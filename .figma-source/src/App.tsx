@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import VideoLearning from './VideoLearning'
 import HomePage from './HomePage'
 
-type Page = 'home' | 'vocabulary' | 'video' | 'courses' | 'profile' | 'settings'
+type Page = 'home' | 'vocabulary' | 'video' | 'courses'
 
 // ─── Icons (inline SVG components) ────────────────────────────────────────────
 
@@ -189,15 +189,15 @@ function Logo({ onClick }: { onClick?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={onClick}>
       <div style={{
-        width: 46, height: 46, borderRadius: 12, overflow: 'hidden',
+        width: 34, height: 34, borderRadius: 10,
+        background: 'linear-gradient(135deg, #FF4D6D 0%, #C2185B 100%)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#FFFFFF', flexShrink: 0,
-        boxShadow: '0 4px 18px rgba(20,42,81,0.42)',
-      }}>
-        <img src="/kotodama-logo.png" alt="Kotodama" style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.62)' }} />
-      </div>
-      <span style={{ fontSize: 20, fontWeight: 700, color: '#EAEAE0', letterSpacing: '-0.035em', fontFamily: 'Fraunces, serif' }}>
-        Kotodama
+        color: 'white', fontSize: 17, fontFamily: "'Noto Sans JP', sans-serif",
+        fontWeight: 700, flexShrink: 0,
+        boxShadow: '0 2px 12px rgba(255,77,109,0.4)',
+      }}>語</div>
+      <span style={{ fontSize: 18, fontWeight: 700, color: '#EAEAE0', letterSpacing: '-0.03em', fontFamily: 'Fraunces, serif' }}>
+        Lingua
       </span>
     </div>
   )
@@ -211,10 +211,10 @@ const NAV_TABS: { id: Page; label: string; icon: React.ReactNode }[] = [
 ]
 
 function TopNav({ onHeroFocus, page, setPage }: { onHeroFocus: () => void; page: Page; setPage: (p: Page) => void }) {
-  const [credits] = useState(0)
+  const [credits] = useState(47)
   return (
     <nav className="nav-bar" style={{ height: 64 }}>
-      <div style={{ maxWidth: 1800, margin: '0 auto', padding: '0 24px', height: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 28px', height: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
         <Logo onClick={() => setPage('home')} />
 
         {/* Divider */}
@@ -257,24 +257,24 @@ function TopNav({ onHeroFocus, page, setPage }: { onHeroFocus: () => void; page:
           {/* Streak */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 20 }}>
             <span style={{ fontSize: 14 }}>🔥</span>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: '#FB923C', fontFamily: 'JetBrains Mono, monospace' }}>0</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: '#FB923C', fontFamily: 'JetBrains Mono, monospace' }}>12</span>
           </div>
           {/* Credits */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', background: 'rgba(255,77,109,0.1)', border: '1px solid rgba(255,77,109,0.2)', borderRadius: 20 }}>
             <ZapIcon size={12} />
             <span style={{ fontSize: 12.5, fontWeight: 600, color: '#FF7D9D', fontFamily: 'JetBrains Mono, monospace' }}>{credits}</span>
           </div>
-          <button className="btn-icon" aria-label="Cài đặt" onClick={() => setPage('settings')} style={{ marginLeft: 2 }}>
+          <button className="btn-icon" style={{ marginLeft: 2 }}>
             <SettingsIcon size={15} />
           </button>
-          <button aria-label="Hồ sơ" onClick={() => setPage('profile')} style={{
+          <div style={{
             width: 34, height: 34, borderRadius: '50%',
             background: 'linear-gradient(135deg, #FF4D6D 0%, #C2185B 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
             marginLeft: 4, flexShrink: 0,
             boxShadow: '0 2px 8px rgba(255,77,109,0.3)',
-          }}>K</button>
+          }}>L</div>
         </div>
       </div>
     </nav>
@@ -1015,6 +1015,14 @@ function FloatingChat() {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 function CoursesPage() {
+  const COURSES_FULL = [
+    { lang: 'JP', langColor: '#FF4D6D', title: 'Tiếng Nhật từ đầu đến JLPT N4', instructor: 'Sensei Tanaka', level: 'Sơ cấp → Trung cấp', lessons: 48, hours: 32, rating: 4.9, students: '12.4K', tags: ['N5', 'N4', 'Kanji'], badge: 'Nổi bật', img: 'https://images.unsplash.com/photo-1573455494060-c5595004fb6c?w=600&h=340&fit=crop&auto=format' },
+    { lang: 'EN', langColor: '#4D8BFF', title: 'Tiếng Anh giao tiếp — IELTS 7.0+', instructor: 'Prof. Williams', level: 'Trung cấp → Nâng cao', lessons: 60, hours: 40, rating: 4.8, students: '28.7K', tags: ['IELTS', 'Speaking'], badge: 'Phổ biến', img: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&h=340&fit=crop&auto=format' },
+    { lang: 'FR', langColor: '#A855F7', title: 'Tiếng Pháp cơ bản — Khám phá Paris', instructor: 'Marie Dupont', level: 'Sơ cấp A1 → A2', lessons: 36, hours: 24, rating: 4.7, students: '8.2K', tags: ['DELF', 'A1', 'A2'], badge: 'Mới', img: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=340&fit=crop&auto=format' },
+    { lang: 'KO', langColor: '#F97316', title: 'Tiếng Hàn qua K-drama thực tế', instructor: 'Kim Jisoo', level: 'Mọi cấp độ', lessons: 30, hours: 20, rating: 4.9, students: '15.1K', tags: ['Hangul', 'TOPIK'], badge: 'Hot', img: 'https://images.unsplash.com/photo-1546874177-9e664107314e?w=600&h=340&fit=crop&auto=format' },
+    { lang: 'JP', langColor: '#FF4D6D', title: 'JLPT N2 — Luyện thi chuyên sâu', instructor: 'Yamamoto Kenji', level: 'Nâng cao', lessons: 52, hours: 38, rating: 4.8, students: '6.8K', tags: ['N2', 'Kanji', 'Ngữ pháp'], badge: '', img: 'https://images.unsplash.com/photo-1564284369929-026ba231f89b?w=600&h=340&fit=crop&auto=format' },
+    { lang: 'ZH', langColor: '#10B981', title: 'Tiếng Trung HSK 1–3 cho người mới', instructor: 'Chen Wei', level: 'Sơ cấp', lessons: 42, hours: 28, rating: 4.6, students: '9.3K', tags: ['HSK', 'Bính âm'], badge: 'Mới', img: 'https://images.unsplash.com/photo-1551641506-ee5bf4cb45f1?w=600&h=340&fit=crop&auto=format' },
+  ]
   return (
     <div style={{ background: '#09090F', minHeight: 'calc(100vh - 64px)', padding: '48px 40px 80px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -1029,39 +1037,43 @@ function CoursesPage() {
             Lộ trình học có cấu trúc · AI theo dõi tiến độ · Chứng chỉ hoàn thành
           </p>
         </div>
-        <div style={{ minHeight: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 14, color: 'rgba(234,234,224,0.4)', fontSize: 14 }}>
-          Chưa có khóa học. Nội dung sẽ được hiển thị sau khi quản trị viên tạo khóa học.
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          {COURSES_FULL.map((c, i) => (
+            <div key={i} className="course-card" style={{ animation: `fadeInUp 0.4s ${0.06 * i}s ease both` }}>
+              <div style={{ position: 'relative', height: 160, overflow: 'hidden', background: '#111' }}>
+                <img src={c.img} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}/>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(9,9,15,0.9) 100%)' }}/>
+                {c.badge && (
+                  <div style={{ position: 'absolute', top: 12, left: 12, padding: '3px 10px', borderRadius: 6, background: c.langColor, color: 'white', fontSize: 10.5, fontWeight: 700 }}>{c.badge}</div>
+                )}
+                <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 6, background: 'rgba(9,9,15,0.7)', border: '1px solid rgba(255,255,255,0.15)', color: c.langColor, fontSize: 11, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace' }}>{c.lang}</div>
+              </div>
+              <div style={{ padding: '16px 18px 20px' }}>
+                <div style={{ fontFamily: 'Fraunces, serif', fontSize: 15.5, fontWeight: 600, color: '#EAEAE0', lineHeight: 1.35, marginBottom: 6 }}>{c.title}</div>
+                <div style={{ fontSize: 12, color: 'rgba(234,234,224,0.4)', marginBottom: 12 }}>{c.instructor} · {c.level}</div>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+                  {c.tags.map(t => (
+                    <span key={t} style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 10.5, fontWeight: 600, color: 'rgba(234,234,224,0.45)', fontFamily: 'JetBrains Mono, monospace' }}>{t}</span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', gap: 14 }}>
+                    <span style={{ fontSize: 11.5, color: 'rgba(234,234,224,0.4)' }}>📖 {c.lessons} bài</span>
+                    <span style={{ fontSize: 11.5, color: 'rgba(234,234,224,0.4)' }}>⏱ {c.hours}h</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 12, color: '#FCD34D' }}>★</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#FCD34D' }}>{c.rating}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(234,234,224,0.35)' }}>({c.students})</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   )
-}
-
-function PageHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return <div style={{ marginBottom: 36 }}>
-    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, letterSpacing: '0.13em', textTransform: 'uppercase', color: 'rgba(234,234,224,0.42)', marginBottom: 12 }}><span style={{ color: '#FF4D6D', marginRight: 9 }}>•</span>{eyebrow}</div>
-    <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 42, fontWeight: 600, color: '#EAEAE0', marginBottom: 10, letterSpacing: '-0.03em' }}>{title}</h1>
-    <p style={{ fontSize: 16, color: 'rgba(234,234,224,0.48)', lineHeight: 1.65, maxWidth: 620 }}>{description}</p>
-  </div>
-}
-
-function ProfilePage() {
-  return <div style={{ minHeight: 'calc(100vh - 64px)', padding: '62px 24px 88px', background: 'radial-gradient(circle at 25% 18%, rgba(255,77,109,0.1), transparent 27%), #09090F' }}><div style={{ maxWidth: 1120, margin: '0 auto' }}><PageHeader eyebrow="TÀI KHOẢN" title="Hồ sơ của bạn" description="Thông tin hồ sơ sẽ xuất hiện khi bạn đăng nhập hoặc tạo tài khoản." />
-    <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20 }}><div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '36px 28px' }}><div style={{ width: 92, height: 92, borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #FF4D6D, #A855F7)', boxShadow: '0 8px 28px rgba(255,77,109,.25)', fontFamily: 'Fraunces, serif', fontSize: 34, fontWeight: 700 }}>K</div><h2 style={{ marginTop: 18, fontFamily: 'Fraunces, serif', fontSize: 24, color: '#EAEAE0' }}>Khách</h2><p style={{ marginTop: 8, fontSize: 13.5, color: 'rgba(234,234,224,.45)', lineHeight: 1.6 }}>Bạn chưa đăng nhập.</p><button className="btn-primary" style={{ marginTop: 24, width: '100%', justifyContent: 'center' }}>Đăng nhập</button></div>
-      <div className="card" style={{ padding: 30 }}><div style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 600, color: '#EAEAE0', marginBottom: 22 }}>Thông tin cá nhân</div>{[['Email', 'Chưa có dữ liệu'], ['Ngôn ngữ đang học', 'Chưa chọn'], ['Cấp độ hiện tại', 'Chưa có dữ liệu']].map(([label, value], index) => <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 20, padding: '17px 0', borderTop: index ? '1px solid rgba(255,255,255,.07)' : 'none' }}><span style={{ color: 'rgba(234,234,224,.43)', fontSize: 14 }}>{label}</span><span style={{ color: 'rgba(234,234,224,.78)', fontSize: 14, fontWeight: 600 }}>{value}</span></div>)}</div></div>
-  </div></div>
-}
-
-function SettingSwitch({ enabled, onChange }: { enabled: boolean; onChange: () => void }) {
-  return <button aria-label="Thay đổi cài đặt" onClick={onChange} style={{ width: 46, height: 26, borderRadius: 20, border: 'none', padding: 3, cursor: 'pointer', background: enabled ? '#FF4D6D' : 'rgba(255,255,255,.13)', transition: 'background .2s' }}><span style={{ display: 'block', width: 20, height: 20, borderRadius: '50%', background: '#fff', transform: enabled ? 'translateX(20px)' : 'translateX(0)', transition: 'transform .2s' }} /></button>
-}
-
-function SettingsPage() {
-  const [reducedMotion, setReducedMotion] = useState(false); const [compactMode, setCompactMode] = useState(false); const [reminders, setReminders] = useState(false);
-  const rows = (title: string, description: string, enabled: boolean, onChange: () => void) => <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, alignItems: 'center', padding: '17px 0', borderTop: '1px solid rgba(255,255,255,.07)' }}><div><div style={{ color: '#EAEAE0', fontSize: 14.5, fontWeight: 600 }}>{title}</div><div style={{ color: 'rgba(234,234,224,.42)', fontSize: 13, marginTop: 5, lineHeight: 1.45 }}>{description}</div></div><SettingSwitch enabled={enabled} onChange={onChange} /></div>;
-  return <div style={{ minHeight: 'calc(100vh - 64px)', padding: '62px 24px 88px', background: 'radial-gradient(circle at 76% 15%, rgba(77,139,255,0.09), transparent 27%), #09090F' }}><div style={{ maxWidth: 1120, margin: '0 auto' }}><PageHeader eyebrow="TÙY CHỈNH TRẢI NGHIỆM" title="Cài đặt" description="Điều chỉnh giao diện và cách Kotodama đồng hành cùng bạn." />
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}><div className="card" style={{ padding: 28 }}><div style={{ fontFamily: 'Fraunces, serif', color: '#EAEAE0', fontSize: 21, marginBottom: 4 }}>Giao diện</div><p style={{ fontSize: 13, color: 'rgba(234,234,224,.42)', marginBottom: 16 }}>Thiết lập hiển thị phù hợp với bạn.</p>{rows('Giảm chuyển động', 'Hạn chế hiệu ứng động trong giao diện.', reducedMotion, () => setReducedMotion(value => !value))}{rows('Chế độ gọn', 'Ưu tiên hiển thị nhiều nội dung hơn.', compactMode, () => setCompactMode(value => !value))}</div><div className="card" style={{ padding: 28 }}><div style={{ fontFamily: 'Fraunces, serif', color: '#EAEAE0', fontSize: 21, marginBottom: 4 }}>Học tập</div><p style={{ fontSize: 13, color: 'rgba(234,234,224,.42)', marginBottom: 16 }}>Cài đặt lộ trình học của bạn.</p><div style={{ padding: '17px 0', borderTop: '1px solid rgba(255,255,255,.07)' }}><div style={{ color: '#EAEAE0', fontSize: 14.5, fontWeight: 600 }}>Ngôn ngữ chính</div><div style={{ color: 'rgba(234,234,224,.42)', fontSize: 13, marginTop: 5 }}>Chưa chọn ngôn ngữ học</div></div>{rows('Nhắc học tập', 'Nhận nhắc nhở khi bạn thiết lập lịch học.', reminders, () => setReminders(value => !value))}</div></div>
-  </div></div>
 }
 
 export default function App() {
@@ -1079,8 +1091,6 @@ export default function App() {
       <TopNav onHeroFocus={focusHero} page={page} setPage={setPage} />
       {page === 'home' && <HomePage setPage={setPage} />}
       {page === 'courses' && <CoursesPage />}
-      {page === 'profile' && <ProfilePage />}
-      {page === 'settings' && <SettingsPage />}
       {page === 'video' && <VideoLearning />}
       {page === 'vocabulary' && (
         <>
