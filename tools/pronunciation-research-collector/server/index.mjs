@@ -1,14 +1,12 @@
 import http from 'node:http'
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
-import { createReadStream } from 'node:fs'
-import { mkdir, open, readFile, rename, rm, stat } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
 
 const root = dirname(fileURLToPath(import.meta.url))
 const publicRoot = resolve(root, '..', 'public')
-const storageRoot = resolve(process.env.RESEARCH_STORAGE_PATH || join(root, '..', 'var', 'pronunciation-research'))
 const port = Number(process.env.PORT || 8790)
 const generatedReviewKey = randomBytes(24).toString('base64url')
 const reviewKey = process.env.RESEARCH_REVIEW_KEY || generatedReviewKey
@@ -46,7 +44,6 @@ function authorised(request) {
   return left.length === right.length && timingSafeEqual(left, right)
 }
 function validParticipantCode(value) { return typeof value === 'string' && /^[a-zA-Z0-9_-]{3,60}$/.test(value) ? value : null }
-function safeAudioKey(value) { return /^attempts\/[0-9a-f-]{36}\/recording-[0-9a-f-]{36}\.(webm|ogg|wav|m4a)$/i.test(value) ? value : null }
 function detectAudio(header) {
   if (header.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]))) return { mimeType: 'audio/webm', ext: 'webm' }
   if (header.subarray(0, 4).equals(Buffer.from('OggS'))) return { mimeType: 'audio/ogg', ext: 'ogg' }
@@ -68,17 +65,14 @@ function validAttempt(body) {
   if (!scenario || !['standard', 'intentional_error'].includes(instructedVariant) || textJa !== scenario.textJa) return null
   return { participantCode, collectionMode: mode, textJa, scenarioKey: body.scenarioKey, ...scenario, instructedVariant }
 }
-async function saveAudio(attemptId, request) {
+async function readAudio(request) {
   const length = Number(request.headers['content-length'] || 0)
   if (!Number.isSafeInteger(length) || length < 1 || length > 20 * 1024 ** 2) throw new Error('Bản ghi phải có dung lượng từ 1 byte đến 20 MB.')
-  const directory = join(storageRoot, 'attempts', attemptId); await mkdir(directory, { recursive: true })
-  const temporary = join(directory, `.upload-${randomUUID()}.part`); const handle = await open(temporary, 'wx'); let size = 0
-  try { for await (const chunk of request) { size += chunk.length; if (size > 20 * 1024 ** 2) throw new Error('Bản ghi vượt quá 20 MB.'); await handle.write(chunk) } } catch (error) { await handle.close(); await rm(temporary, { force: true }); throw error }
-  await handle.close()
-  const headerHandle = await open(temporary, 'r'); const header = Buffer.alloc(32); const { bytesRead } = await headerHandle.read(header, 0, 32, 0); await headerHandle.close()
-  const detected = detectAudio(header.subarray(0, bytesRead)); if (!detected) { await rm(temporary, { force: true }); throw new Error('Chỉ nhận WebM, OGG, WAV hoặc M4A.') }
-  const key = `attempts/${attemptId}/recording-${randomUUID()}.${detected.ext}`; await rename(temporary, join(storageRoot, ...key.split('/')))
-  return { key, ...detected, size }
+  const chunks = []; let size = 0
+  for await (const chunk of request) { size += chunk.length; if (size > 20 * 1024 ** 2) throw new Error('Bản ghi vượt quá 20 MB.'); chunks.push(chunk) }
+  const content = Buffer.concat(chunks)
+  const detected = detectAudio(content.subarray(0, 32)); if (!detected) throw new Error('Chỉ nhận WebM, OGG, WAV hoặc M4A.')
+  return { ...detected, content, size }
 }
 async function serveStatic(response, pathname) {
   const filename = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '')
@@ -101,10 +95,15 @@ const server = http.createServer(async (request, response) => {
     const uploadMatch = path.match(/^\/api\/attempts\/([0-9a-f-]{36})\/audio$/i)
     if (request.method === 'PUT' && uploadMatch) {
       const durationMs = Math.round(Number(url.searchParams.get('durationMs'))); if (!Number.isInteger(durationMs) || durationMs < 250 || durationMs > 120_000) return fail(response, 422, 'Thời lượng bản ghi không hợp lệ.')
-      const found = await pool.query("select id from research_collector_attempts where id = $1 and status = 'draft'", [uploadMatch[1]]); if (!found.rows[0]) return fail(response, 409, 'Lượt ghi âm không còn hợp lệ.')
-      const audio = await saveAudio(uploadMatch[1], request)
-      const result = await pool.query("update research_collector_attempts set audio_storage_key=$1,audio_mime_type=$2,audio_byte_size=$3,duration_ms=$4,status='submitted',submitted_at=now(),updated_at=now() where id=$5 and status='draft' returning *", [audio.key, audio.mimeType, audio.size, durationMs, uploadMatch[1]])
-      if (!result.rows[0]) return fail(response, 409, 'Lượt ghi âm không còn hợp lệ.'); return json(response, 202, { attempt: rowAttempt(result.rows[0]) })
+      const audio = await readAudio(request); const client = await pool.connect()
+      try {
+        await client.query('begin')
+        const locked = await client.query("select id from research_collector_attempts where id = $1 and status = 'draft' for update", [uploadMatch[1]])
+        if (!locked.rows[0]) { await client.query('rollback'); return fail(response, 409, 'Lượt ghi âm không còn hợp lệ.') }
+        await client.query('insert into research_collector_audio (attempt_id,mime_type,byte_size,content) values ($1,$2,$3,$4)', [uploadMatch[1], audio.mimeType, audio.size, audio.content])
+        const result = await client.query("update research_collector_attempts set audio_mime_type=$1,audio_byte_size=$2,duration_ms=$3,status='submitted',submitted_at=now(),updated_at=now() where id=$4 returning *", [audio.mimeType, audio.size, durationMs, uploadMatch[1]])
+        await client.query('commit'); return json(response, 202, { attempt: rowAttempt(result.rows[0]) })
+      } catch (error) { await client.query('rollback'); throw error } finally { client.release() }
     }
     if (request.method === 'GET' && path === '/api/review-queue') {
       if (!authorised(request)) return fail(response, 401, 'Mã người chấm không hợp lệ.')
@@ -113,9 +112,9 @@ const server = http.createServer(async (request, response) => {
     const audioMatch = path.match(/^\/api\/attempts\/([0-9a-f-]{36})\/audio\/content$/i)
     if (request.method === 'GET' && audioMatch) {
       if (!authorised(request)) return fail(response, 401, 'Mã người chấm không hợp lệ.')
-      const result = await pool.query('select audio_storage_key,audio_mime_type,audio_byte_size from research_collector_attempts where id=$1', [audioMatch[1]]); const item = result.rows[0]; const key = safeAudioKey(item?.audio_storage_key)
-      if (!key) return fail(response, 404, 'Không tìm thấy bản ghi.'); const file = join(storageRoot, ...key.split('/')); await stat(file)
-      response.writeHead(200, { 'content-type': item.audio_mime_type, 'content-length': item.audio_byte_size, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' }); return createReadStream(file).pipe(response)
+      const result = await pool.query('select mime_type,byte_size,content from research_collector_audio where attempt_id=$1', [audioMatch[1]]); const item = result.rows[0]
+      if (!item) return fail(response, 404, 'Không tìm thấy bản ghi.')
+      response.writeHead(200, { 'content-type': item.mime_type, 'content-length': item.byte_size, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' }); return response.end(item.content)
     }
     const labelMatch = path.match(/^\/api\/attempts\/([0-9a-f-]{36})\/labels$/i)
     if (request.method === 'POST' && labelMatch) {

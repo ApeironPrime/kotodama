@@ -18,7 +18,7 @@ Mở `http://127.0.0.1:8790`. Người tham gia dùng mã giả danh; không yê
 
 Tạo một **Web Service** với Root Directory là `tools/pronunciation-research-collector`, Build Command `npm install`, Start Command `npm run dev`.
 
-Audio không được lưu trên filesystem tạm của Render. Gắn Persistent Disk tại `/var/data` và đặt `RESEARCH_STORAGE_PATH=/var/data`. Các biến `DATABASE_URL` và `RESEARCH_REVIEW_KEY` phải được đặt trong Render Environment; không commit chúng vào Git.
+Chọn gói **Free**. Audio pilot được lưu trong bảng PostgreSQL riêng `research_collector_audio`, nên không cần Persistent Disk và không mất khi Render restart. Gói Free có cold start; chỉ phù hợp pilot nhỏ vì audio sẽ dùng quota Neon. Các biến `DATABASE_URL` và `RESEARCH_REVIEW_KEY` phải được đặt trong Render Environment; không commit chúng vào Git.
 
 ## Vòng đời
 
