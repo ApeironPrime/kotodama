@@ -20,12 +20,29 @@ const ssl = process.env.DATABASE_SSL === 'true' || (!usesLocalDatabase && proces
   : undefined
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl })
 
-const scenarios = new Map([
-  ['tsu_chu', { textJa: '私はつくえを使います。', targetPhone: 'ts', targetError: 'tsu_to_chu' }],
-  ['sokuon', { textJa: '切手を買いました。', targetPhone: 'cl', targetError: 'sokuon' }],
-  ['long_vowel', { textJa: 'ケーキを食べました。', targetPhone: 'e', targetError: 'long_vowel' }],
-  ['mora_n', { textJa: '新聞を読みます。', targetPhone: 'N', targetError: 'mora_n' }],
-])
+const guidedScenarios = [
+  ['warmup_01', '今日は日本語の発音を練習します。ゆっくり、はっきり、最後まで話します。', null, 'baseline', 'standard'],
+  ['warmup_02', '朝、私は駅の近くの店で、温かいコーヒーを買いました。', null, 'baseline', 'standard'],
+  ['tsu_01', '私はつくえを使って、次の週末の予定を書きます。', 'ts', 'tsu_to_chu', 'standard'],
+  ['tsu_02_intentional', '私はつくえを使って、次の週末の予定を書きます。', 'ts', 'tsu_to_chu', 'intentional_error'],
+  ['tsu_03', '次の月曜日に、父と一緒に小さな図書館へ行きました。', 'ts', 'tsu_to_chu', 'standard'],
+  ['tsu_04', 'いつも使っているかばんに、二つの本を入れました。', 'ts', 'tsu_to_chu', 'standard'],
+  ['sokuon_01', '昨日、私は切手を買って、友達に手紙を書きました。', 'cl', 'sokuon', 'standard'],
+  ['sokuon_02_intentional', '昨日、私は切手を買って、友達に手紙を書きました。', 'cl', 'sokuon', 'intentional_error'],
+  ['sokuon_03', '学校の近くにある小さな店で、ゆっくり待っていました。', 'cl', 'sokuon', 'standard'],
+  ['sokuon_04', '朝、家を出る前に、ちょっとだけ音楽を聞きました。', 'cl', 'sokuon', 'standard'],
+  ['long_01', '午後、私はケーキとコーヒーをゆっくり食べました。', 'e', 'long_vowel', 'standard'],
+  ['long_02_intentional', '午後、私はケーキとコーヒーをゆっくり食べました。', 'e', 'long_vowel', 'intentional_error'],
+  ['long_03', '先生と一緒に、駅の近くのケーキ屋さんへ行きました。', 'e', 'long_vowel', 'standard'],
+  ['long_04', '旅行のあとで、弟とゲームをして遊びました。', 'e', 'long_vowel', 'standard'],
+  ['mora_n_01', '新聞を読んでから、銀行へ行きました。', 'N', 'mora_n', 'standard'],
+  ['mora_n_02_intentional', '新聞を読んでから、銀行へ行きました。', 'N', 'mora_n', 'intentional_error'],
+  ['mora_n_03', '今晩、家族と一緒にご飯を食べます。', 'N', 'mora_n', 'standard'],
+  ['mora_n_04', '天気がいいので、友人と公園を散歩しました。', 'N', 'mora_n', 'standard'],
+  ['mixed_01', '今朝、駅で切手を買い、電車の中で新聞を読みました。', null, 'mixed', 'standard'],
+  ['closing_01', '私は日本語を勉強しています。これからも毎日少しずつ練習したいです。', null, 'mixed', 'standard'],
+]
+const scenarios = new Map(guidedScenarios.map(([key, textJa, targetPhone, targetError, instructedVariant]) => [key, { textJa, targetPhone, targetError, instructedVariant }]))
 const contentTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' }
 
 function json(response, status, data) {
@@ -52,18 +69,22 @@ function detectAudio(header) {
   return null
 }
 function rowAttempt(row) {
-  return { id: row.id, participantCode: row.participant_code, collectionMode: row.collection_mode, scenarioKey: row.scenario_key, textJa: row.text_ja, targetPhone: row.target_phone, targetError: row.target_error, instructedVariant: row.instructed_variant, durationMs: row.duration_ms, status: row.status, createdAt: row.created_at, submittedAt: row.submitted_at }
+  return { id: row.id, participantCode: row.participant_code, collectionMode: row.collection_mode, scenarioKey: row.scenario_key, sessionId: row.session_id, sessionStep: row.session_step, textJa: row.text_ja, targetPhone: row.target_phone, targetError: row.target_error, instructedVariant: row.instructed_variant, durationMs: row.duration_ms, status: row.status, createdAt: row.created_at, submittedAt: row.submitted_at }
 }
 function validAttempt(body) {
   const participantCode = validParticipantCode(body?.participantCode)
   const textJa = typeof body?.textJa === 'string' ? body.textJa.trim() : ''
   const mode = body?.collectionMode
-  if (!participantCode || !textJa || textJa.length > 1000 || body?.consent !== true || !['scripted', 'free'].includes(mode)) return null
+  if (!participantCode || !textJa || textJa.length > 1000 || body?.consent !== true || !['scripted', 'guided', 'free'].includes(mode)) return null
   if (mode === 'free') return { participantCode, collectionMode: mode, textJa, scenarioKey: null, targetPhone: null, targetError: null, instructedVariant: 'natural' }
   const scenario = scenarios.get(body?.scenarioKey)
   const instructedVariant = body?.instructedVariant
   if (!scenario || !['standard', 'intentional_error'].includes(instructedVariant) || textJa !== scenario.textJa) return null
-  return { participantCode, collectionMode: mode, textJa, scenarioKey: body.scenarioKey, ...scenario, instructedVariant }
+  if (mode !== 'guided') return { participantCode, collectionMode: mode, textJa, scenarioKey: body.scenarioKey, ...scenario, instructedVariant }
+  const sessionId = typeof body?.sessionId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.sessionId) ? body.sessionId : null
+  const sessionStep = Number(body?.sessionStep)
+  if (!sessionId || !Number.isInteger(sessionStep) || sessionStep < 1 || sessionStep > guidedScenarios.length || guidedScenarios[sessionStep - 1][0] !== body.scenarioKey || scenario.instructedVariant !== instructedVariant) return null
+  return { participantCode, collectionMode: mode, textJa, scenarioKey: body.scenarioKey, ...scenario, instructedVariant, sessionId, sessionStep }
 }
 async function readAudio(request) {
   const length = Number(request.headers['content-length'] || 0)
@@ -88,8 +109,8 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'POST' && path === '/api/attempts') {
       const input = validAttempt(await readJson(request)); if (!input) return fail(response, 422, 'Thông tin, mã người tham gia hoặc đồng ý nghiên cứu chưa hợp lệ.')
       const id = randomUUID(); const result = await pool.query(
-        `insert into research_collector_attempts (id, participant_code, collection_mode, scenario_key, text_ja, target_phone, target_error, instructed_variant, consented_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,now()) returning *`, [id, input.participantCode, input.collectionMode, input.scenarioKey, input.textJa, input.targetPhone, input.targetError, input.instructedVariant])
+        `insert into research_collector_attempts (id, participant_code, collection_mode, scenario_key, session_id, session_step, text_ja, target_phone, target_error, instructed_variant, consented_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now()) returning *`, [id, input.participantCode, input.collectionMode, input.scenarioKey, input.sessionId || null, input.sessionStep || null, input.textJa, input.targetPhone, input.targetError, input.instructedVariant])
       return json(response, 201, { attempt: rowAttempt(result.rows[0]), uploadUrl: `/api/attempts/${id}/audio`, maxUploadBytes: 20 * 1024 ** 2 })
     }
     const uploadMatch = path.match(/^\/api\/attempts\/([0-9a-f-]{36})\/audio$/i)

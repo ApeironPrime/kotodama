@@ -12,7 +12,7 @@ const ssl = process.env.DATABASE_SSL === 'true' || (!usesLocalDatabase && proces
 const pool = new pg.Pool({ connectionString: databaseUrl, ssl })
 try {
   const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), 'migrations')
-  for (const name of ['001_research_collector.sql', '002_audio_in_postgres.sql']) {
+  for (const name of ['001_research_collector.sql', '002_audio_in_postgres.sql', '003_guided_sessions.sql']) {
     await pool.query(await readFile(join(migrationsDir, name), 'utf8'))
     console.log(`Applied ${name}`)
   }

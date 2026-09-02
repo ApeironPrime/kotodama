@@ -12,7 +12,7 @@ npm.cmd run db:migrate
 npm.cmd run dev
 ```
 
-Mở `http://127.0.0.1:8790`. Người tham gia dùng mã giả danh; không yêu cầu tên, email hoặc tài khoản Kotodama. Người chấm mở tab **Chấm nhãn**, nhập `RESEARCH_REVIEW_KEY` và nghe từng bản ghi.
+Mở `http://127.0.0.1:8790`. Người tham gia dùng mã giả danh; không yêu cầu tên, email hoặc tài khoản Kotodama. Luồng chính là một **guided session 20 câu, khoảng 10–15 phút**: sau mỗi lượt gửi, web tự chuyển sang câu tiếp theo và vẫn lưu từng câu thành audio riêng. Người chấm mở tab **Chấm nhãn**, nhập `RESEARCH_REVIEW_KEY` và nghe từng bản ghi.
 
 ## Deploy Render
 
