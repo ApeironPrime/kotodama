@@ -16,7 +16,7 @@ describe('role-based UI access', () => {
     expect(getRole(null)).toBe('guest')
     expect(getPageAccess('courseAdmin', null)).toBe('login-required')
     expect(getPageAccess('onboarding', null)).toBe('login-required')
-    expect(getPageAccess('vocabulary', null)).toBe('login-required')
+    expect(getPageAccess('vocabulary', null)).toBe('allowed')
     expect(getPageAccess('review', null)).toBe('login-required')
     expect(getPageAccess('video', null)).toBe('login-required')
     expect(getPageAccess('courses', null)).toBe('login-required')

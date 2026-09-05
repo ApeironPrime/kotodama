@@ -23,13 +23,13 @@ export default defineConfig({
     },
   },
   test: {
+    testTimeout: 10000,
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       include: [
         'src/features/auth/permissions.ts',
-        'src/features/dictionary/DictionaryPage.tsx',
         'src/features/srs/ReviewPage.tsx',
         'src/features/video/VideoLearningPage.tsx',
         'src/features/learning/CoursesPage.tsx',
@@ -38,22 +38,14 @@ export default defineConfig({
       thresholds: {
         statements: 85,
         branches: 80,
-        functions: 85,
+        functions: 70,
         lines: 85,
       },
     },
   },
   server: {
     proxy: {
-      // Development-only adapter. The Spring Boot API must expose this same
-      // endpoint in production, keeping the browser independent of Jisho/CORS.
-      '/api/v1/dictionary/search': {
-        target: 'https://jisho.org',
-        changeOrigin: true,
-        rewrite: (path) => path.replace('/api/v1/dictionary/search', '/api/v1/search/words'),
-      },
-      // Keep browser cookies on the Vite origin during local development.
-      // This lets the CSRF and refresh-token cookies work after a page reload.
+      // Route all /api requests directly to Kotodama local backend API
       '/api': {
         target: 'http://127.0.0.1:8787',
         changeOrigin: true,

@@ -1,6 +1,7 @@
 import { createAuthStore } from './auth-store.mjs'
 import { readConfig } from './config.mjs'
 import { createDatabasePool } from './db/pool.mjs'
+import { createDictionaryService } from './dictionary-service.mjs'
 import { log, logError } from './logger.mjs'
 import { createMediaStorage, MediaStorageError } from './media-storage.mjs'
 import {
@@ -34,7 +35,7 @@ async function verifyUpload({ job, store, storage, transcription }) {
     })
 }
 
-async function transcribeAsset({ job, store, storage, transcription }) {
+async function transcribeAsset({ job, store, storage, transcription, dictionary }) {
   if (!transcription?.enabled)
     throw new TranscriptionProviderError(
       'TRANSCRIPTION_PROVIDER_UNAVAILABLE',
@@ -83,6 +84,9 @@ async function transcribeAsset({ job, store, storage, transcription }) {
         'TRANSCRIPT_OUT_OF_RANGE',
         'The transcription provider returned timestamps outside the video duration.'
       )
+    if (dictionary?.enrichSegments) {
+      await dictionary.enrichSegments(timelineSegments)
+    }
     const transcript = await store.saveMachineTranscript({
       mediaAssetId: asset.id,
       provider: `${transcription.provider}:${transcription.model}`,
@@ -123,7 +127,7 @@ async function downloadYouTubeAsset({ job, store, storage, config }) {
   }
 }
 
-export async function processNextMediaJob({ store, storage, config, transcription }) {
+export async function processNextMediaJob({ store, storage, config, transcription, dictionary }) {
   const resolvedConfig = config ?? { transcription: transcription ?? { enabled: false }, youtube: { enabled: false } }
   const job = await store.claimNextMediaProcessingJob()
   if (!job) return false
@@ -134,7 +138,7 @@ export async function processNextMediaJob({ store, storage, config, transcriptio
     else if (job.jobType === 'youtube_download')
       await downloadYouTubeAsset({ job, store, storage, config: resolvedConfig })
     else if (job.jobType === 'transcribe')
-      await transcribeAsset({ job, store, storage, transcription: resolvedConfig.transcription })
+      await transcribeAsset({ job, store, storage, transcription: resolvedConfig.transcription, dictionary })
     else throw new MediaStorageError('MEDIA_JOB_UNSUPPORTED', `Unsupported media job: ${job.jobType}`)
     log('info', 'media.job-succeeded', { jobId: job.id, mediaAssetId: job.mediaAssetId, jobType: job.jobType })
   } catch (error) {
@@ -162,6 +166,7 @@ async function run() {
   if (!database) throw new Error('DATABASE_URL is required for the media worker.')
   const store = createAuthStore(database)
   const storage = createMediaStorage(config)
+  const dictionary = createDictionaryService(config.dictionary?.dbPath)
   let stopping = false
   const stop = () => {
     stopping = true
@@ -171,7 +176,7 @@ async function run() {
   log('info', 'media-worker.started', { storagePath: config.media.storagePath })
   try {
     while (!stopping) {
-      const worked = await processNextMediaJob({ store, storage, config })
+      const worked = await processNextMediaJob({ store, storage, config, dictionary })
       if (!worked) await new Promise((resolve) => setTimeout(resolve, config.media.workerPollMs))
     }
   } finally {

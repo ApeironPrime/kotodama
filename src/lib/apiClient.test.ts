@@ -75,6 +75,27 @@ describe('API error contract', () => {
     expect(apiPaths.video.playbackSession('asset/a')).toBe('/api/v1/video/assets/asset%2Fa/playback-session')
     expect(apiPaths.video.retry('asset/a')).toBe('/api/v1/video/assets/asset%2Fa/retry')
     expect(apiPaths.video.youtubeImports).toBe('/api/v1/video/youtube-imports')
+    expect(apiPaths.video.uploadSession('asset/1')).toBe('/api/v1/video/assets/asset%2F1/upload-session')
+    expect(apiPaths.video.upload('asset/1')).toBe('/api/v1/video/assets/asset%2F1/upload')
+    expect(apiPaths.video.asset('asset/1')).toBe('/api/v1/video/assets/asset%2F1')
+    expect(apiPaths.video.jobs('asset/1')).toBe('/api/v1/video/assets/asset%2F1/jobs')
+
+    expect(apiPaths.dictionary.search('nhật', 10)).toBe('/api/v1/dictionary/search?keyword=nh%E1%BA%ADt&limit=10')
+    expect(apiPaths.dictionary.word('nihon')).toBe('/api/v1/dictionary/word/nihon')
+    expect(apiPaths.account.learningPlan).toBe('/api/v1/account/learning-plan')
+    expect(apiPaths.account.profile).toBe('/api/v1/account/profile')
+    expect(apiPaths.account.preferences).toBe('/api/v1/account/preferences')
+
+    expect(apiPaths.nhaikanji.kanjiList('N5', 'thổ', 1, 20)).toBe(
+      '/api/v1/nhaikanji/kanji?level=N5&q=th%E1%BB%95&page=1&limit=20'
+    )
+    expect(apiPaths.nhaikanji.kanjiDetail('土')).toBe('/api/v1/nhaikanji/kanji/%E5%9C%9F')
+    expect(apiPaths.nhaikanji.bunpoList('N4', 'minna', 'câu', 1, 10)).toBe(
+      '/api/v1/nhaikanji/bunpo?level=N4&bookId=minna&q=c%C3%A2u&page=1&limit=10'
+    )
+    expect(apiPaths.nhaikanji.jlptExams('N4', 'vocab')).toBe('/api/v1/nhaikanji/jlpt/exams?level=N4&section=vocab')
+    expect(apiPaths.nhaikanji.jlptExamDetail('exam-1')).toBe('/api/v1/nhaikanji/jlpt/exams/exam-1')
+    expect(apiPaths.nhaikanji.jlptSubmit).toBe('/api/v1/nhaikanji/jlpt/submit')
   })
 
   it('unwraps responses and deduplicates simultaneous requests with the same key', async () => {

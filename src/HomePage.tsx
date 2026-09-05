@@ -110,28 +110,44 @@ export default function HomePage({
         <section className="showcase-section showcase-section--tools">
           <div className="showcase-tool-grid">
             <FeatureCard
-              icon={Zap}
-              title="Tra từ AI"
-              description="Phân tích từ, ngữ pháp và gợi nhớ thông minh trong một không gian tập trung."
-              action="Tra từ ngay"
+              icon={Sparkles}
+              title="Kho Hán Tự (Kanji)"
+              description="2500+ Chữ Hán phân loại N5→N1 với Âm Hán-Việt, câu chuyện chiết tự và luyện viết nét."
+              action="Học Hán Tự"
               tone="rose"
-              onClick={() => setPage('vocabulary')}
+              onClick={() => setPage('kanji')}
+            />
+            <FeatureCard
+              icon={BookOpen}
+              title="Kho Ngữ Pháp (Bunpo)"
+              description="Mẫu câu và cấu trúc N5→N1 chuẩn giáo trình Minna no Nihongo & Somatome."
+              action="Xem ngữ pháp"
+              tone="blue"
+              onClick={() => setPage('bunpo')}
+            />
+            <FeatureCard
+              icon={GraduationCap}
+              title="Luyện Thi JLPT"
+              description="Ngân hàng đề thi trắc nghiệm bấm giờ, chấm điểm và xem giải thích chi tiết."
+              action="Luyện thi ngay"
+              tone="violet"
+              onClick={() => setPage('jlpt')}
             />
             <FeatureCard
               icon={Video}
-              title="Học qua Video"
-              description="Học trực tiếp từ video với phụ đề tương tác và từ vựng được lưu theo ngữ cảnh."
+              title="Học qua Video AI"
+              description="Học trực tiếp từ video với phụ đề Furigana tương tác và luyện Shadowing ASR."
               action="Mở Video AI"
               tone="blue"
               onClick={() => setPage('video')}
             />
             <FeatureCard
-              icon={GraduationCap}
-              title="Khóa học"
-              description="Theo dõi hành trình học của bạn với cấu trúc rõ ràng và các mốc tiến độ trực quan."
-              action="Khám phá"
-              tone="violet"
-              onClick={() => setPage('courses')}
+              icon={Zap}
+              title="Tra Từ Điển & SRS"
+              description="Tra cứu từ vựng sâu, lưu thẻ nhớ và ôn tập lặp lại ngắt quãng thông minh."
+              action="Tra từ ngay"
+              tone="rose"
+              onClick={() => setPage('vocabulary')}
             />
           </div>
         </section>

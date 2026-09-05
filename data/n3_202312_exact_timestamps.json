@@ -1,0 +1,284 @@
+{
+  "questions": [
+    {
+      "globalNumber": 1,
+      "mondai": 1,
+      "mondaiQuestionNumber": 1,
+      "startSec": 155,
+      "endSec": 226,
+      "startTime": "02:35",
+      "endTime": "03:46",
+      "firstWordsJa": "では、明日ば..."
+    },
+    {
+      "globalNumber": 2,
+      "mondai": 1,
+      "mondaiQuestionNumber": 2,
+      "startSec": 309,
+      "endSec": 410,
+      "startTime": "05:09",
+      "endTime": "06:50",
+      "firstWordsJa": "家でホストファ..."
+    },
+    {
+      "globalNumber": 3,
+      "mondai": 1,
+      "mondaiQuestionNumber": 3,
+      "startSec": 619,
+      "endSec": 699,
+      "startTime": "10:19",
+      "endTime": "11:39",
+      "firstWordsJa": "今から授業なん..."
+    },
+    {
+      "globalNumber": 4,
+      "mondai": 1,
+      "mondaiQuestionNumber": 4,
+      "startSec": 740,
+      "endSec": 829,
+      "startTime": "12:20",
+      "endTime": "13:49",
+      "firstWordsJa": "吉田さん、おは..."
+    },
+    {
+      "globalNumber": 5,
+      "mondai": 1,
+      "mondaiQuestionNumber": 5,
+      "startSec": 911,
+      "endSec": 953,
+      "startTime": "15:11",
+      "endTime": "15:53",
+      "firstWordsJa": "林さん、ありが..."
+    },
+    {
+      "globalNumber": 6,
+      "mondai": 1,
+      "mondaiQuestionNumber": 6,
+      "startSec": 1029,
+      "endSec": 1115,
+      "startTime": "17:09",
+      "endTime": "18:35",
+      "firstWordsJa": "北山公園に到..."
+    },
+    {
+      "globalNumber": 7,
+      "mondai": 2,
+      "mondaiQuestionNumber": 1,
+      "startSec": 1296,
+      "endSec": 1321,
+      "startTime": "21:36",
+      "endTime": "22:01",
+      "firstWordsJa": "あら、田中くん..."
+    },
+    {
+      "globalNumber": 8,
+      "mondai": 2,
+      "mondaiQuestionNumber": 2,
+      "startSec": 1450,
+      "endSec": 1519,
+      "startTime": "24:10",
+      "endTime": "25:19",
+      "firstWordsJa": "素敵な絵がたく..."
+    },
+    {
+      "globalNumber": 9,
+      "mondai": 2,
+      "mondaiQuestionNumber": 3,
+      "startSec": 1617,
+      "endSec": 1695,
+      "startTime": "26:57",
+      "endTime": "28:15",
+      "firstWordsJa": "もしもし。僕..."
+    },
+    {
+      "globalNumber": 10,
+      "mondai": 2,
+      "mondaiQuestionNumber": 4,
+      "startSec": 1812,
+      "endSec": 1857,
+      "startTime": "30:12",
+      "endTime": "30:57",
+      "firstWordsJa": "サラさん、帰国..."
+    },
+    {
+      "globalNumber": 11,
+      "mondai": 2,
+      "mondaiQuestionNumber": 5,
+      "startSec": 1921,
+      "endSec": 1952,
+      "startTime": "32:01",
+      "endTime": "32:32",
+      "firstWordsJa": "リナさん、今度..."
+    },
+    {
+      "globalNumber": 12,
+      "mondai": 2,
+      "mondaiQuestionNumber": 6,
+      "startSec": 2019,
+      "endSec": 2043,
+      "startTime": "33:39",
+      "endTime": "34:03",
+      "firstWordsJa": "今日の靴、新..."
+    },
+    {
+      "globalNumber": 13,
+      "mondai": 3,
+      "mondaiQuestionNumber": 1,
+      "startSec": 2313,
+      "endSec": 2353,
+      "startTime": "38:33",
+      "endTime": "39:13",
+      "firstWordsJa": "私は普段から..."
+    },
+    {
+      "globalNumber": 14,
+      "mondai": 3,
+      "mondaiQuestionNumber": 2,
+      "startSec": 2911,
+      "endSec": 2940,
+      "startTime": "48:31",
+      "endTime": "49:00",
+      "firstWordsJa": "テレビで専門家..."
+    },
+    {
+      "globalNumber": 15,
+      "mondai": 3,
+      "mondaiQuestionNumber": 3,
+      "startSec": 3029,
+      "endSec": 3059,
+      "startTime": "50:29",
+      "endTime": "50:59",
+      "firstWordsJa": "コップに水が半..."
+    },
+    {
+      "globalNumber": 16,
+      "mondai": 4,
+      "mondaiQuestionNumber": 1,
+      "startSec": 3320,
+      "endSec": 3342,
+      "startTime": "55:20",
+      "endTime": "55:42",
+      "firstWordsJa": "高校のクラス会..."
+    },
+    {
+      "globalNumber": 17,
+      "mondai": 4,
+      "mondaiQuestionNumber": 2,
+      "startSec": 3399,
+      "endSec": 3419,
+      "startTime": "56:39",
+      "endTime": "56:59",
+      "firstWordsJa": "友達が教室を出..."
+    },
+    {
+      "globalNumber": 18,
+      "mondai": 4,
+      "mondaiQuestionNumber": 3,
+      "startSec": 3477,
+      "endSec": 3497,
+      "startTime": "57:57",
+      "endTime": "58:17",
+      "firstWordsJa": "課長。先週お伝..."
+    },
+    {
+      "globalNumber": 19,
+      "mondai": 4,
+      "mondaiQuestionNumber": 4,
+      "startSec": 3921,
+      "endSec": 3940,
+      "startTime": "1:05:21",
+      "endTime": "1:05:40",
+      "firstWordsJa": "リナさん、今度..."
+    },
+    {
+      "globalNumber": 20,
+      "mondai": 5,
+      "mondaiQuestionNumber": 1,
+      "startSec": 4010,
+      "endSec": 4014,
+      "startTime": "1:06:50",
+      "endTime": "1:06:54",
+      "firstWordsJa": "他の色のはまだ..."
+    },
+    {
+      "globalNumber": 21,
+      "mondai": 5,
+      "mondaiQuestionNumber": 2,
+      "startSec": 4031,
+      "endSec": 4039,
+      "startTime": "1:07:11",
+      "endTime": "1:07:19",
+      "firstWordsJa": "野田さん、明日..."
+    },
+    {
+      "globalNumber": 22,
+      "mondai": 5,
+      "mondaiQuestionNumber": 3,
+      "startSec": 4106,
+      "endSec": 4113,
+      "startTime": "1:08:26",
+      "endTime": "1:08:33",
+      "firstWordsJa": "雷が鳴ってるね..."
+    },
+    {
+      "globalNumber": 23,
+      "mondai": 5,
+      "mondaiQuestionNumber": 4,
+      "startSec": 4136,
+      "endSec": 4140,
+      "startTime": "1:08:56",
+      "endTime": "1:09:00",
+      "firstWordsJa": "工事が遅れてい..."
+    },
+    {
+      "globalNumber": 24,
+      "mondai": 5,
+      "mondaiQuestionNumber": 5,
+      "startSec": 4172,
+      "endSec": 4176,
+      "startTime": "1:09:32",
+      "endTime": "1:09:36",
+      "firstWordsJa": "リナさん、今度..."
+    },
+    {
+      "globalNumber": 25,
+      "mondai": 5,
+      "mondaiQuestionNumber": 6,
+      "startSec": 4200,
+      "endSec": 4203,
+      "startTime": "1:10:00",
+      "endTime": "1:10:03",
+      "firstWordsJa": "お客様、こちら..."
+    },
+    {
+      "globalNumber": 26,
+      "mondai": 5,
+      "mondaiQuestionNumber": 7,
+      "startSec": 4231,
+      "endSec": 4235,
+      "startTime": "1:10:31",
+      "endTime": "1:10:35",
+      "firstWordsJa": "あいさつをしな..."
+    },
+    {
+      "globalNumber": 27,
+      "mondai": 5,
+      "mondaiQuestionNumber": 8,
+      "startSec": 4277,
+      "endSec": 4280,
+      "startTime": "1:11:17",
+      "endTime": "1:11:20",
+      "firstWordsJa": "でわ、私から連..."
+    },
+    {
+      "globalNumber": 28,
+      "mondai": 5,
+      "mondaiQuestionNumber": 9,
+      "startSec": 4327,
+      "endSec": 4330,
+      "startTime": "1:12:07",
+      "endTime": "1:12:10",
+      "firstWordsJa": "友達が教科書を..."
+    }
+  ]
+}

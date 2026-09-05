@@ -44,10 +44,77 @@ export const apiPaths = {
     playbackSession: (assetId: string) => `/api/v1/video/assets/${encodeURIComponent(assetId)}/playback-session`,
     youtubeImports: '/api/v1/video/youtube-imports',
   },
+  dictionary: {
+    search: (keyword: string, limit = 20) =>
+      `/api/v1/dictionary/search?keyword=${encodeURIComponent(keyword)}&limit=${limit}`,
+    word: (word: string) => `/api/v1/dictionary/word/${encodeURIComponent(word)}`,
+    kanji: (char: string) => `/api/v1/dictionary/kanji/${encodeURIComponent(char)}`,
+  },
+  shadowing: {
+    sessions: '/api/v1/shadowing/sessions',
+    session: (id: string) => `/api/v1/shadowing/sessions/${encodeURIComponent(id)}`,
+    next: (id: string) => `/api/v1/shadowing/sessions/${encodeURIComponent(id)}/next`,
+    attempts: (sessionId: string) => `/api/v1/shadowing/sessions/${encodeURIComponent(sessionId)}/attempts`,
+    attempt: (id: string) => `/api/v1/shadowing/attempts/${encodeURIComponent(id)}`,
+  },
+  nhaikanji: {
+    kanjiList: (level = 'ALL', query = '', page = 1, limit = 50) =>
+      `/api/v1/nhaikanji/kanji?level=${encodeURIComponent(level)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+    kanjiDetail: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}`,
+    bunpoList: (level = 'ALL', bookId = 'all', query = '', page = 1, limit = 50) =>
+      `/api/v1/nhaikanji/bunpo?level=${encodeURIComponent(level)}&bookId=${encodeURIComponent(bookId)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+    jlptExams: (level = 'ALL', section = 'all') =>
+      `/api/v1/nhaikanji/jlpt/exams?level=${encodeURIComponent(level)}&section=${encodeURIComponent(section)}`,
+    jlptExamDetail: (examId: string) => `/api/v1/nhaikanji/jlpt/exams/${encodeURIComponent(examId)}`,
+    jlptSubmit: '/api/v1/nhaikanji/jlpt/submit',
+  },
 } as const
 
 type ApiEnvelope<T> = { data: T; meta?: Record<string, unknown> }
 type ErrorBody = { message?: unknown; code?: unknown; error?: { message?: unknown; code?: unknown } }
+
+export interface DictionaryKanji {
+  character: string
+  hanViet?: string | null
+  onyomi?: string | null
+  kunyomi?: string | null
+  jlpt?: string | null
+  strokeCount?: number | null
+  meaning?: string | null
+}
+
+export interface DictionaryExample {
+  sentenceJp: string
+  furigana?: string | null
+  sentenceVi: string
+}
+
+export interface DictionaryRelatedWord {
+  word: string
+  reading?: string | null
+  hanViet?: string | null
+  meaning?: string | null
+}
+
+export interface DictionaryWordItem {
+  id: number
+  word: string
+  reading?: string | null
+  romaji?: string | null
+  hanViet?: string | null
+  jlpt?: string | null
+  partOfSpeech?: string | null
+  meanings: string[]
+  rawMeaning?: string | null
+  kanjis: DictionaryKanji[]
+  relatedWords?: DictionaryRelatedWord[]
+  examples?: DictionaryExample[]
+}
+
+export interface DictionarySearchResult {
+  results: DictionaryWordItem[]
+  count: number
+}
 
 export type ApiErrorKind =
   | 'network'
@@ -98,7 +165,13 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  const accessToken = window.sessionStorage.getItem('kotodama.access-token')
+  let accessToken: string | null = null
+  try {
+    accessToken =
+      window.sessionStorage.getItem('kotodama.access-token') || window.localStorage.getItem('kotodama.access-token')
+  } catch {
+    // ignore
+  }
   if (accessToken && shouldAttachAccessToken(config.url)) config.headers.set('Authorization', `Bearer ${accessToken}`)
   if (!['GET', 'HEAD', 'OPTIONS'].includes(String(config.method).toUpperCase())) {
     const csrfToken = readBrowserCookie('kotodama_csrf')

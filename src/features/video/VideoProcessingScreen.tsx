@@ -27,7 +27,10 @@ export default function VideoProcessingScreen({
         if (!mounted) return
         setAsset(nextAsset)
         setJobs(nextJobs.items)
-        if (nextJobs.items.some((job) => job.jobType === 'transcribe' && job.status === 'succeeded')) {
+        if (
+          nextAsset.processingStatus === 'ready' ||
+          nextJobs.items.some((job) => job.jobType === 'transcribe' && job.status === 'succeeded')
+        ) {
           const nextTranscript = await getTranscript(video.id)
           if (mounted) setTranscript(nextTranscript)
         }
@@ -45,12 +48,13 @@ export default function VideoProcessingScreen({
 
   const verification = jobs.find((job) => job.jobType === 'upload_verify')
   const transcription = jobs.find((job) => job.jobType === 'transcribe')
-  const verified = verification?.status === 'succeeded'
-  const transcriptReady = Boolean(transcript) && transcription?.status === 'succeeded'
+  const verified = verification?.status === 'succeeded' || asset.processingStatus === 'ready'
+  const transcriptReady =
+    Boolean(transcript) && (asset.processingStatus === 'ready' || transcription?.status === 'succeeded')
   const failedJob = jobs.find((job) => job.status === 'failed')
   const activeJob = jobs.find((job) => job.status === 'running') ?? jobs.find((job) => job.status === 'queued')
   const processingFailed = asset.processingStatus === 'failed' || Boolean(failedJob)
-  const transcriptUnavailable = verified && !transcription && !processingFailed
+  const transcriptUnavailable = verified && !transcription && !processingFailed && !transcriptReady
   const jobLabel =
     activeJob?.jobType === 'youtube_download'
       ? 'Đang tải video YouTube'

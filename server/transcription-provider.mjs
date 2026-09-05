@@ -30,6 +30,53 @@ function parsePlaylistDurations(playlist) {
     .filter((duration) => Number.isFinite(duration) && duration > 0)
 }
 
+export async function convertAudioToPcmWav({ inputPath, outputPath, ffmpegPath = 'ffmpeg' }) {
+  await run(ffmpegPath, [
+    '-nostdin',
+    '-v',
+    'error',
+    '-y',
+    '-i',
+    inputPath,
+    '-ac',
+    '1',
+    '-ar',
+    '16000',
+    '-c:a',
+    'pcm_s16le',
+    outputPath,
+  ])
+  return outputPath
+}
+
+export async function extractAudioSnippet({ sourcePath, startMs, endMs, outputPath, ffmpegPath = 'ffmpeg' }) {
+  const startSeconds = Math.max(0, startMs / 1000).toFixed(3)
+  const durationSeconds = Math.max(0.1, (endMs - startMs) / 1000).toFixed(3)
+  await run(ffmpegPath, [
+    '-nostdin',
+    '-v',
+    'error',
+    '-y',
+    '-ss',
+    startSeconds,
+    '-t',
+    durationSeconds,
+    '-i',
+    sourcePath,
+    '-map',
+    '0:a:0',
+    '-vn',
+    '-ac',
+    '1',
+    '-ar',
+    '16000',
+    '-c:a',
+    'pcm_s16le',
+    outputPath,
+  ])
+  return outputPath
+}
+
 /**
  * Produces mono WAV PCM chunks so Faster-Whisper always receives a portable,
  * seekable audio container. Some FFmpeg builds write fragmented M4A segments
@@ -99,29 +146,76 @@ export async function removeExtractedAudio(directory) {
 
 export function normalizeDiarizedTranscript(payload, offsetSeconds = 0) {
   const segments = Array.isArray(payload?.segments) ? payload.segments : []
-  const normalized = segments
+  const rawNormalized = segments
     .map((segment) => {
-      const start = Number(segment.start)
-      const end = Number(segment.end)
+      let start = Number(segment.start)
+      let end = Number(segment.end)
       const text = typeof segment.text === 'string' ? segment.text.trim() : ''
       if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || !text) return null
+      if (start > 500 && end > 500) {
+        start = start / 1000
+        end = end / 1000
+      }
+      const words = normalizeTranscriptWords(segment.words, offsetSeconds, start, end)
+      // Token-aware boundary snapping with slight cushion to prevent clipping
+      let startMs = Math.round((offsetSeconds + start) * 1_000)
+      let endMs = Math.round((offsetSeconds + end) * 1_000)
+      if (words.length > 0) {
+        const firstTokenStart = words[0].startMs
+        const lastTokenEnd = words[words.length - 1].endMs
+        startMs = Math.max(0, Math.min(startMs, firstTokenStart - 60))
+        endMs = Math.max(endMs, lastTokenEnd + 120)
+      }
+
       return {
-        startMs: Math.round((offsetSeconds + start) * 1_000),
-        endMs: Math.round((offsetSeconds + end) * 1_000),
+        startMs,
+        endMs,
         textJa: text,
         speakerLabel: typeof segment.speaker === 'string' && segment.speaker.trim() ? segment.speaker.trim() : null,
         speakerConfidence: null,
         confidence: null,
-        tokens: normalizeTranscriptWords(segment.words, offsetSeconds, start, end),
+        tokens: words,
       }
     })
     .filter(Boolean)
-  if (!normalized.length)
+
+  if (!rawNormalized.length)
     throw new TranscriptionProviderError(
       'TRANSCRIPT_EMPTY',
       'The transcription provider did not return usable timed segments.'
     )
-  return normalized
+
+  // Preserve natural phrase lines: only stitch accidental tiny 1-2 char fragments with tiny gaps
+  const stitched = []
+  for (let i = 0; i < rawNormalized.length; i++) {
+    const current = { ...rawNormalized[i] }
+    while (i + 1 < rawNormalized.length) {
+      const next = rawNormalized[i + 1]
+      const gapMs = next.startMs - current.endMs
+      const isTinyFragment = current.textJa.length <= 2 || next.textJa.length <= 2
+      const sameSpeaker = current.speakerLabel === next.speakerLabel
+
+      // Only merge if accidental tiny fragment with small gap (< 350ms)
+      if (sameSpeaker && isTinyFragment && gapMs < 350 && current.textJa.length + next.textJa.length <= 40) {
+        current.textJa = `${current.textJa}${/[a-zA-Z0-9]$/.test(current.textJa) ? ' ' : ''}${next.textJa}`
+        current.endMs = Math.max(current.endMs, next.endMs)
+        current.tokens = [...current.tokens, ...next.tokens].map((tok, idx) => ({ ...tok, sequenceNo: idx + 1 }))
+        i++ // consume next
+      } else {
+        break
+      }
+    }
+    stitched.push(current)
+  }
+
+  // Ensure strict monotonic non-overlapping bounds
+  for (let i = 0; i < stitched.length - 1; i++) {
+    if (stitched[i].endMs > stitched[i + 1].startMs) {
+      stitched[i].endMs = Math.max(stitched[i].startMs + 400, stitched[i + 1].startMs - 20)
+    }
+  }
+
+  return stitched
 }
 
 function normalizeTranscriptWords(words, offsetSeconds, segmentStart, segmentEnd) {
@@ -148,19 +242,19 @@ function normalizeTranscriptWords(words, offsetSeconds, segmentStart, segmentEnd
     .filter(Boolean)
 }
 
-export async function transcribeJapaneseAudioChunk({ filePath, fileName, config, fetchImpl = fetch }) {
+export async function transcribeJapaneseAudioChunk({ filePath, fileName, config, prompt = null, fetchImpl = fetch }) {
   if (config?.provider === 'local_whisper')
-    return transcribeJapaneseAudioWithLocalAsr({ filePath, fileName, config, fetchImpl })
+    return transcribeJapaneseAudioWithLocalAsr({ filePath, fileName, config, prompt, fetchImpl })
   if (!config?.apiKey)
     throw new TranscriptionProviderError(
       'TRANSCRIPTION_PROVIDER_UNAVAILABLE',
       'The configured transcription provider is unavailable.'
     )
   if (config.provider === 'gemini') return transcribeJapaneseAudioWithGemini({ filePath, config, fetchImpl })
-  return transcribeJapaneseAudioWithOpenAI({ filePath, fileName, config, fetchImpl })
+  return transcribeJapaneseAudioWithOpenAI({ filePath, fileName, config, prompt, fetchImpl })
 }
 
-async function transcribeJapaneseAudioWithLocalAsr({ filePath, fileName, config, fetchImpl }) {
+async function transcribeJapaneseAudioWithLocalAsr({ filePath, fileName, config, prompt = null, fetchImpl }) {
   if (!config.localAsrUrl)
     throw new TranscriptionProviderError(
       'TRANSCRIPTION_PROVIDER_UNAVAILABLE',
@@ -169,6 +263,7 @@ async function transcribeJapaneseAudioWithLocalAsr({ filePath, fileName, config,
   const audio = await readFile(filePath)
   const form = new FormData()
   form.set('file', new Blob([audio], { type: fileName.endsWith('.wav') ? 'audio/wav' : 'audio/mp4' }), fileName)
+  if (prompt) form.set('prompt', prompt)
   const response = await fetchImpl(`${config.localAsrUrl}/v1/transcribe/japanese`, {
     method: 'POST',
     body: form,
@@ -236,6 +331,7 @@ function geminiResponseText(payload) {
 
 async function transcribeJapaneseAudioWithGemini({ filePath, config, fetchImpl }) {
   const audio = await readFile(filePath)
+  const mimeType = filePath.endsWith('.wav') ? 'audio/wav' : filePath.endsWith('.mp3') ? 'audio/mp3' : 'audio/mp4'
   const response = await fetchImpl(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`,
     {
@@ -247,15 +343,14 @@ async function transcribeJapaneseAudioWithGemini({ filePath, config, fetchImpl }
             parts: [
               {
                 text: [
-                  'Transcribe this Japanese audio chunk.',
-                  'Return only the requested JSON. Split by natural utterance.',
-                  'Return one short natural sentence or speech unit per segment; split at Japanese punctuation when possible.',
-                  'Keep each segment under approximately 12 seconds and never merge multiple sentences into one segment.',
-                  'start and end are seconds relative to this chunk and must be as accurate as possible.',
-                  'Use Japanese text exactly as spoken. Do not translate. Do not invent speaker names.',
+                  'Transcribe this Japanese audio chunk accurately.',
+                  'Return only JSON conforming to the schema with segments.',
+                  'Split into natural sentences or phrases (under 12 seconds per segment).',
+                  'start and end MUST be floating point seconds relative to this chunk start (e.g. 5.4, 12.8, not milliseconds).',
+                  'Use verbatim Japanese text exactly as spoken without translation or summary.',
                 ].join(' '),
               },
-              { inline_data: { mime_type: 'audio/mp4', data: audio.toString('base64') } },
+              { inline_data: { mime_type: mimeType, data: audio.toString('base64') } },
             ],
           },
         ],
@@ -283,4 +378,34 @@ async function transcribeJapaneseAudioWithGemini({ filePath, config, fetchImpl }
       'Gemini did not return valid transcript JSON.'
     )
   }
+}
+
+export async function comparePitchAudioWithLocalDsp({
+  referenceAudioPath,
+  userAudioPath,
+  localAsrUrl = 'http://127.0.0.1:8788',
+  timeoutMs = 15000,
+  fetchImpl = fetch,
+}) {
+  const [refAudio, userAudio] = await Promise.all([readFile(referenceAudioPath), readFile(userAudioPath)])
+
+  const form = new FormData()
+  form.set('reference_file', new Blob([refAudio], { type: 'audio/wav' }), 'ref.wav')
+  form.set('user_file', new Blob([userAudio], { type: 'audio/wav' }), 'user.wav')
+
+  const response = await fetchImpl(`${localAsrUrl}/v1/dsp/compare`, {
+    method: 'POST',
+    body: form,
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '')
+    throw new TranscriptionProviderError(
+      'DSP_COMPARISON_FAILED',
+      `DSP pitch comparison failed (${response.status}): ${detail.slice(0, 300)}`
+    )
+  }
+
+  return response.json()
 }

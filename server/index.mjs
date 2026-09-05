@@ -1,7 +1,7 @@
 import http from 'node:http'
 import { randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { stat } from 'node:fs/promises'
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
 import {
   hashPassword,
   randomToken,
@@ -23,14 +23,87 @@ import { createEmailService } from './email.mjs'
 import { log, logError } from './logger.mjs'
 import { createMediaStorage, MediaStorageError } from './media-storage.mjs'
 import { normalizeYouTubeUrl } from './youtube-provider.mjs'
+import { createDictionaryService } from './dictionary-service.mjs'
+import { nhaiKanjiService } from './nhaikanji-service.mjs'
+import { CurriculumService } from './curriculum-service.mjs'
+import { SrsService } from './srs-service.mjs'
+import { SrsStore } from './srs-store.mjs'
+import { evaluateShadowingAttempt } from './shadowing-scorer.mjs'
+import {
+  comparePitchAudioWithLocalDsp,
+  convertAudioToPcmWav,
+  extractAudioSnippet,
+  transcribeJapaneseAudioChunk,
+} from './transcription-provider.mjs'
+import { tmpdir } from 'node:os'
+import { extname, join, resolve } from 'node:path'
+
+const distDir = resolve('dist')
+const mimeTypes = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+}
+
+async function tryServeStatic(request, response, requestPath) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return false
+  const cleanPath = requestPath.split('?')[0].replace(/\.\./g, '')
+  let filePath = join(distDir, cleanPath)
+  try {
+    let fileStat = await stat(filePath).catch(() => null)
+    if (fileStat?.isDirectory()) {
+      filePath = join(filePath, 'index.html')
+      fileStat = await stat(filePath).catch(() => null)
+    }
+    if (!fileStat?.isFile()) {
+      if (extname(cleanPath)) return false
+      filePath = join(distDir, 'index.html')
+      fileStat = await stat(filePath).catch(() => null)
+    }
+    if (!fileStat?.isFile()) return false
+
+    const ext = extname(filePath).toLowerCase()
+    const contentType = mimeTypes[ext] ?? 'application/octet-stream'
+    response.writeHead(200, {
+      'content-type': contentType,
+      'content-length': fileStat.size,
+      ...(ext === '.html' ? { 'cache-control': 'no-cache' } : { 'cache-control': 'public, max-age=31536000, immutable' }),
+    })
+    if (request.method === 'HEAD') {
+      response.end()
+      return true
+    }
+    createReadStream(filePath).pipe(response)
+    return true
+  } catch {
+    return false
+  }
+}
 
 const config = readConfig()
-const port = Number(process.env.API_PORT ?? 8787)
+const port = Number(process.env.PORT ?? process.env.API_PORT ?? 8787)
 const database = createDatabasePool(config.databaseUrl)
 if (config.production && !database) throw new Error('DATABASE_URL is required in production.')
 const authStore = createAuthStore(database)
 const emailService = createEmailService(config)
 const mediaStorage = createMediaStorage(config)
+const dictionaryService = createDictionaryService(config.dictionary?.dbPath)
+const curriculumService = new CurriculumService()
+const srsStore = database ? new SrsStore(database) : null
+const srsService = srsStore ? new SrsService(srsStore) : null
 const production = config.production
 const jwtSecret = config.jwtSecret
 const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
@@ -39,7 +112,7 @@ const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
 const allowedOrigins = configuredOrigins?.length
   ? configuredOrigins
   : production
-    ? []
+    ? (Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL) ? ['*'] : [])
     : [
         'http://127.0.0.1:5173',
         'http://127.0.0.1:5174',
@@ -110,12 +183,12 @@ function getIp(request) {
     .trim()
 }
 
-async function readJson(request) {
+async function readJson(request, { maxSize = 32_768 } = {}) {
   let size = 0
   const chunks = []
   for await (const chunk of request) {
     size += chunk.length
-    if (size > 32_768) throw new Error('PAYLOAD_TOO_LARGE')
+    if (size > maxSize) throw new Error('PAYLOAD_TOO_LARGE')
     chunks.push(chunk)
   }
   if (!chunks.length) return {}
@@ -429,8 +502,22 @@ async function bootstrapAdmin() {
 }
 
 async function route(request, response) {
+  const host = request.headers.host || 'localhost'
+  const url = new URL(request.url, `http://${host}`)
+  const path = url.pathname
+
+  // Serve static assets and SPA routes without CORS restrictions
+  if (!path.startsWith('/api/') && path !== '/health' && path !== '/ready') {
+    const served = await tryServeStatic(request, response, path)
+    if (served) return
+    return fail(response, 404, 'Không tìm thấy endpoint.', 'NOT_FOUND')
+  }
+
   const origin = request.headers.origin
-  if (origin && !allowedOrigins.includes(origin)) return fail(response, 403, 'Origin không được phép.', 'CORS_DENIED')
+  const isSameOrigin = origin && (origin === `http://${host}` || origin === `https://${host}`)
+  const isAllowed = !origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin) || isSameOrigin
+  if (!isAllowed) return fail(response, 403, 'Origin không được phép.', 'CORS_DENIED')
+
   const cors = origin
     ? {
         'access-control-allow-origin': origin,
@@ -445,8 +532,7 @@ async function route(request, response) {
     response.writeHead(204, cors)
     return response.end()
   }
-  const url = new URL(request.url, `http://${request.headers.host}`)
-  const path = url.pathname
+
   if (request.method === 'GET' && path === '/health') {
     try {
       const persistence = await databaseHealth(database)
@@ -475,18 +561,27 @@ async function route(request, response) {
       return json(response, 503, { data: { status: 'not_ready' } }, cors)
     }
   }
+
   if (
     !path.startsWith('/api/v1/auth/') &&
     !path.startsWith('/api/v1/admin/') &&
     !path.startsWith('/api/v1/account/') &&
-    !path.startsWith('/api/v1/video/')
+    !path.startsWith('/api/v1/video/') &&
+    !path.startsWith('/api/v1/dictionary/') &&
+    !path.startsWith('/api/v1/shadowing/') &&
+    !path.startsWith('/api/v1/nhaikanji/') &&
+    !path.startsWith('/api/v1/curriculum/') &&
+    !path.startsWith('/api/v1/srs/')
   )
     return fail(response, 404, 'Không tìm thấy endpoint.', 'NOT_FOUND')
 
   let body = {}
   if (request.method === 'POST') {
+    // Shadowing attempts include base64-encoded audio → allow up to 10 MB
+    const isShadowingAttempt = path.match(/^\/api\/v1\/shadowing\/sessions\/[0-9a-f-]+\/attempts$/i)
+    const maxBodySize = isShadowingAttempt ? 10 * 1024 * 1024 : 32_768
     try {
-      body = await readJson(request)
+      body = await readJson(request, { maxSize: maxBodySize })
     } catch (error) {
       return fail(
         response,
@@ -497,6 +592,199 @@ async function route(request, response) {
     }
   }
   const respond = (data, status, headers) => success(response, data, status, { ...cors, ...headers })
+
+  // --- NhaiKanji Endpoints ---
+  if (request.method === 'GET' && path === '/api/v1/nhaikanji/kanji') {
+    const level = url.searchParams.get('level') || 'ALL'
+    const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
+    const page = Number.parseInt(url.searchParams.get('page') || '1', 10) || 1
+    const limit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
+    const result = nhaiKanjiService.getKanjiList({ level, query, page, limit })
+    return respond(result)
+  }
+
+  const nhaikanjiDetailMatch = path.match(/^\/api\/v1\/nhaikanji\/kanji\/(.+)$/)
+  if (request.method === 'GET' && nhaikanjiDetailMatch) {
+    const char = decodeURIComponent(nhaikanjiDetailMatch[1])
+    const detail = nhaiKanjiService.getKanjiDetail(char)
+    if (!detail) return fail(response, 404, 'Không tìm thấy Hán tự này.', 'KANJI_NOT_FOUND')
+    return respond(detail)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/nhaikanji/bunpo') {
+    const level = url.searchParams.get('level') || 'ALL'
+    const bookId = url.searchParams.get('bookId') || 'all'
+    const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
+    const page = Number.parseInt(url.searchParams.get('page') || '1', 10) || 1
+    const limit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
+    const result = nhaiKanjiService.getBunpoList({ level, bookId, query, page, limit })
+    return respond(result)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/nhaikanji/jlpt/exams') {
+    const level = url.searchParams.get('level') || 'ALL'
+    const section = url.searchParams.get('section') || 'all'
+    const result = nhaiKanjiService.getJlptExams({ level, section })
+    return respond(result)
+  }
+
+  const jlptDetailMatch = path.match(/^\/api\/v1\/nhaikanji\/jlpt\/exams\/(.+)$/)
+  if (request.method === 'GET' && jlptDetailMatch) {
+    const examId = decodeURIComponent(jlptDetailMatch[1])
+    const exam = nhaiKanjiService.getJlptExamDetail(examId)
+    if (!exam) return fail(response, 404, 'Không tìm thấy đề thi này.', 'EXAM_NOT_FOUND')
+    return respond(exam)
+  }
+
+  if (request.method === 'POST' && path === '/api/v1/nhaikanji/jlpt/submit') {
+    const { examId, answers } = body
+    if (!examId) return fail(response, 400, 'Thiếu thông tin examId.', 'MISSING_EXAM_ID')
+    const result = nhaiKanjiService.submitJlptExam(examId, answers || {})
+    if (!result) return fail(response, 404, 'Không tìm thấy đề thi này để chấm.', 'EXAM_NOT_FOUND')
+    return respond(result)
+  }
+
+  // --- Curriculum Endpoints ---
+  if (request.method === 'GET' && path === '/api/v1/curriculum/words') {
+    const curriculum = url.searchParams.get('curriculum') || 'all'
+    const level = url.searchParams.get('level') || 'ALL'
+    const unit = url.searchParams.get('unit') || null
+    const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
+    const page = Number.parseInt(url.searchParams.get('page') || '1', 10) || 1
+    const limit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
+    const result = curriculumService.getCurriculumWords({ curriculum, level, unit, query, page, limit })
+    return respond(result)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/curriculum/grammar') {
+    const curriculum = url.searchParams.get('curriculum') || 'all'
+    const level = url.searchParams.get('level') || 'ALL'
+    const lesson = url.searchParams.get('lesson') || null
+    const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
+    const page = Number.parseInt(url.searchParams.get('page') || '1', 10) || 1
+    const limit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
+    const result = curriculumService.getCurriculumGrammar({ curriculum, level, lesson, query, page, limit })
+    return respond(result)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/curriculum/units') {
+    const curriculum = url.searchParams.get('curriculum') || 'all'
+    const units = curriculumService.getCurriculumUnits(curriculum)
+    return respond(units)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/curriculum/lessons') {
+    const curriculum = url.searchParams.get('curriculum') || 'all'
+    const lessons = curriculumService.getGrammarLessons(curriculum)
+    return respond(lessons)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/curriculum/stats') {
+    const stats = curriculumService.getCurriculumStats()
+    return respond(stats)
+  }
+
+  // --- SRS Flashcard Endpoints (REQUIRE AUTHENTICATION) ---
+  if (request.method === 'GET' && path === '/api/v1/srs/deck') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    const type = url.searchParams.get('type') || 'all'
+    const status = url.searchParams.get('status') || 'all'
+    const level = url.searchParams.get('level') || 'ALL'
+    const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
+    const page = Number.parseInt(url.searchParams.get('page') || '1', 10) || 1
+    const limit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
+    try {
+      const result = await srsService.getCards(user.id, { type, status, level, query, page, limit })
+      return respond(result)
+    } catch (err) {
+      return fail(response, 500, err.message, 'SRS_ERROR')
+    }
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/srs/stats') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    const type = url.searchParams.get('type') || 'all'
+    try {
+      const stats = await srsService.getStats(user.id, { type })
+      return respond(stats)
+    } catch (err) {
+      return fail(response, 500, err.message, 'SRS_ERROR')
+    }
+  }
+
+  if (request.method === 'POST' && path === '/api/v1/srs/review') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    const { cardId, rating } = body
+    if (!cardId || !rating) return fail(response, 400, 'Thiếu cardId hoặc rating.', 'MISSING_PARAMS')
+    if (!['again', 'hard', 'good', 'easy'].includes(rating)) {
+      return fail(response, 422, 'Rating không hợp lệ (phải là again, hard, good, easy).', 'INVALID_RATING')
+    }
+    try {
+      const card = await srsService.submitReview(user.id, cardId, rating)
+      if (!card) return fail(response, 404, 'Không tìm thấy thẻ này.', 'CARD_NOT_FOUND')
+      return respond(card)
+    } catch (err) {
+      return fail(response, 500, err.message, 'SRS_ERROR')
+    }
+  }
+
+  if (request.method === 'POST' && path === '/api/v1/srs/add') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    const cardData = body
+    if (!cardData || (!cardData.term && !cardData.word)) {
+      return fail(response, 400, 'Thiếu dữ liệu từ vựng/Hán tự/ngữ pháp.', 'MISSING_TERM')
+    }
+    try {
+      const card = await srsService.addCard(user.id, cardData)
+      return respond(card, 201)
+    } catch (err) {
+      return fail(response, 500, err.message, 'SRS_ERROR')
+    }
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/srs/saved-terms') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    try {
+      const terms = await srsService.getSavedTerms(user.id)
+      return respond(terms)
+    } catch (err) {
+      return fail(response, 500, err.message, 'SRS_ERROR')
+    }
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/dictionary/search') {
+    const keyword = url.searchParams.get('keyword') ?? url.searchParams.get('q') ?? ''
+    const limit = Number.parseInt(url.searchParams.get('limit') ?? '20', 10) || 20
+    const jlpt = url.searchParams.get('jlpt') ?? null
+    const results = await dictionaryService.search(keyword, { limit, jlpt })
+    return respond({ results, count: results.length })
+  }
+
+  const wordDetailMatch = path.match(/^\/api\/v1\/dictionary\/word\/(.+)$/)
+  if (request.method === 'GET' && wordDetailMatch) {
+    const word = decodeURIComponent(wordDetailMatch[1])
+    const detail = await dictionaryService.getWordDetail(word)
+    if (!detail) return fail(response, 404, 'Không tìm thấy từ này trong từ điển.', 'WORD_NOT_FOUND')
+    return respond(detail)
+  }
+
+  const kanjiDetailMatch = path.match(/^\/api\/v1\/dictionary\/kanji\/(.+)$/)
+  if (request.method === 'GET' && kanjiDetailMatch) {
+    const char = decodeURIComponent(kanjiDetailMatch[1])
+    const detail = dictionaryService.getKanjiDetail(char)
+    if (!detail) return fail(response, 404, 'Không tìm thấy Hán tự này.', 'KANJI_NOT_FOUND')
+    return respond(detail)
+  }
 
   if (request.method === 'POST' && path === '/api/v1/auth/register') {
     if (!(await rateLimit(request, response, 'register', 5))) return
@@ -844,6 +1132,262 @@ async function route(request, response) {
     if (!asset) return fail(response, 404, 'Không tìm thấy video.', 'VIDEO_NOT_FOUND')
     return respond(asset)
   }
+
+  // ── Shadowing Routes ──
+  if (request.method === 'POST' && path === '/api/v1/shadowing/sessions') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    const session = await getRefreshSession(request)
+    if (!requireCsrf(request, response, session)) return
+    const mediaAssetId = typeof body.mediaAssetId === 'string' ? body.mediaAssetId.trim() : ''
+    if (!mediaAssetId) return fail(response, 422, 'mediaAssetId là bắt buộc.', 'VALIDATION_ERROR')
+    const asset = await authStore.findMediaAssetForUser(mediaAssetId, user.id)
+    if (!asset) return fail(response, 404, 'Không tìm thấy video.', 'VIDEO_NOT_FOUND')
+    const shadowingSession = await authStore.createShadowingSession({
+      userId: user.id,
+      mediaAssetId,
+      transcriptVersionId: typeof body.transcriptVersionId === 'string' ? body.transcriptVersionId.trim() : null,
+      mode: ['sequential', 'random', 'roleplay'].includes(body.mode) ? body.mode : 'sequential',
+      selectedSpeakerLabel: typeof body.selectedSpeakerLabel === 'string' ? body.selectedSpeakerLabel.trim() : null,
+    })
+    if (!shadowingSession)
+      return fail(response, 409, 'Không thể tạo phiên luyện tập shadowing.', 'SESSION_CREATE_FAILED')
+    return respond({ session: shadowingSession }, 201)
+  }
+
+  const shadowingSessionMatch = path.match(/^\/api\/v1\/shadowing\/sessions\/([0-9a-f-]{36})$/i)
+  if (request.method === 'GET' && shadowingSessionMatch) {
+    const user = await requireUser(request, response)
+    if (!user) return
+    const session = await authStore.findShadowingSession(shadowingSessionMatch[1], user.id)
+    if (!session) return fail(response, 404, 'Không tìm thấy phiên shadowing.', 'SESSION_NOT_FOUND')
+    const attempts = await authStore.listShadowingAttemptsForSession(session.id, user.id)
+    return respond({ session, attempts })
+  }
+
+  const shadowingSessionNextMatch = path.match(/^\/api\/v1\/shadowing\/sessions\/([0-9a-f-]{36})\/next$/i)
+  if (request.method === 'POST' && shadowingSessionNextMatch) {
+    const user = await requireUser(request, response)
+    if (!user) return
+    const session = await getRefreshSession(request)
+    if (!requireCsrf(request, response, session)) return
+    const nextSequenceNo = Math.max(1, Number(body.nextSequenceNo) || 1)
+    const isCompleted = Boolean(body.isCompleted)
+    const updatedSession = await authStore.advanceShadowingSession(
+      shadowingSessionNextMatch[1],
+      user.id,
+      nextSequenceNo,
+      isCompleted
+    )
+    if (!updatedSession) return fail(response, 404, 'Không tìm thấy phiên shadowing.', 'SESSION_NOT_FOUND')
+    return respond({ session: updatedSession })
+  }
+
+  const shadowingSessionAttemptMatch = path.match(/^\/api\/v1\/shadowing\/sessions\/([0-9a-f-]{36})\/attempts$/i)
+  if (request.method === 'POST' && shadowingSessionAttemptMatch) {
+    const user = await requireUser(request, response)
+    if (!user) return
+    const session = await getRefreshSession(request)
+    if (!requireCsrf(request, response, session)) return
+    const shadowingSession = await authStore.findShadowingSession(shadowingSessionAttemptMatch[1], user.id)
+    if (!shadowingSession) return fail(response, 404, 'Không tìm thấy phiên shadowing.', 'SESSION_NOT_FOUND')
+
+    const transcriptSegmentId = typeof body.transcriptSegmentId === 'string' ? body.transcriptSegmentId.trim() : ''
+    const referenceText = typeof body.referenceText === 'string' ? body.referenceText.trim() : ''
+    const audioBase64 = typeof body.audioBase64 === 'string' ? body.audioBase64 : ''
+    const durationMs = Math.max(0, Number(body.durationMs) || 0)
+    const attemptNo = Math.max(1, Number(body.attemptNo) || 1)
+
+    if (!transcriptSegmentId || !audioBase64) {
+      return fail(response, 422, 'Thiếu thông tin đoạn thoại hoặc âm thanh ghi âm.', 'VALIDATION_ERROR')
+    }
+
+    let recognizedText = ''
+    let dspComparison = null
+
+    if (audioBase64.length > 50) {
+      const tempDir = await mkdtemp(join(tmpdir(), 'kotodama-shadowing-'))
+      const rawAudioPath = join(tempDir, 'raw_attempt.webm')
+      const tempAudioPath = join(tempDir, 'attempt.wav')
+      const refAudioPath = join(tempDir, 'reference.wav')
+      try {
+        const rawBase64 = audioBase64.includes(',') ? audioBase64.split(',')[1] : audioBase64
+        const audioBuffer = Buffer.from(rawBase64, 'base64')
+        await writeFile(rawAudioPath, audioBuffer)
+
+        // Convert incoming web audio format to standard 16kHz mono WAV PCM
+        const ffmpegPath = config.transcription?.ffmpegPath || 'ffmpeg'
+        log('shadowing.audio-received', { rawSize: audioBuffer.length, ffmpegPath })
+        try {
+          await convertAudioToPcmWav({
+            inputPath: rawAudioPath,
+            outputPath: tempAudioPath,
+            ffmpegPath,
+          })
+          const { stat } = await import('node:fs/promises')
+          const wavStat = await stat(tempAudioPath).catch(() => null)
+          log('shadowing.audio-converted', { wavSize: wavStat?.size ?? 0 })
+        } catch (convertError) {
+          logError('shadowing.audio-convert-failed', convertError)
+          // Do NOT fallback to raw WebM — it will break Whisper and DSP
+          // Instead, just copy as-is and let downstream handle gracefully
+          await writeFile(tempAudioPath, audioBuffer)
+        }
+
+        // 1. Japanese Speech Recognition (Try fast local Whisper first, fallback to Gemini Cloud ASR)
+        const localAsrUrl = config.transcription?.localAsrUrl || 'http://127.0.0.1:8788'
+        let localSuccess = false
+        try {
+          const localAsrResult = await transcribeJapaneseAudioChunk({
+            filePath: tempAudioPath,
+            fileName: 'attempt.wav',
+            config: { ...config.transcription, provider: 'local_whisper', localAsrUrl, timeoutMs: 4000 },
+            prompt: referenceText,
+          })
+          const segments = Array.isArray(localAsrResult?.segments) ? localAsrResult.segments : []
+          recognizedText = segments
+            .map((s) => s.text)
+            .join(' ')
+            .trim()
+          if (recognizedText) localSuccess = true
+        } catch (localAsrError) {
+          log('info', 'shadowing.local-asr-unavailable-fallback-to-gemini', { error: localAsrError.message })
+        }
+
+        if (!localSuccess && (config.transcription?.apiKey || process.env.GEMINI_API_KEY)) {
+          try {
+            const fallbackKey = config.transcription?.apiKey || process.env.GEMINI_API_KEY
+            const cloudResult = await transcribeJapaneseAudioChunk({
+              filePath: tempAudioPath,
+              fileName: 'attempt.wav',
+              config: {
+                ...config.transcription,
+                provider: 'gemini',
+                apiKey: fallbackKey,
+                model: process.env.GEMINI_TRANSCRIPTION_MODEL || 'gemini-3.5-flash-lite',
+                timeoutMs: 15000,
+              },
+              prompt: referenceText,
+            })
+            const segments = Array.isArray(cloudResult?.segments) ? cloudResult.segments : []
+            recognizedText = segments
+              .map((s) => s.text)
+              .join(' ')
+              .trim()
+          } catch (cloudError) {
+            logError('shadowing.cloud-transcribe-failed', cloudError)
+          }
+        }
+
+        // 2. DSP Pitch & Rhythm Comparison with Native Reference Audio
+        try {
+          const mediaAsset = await authStore.findMediaAssetForProcessing(shadowingSession.mediaAssetId)
+          if (mediaAsset?.storageKey) {
+            const transcript = await authStore.findCurrentTranscript(shadowingSession.mediaAssetId, user.id)
+            const targetSegment = transcript?.segments?.find(
+              (s) => s.id === transcriptSegmentId || transcriptSegmentId.startsWith(s.id)
+            )
+            if (targetSegment && targetSegment.endMs > targetSegment.startMs) {
+              const sourceFilePath = mediaStorage.absolutePath(mediaAsset.storageKey)
+              await extractAudioSnippet({
+                sourcePath: sourceFilePath,
+                startMs: targetSegment.startMs,
+                endMs: targetSegment.endMs,
+                outputPath: refAudioPath,
+                ffmpegPath: config.transcription?.ffmpegPath,
+              })
+              dspComparison = await comparePitchAudioWithLocalDsp({
+                referenceAudioPath: refAudioPath,
+                userAudioPath: tempAudioPath,
+                localAsrUrl: localAsrUrl,
+                timeoutMs: 30000,
+              })
+            }
+          }
+        } catch (dspError) {
+          logError('shadowing.dsp-compare-failed', dspError)
+          dspComparison = null
+        }
+      } finally {
+        await rm(tempDir, { recursive: true, force: true }).catch(() => undefined)
+      }
+    }
+
+    const evaluation = evaluateShadowingAttempt({
+      referenceText,
+      recognizedText,
+      referenceDurationMs: Math.max(0, Number(body.referenceDurationMs) || durationMs),
+      userDurationMs: durationMs,
+      dspComparison,
+    })
+
+    try {
+      const attempt = await authStore.saveShadowingAttempt({
+        sessionId: shadowingSession.id,
+        transcriptSegmentId,
+        attemptNo,
+        audioStorageKey: null,
+        durationMs,
+        recognizedText,
+        alignment: evaluation.alignment,
+        evaluatorProvider: `${config.transcription?.provider || 'local'}:dsp_pitch_dtw`,
+        evaluationStatus: 'scored',
+        score: {
+          overallScore: evaluation.overallScore,
+          contentScore: evaluation.contentScore,
+          pronunciationScore: evaluation.pronunciationScore,
+          timingScore: evaluation.timingScore,
+          prosodyScore: evaluation.pitchScore,
+          confidence: evaluation.confidence,
+          feedback: evaluation.feedback,
+          scoringVersion: evaluation.scoringVersion,
+        },
+      })
+
+      return respond({ attempt, evaluation }, 201)
+    } catch (saveError) {
+      logError('shadowing.save-attempt-failed', saveError)
+      // Still return the evaluation result even if DB save failed
+      return respond(
+        {
+          attempt: {
+            id: null,
+            sessionId: shadowingSession.id,
+            transcriptSegmentId,
+            attemptNo,
+            durationMs,
+            recognizedText,
+            alignment: evaluation.alignment,
+            evaluatorProvider: 'local:dsp_pitch_dtw',
+            evaluationStatus: 'scored',
+            createdAt: new Date().toISOString(),
+            score: {
+              overallScore: evaluation.overallScore,
+              contentScore: evaluation.contentScore,
+              pronunciationScore: evaluation.pronunciationScore,
+              timingScore: evaluation.timingScore,
+              prosodyScore: evaluation.pitchScore,
+              confidence: evaluation.confidence,
+              feedback: evaluation.feedback,
+              scoringVersion: evaluation.scoringVersion,
+            },
+          },
+          evaluation,
+        },
+        201
+      )
+    }
+  }
+
+  const shadowingAttemptMatch = path.match(/^\/api\/v1\/shadowing\/attempts\/([0-9a-f-]{36})$/i)
+  if (request.method === 'GET' && shadowingAttemptMatch) {
+    const user = await requireUser(request, response)
+    if (!user) return
+    const attempt = await authStore.findShadowingAttempt(shadowingAttemptMatch[1], user.id)
+    if (!attempt) return fail(response, 404, 'Không tìm thấy kết quả luyện tập.', 'ATTEMPT_NOT_FOUND')
+    return respond({ attempt })
+  }
+
   if (request.method === 'GET' && path === '/api/v1/admin/users') {
     if (!(await requireAdmin(request, response))) return
     const query = String(url.searchParams.get('query') ?? '')
@@ -920,7 +1464,8 @@ const server = http.createServer((request, response) => {
     fail(response, 500, 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.', 'INTERNAL_ERROR')
   })
 })
-server.listen(port, '127.0.0.1', () => log('info', 'server.started', { port, persistence: authStore.mode }))
+const host = process.env.HOST ?? '0.0.0.0'
+server.listen(port, host, () => log('info', 'server.started', { port, host, persistence: authStore.mode }))
 
 async function shutdown() {
   clearInterval(cleanupInterval)

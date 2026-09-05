@@ -12,7 +12,6 @@ const permissions: Record<AppRole, readonly Permission[]> = {
 
 const pagePermissions: Partial<Record<Page, Permission>> = {
   onboarding: 'account:manage',
-  vocabulary: 'account:manage',
   review: 'account:manage',
   video: 'account:manage',
   courses: 'account:manage',

@@ -2,6 +2,10 @@ export type Page =
   | 'home'
   | 'onboarding'
   | 'vocabulary'
+  | 'bunpo'
+  | 'dictionary'
+  | 'kanji'
+  | 'jlpt'
   | 'review'
   | 'video'
   | 'courses'
@@ -30,7 +34,11 @@ export type AppRoute = { page: Page; path: string; title: string }
 export const APP_ROUTES: readonly AppRoute[] = [
   { page: 'home', path: '/', title: 'Học ngôn ngữ cùng AI' },
   { page: 'onboarding', path: '/bat-dau', title: 'Tạo lộ trình học' },
-  { page: 'vocabulary', path: '/tra-tu', title: 'Tra từ tiếng Nhật' },
+  { page: 'vocabulary', path: '/tu-vung', title: 'Từ vựng N5-N1' },
+  { page: 'bunpo', path: '/bunpo', title: 'Ngữ pháp N5-N1' },
+  { page: 'dictionary', path: '/tra-tu', title: 'Tra từ điển tiếng Nhật' },
+  { page: 'kanji', path: '/kanji', title: 'Hán tự & Chiết tự' },
+  { page: 'jlpt', path: '/jlpt', title: 'Luyện thi JLPT' },
   { page: 'review', path: '/on-tap', title: 'Ôn tập SRS' },
   { page: 'video', path: '/video-ai', title: 'Video AI' },
   { page: 'courses', path: '/khoa-hoc', title: 'Khóa học' },

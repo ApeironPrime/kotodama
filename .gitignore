@@ -29,3 +29,19 @@ dist-ssr
 .env.*.local
 var/media
 tools/
+
+# Python & Virtualenv
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary & Build files
+tmp/
+scratch/
+coverage/
+*.db-shm
+*.db-wal
+

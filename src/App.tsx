@@ -15,7 +15,11 @@ const AuthLifecyclePage = lazy(() => import('./features/auth/AuthLifecyclePage')
 const LocalProfilePage = lazy(() => import('./features/account/ProfilePage'))
 const AccountSecurityPage = lazy(() => import('./features/account/AccountSecurityPage'))
 const AccountAdminPage = lazy(() => import('./features/account/AccountAdminPage'))
+const VocabularyPage = lazy(() => import('./features/vocabulary/VocabularyPage'))
 const DictionaryPage = lazy(() => import('./features/dictionary/DictionaryPage'))
+const BunpoPage = lazy(() => import('./features/nhaikanji/BunpoPage'))
+const KanjiPage = lazy(() => import('./features/nhaikanji/KanjiPage'))
+const JlptPage = lazy(() => import('./features/nhaikanji/JlptPage'))
 const OnboardingPage = lazy(() => import('./features/learning/OnboardingPage'))
 const ReviewPage = lazy(() => import('./features/srs/ReviewPage'))
 const SettingsPage = lazy(() => import('./pages/AccountPages').then(({ SettingsPage: Page }) => ({ default: Page })))
@@ -116,8 +120,12 @@ function AppContent() {
           <Suspense fallback={<PageSkeleton label="Đang tải trang…" />}>
             {page === 'home' && <HomePage setPage={goTo} isAuthenticated={isAuthenticated} />}
             {page === 'onboarding' && <OnboardingPage onNavigate={goTo} />}
-            {page === 'vocabulary' && <DictionaryPage inputRef={searchInputRef} onReview={() => goTo('review')} />}
-            {page === 'review' && <ReviewPage onDictionary={() => goTo('vocabulary')} />}
+            {page === 'vocabulary' && <VocabularyPage onGoToSrs={() => goTo('review')} />}
+            {page === 'bunpo' && <BunpoPage onGoToSrs={() => goTo('review')} />}
+            {page === 'dictionary' && <DictionaryPage inputRef={searchInputRef} onReview={() => goTo('review')} />}
+            {page === 'kanji' && <KanjiPage />}
+            {page === 'jlpt' && <JlptPage />}
+            {page === 'review' && <ReviewPage onDictionary={() => goTo('dictionary')} />}
             {page === 'video' && <VideoLearning />}
             {page === 'courses' && (
               <CoursesPage

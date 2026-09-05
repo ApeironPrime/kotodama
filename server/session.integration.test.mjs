@@ -29,13 +29,13 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
 }
 
 async function waitForServer() {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
       if ((await fetch(`${baseUrl}/health`)).ok) return
     } catch {
-      /* API is still starting. */
+      /* server is still starting */
     }
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 100))
   }
   throw new Error('Session test server did not start.')
 }

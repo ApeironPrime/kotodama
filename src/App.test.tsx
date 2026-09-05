@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
@@ -40,28 +40,26 @@ function renderApp(path: string, auth: AuthContextValue = anonymousAuth) {
 }
 
 describe('application journeys', () => {
-  it('sends anonymous visitors from protected dictionary route to login', async () => {
-    renderApp('/tra-tu')
+  it('sends anonymous visitors from protected routes to login', async () => {
+    renderApp('/on-tap')
 
-    expect(await screen.findByRole('heading', { name: 'Chào mừng trở lại' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Chào mừng trở lại' }, { timeout: 8000 })).toBeTruthy()
   })
 
   it('opens the login page from the home primary action', async () => {
     renderApp('/')
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Đăng nhập để bắt đầu' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Đăng nhập để bắt đầu/i }, { timeout: 8000 }))
 
-    expect(await screen.findByRole('heading', { name: 'Chào mừng trở lại' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Chào mừng trở lại' }, { timeout: 8000 })).toBeTruthy()
   })
 
-  it('renders the real-data waiting dictionary state for an authenticated learner', async () => {
+  it('renders the dictionary search interface for an authenticated learner', async () => {
     renderApp('/tra-tu', { ...anonymousAuth, status: 'authenticated', user: learner })
 
-    const input = await screen.findByRole('textbox', { name: 'Từ cần tra' })
-    fireEvent.change(input, { target: { value: '食べる' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Tra từ' }))
-
-    await waitFor(() => expect(screen.getByText('Chưa thể tra “食べる”')).toBeTruthy())
-    expect(screen.getByText('Kết quả chỉ được lấy từ API từ điển; hiện chưa có dữ liệu để hiển thị.')).toBeTruthy()
+    const input = await screen.findByRole('textbox', { name: 'Từ cần tra' }, { timeout: 8000 })
+    expect(input).toBeTruthy()
+    expect(screen.getByText('TỪ ĐIỂN NHẬT - VIỆT (VNJP DICTIONARY)')).toBeTruthy()
+    expect(screen.getByText('Sẵn sàng tra cứu')).toBeTruthy()
   })
 })

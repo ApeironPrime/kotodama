@@ -194,3 +194,27 @@ export function Modal({ title, children, onClose }: { title: string; children: R
     </div>
   )
 }
+
+type BadgeVariant = 'primary' | 'secondary' | 'outline' | 'danger'
+export function Badge({
+  className,
+  variant = 'primary',
+  children,
+  ...props
+}: HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
+  return (
+    <span
+      className={classes(
+        'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium',
+        variant === 'primary' && 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300',
+        variant === 'secondary' && 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+        variant === 'outline' && 'border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300',
+        variant === 'danger' && 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </span>
+  )
+}

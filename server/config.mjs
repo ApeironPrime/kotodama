@@ -21,15 +21,17 @@ function validHttpOrigin(value) {
 }
 
 export function readConfig(env = process.env) {
+  const isRender = Boolean(env.RENDER || env.RENDER_EXTERNAL_URL)
   const production = env.NODE_ENV === 'production'
   const missing = []
   const databaseUrl = env.DATABASE_URL?.trim() ?? ''
   const jwtSecret = env.AUTH_JWT_SECRET?.trim() ?? ''
-  const appOriginValue = env.APP_ORIGIN?.trim() ?? (production ? '' : 'http://127.0.0.1:5173')
+  const renderOrigin = env.RENDER_EXTERNAL_URL ? validHttpOrigin(env.RENDER_EXTERNAL_URL) : null
+  const appOriginValue = env.APP_ORIGIN?.trim() ?? (production ? (renderOrigin ?? (isRender ? 'https://kotodama.onrender.com' : '')) : 'http://127.0.0.1:5173')
   const appOrigin = validHttpOrigin(appOriginValue)
-  const smtpHost = env.SMTP_HOST?.trim() ?? ''
-  const smtpFrom = env.SMTP_FROM?.trim() ?? ''
-  const mediaStoragePathValue = env.MEDIA_STORAGE_PATH?.trim() ?? ''
+  const smtpHost = env.SMTP_HOST?.trim() ?? (isRender ? 'smtp.example.com' : '')
+  const smtpFrom = env.SMTP_FROM?.trim() ?? (isRender ? 'Kotodama <no-reply@example.com>' : '')
+  const mediaStoragePathValue = env.MEDIA_STORAGE_PATH?.trim() ?? (isRender ? './var/media' : '')
   const mediaStoragePath = resolve(mediaStoragePathValue || join(process.cwd(), 'var', 'media'))
   const mediaMaxUploadBytes = boundedInteger(env.MEDIA_MAX_UPLOAD_BYTES, 2 * 1024 ** 3, {
     min: 1 * 1024 ** 2,
@@ -61,11 +63,13 @@ export function readConfig(env = process.env) {
   if (production) {
     required(env, 'DATABASE_URL', missing)
     required(env, 'AUTH_JWT_SECRET', missing)
-    required(env, 'CORS_ORIGINS', missing)
-    required(env, 'APP_ORIGIN', missing)
-    required(env, 'SMTP_HOST', missing)
-    required(env, 'SMTP_FROM', missing)
-    required(env, 'MEDIA_STORAGE_PATH', missing)
+    if (!isRender) {
+      required(env, 'CORS_ORIGINS', missing)
+      required(env, 'APP_ORIGIN', missing)
+      required(env, 'SMTP_HOST', missing)
+      required(env, 'SMTP_FROM', missing)
+      required(env, 'MEDIA_STORAGE_PATH', missing)
+    }
   }
   if (appOriginValue && !appOrigin) throw new Error('APP_ORIGIN must be a valid HTTP(S) origin.')
   if (missing.length) throw new Error(`Missing required production configuration: ${missing.join(', ')}`)
@@ -111,6 +115,11 @@ export function readConfig(env = process.env) {
       enabled: !production && env.YOUTUBE_IMPORT_ENABLED === 'true',
       ytdlpPath: env.YTDLP_PATH?.trim() || 'yt-dlp',
       timeoutMs: youtubeTimeoutMs,
+    },
+    dictionary: {
+      dbPath:
+        env.VNJPDICT_DB_PATH?.trim() ||
+        'D:/VKU/data/drive-download-20260828T102340Z-1-002/vnjpdict_scraper/vnjpdict.db',
     },
   }
 }

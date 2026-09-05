@@ -23,8 +23,18 @@ export type AuthContextValue = {
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
+const DEFAULT_AUTH_CONTEXT: AuthContextValue = {
+  status: 'anonymous',
+  user: null,
+  sessionExpired: false,
+  signIn: async () => {},
+  signUp: async () => {},
+  acceptSession: () => {},
+  signOut: async () => {},
+}
+
 export function useAuth() {
   const value = useContext(AuthContext)
-  if (!value) throw new Error('useAuth phải được dùng bên trong AuthProvider.')
-  return value
+  return value ?? DEFAULT_AUTH_CONTEXT
 }
+

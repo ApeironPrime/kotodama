@@ -32,14 +32,15 @@ process.on('SIGINT', () => stop())
 process.on('SIGTERM', () => stop())
 
 for (const [index, child] of children.entries()) {
+  const name = processNames[index]
   child.once('error', (error) => {
-    console.error(`Không thể khởi động ${processNames[index]}: ${error.message}`)
-    stop(1)
+    console.error(`Không thể khởi động ${name}: ${error.message}`)
+    if (name !== 'asr:local') stop(1)
   })
   child.once('exit', (code, signal) => {
     if (!stopping) {
-      console.error(`${processNames[index]} đã dừng (${signal ?? `mã ${code ?? 1}`}).`)
-      stop(code ?? 1)
+      console.error(`${name} đã dừng (${signal ?? `mã ${code ?? 1}`}).`)
+      if (name !== 'asr:local') stop(code ?? 1)
     }
   })
 }

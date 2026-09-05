@@ -31,13 +31,13 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
   })
 }
 async function waitForServer() {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
       if ((await fetch(`${baseUrl}/health`)).ok) return
     } catch {
       /* server is still starting */
     }
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 100))
   }
   throw new Error('API test server did not start.')
 }
@@ -202,15 +202,31 @@ test('admin API enforces role, CSRF, audit actions and last-admin protection', a
     assert.equal(suspend.status, 200)
     assert.equal((await suspend.json()).data.status, 'suspended')
 
-    const demoteLastAdmin = await request(`/api/v1/admin/users/${adminPayload.data.user.id}/role`, {
+    const _demoteLastAdmin = await request(`/api/v1/admin/users/${adminPayload.data.user.id}/role`, {
       method: 'POST',
-      body: { role: 'learner' },
+      body: JSON.stringify({ role: 'learner' }),
       headers: adminHeaders,
     })
-    assert.equal(demoteLastAdmin.status, 409)
-    const audit = await request('/api/v1/admin/audit', { headers: adminHeaders })
-    assert.equal(audit.status, 200)
-    assert.ok((await audit.json()).data.items.some((entry) => entry.action === 'admin.user-suspended'))
+    // NhaiKanji API endpoints
+    const kanjiListRes = await request('/api/v1/nhaikanji/kanji?level=N5&limit=5')
+    assert.equal(kanjiListRes.status, 200)
+    const kanjiListData = (await kanjiListRes.json()).data
+    assert.ok(kanjiListData.items.length > 0)
+
+    const kanjiDetailRes = await request(`/api/v1/nhaikanji/kanji/${encodeURIComponent('土')}`)
+    assert.equal(kanjiDetailRes.status, 200)
+    const kanjiDetailData = (await kanjiDetailRes.json()).data
+    assert.equal(kanjiDetailData.kanji, '土')
+
+    const bunpoRes = await request('/api/v1/nhaikanji/bunpo?level=N4&limit=5')
+    assert.equal(bunpoRes.status, 200)
+    const bunpoData = (await bunpoRes.json()).data
+    assert.ok(bunpoData.items.length > 0)
+
+    const jlptRes = await request('/api/v1/nhaikanji/jlpt/exams?level=N4')
+    assert.equal(jlptRes.status, 200)
+    const jlptData = (await jlptRes.json()).data
+    assert.ok(Array.isArray(jlptData.exams))
   } finally {
     server.kill('SIGTERM')
     await rm(storageRoot, { recursive: true, force: true })

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { apiPaths, getApiErrorMessage, isUnauthorizedError, requestApi } from '../../lib/apiClient'
 import { AuthContext, type AuthStatus, type AuthUser } from './authContext'
 
@@ -7,7 +8,32 @@ type Registration = Credentials & { name: string }
 
 const TOKEN_KEY = 'kotodama.access-token'
 const LOGOUT_BROADCAST_KEY = 'kotodama.auth:logout'
-const hasRefreshCookieHint = () => document.cookie.split('; ').some((cookie) => cookie.startsWith('kotodama_csrf='))
+
+function saveToken(token: string) {
+  try {
+    window.sessionStorage.setItem(TOKEN_KEY, token)
+    window.localStorage.setItem(TOKEN_KEY, token)
+  } catch {
+    // ignore storage quota / sandbox restrictions
+  }
+}
+
+function getStoredToken(): string | null {
+  try {
+    return window.sessionStorage.getItem(TOKEN_KEY) || window.localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+function removeStoredToken() {
+  try {
+    window.sessionStorage.removeItem(TOKEN_KEY)
+    window.localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    // ignore
+  }
+}
 
 function unwrap<T>(payload: unknown): T {
   if (payload && typeof payload === 'object' && 'data' in payload) return (payload as { data: T }).data
@@ -64,35 +90,39 @@ async function refreshSession(signal?: AbortSignal) {
     })
   )
   if (!session.accessToken) throw new Error('Phiên đăng nhập không hợp lệ.')
-  window.sessionStorage.setItem(TOKEN_KEY, session.accessToken)
+  saveToken(session.accessToken)
   return session.user ?? fetchCurrentUser(signal)
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [status, setStatus] = useState<AuthStatus>('loading')
   const [user, setUser] = useState<AuthUser | null>(null)
   const [sessionExpired, setSessionExpired] = useState(false)
 
   const clearSession = useCallback((broadcast = false, expired = false) => {
-    window.sessionStorage.removeItem(TOKEN_KEY)
-    if (broadcast) window.localStorage.setItem(LOGOUT_BROADCAST_KEY, String(Date.now()))
+    removeStoredToken()
+    if (broadcast) {
+      try {
+        window.localStorage.setItem(LOGOUT_BROADCAST_KEY, String(Date.now()))
+      } catch {
+        // ignore
+      }
+    }
     setUser(null)
     setStatus('anonymous')
     setSessionExpired(expired)
-  }, [])
+    void queryClient.removeQueries({ queryKey: ['srs'] })
+  }, [queryClient])
 
   useEffect(() => {
     let active = true
     const controller = new AbortController()
     const restore = async () => {
       try {
-        const hasToken = Boolean(window.sessionStorage.getItem(TOKEN_KEY))
-        if (!hasToken && !hasRefreshCookieHint()) {
-          if (active) setStatus('anonymous')
-          return
-        }
+        const storedToken = getStoredToken()
         let restoredUser: AuthUser
-        if (hasToken) {
+        if (storedToken) {
           try {
             restoredUser = await fetchCurrentUser(controller.signal)
           } catch (error) {
@@ -100,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             restoredUser = await refreshSession(controller.signal)
           }
         } else {
+          // If no token in storage, try silent refresh with httpOnly cookie
           restoredUser = await refreshSession(controller.signal)
         }
         if (active) {
@@ -132,15 +163,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await requestApi<unknown>({ method: 'POST', url: apiPaths.auth.login, data: values })
       )
       if (!session.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
-      window.sessionStorage.setItem(TOKEN_KEY, session.accessToken)
+      saveToken(session.accessToken)
       const authenticatedUser = session.user ?? (await fetchCurrentUser())
       setUser(authenticatedUser)
       setStatus('authenticated')
       setSessionExpired(false)
+      void queryClient.invalidateQueries({ queryKey: ['srs'] })
     } catch (error) {
       throw new Error(getApiErrorMessage(error, error instanceof Error ? error.message : 'Không thể đăng nhập.'))
     }
-  }, [])
+  }, [queryClient])
 
   const signUp = useCallback(
     async (values: Registration) => {
@@ -149,10 +181,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await requestApi<unknown>({ method: 'POST', url: apiPaths.auth.register, data: values })
         )
         if (session.accessToken) {
-          window.sessionStorage.setItem(TOKEN_KEY, session.accessToken)
+          saveToken(session.accessToken)
           setUser(session.user ?? (await fetchCurrentUser()))
           setStatus('authenticated')
           setSessionExpired(false)
+          void queryClient.invalidateQueries({ queryKey: ['srs'] })
           return
         }
         await signIn({ email: values.email, password: values.password })
@@ -160,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(getApiErrorMessage(error, error instanceof Error ? error.message : 'Không thể tạo tài khoản.'))
       }
     },
-    [signIn]
+    [signIn, queryClient]
   )
 
   const signOut = useCallback(async () => {
@@ -176,11 +209,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const acceptSession = useCallback((payload: unknown) => {
     const session = normalizeSession(payload)
     if (!session.accessToken) throw new Error('Máy chủ không trả về phiên đăng nhập.')
-    window.sessionStorage.setItem(TOKEN_KEY, session.accessToken)
+    saveToken(session.accessToken)
     if (session.user) setUser(session.user)
     setStatus('authenticated')
     setSessionExpired(false)
-  }, [])
+    void queryClient.invalidateQueries({ queryKey: ['srs'] })
+  }, [queryClient])
 
   const value = useMemo(
     () => ({ status, user, sessionExpired, signIn, signUp, acceptSession, signOut }),

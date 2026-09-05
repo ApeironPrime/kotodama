@@ -8,6 +8,7 @@
     "npm": ">=10"
   },
   "scripts": {
+    "start": "node --experimental-sqlite server/index.mjs",
     "dev": "vite",
     "dev:local": "node --env-file-if-exists=.env scripts/dev-local.mjs",
     "typecheck": "tsc -b --pretty false",
@@ -27,6 +28,7 @@
     "media:worker": "node --watch --env-file-if-exists=.env server/media-worker.mjs",
     "asr:local": "node --env-file-if-exists=.env scripts/asr-local.mjs",
     "db:migrate": "node --env-file-if-exists=.env server/db/migrate.mjs",
+    "db:seed:admin": "node --env-file-if-exists=.env scripts/seed-admin.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -50,6 +52,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^29.1.1",
     "oxlint": "^1.75.0",
+    "playwright": "^1.62.1",
     "prettier": "^3.9.6",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",

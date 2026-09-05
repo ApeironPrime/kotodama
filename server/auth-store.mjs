@@ -203,6 +203,114 @@ function transcriptFromMemory(transcript, segments = []) {
   }
 }
 
+function shadowingSessionFromMemory(session, asset = null, transcript = null) {
+  if (!session) return null
+  return {
+    id: session.id,
+    userId: session.userId,
+    mediaAssetId: session.mediaAssetId,
+    transcriptVersionId: session.transcriptVersionId,
+    mode: session.mode,
+    selectedSpeakerLabel: session.selectedSpeakerLabel ?? null,
+    status: session.status,
+    currentSegmentSequence: session.currentSegmentSequence ?? 1,
+    startedAt: session.startedAt,
+    completedAt: session.completedAt ?? null,
+    mediaAsset: asset ? mediaAssetFromMemory(asset) : undefined,
+    transcript: transcript ?? undefined,
+  }
+}
+
+function shadowingSessionFromRow(row, asset = null, transcript = null) {
+  if (!row) return null
+  return {
+    id: row.id,
+    userId: row.user_id,
+    mediaAssetId: row.media_asset_id,
+    transcriptVersionId: row.transcript_version_id,
+    mode: row.mode,
+    selectedSpeakerLabel: row.selected_speaker_label,
+    status: row.status,
+    currentSegmentSequence: row.current_segment_sequence ?? 1,
+    startedAt: iso(row.started_at),
+    completedAt: iso(row.completed_at),
+    mediaAsset: asset ? mediaAssetFromRow(asset) : undefined,
+    transcript: transcript ?? undefined,
+  }
+}
+
+function shadowingScoreFromMemory(score) {
+  if (!score) return null
+  return {
+    shadowingAttemptId: score.shadowingAttemptId,
+    overallScore: score.overallScore,
+    contentScore: score.contentScore,
+    pronunciationScore: score.pronunciationScore,
+    timingScore: score.timingScore,
+    prosodyScore: score.prosodyScore ?? null,
+    confidence: score.confidence,
+    feedback: score.feedback ?? {},
+    scoringVersion: score.scoringVersion,
+    createdAt: score.createdAt,
+  }
+}
+
+function shadowingScoreFromRow(row) {
+  if (!row) return null
+  return {
+    shadowingAttemptId: row.shadowing_attempt_id ?? row.id,
+    overallScore: row.overall_score === null ? null : Number(row.overall_score),
+    contentScore: row.content_score === null ? null : Number(row.content_score),
+    pronunciationScore: row.pronunciation_score === null ? null : Number(row.pronunciation_score),
+    timingScore: row.timing_score === null ? null : Number(row.timing_score),
+    prosodyScore: row.prosody_score === null ? null : Number(row.prosody_score),
+    confidence: row.confidence === null ? null : Number(row.confidence),
+    feedback: typeof row.feedback === 'object' && row.feedback !== null ? row.feedback : {},
+    scoringVersion: row.scoring_version ?? 'whisper_basic_v1',
+    createdAt: iso(row.score_created_at ?? row.created_at),
+  }
+}
+
+function shadowingAttemptFromMemory(attempt, score = null) {
+  if (!attempt) return null
+  return {
+    id: attempt.id,
+    sessionId: attempt.sessionId,
+    transcriptSegmentId: attempt.transcriptSegmentId,
+    attemptNo: attempt.attemptNo,
+    audioStorageKey: attempt.audioStorageKey ?? null,
+    durationMs: attempt.durationMs ?? null,
+    recognizedText: attempt.recognizedText ?? null,
+    alignment: attempt.alignment ?? [],
+    evaluatorProvider: attempt.evaluatorProvider ?? null,
+    evaluationStatus: attempt.evaluationStatus,
+    createdAt: attempt.createdAt,
+    score: score ? shadowingScoreFromMemory(score) : null,
+  }
+}
+
+function shadowingAttemptFromRow(row, score = null) {
+  if (!row) return null
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    transcriptSegmentId: row.transcript_segment_id,
+    attemptNo: row.attempt_no,
+    audioStorageKey: row.audio_storage_key,
+    durationMs: row.duration_ms,
+    recognizedText: row.recognized_text,
+    alignment: Array.isArray(row.alignment)
+      ? row.alignment
+      : typeof row.alignment === 'string'
+        ? JSON.parse(row.alignment || '[]')
+        : [],
+    evaluatorProvider: row.evaluator_provider,
+    evaluationStatus: row.evaluation_status,
+    createdAt: iso(row.created_at),
+    score: score ? shadowingScoreFromRow(score) : null,
+  }
+}
+
 function transcriptTokenFromRow(row) {
   return {
     id: row.id,
@@ -285,6 +393,9 @@ function createMemoryStore() {
   const mediaJobsById = new Map()
   const transcriptsById = new Map()
   const transcriptSegmentsByTranscriptId = new Map()
+  const shadowingSessionsById = new Map()
+  const shadowingAttemptsById = new Map()
+  const shadowingScoresByAttemptId = new Map()
 
   return {
     mode: 'memory',
@@ -390,14 +501,16 @@ function createMemoryStore() {
     },
     async listMediaAssets(userId, limit) {
       return [...mediaAssetsById.values()]
-        .filter((asset) => asset.ownerUserId === userId && !asset.deletedAt)
+        .filter((asset) => (asset.ownerUserId === userId || asset.processingStatus === 'ready') && !asset.deletedAt)
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
         .slice(0, limit)
         .map(mediaAssetFromMemory)
     },
     async findMediaAssetForUser(id, userId) {
       const asset = mediaAssetsById.get(id)
-      return asset && asset.ownerUserId === userId && !asset.deletedAt ? mediaAssetFromMemory(asset) : null
+      return asset && (asset.ownerUserId === userId || asset.processingStatus === 'ready') && !asset.deletedAt
+        ? mediaAssetFromMemory(asset)
+        : null
     },
     async markMediaAssetUploading(id, userId) {
       const asset = mediaAssetsById.get(id)
@@ -489,7 +602,7 @@ function createMemoryStore() {
     },
     async listMediaProcessingJobsForAsset(assetId, userId) {
       const asset = mediaAssetsById.get(assetId)
-      if (!asset || asset.ownerUserId !== userId || asset.deletedAt) return null
+      if (!asset || (asset.ownerUserId !== userId && asset.processingStatus !== 'ready') || asset.deletedAt) return null
       return [...mediaJobsById.values()]
         .filter((job) => job.mediaAssetId === assetId)
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
@@ -588,8 +701,8 @@ function createMemoryStore() {
           startMs: segment.startMs,
           endMs: segment.endMs,
           textJa: segment.textJa,
-          textFurigana: null,
-          textVi: null,
+          textFurigana: segment.textFurigana ?? null,
+          textVi: segment.textVi ?? null,
           confidence: segment.confidence ?? null,
         }
         return { ...savedSegment, tokens: normalizedSegmentTokens(segment.tokens, savedSegment) }
@@ -602,13 +715,137 @@ function createMemoryStore() {
     },
     async findCurrentTranscript(mediaAssetId, userId) {
       const asset = mediaAssetsById.get(mediaAssetId)
-      if (!asset || asset.ownerUserId !== userId || asset.deletedAt) return null
+      if (!asset || (asset.ownerUserId !== userId && asset.processingStatus !== 'ready') || asset.deletedAt) return null
       const transcript = [...transcriptsById.values()].find(
         (item) => item.mediaAssetId === mediaAssetId && item.status === 'ready'
       )
       return transcript
         ? transcriptFromMemory(transcript, transcriptSegmentsByTranscriptId.get(transcript.id) ?? [])
         : null
+    },
+    async createShadowingSession({
+      userId,
+      mediaAssetId,
+      transcriptVersionId = null,
+      mode = 'sequential',
+      selectedSpeakerLabel = null,
+    }) {
+      const asset = mediaAssetsById.get(mediaAssetId)
+      if (!asset || asset.ownerUserId !== userId || asset.deletedAt) return null
+      const transcript = transcriptVersionId
+        ? transcriptsById.get(transcriptVersionId)
+        : [...transcriptsById.values()].find((item) => item.mediaAssetId === mediaAssetId && item.status === 'ready')
+      const now = new Date().toISOString()
+      const session = {
+        id: randomUUID(),
+        userId,
+        mediaAssetId,
+        transcriptVersionId: transcript?.id ?? null,
+        mode,
+        selectedSpeakerLabel: selectedSpeakerLabel ?? null,
+        status: 'active',
+        currentSegmentSequence: 1,
+        startedAt: now,
+        completedAt: null,
+      }
+      shadowingSessionsById.set(session.id, session)
+      return shadowingSessionFromMemory(
+        session,
+        asset,
+        transcript ? transcriptFromMemory(transcript, transcriptSegmentsByTranscriptId.get(transcript.id) ?? []) : null
+      )
+    },
+    async findShadowingSession(sessionId, userId) {
+      const session = shadowingSessionsById.get(sessionId)
+      if (!session || session.userId !== userId) return null
+      const asset = mediaAssetsById.get(session.mediaAssetId)
+      const transcript = session.transcriptVersionId ? transcriptsById.get(session.transcriptVersionId) : null
+      return shadowingSessionFromMemory(
+        session,
+        asset,
+        transcript ? transcriptFromMemory(transcript, transcriptSegmentsByTranscriptId.get(transcript.id) ?? []) : null
+      )
+    },
+    async advanceShadowingSession(sessionId, userId, nextSequenceNo, isCompleted = false) {
+      const session = shadowingSessionsById.get(sessionId)
+      if (!session || session.userId !== userId) return null
+      session.currentSegmentSequence = nextSequenceNo
+      if (isCompleted) {
+        session.status = 'completed'
+        session.completedAt = new Date().toISOString()
+      }
+      const asset = mediaAssetsById.get(session.mediaAssetId)
+      const transcript = session.transcriptVersionId ? transcriptsById.get(session.transcriptVersionId) : null
+      return shadowingSessionFromMemory(
+        session,
+        asset,
+        transcript ? transcriptFromMemory(transcript, transcriptSegmentsByTranscriptId.get(transcript.id) ?? []) : null
+      )
+    },
+    async saveShadowingAttempt({
+      sessionId,
+      transcriptSegmentId,
+      attemptNo,
+      audioStorageKey = null,
+      durationMs = null,
+      recognizedText = null,
+      alignment = [],
+      evaluatorProvider = 'whisper_basic_v1',
+      evaluationStatus = 'scored',
+      score = null,
+    }) {
+      const session = shadowingSessionsById.get(sessionId)
+      if (!session) return null
+      const now = new Date().toISOString()
+      const attemptId = randomUUID()
+      const attempt = {
+        id: attemptId,
+        sessionId,
+        transcriptSegmentId,
+        attemptNo,
+        audioStorageKey,
+        durationMs,
+        recognizedText,
+        alignment,
+        evaluatorProvider,
+        evaluationStatus,
+        createdAt: now,
+      }
+      shadowingAttemptsById.set(attemptId, attempt)
+
+      let savedScore = null
+      if (score) {
+        savedScore = {
+          shadowingAttemptId: attemptId,
+          overallScore: score.overallScore ?? 0,
+          contentScore: score.contentScore ?? 0,
+          pronunciationScore: score.pronunciationScore ?? 0,
+          timingScore: score.timingScore ?? 0,
+          prosodyScore: score.prosodyScore ?? null,
+          confidence: score.confidence ?? 100,
+          feedback: score.feedback ?? {},
+          scoringVersion: score.scoringVersion ?? 'whisper_basic_v1',
+          createdAt: now,
+        }
+        shadowingScoresByAttemptId.set(attemptId, savedScore)
+      }
+      return shadowingAttemptFromMemory(attempt, savedScore)
+    },
+    async findShadowingAttempt(attemptId, userId) {
+      const attempt = shadowingAttemptsById.get(attemptId)
+      if (!attempt) return null
+      const session = shadowingSessionsById.get(attempt.sessionId)
+      if (!session || session.userId !== userId) return null
+      const score = shadowingScoresByAttemptId.get(attemptId)
+      return shadowingAttemptFromMemory(attempt, score)
+    },
+    async listShadowingAttemptsForSession(sessionId, userId) {
+      const session = shadowingSessionsById.get(sessionId)
+      if (!session || session.userId !== userId) return []
+      return [...shadowingAttemptsById.values()]
+        .filter((attempt) => attempt.sessionId === sessionId)
+        .sort((left, right) => left.attemptNo - right.attemptNo)
+        .map((attempt) => shadowingAttemptFromMemory(attempt, shadowingScoresByAttemptId.get(attempt.id)))
     },
     async createRefreshSession(tokenHash, session) {
       const stored = {
@@ -940,7 +1177,7 @@ function createPostgresStore(pool) {
     async listMediaAssets(userId, limit) {
       const result = await pool.query(
         `select * from media_assets
-         where owner_user_id = $1 and deleted_at is null
+         where (owner_user_id = $1 or processing_status = 'ready') and deleted_at is null
          order by created_at desc limit $2`,
         [userId, limit]
       )
@@ -949,10 +1186,10 @@ function createPostgresStore(pool) {
     async findMediaAssetForUser(id, userId) {
       const result = await pool.query(
         `select * from media_assets
-         where id = $1 and owner_user_id = $2 and deleted_at is null`,
+         where id = $1 and (owner_user_id = $2 or processing_status = 'ready') and deleted_at is null`,
         [id, userId]
       )
-      return mediaAssetFromRow(result.rows[0])
+      return result.rows[0] ? mediaAssetFromRow(result.rows[0]) : null
     },
     async markMediaAssetUploading(id, userId) {
       const result = await pool.query(
@@ -1037,7 +1274,7 @@ function createPostgresStore(pool) {
       const result = await pool.query(
         `select jobs.* from media_processing_jobs jobs
          join media_assets assets on assets.id = jobs.media_asset_id
-         where jobs.media_asset_id = $1 and assets.owner_user_id = $2 and assets.deleted_at is null
+         where jobs.media_asset_id = $1 and (assets.owner_user_id = $2 or assets.processing_status = 'ready') and assets.deleted_at is null
          order by jobs.created_at desc`,
         [assetId, userId]
       )
@@ -1189,8 +1426,8 @@ function createPostgresStore(pool) {
         for (const [index, segment] of segments.entries()) {
           const result = await client.query(
             `insert into transcript_segments
-              (id, transcript_version_id, sequence_no, speaker_label, speaker_confidence, start_ms, end_ms, text_ja, confidence)
-             values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`,
+              (id, transcript_version_id, sequence_no, speaker_label, speaker_confidence, start_ms, end_ms, text_ja, text_furigana, text_vi, confidence)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *`,
             [
               randomUUID(),
               transcript.id,
@@ -1200,6 +1437,8 @@ function createPostgresStore(pool) {
               segment.startMs,
               segment.endMs,
               segment.textJa,
+              segment.textFurigana ?? null,
+              segment.textVi ?? null,
               segment.confidence,
             ]
           )
@@ -1242,10 +1481,10 @@ function createPostgresStore(pool) {
     async findCurrentTranscript(mediaAssetId, userId) {
       const transcriptResult = await pool.query(
         `select versions.* from transcript_versions versions
-         join media_assets assets on assets.id = versions.media_asset_id
-         where versions.media_asset_id = $1 and versions.status = 'ready'
-           and assets.owner_user_id = $2 and assets.deleted_at is null
-         order by versions.version desc limit 1`,
+          join media_assets assets on assets.id = versions.media_asset_id
+          where versions.media_asset_id = $1 and versions.status = 'ready'
+            and (assets.owner_user_id = $2 or assets.processing_status = 'ready') and assets.deleted_at is null
+          order by versions.version desc limit 1`,
         [mediaAssetId, userId]
       )
       const transcript = transcriptResult.rows[0]
@@ -1262,6 +1501,161 @@ function createPostgresStore(pool) {
           )
         : { rows: [] }
       return transcriptFromRow(transcript, attachTokensToSegments(segments.rows, tokens.rows))
+    },
+    async createShadowingSession({
+      userId,
+      mediaAssetId,
+      transcriptVersionId = null,
+      mode = 'sequential',
+      selectedSpeakerLabel = null,
+    }) {
+      let resolvedTranscriptId = transcriptVersionId
+      if (!resolvedTranscriptId) {
+        const transcriptRes = await pool.query(
+          `select id from transcript_versions where media_asset_id = $1 and status = 'ready' order by version desc limit 1`,
+          [mediaAssetId]
+        )
+        resolvedTranscriptId = transcriptRes.rows[0]?.id ?? null
+      }
+      const id = randomUUID()
+      const result = await pool.query(
+        `insert into shadowing_sessions
+          (id, user_id, media_asset_id, transcript_version_id, mode, selected_speaker_label, status, current_segment_sequence)
+         values ($1, $2, $3, $4, $5, $6, 'active', 1)
+         returning *`,
+        [id, userId, mediaAssetId, resolvedTranscriptId, mode, selectedSpeakerLabel]
+      )
+      return shadowingSessionFromRow(result.rows[0])
+    },
+    async findShadowingSession(sessionId, userId) {
+      const result = await pool.query(`select * from shadowing_sessions where id = $1 and user_id = $2`, [
+        sessionId,
+        userId,
+      ])
+      return shadowingSessionFromRow(result.rows[0])
+    },
+    async advanceShadowingSession(sessionId, userId, nextSequenceNo, isCompleted = false) {
+      const statusClause = isCompleted ? `, status = 'completed', completed_at = now()` : ''
+      const result = await pool.query(
+        `update shadowing_sessions
+         set current_segment_sequence = $3 ${statusClause}
+         where id = $1 and user_id = $2
+         returning *`,
+        [sessionId, userId, nextSequenceNo]
+      )
+      return shadowingSessionFromRow(result.rows[0])
+    },
+    async saveShadowingAttempt({
+      sessionId,
+      transcriptSegmentId,
+      attemptNo,
+      audioStorageKey = null,
+      durationMs = null,
+      recognizedText = null,
+      alignment = [],
+      evaluatorProvider = 'whisper_basic_v1',
+      evaluationStatus = 'scored',
+      score = null,
+    }) {
+      const client = await pool.connect()
+      try {
+        // Validate segment ID BEFORE starting transaction (to avoid aborting the txn on check failure)
+        let validSegmentId = transcriptSegmentId ?? null
+        if (validSegmentId) {
+          try {
+            const segCheck = await client.query('select id from transcript_segments where id = $1', [validSegmentId])
+            if (!segCheck.rows[0]) validSegmentId = null
+          } catch {
+            validSegmentId = null
+          }
+        }
+        await client.query('begin')
+        const attemptId = randomUUID()
+        const attemptResult = await client.query(
+          `insert into shadowing_attempts
+            (id, session_id, transcript_segment_id, attempt_no, audio_storage_key, duration_ms, recognized_text, alignment, evaluator_provider, evaluation_status)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           returning *`,
+          [
+            attemptId,
+            sessionId,
+            validSegmentId,
+            attemptNo,
+            audioStorageKey,
+            durationMs,
+            recognizedText,
+            JSON.stringify(alignment),
+            evaluatorProvider,
+            evaluationStatus,
+          ]
+        )
+        let savedScoreRow = null
+        if (score) {
+          const scoreResult = await client.query(
+            `insert into shadowing_scores
+              (shadowing_attempt_id, overall_score, content_score, pronunciation_score, timing_score, prosody_score, confidence, feedback, scoring_version)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             returning *`,
+            [
+              attemptId,
+              score.overallScore ?? 0,
+              score.contentScore ?? 0,
+              score.pronunciationScore ?? 0,
+              score.timingScore ?? 0,
+              score.prosodyScore ?? null,
+              score.confidence ?? 100,
+              JSON.stringify(score.feedback ?? {}),
+              score.scoringVersion ?? 'whisper_basic_v1',
+            ]
+          )
+          savedScoreRow = scoreResult.rows[0]
+        }
+        await client.query('commit')
+        return shadowingAttemptFromRow(
+          attemptResult.rows[0],
+          savedScoreRow ? shadowingScoreFromRow(savedScoreRow) : null
+        )
+      } catch (error) {
+        await client.query('rollback')
+        throw error
+      } finally {
+        client.release()
+      }
+    },
+    async findShadowingAttempt(attemptId, userId) {
+      const result = await pool.query(
+        `select attempts.*,
+                scores.overall_score, scores.content_score, scores.pronunciation_score,
+                scores.timing_score, scores.prosody_score, scores.confidence,
+                scores.feedback, scores.scoring_version, scores.created_at as score_created_at
+         from shadowing_attempts attempts
+         join shadowing_sessions sessions on sessions.id = attempts.session_id
+         left join shadowing_scores scores on scores.shadowing_attempt_id = attempts.id
+         where attempts.id = $1 and sessions.user_id = $2`,
+        [attemptId, userId]
+      )
+      const row = result.rows[0]
+      if (!row) return null
+      const score = row.overall_score !== null ? shadowingScoreFromRow(row) : null
+      return shadowingAttemptFromRow(row, score)
+    },
+    async listShadowingAttemptsForSession(sessionId, userId) {
+      const result = await pool.query(
+        `select attempts.*,
+                scores.overall_score, scores.content_score, scores.pronunciation_score,
+                scores.timing_score, scores.prosody_score, scores.confidence,
+                scores.feedback, scores.scoring_version, scores.created_at as score_created_at
+         from shadowing_attempts attempts
+         join shadowing_sessions sessions on sessions.id = attempts.session_id
+         left join shadowing_scores scores on scores.shadowing_attempt_id = attempts.id
+         where attempts.session_id = $1 and sessions.user_id = $2
+         order by attempts.attempt_no asc`,
+        [sessionId, userId]
+      )
+      return result.rows.map((row) => {
+        const score = row.overall_score !== null ? shadowingScoreFromRow(row) : null
+        return shadowingAttemptFromRow(row, score)
+      })
     },
     async createRefreshSession(tokenHash, session) {
       const id = session.id ?? randomUUID()

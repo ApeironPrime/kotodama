@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { CoursesPage } from './learning/CoursesPage'
 import { CourseLearningPage } from './learning/CourseLearningPage'
@@ -17,6 +19,7 @@ import {
 } from './video/videoApi'
 
 vi.mock('./video/videoApi', () => ({
+  listMediaAssets: vi.fn().mockResolvedValue({ items: [] }),
   uploadLocalVideo: vi.fn(),
   getMediaAsset: vi.fn(),
   getMediaJobs: vi.fn().mockResolvedValue({ items: [] }),
@@ -25,14 +28,20 @@ vi.mock('./video/videoApi', () => ({
   importYouTubeVideo: vi.fn(),
 }))
 
+function render(ui: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return rtlRender(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+}
+
 describe('API waiting states', () => {
-  it('keeps the SRS page empty until API data exists', () => {
+  it('renders the SRS review page with KPI cards and category tabs', () => {
     render(<ReviewPage onDictionary={vi.fn()} />)
 
-    expect(screen.getByText('Hàng đợi ôn tập đang chờ dữ liệu')).toBeTruthy()
-    expect(
-      screen.getByText('Không tạo thẻ hoặc lịch ôn giả trên trình duyệt. Từ cần ôn sẽ đến từ API SRS.')
-    ).toBeTruthy()
+    expect(screen.getByText('Đã thành thạo')).toBeTruthy()
+    expect(screen.getByText('Cần ôn hôm nay')).toBeTruthy()
+    expect(screen.getByText('Trung bình thành thạo')).toBeTruthy()
   })
 
   it('shows the course catalog and management as API-backed empty states', () => {
@@ -144,6 +153,7 @@ describe('API waiting states', () => {
     vi.mocked(getMediaAsset).mockResolvedValue(asset)
 
     const { container } = render(<VideoLearningPage />)
+    fireEvent.click(screen.getByRole('tab', { name: /Tệp cục bộ/i }))
     const input = container.querySelector('input[type="file"]')
     if (!(input instanceof HTMLInputElement)) throw new Error('Video file input is unavailable')
     fireEvent.change(input, {
@@ -209,6 +219,7 @@ describe('API waiting states', () => {
       items: [{ jobType: 'transcribe', status: 'succeeded' }] as never,
     })
     const { container } = render(<VideoLearningPage />)
+    fireEvent.click(screen.getByRole('tab', { name: /Tệp cục bộ/i }))
     const input = container.querySelector('input[type="file"]')
     if (!(input instanceof HTMLInputElement)) throw new Error('Video file input is unavailable')
     fireEvent.change(input, { target: { files: [new File(['video-bytes'], 'dialogue.mp4', { type: 'video/mp4' })] } })
@@ -216,6 +227,6 @@ describe('API waiting states', () => {
     expect(await screen.findByRole('button', { name: 'Bắt đầu học với video' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu học với video' }))
     expect(await screen.findByRole('heading', { name: 'Hội thoại Nhật' })).toBeTruthy()
-    expect(screen.getByText('こんにちは')).toBeTruthy()
+    expect(screen.getAllByText('こんにちは').length).toBeGreaterThan(0)
   })
 })

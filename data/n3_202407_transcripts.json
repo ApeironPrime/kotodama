@@ -1,0 +1,2289 @@
+[
+  {
+    "chunkIdx": 0,
+    "start": 0,
+    "end": 120,
+    "segments": [
+      {
+        "relStart": 0,
+        "relEnd": 1,
+        "absStart": 0,
+        "absEnd": 1,
+        "ja": "1番"
+      },
+      {
+        "relStart": 1,
+        "relEnd": 8,
+        "absStart": 1,
+        "absEnd": 8,
+        "ja": "台所 で 男 の 留学生 と ホスト ファミリー の お母さん が 話し て い ます 。"
+      },
+      {
+        "relStart": 9,
+        "relEnd": 14,
+        "absStart": 9,
+        "absEnd": 14,
+        "ja": "男 の 留学生 は この 後 まず 何 を し ます か ?"
+      },
+      {
+        "relStart": 16,
+        "relEnd": 20,
+        "absStart": 16,
+        "absEnd": 20,
+        "ja": "お 昼ご飯 の 準備 何か お 手伝い できる こと あり ます か ?"
+      },
+      {
+        "relStart": 21,
+        "relEnd": 24,
+        "absStart": 21,
+        "absEnd": 24,
+        "ja": "ありがとう 。 お 昼 ピザ で いい ?"
+      },
+      {
+        "relStart": 25,
+        "relEnd": 27,
+        "absStart": 25,
+        "absEnd": 27,
+        "ja": "チーズ と ピザ の ソース が ある から 。"
+      },
+      {
+        "relStart": 28,
+        "relEnd": 33,
+        "absStart": 28,
+        "absEnd": 33,
+        "ja": "いい です ね 。 薄く 伸ばし て 丸い 形 に する の やっ て み たい です 。"
+      },
+      {
+        "relStart": 34,
+        "relEnd": 37,
+        "absStart": 34,
+        "absEnd": 37,
+        "ja": "あ 、 それ は 冷凍 の もう でき てる の が ある から 。"
+      },
+      {
+        "relStart": 38,
+        "relEnd": 39,
+        "absStart": 38,
+        "absEnd": 39,
+        "ja": "これ 。"
+      },
+      {
+        "relStart": 40,
+        "relEnd": 42,
+        "absStart": 40,
+        "absEnd": 42,
+        "ja": "上 に 何か 乗せ て 焼く だけ な ん だ 。"
+      },
+      {
+        "relStart": 43,
+        "relEnd": 46,
+        "absStart": 43,
+        "absEnd": 46,
+        "ja": "ええと 、 ピザ ソース 先 に 塗っ て くれる ?"
+      },
+      {
+        "relStart": 47,
+        "relEnd": 49,
+        "absStart": 47,
+        "absEnd": 49,
+        "ja": "はい 。 何 の ピザ に する ん です か ?"
+      },
+      {
+        "relStart": 50,
+        "relEnd": 53,
+        "absStart": 50,
+        "absEnd": 53,
+        "ja": "ええと 、 ソーセージ と ピーマン に しよ 。"
+      },
+      {
+        "relStart": 54,
+        "relEnd": 55,
+        "absStart": 54,
+        "absEnd": 55,
+        "ja": "私 切る ね 。"
+      },
+      {
+        "relStart": 56,
+        "relEnd": 58,
+        "absStart": 56,
+        "absEnd": 58,
+        "ja": "切っ た の 乗せ て いっ て くれる ?"
+      },
+      {
+        "relStart": 59,
+        "relEnd": 59,
+        "absStart": 59,
+        "absEnd": 59,
+        "ja": "はい 。"
+      },
+      {
+        "relStart": 105,
+        "relEnd": 110,
+        "absStart": 105,
+        "absEnd": 110,
+        "ja": "男 の 留学生 は この 後 まず 何 を し ます か ?"
+      },
+      {
+        "relStart": 122,
+        "relEnd": 123,
+        "absStart": 122,
+        "absEnd": 123,
+        "ja": "2 番"
+      },
+      {
+        "relStart": 124,
+        "relEnd": 128,
+        "absStart": 124,
+        "absEnd": 128,
+        "ja": "会社 で 女 の 人 と 課長 が 話し て い ます 。"
+      },
+      {
+        "relStart": 129,
+        "relEnd": 133,
+        "absStart": 129,
+        "absEnd": 133,
+        "ja": "女 の 人 は 資料 を どの よう に 直し ます か ?"
+      },
+      {
+        "relStart": 135,
+        "relEnd": 141,
+        "absStart": 135,
+        "absEnd": 141,
+        "ja": "課長 今度 の 営業 部 の 会議 で 配る 資料 見 て いただけ まし た か ?"
+      },
+      {
+        "relStart": 142,
+        "relEnd": 143,
+        "absStart": 142,
+        "absEnd": 143,
+        "ja": "あ 、 見 まし た よ 。"
+      },
+      {
+        "relStart": 144,
+        "relEnd": 147,
+        "absStart": 144,
+        "absEnd": 147,
+        "ja": "グラフ を たくさん 入れ た の は 分かり やすく て いい ん です けど 。"
+      },
+      {
+        "relStart": 148,
+        "relEnd": 151,
+        "absStart": 148,
+        "absEnd": 151,
+        "ja": "それぞれ 説明 する 分 が 長 すぎ ます ね 。"
+      },
+      {
+        "relStart": 152,
+        "relEnd": 155,
+        "absStart": 152,
+        "absEnd": 155,
+        "ja": "詳しく 書き たい 気持ち は 分かる ん です けど 。"
+      },
+      {
+        "relStart": 155,
+        "relEnd": 156,
+        "absStart": 155,
+        "absEnd": 156,
+        "ja": "そう です か 。"
+      },
+      {
+        "relStart": 157,
+        "relEnd": 159,
+        "absStart": 157,
+        "absEnd": 159,
+        "ja": "伝わり やすく なる よう に"
+      },
+      {
+        "relStart": 159,
+        "relEnd": 160,
+        "absStart": 159,
+        "absEnd": 160,
+        "ja": "工夫"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 1,
+    "start": 110,
+    "end": 230,
+    "segments": [
+      {
+        "relStart": 46.216,
+        "relEnd": 46.996,
+        "absStart": 156,
+        "absEnd": 157,
+        "ja": "3番"
+      },
+      {
+        "relStart": 47.786,
+        "relEnd": 53.646,
+        "absStart": 158,
+        "absEnd": 164,
+        "ja": "日本語のクラスで男の留学生と女の先生が話しています。"
+      },
+      {
+        "relStart": 54.896,
+        "relEnd": 58.746,
+        "absStart": 165,
+        "absEnd": 169,
+        "ja": "男の留学生は何をしなければなりませんか？"
+      },
+      {
+        "relStart": 101.192,
+        "relEnd": 104.532,
+        "absStart": 211,
+        "absEnd": 215,
+        "ja": "先生、最後の授業での発表のことですが"
+      },
+      {
+        "relStart": 105.342,
+        "relEnd": 108.432,
+        "absStart": 215,
+        "absEnd": 218,
+        "ja": "1週間早く帰国しなくちゃいけなくなったんです。"
+      },
+      {
+        "relStart": 108.972,
+        "relEnd": 109.522,
+        "absStart": 219,
+        "absEnd": 220,
+        "ja": "そうですか。"
+      },
+      {
+        "relStart": 109.972,
+        "relEnd": 115.002,
+        "absStart": 220,
+        "absEnd": 225,
+        "ja": "それです最後の発表の日に来られないんですがどうしたらいいでしょうか。"
+      },
+      {
+        "relStart": 116.142,
+        "relEnd": 122.252,
+        "absStart": 226,
+        "absEnd": 232,
+        "ja": "うーん、帰国する前に私の部屋で発表をしてもらえたらいいけど"
+      },
+      {
+        "relStart": 122.682,
+        "relEnd": 125.132,
+        "absStart": 233,
+        "absEnd": 235,
+        "ja": "その時間は取れそうにないんですよね。"
+      },
+      {
+        "relStart": 125.962,
+        "relEnd": 129.802,
+        "absStart": 236,
+        "absEnd": 240,
+        "ja": "あの、発表の代わりにレポートはダメでしょうか。"
+      },
+      {
+        "relStart": 130.322,
+        "relEnd": 133.722,
+        "absStart": 240,
+        "absEnd": 244,
+        "ja": "レポートは発表の代わりにはなりませんから。"
+      },
+      {
+        "relStart": 135.292,
+        "relEnd": 141.692,
+        "absStart": 245,
+        "absEnd": 252,
+        "ja": "うーん、では帰国する前に発表をビデオに撮って出してください。"
+      },
+      {
+        "relStart": 142.752,
+        "relEnd": 144.132,
+        "absStart": 253,
+        "absEnd": 254,
+        "ja": "それならできそうですか？"
+      },
+      {
+        "relStart": 145.192,
+        "relEnd": 147.882,
+        "absStart": 255,
+        "absEnd": 258,
+        "ja": "点数の付け方は少し変わりますが。"
+      },
+      {
+        "relStart": 148.422,
+        "relEnd": 149.332,
+        "absStart": 258,
+        "absEnd": 259,
+        "ja": "はい、わかりました。"
+      },
+      {
+        "relStart": 150.152,
+        "relEnd": 151.102,
+        "absStart": 260,
+        "absEnd": 261,
+        "ja": "ありがとうございます。"
+      },
+      {
+        "relStart": 157.946,
+        "relEnd": 159.436,
+        "absStart": 268,
+        "absEnd": 269,
+        "ja": "男の留学生は"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 2,
+    "start": 220,
+    "end": 340,
+    "segments": [
+      {
+        "relStart": 0,
+        "relEnd": 2,
+        "absStart": 220,
+        "absEnd": 222,
+        "ja": "ありがとうございます。"
+      },
+      {
+        "relStart": 7,
+        "relEnd": 11,
+        "absStart": 227,
+        "absEnd": 231,
+        "ja": "男の留学生は何をしなければなりませんか？"
+      },
+      {
+        "relStart": 24,
+        "relEnd": 25,
+        "absStart": 244,
+        "absEnd": 245,
+        "ja": "4番"
+      },
+      {
+        "relStart": 25,
+        "relEnd": 30,
+        "absStart": 245,
+        "absEnd": 250,
+        "ja": "会社で女の人と男の人が話しています。"
+      },
+      {
+        "relStart": 31,
+        "relEnd": 36,
+        "absStart": 251,
+        "absEnd": 256,
+        "ja": "男の人はこの後まず何をしなければなりませんか？"
+      },
+      {
+        "relStart": 38,
+        "relEnd": 40,
+        "absStart": 258,
+        "absEnd": 260,
+        "ja": "林さん、おはようございます。"
+      },
+      {
+        "relStart": 41,
+        "relEnd": 44,
+        "absStart": 261,
+        "absEnd": 264,
+        "ja": "今日の午前中、急ぎの仕事入ってますか？"
+      },
+      {
+        "relStart": 45,
+        "relEnd": 46,
+        "absStart": 265,
+        "absEnd": 266,
+        "ja": "おはようございます。"
+      },
+      {
+        "relStart": 47,
+        "relEnd": 50,
+        "absStart": 267,
+        "absEnd": 270,
+        "ja": "昨日の出張の報告を教授に出すことになっていますが、"
+      },
+      {
+        "relStart": 51,
+        "relEnd": 55,
+        "absStart": 271,
+        "absEnd": 275,
+        "ja": "じゃあ、先にとってもらえませんか？"
+      },
+      {
+        "relStart": 55,
+        "relEnd": 58,
+        "absStart": 275,
+        "absEnd": 278,
+        "ja": "11時から会議があるでしょ？"
+      },
+      {
+        "relStart": 58,
+        "relEnd": 62,
+        "absStart": 278,
+        "absEnd": 282,
+        "ja": "今日準備してくれる予定だった西田さんがお休みで、"
+      },
+      {
+        "relStart": 63,
+        "relEnd": 63,
+        "absStart": 283,
+        "absEnd": 283,
+        "ja": "分かりました。"
+      },
+      {
+        "relStart": 64,
+        "relEnd": 66,
+        "absStart": 284,
+        "absEnd": 286,
+        "ja": "何をすればいいですか？"
+      },
+      {
+        "relStart": 66,
+        "relEnd": 68,
+        "absStart": 286,
+        "absEnd": 288,
+        "ja": "資料の印刷は終わってますか？"
+      },
+      {
+        "relStart": 69,
+        "relEnd": 73,
+        "absStart": 289,
+        "absEnd": 293,
+        "ja": "ええ、でもどこにあるのか見つからなくて、"
+      },
+      {
+        "relStart": 74,
+        "relEnd": 76,
+        "absStart": 294,
+        "absEnd": 296,
+        "ja": "一度西田さんに連絡してみます。"
+      },
+      {
+        "relStart": 77,
+        "relEnd": 83,
+        "absStart": 297,
+        "absEnd": 303,
+        "ja": "林さんは会議室の椅子が足りないないので、他の部屋から運んでおいてくれますか？"
+      },
+      {
+        "relStart": 84,
+        "relEnd": 86,
+        "absStart": 304,
+        "absEnd": 306,
+        "ja": "15ぐらいお願いします。"
+      },
+      {
+        "relStart": 87,
+        "relEnd": 89,
+        "absStart": 307,
+        "absEnd": 309,
+        "ja": "資料が見つかったら私も行きます。"
+      },
+      {
+        "relStart": 90,
+        "relEnd": 90,
+        "absStart": 310,
+        "absEnd": 310,
+        "ja": "分かりました。"
+      },
+      {
+        "relStart": 136,
+        "relEnd": 142,
+        "absStart": 356,
+        "absEnd": 362,
+        "ja": "男の人はこの後まず何をしなければなりませんか？"
+      },
+      {
+        "relStart": 154,
+        "relEnd": 155,
+        "absStart": 374,
+        "absEnd": 375,
+        "ja": "5番"
+      },
+      {
+        "relStart": 155,
+        "relEnd": 160,
+        "absStart": 375,
+        "absEnd": 380,
+        "ja": "大学のあるクラブの部屋で男の学生"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 3,
+    "start": 330,
+    "end": 450,
+    "segments": [
+      {
+        "relStart": 4.197,
+        "relEnd": 12.637,
+        "absStart": 334,
+        "absEnd": 343,
+        "ja": "5番。大学のあるクラブの部屋で男の学生と女の学生が話しています。"
+      },
+      {
+        "relStart": 13.257,
+        "relEnd": 16.517,
+        "absStart": 343,
+        "absEnd": 347,
+        "ja": "女の学生は何を買いますか？"
+      },
+      {
+        "relStart": 18.232,
+        "relEnd": 21.842,
+        "absStart": 348,
+        "absEnd": 352,
+        "ja": "明日、みんなでこの部屋の掃除をするよね。"
+      },
+      {
+        "relStart": 22.422,
+        "relEnd": 28.252,
+        "absStart": 352,
+        "absEnd": 358,
+        "ja": "窓を拭くための洗剤と雑巾を5枚くらい明日までに買ってきてもらえる？"
+      },
+      {
+        "relStart": 28.912,
+        "relEnd": 31.062,
+        "absStart": 359,
+        "absEnd": 361,
+        "ja": "お金はクラブのお金を使って。"
+      },
+      {
+        "relStart": 31.432,
+        "relEnd": 32.222,
+        "absStart": 361,
+        "absEnd": 362,
+        "ja": "はい。"
+      },
+      {
+        "relStart": 32.842,
+        "relEnd": 39.512,
+        "absStart": 363,
+        "absEnd": 370,
+        "ja": "雑巾は私の家に古いタオルが何枚もありますけど、それ使いますか？"
+      },
+      {
+        "relStart": 40.032,
+        "relEnd": 43.832,
+        "absStart": 370,
+        "absEnd": 374,
+        "ja": "じゃあ、それでもいいね。明日持ってきてくれる？"
+      },
+      {
+        "relStart": 44.592,
+        "relEnd": 49.002,
+        "absStart": 375,
+        "absEnd": 379,
+        "ja": "あ、ゴミ袋が足りなくなりそうだから、それも買ってきてもらえる？"
+      },
+      {
+        "relStart": 49.332,
+        "relEnd": 50.112,
+        "absStart": 379,
+        "absEnd": 380,
+        "ja": "分かりました。"
+      },
+      {
+        "relStart": 50.492,
+        "relEnd": 54.062,
+        "absStart": 380,
+        "absEnd": 384,
+        "ja": "あれ？部屋の電気、チカチカしてきたね。"
+      },
+      {
+        "relStart": 54.762,
+        "relEnd": 57.072,
+        "absStart": 385,
+        "absEnd": 387,
+        "ja": "蛍光灯も買ってきましょうか？"
+      },
+      {
+        "relStart": 57.512,
+        "relEnd": 61.942,
+        "absStart": 388,
+        "absEnd": 392,
+        "ja": "いや、それは僕が大学に連絡して取り替えてもらうよ。"
+      },
+      {
+        "relStart": 108.062,
+        "relEnd": 110.662,
+        "absStart": 438,
+        "absEnd": 441,
+        "ja": "女の学生は何を買いますか？"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 4,
+    "start": 440,
+    "end": 560,
+    "segments": [
+      {
+        "relStart": 0,
+        "relEnd": 3.79,
+        "absStart": 440,
+        "absEnd": 444,
+        "ja": "作ら れ て いる か よく わかっ た と 思い ます 。が"
+      },
+      {
+        "relStart": 4.69,
+        "relEnd": 8.52,
+        "absStart": 445,
+        "absEnd": 449,
+        "ja": "今日 は ビジネス マナー の 先生 を お 呼び し て"
+      },
+      {
+        "relStart": 9.07,
+        "relEnd": 15.34,
+        "absStart": 449,
+        "absEnd": 455,
+        "ja": "仕事 に 必要 な 敬語 や 失礼 に なら ない 言葉 の 使い 方 を 練習 し ます 。が"
+      },
+      {
+        "relStart": 16.79,
+        "relEnd": 21.14,
+        "absStart": 457,
+        "absEnd": 461,
+        "ja": "明日 は 新 商品 の 発表 会 を 見学 し て もらい ます が 、"
+      },
+      {
+        "relStart": 22.03,
+        "relEnd": 29.89,
+        "absStart": 462,
+        "absEnd": 470,
+        "ja": "お 客 様 と お 話し する 機会 も ある か も しれ ない の で 今日 学ぶ こと を しっかり 身 に つけ て ください 。が"
+      },
+      {
+        "relStart": 36.31,
+        "relEnd": 39.81,
+        "absStart": 476,
+        "absEnd": 480,
+        "ja": "新入 社員 は 今日 何 を し ます か ?が"
+      },
+      {
+        "relStart": 42.17,
+        "relEnd": 43.14,
+        "absStart": 482,
+        "absEnd": 483,
+        "ja": "1 番 。が"
+      },
+      {
+        "relStart": 44.25,
+        "relEnd": 47.31,
+        "absStart": 484,
+        "absEnd": 487,
+        "ja": "男 の 人 と 女 の 人 が 話し て い ます 。が"
+      },
+      {
+        "relStart": 48.77,
+        "relEnd": 53.47,
+        "absStart": 489,
+        "absEnd": 493,
+        "ja": "女 の 人 は どうして 先生 に なっ た と 言っ て い ます か ?が"
+      },
+      {
+        "relStart": 117.15,
+        "relEnd": 121.28,
+        "absStart": 557,
+        "absEnd": 561,
+        "ja": "中山 さん 今年 から 小 学校 の 先生 に なっ た ん だ よ ね 。が"
+      },
+      {
+        "relStart": 121.82,
+        "relEnd": 126.54,
+        "absStart": 562,
+        "absEnd": 567,
+        "ja": "中山 さん は 子供 が 好き だっ て いう イメージ が なかっ た から 意外 だっ た よ 。が"
+      },
+      {
+        "relStart": 127.02,
+        "relEnd": 127.87,
+        "absStart": 567,
+        "absEnd": 568,
+        "ja": "そう でしょ ?が"
+      },
+      {
+        "relStart": 129.27,
+        "relEnd": 133.41,
+        "absStart": 569,
+        "absEnd": 573,
+        "ja": "うち 両親 が 教師 で いつも 大変 そう だっ た から 。が"
+      },
+      {
+        "relStart": 133.9,
+        "relEnd": 137.64,
+        "absStart": 574,
+        "absEnd": 578,
+        "ja": "教師 は ちょっとっ て 小さい 頃 は 思っ て た ん だ けど 。が"
+      },
+      {
+        "relStart": 138.08,
+        "relEnd": 141.25,
+        "absStart": 578,
+        "absEnd": 581,
+        "ja": "じゃあ なん で 教える こと が 好き だっ た から ?が"
+      },
+      {
+        "relStart": 142.27,
+        "relEnd": 144.59,
+        "absStart": 582,
+        "absEnd": 585,
+        "ja": "うーん そう じゃ なく て 。が"
+      },
+      {
+        "relStart": 145.41,
+        "relEnd": 153.25,
+        "absStart": 585,
+        "absEnd": 593,
+        "ja": "私 勉強 が 嫌い だっ た ん だ けど 小学 6 年 生 の 時 の 担任 の 先生 が すごく 面白く て ね 。が"
+      },
+      {
+        "relStart": 154.51,
+        "relEnd": 158.94,
+        "absStart": 595,
+        "absEnd": 599,
+        "ja": "授業 が 楽しく て いつのまにか 勉強 が 好き に なっ て た ん だ 。が"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 5,
+    "start": 550,
+    "end": 670,
+    "segments": [
+      {
+        "relStart": 0.049,
+        "relEnd": 3.739,
+        "absStart": 550,
+        "absEnd": 554,
+        "ja": "きの担任の先生がすごく面白くてね。"
+      },
+      {
+        "relStart": 4.199,
+        "relEnd": 9.179,
+        "absStart": 554,
+        "absEnd": 559,
+        "ja": "授業が楽しくて、いつの間にか勉強が好きになってたんだ。"
+      },
+      {
+        "relStart": 10.059,
+        "relEnd": 13.919,
+        "absStart": 560,
+        "absEnd": 564,
+        "ja": "それで、あんな先生になりたいて思うようになって、"
+      },
+      {
+        "relStart": 14.129,
+        "relEnd": 14.939,
+        "absStart": 564,
+        "absEnd": 565,
+        "ja": "そうなんだ。"
+      },
+      {
+        "relStart": 15.659,
+        "relEnd": 22.099,
+        "absStart": 566,
+        "absEnd": 572,
+        "ja": "私も子どもたちに勉強面白いて思ってもらえるように頑張らなきゃ。"
+      },
+      {
+        "relStart": 28.188,
+        "relEnd": 32.748,
+        "absStart": 578,
+        "absEnd": 583,
+        "ja": "女の人はどうして先生になったと言っていますか？"
+      },
+      {
+        "relStart": 45.456,
+        "relEnd": 49.336,
+        "absStart": 595,
+        "absEnd": 599,
+        "ja": "2番。女の人と男の人が話しています。"
+      },
+      {
+        "relStart": 50.566,
+        "relEnd": 57.516,
+        "absStart": 601,
+        "absEnd": 608,
+        "ja": "男の人は今回の旅行で何が一番印象に残っていると言っていますか？"
+      },
+      {
+        "relStart": 122.001,
+        "relEnd": 127.321,
+        "absStart": 672,
+        "absEnd": 677,
+        "ja": "松田さん、この間の休みに海外旅行行ったんでしょ？"
+      },
+      {
+        "relStart": 127.671,
+        "relEnd": 128.521,
+        "absStart": 678,
+        "absEnd": 679,
+        "ja": "どうだった？"
+      },
+      {
+        "relStart": 128.911,
+        "relEnd": 129.831,
+        "absStart": 679,
+        "absEnd": 680,
+        "ja": "楽しかったよ。"
+      },
+      {
+        "relStart": 130.341,
+        "relEnd": 135.531,
+        "absStart": 680,
+        "absEnd": 686,
+        "ja": "同じタクシーの運転手に頼んで4日間あちこち案内してもらったんだ。"
+      },
+      {
+        "relStart": 136.271,
+        "relEnd": 142.131,
+        "absStart": 686,
+        "absEnd": 692,
+        "ja": "すごく親切でガイドブックに載ってない美味しいレストランも紹介してくれたよ。"
+      },
+      {
+        "relStart": 142.501,
+        "relEnd": 143.701,
+        "absStart": 693,
+        "absEnd": 694,
+        "ja": "それはよかったね。"
+      },
+      {
+        "relStart": 144.971,
+        "relEnd": 147.781,
+        "absStart": 695,
+        "absEnd": 698,
+        "ja": "ずっとその人に案内してもらったの？"
+      },
+      {
+        "relStart": 148.161,
+        "relEnd": 157.921,
+        "absStart": 698,
+        "absEnd": 708,
+        "ja": "いや、最終日だけ1人で行動してみたいくなって、ホテルの人に良さそうなところを聞いてバスで近くの森に行ってみたんだ。"
+      },
+      {
+        "relStart": 159.271,
+        "relEnd": 159.941,
+        "absStart": 709,
+        "absEnd": 710,
+        "ja": "森の中を"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 6,
+    "start": 660,
+    "end": 780,
+    "segments": [
+      {
+        "relStart": 35.342,
+        "relEnd": 41.522,
+        "absStart": 695,
+        "absEnd": 702,
+        "ja": "男 の 人 は 今回 の 旅行 で 何 が 一番 印象 に 残っ て いる と 言っ て い ます か ?"
+      },
+      {
+        "relStart": 54.499,
+        "relEnd": 60.599,
+        "absStart": 714,
+        "absEnd": 721,
+        "ja": "3 番 大学 で 男 の 学生 と 女 の 学生 が 話し て い ます ."
+      },
+      {
+        "relStart": 61.129,
+        "relEnd": 107.999,
+        "absStart": 721,
+        "absEnd": 768,
+        "ja": "男 の 学生 は どうして 女 の 学生 を 駅前 の カフェ に 誘っ て い ます か ?"
+      },
+      {
+        "relStart": 131.812,
+        "relEnd": 134.792,
+        "absStart": 792,
+        "absEnd": 795,
+        "ja": "山田 さん 猫 を 買い たいっ て 言っ て た よ ね ."
+      },
+      {
+        "relStart": 135.252,
+        "relEnd": 140.352,
+        "absStart": 795,
+        "absEnd": 800,
+        "ja": "うん 今 色々 な お 店 を 見 て 探 し てる ところ ."
+      },
+      {
+        "relStart": 140.752,
+        "relEnd": 147.692,
+        "absStart": 801,
+        "absEnd": 808,
+        "ja": "駅前 に 新しく でき た 猫 カフェ で 僕 アルバイト を 始め た ん だ けど 一度 遊び に 来 ない ?"
+      },
+      {
+        "relStart": 148.432,
+        "relEnd": 153.302,
+        "absStart": 808,
+        "absEnd": 813,
+        "ja": "猫 を 見 たり 猫 と 遊ん だり し ながら お 茶 する 猫 カフェ ?"
+      },
+      {
+        "relStart": 154.262,
+        "relEnd": 159.982,
+        "absStart": 814,
+        "absEnd": 820,
+        "ja": "どうして うち の カフェ に いる 猫 は みんな 飼い主 が い ない 猫 で 気 に"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 7,
+    "start": 770,
+    "end": 890,
+    "segments": [
+      {
+        "relStart": 0.088,
+        "relEnd": 3.738,
+        "absStart": 770,
+        "absEnd": 774,
+        "ja": "猫 と 遊ん だり し ながら お茶 する 猫 カフェ ?"
+      },
+      {
+        "relStart": 4.548,
+        "relEnd": 5.488,
+        "absStart": 775,
+        "absEnd": 775,
+        "ja": "どうして ?"
+      },
+      {
+        "relStart": 5.618,
+        "relEnd": 12.638,
+        "absStart": 776,
+        "absEnd": 783,
+        "ja": "うち の カフェ に いる 猫 は みんな 飼い主 が い ない 猫 で 気 に 入っ たら その 猫 を 買う こと も できる ん だ 。"
+      },
+      {
+        "relStart": 13.068,
+        "relEnd": 16.328,
+        "absStart": 783,
+        "absEnd": 786,
+        "ja": "すごく 可愛い から ぜひ 一度 見 に 来 て ほしい な 。"
+      },
+      {
+        "relStart": 16.928,
+        "relEnd": 17.808,
+        "absStart": 787,
+        "absEnd": 788,
+        "ja": "そう な ん だ 。"
+      },
+      {
+        "relStart": 18.238,
+        "relEnd": 23.778,
+        "absStart": 788,
+        "absEnd": 794,
+        "ja": "飼い主 と し て 問題 が ない か 色々 な チェック が あっ て 変え ない 場合 も ある ん だ けど 。"
+      },
+      {
+        "relStart": 24.368,
+        "relEnd": 28.728,
+        "absStart": 794,
+        "absEnd": 799,
+        "ja": "うまくいっ たら 山田 さん に とっ て も 猫 に とっ て も いい と 思わ ない ?"
+      },
+      {
+        "relStart": 29.278,
+        "relEnd": 30.648,
+        "absStart": 799,
+        "absEnd": 801,
+        "ja": "そう だ ね 。"
+      },
+      {
+        "relStart": 36.658,
+        "relEnd": 42.638,
+        "absStart": 807,
+        "absEnd": 813,
+        "ja": "男 の 学生 は どう し て 女 の 学生 を 駅前 の カフェ に 誘っ て い ます か ?"
+      },
+      {
+        "relStart": 55.432,
+        "relEnd": 56.402,
+        "absStart": 825,
+        "absEnd": 826,
+        "ja": "4 番 。"
+      },
+      {
+        "relStart": 57.062,
+        "relEnd": 59.902,
+        "absStart": 827,
+        "absEnd": 830,
+        "ja": "テレビ で アナウンサー が 話し て い ます 。"
+      },
+      {
+        "relStart": 61.272,
+        "relEnd": 8.092,
+        "absStart": 831,
+        "absEnd": 778,
+        "ja": "南 ショッピング センター で 今年 海外 から の 客 の ため に 始め た こと は 何 です か ?"
+      },
+      {
+        "relStart": 9.202,
+        "relEnd": 11.232,
+        "absStart": 779,
+        "absEnd": 781,
+        "ja": "今年 始め た こと です 。"
+      },
+      {
+        "relStart": 134.992,
+        "relEnd": 142.152,
+        "absStart": 905,
+        "absEnd": 912,
+        "ja": "海外 から の 観光 客 が 増え 、 空港 から 無料 の バス を 出す ホテル など が 増え て き まし た 。"
+      },
+      {
+        "relStart": 142.872,
+        "relEnd": 149.312,
+        "absStart": 913,
+        "absEnd": 919,
+        "ja": "ショッピング センター で も 外国人 観光 客 の ため に 様々 な 工夫 が さ れ て い ます 。"
+      },
+      {
+        "relStart": 150.142,
+        "relEnd": 156.12,
+        "absStart": 920,
+        "absEnd": 926,
+        "ja": "南 ショッピング センター で は 今年 浴衣 を 貸し出す サービス を 始め まし た 。"
+      },
+      {
+        "relStart": 156.76,
+        "relEnd": 159.22,
+        "absStart": 927,
+        "absEnd": 929,
+        "ja": "浴衣 が 着 られ て 写真 を 撮っ たり 、"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 8,
+    "start": 880,
+    "end": 1000,
+    "segments": [
+      {
+        "relStart": 0.057,
+        "relEnd": 6.007,
+        "absStart": 880,
+        "absEnd": 886,
+        "ja": "南ショッピングセンターでは今年浴衣を貸し出すサービスを始めました。"
+      },
+      {
+        "relStart": 6.817,
+        "relEnd": 14.167,
+        "absStart": 887,
+        "absEnd": 894,
+        "ja": "浴衣が切られて写真を撮ったり浴衣を着たまま買い物をしたりすることができます。"
+      },
+      {
+        "relStart": 14.807,
+        "relEnd": 24.527,
+        "absStart": 895,
+        "absEnd": 905,
+        "ja": "去年始まった折り紙の教室や日本の漫画やアニメを紹介するコーナーは今年も続けて行われているそうです。"
+      },
+      {
+        "relStart": 30.12,
+        "relEnd": 37.66,
+        "absStart": 910,
+        "absEnd": 918,
+        "ja": "南ショッピングセンターで今年海外からの客のために始めたことは何ですか？"
+      },
+      {
+        "relStart": 49.325,
+        "relEnd": 56.635,
+        "absStart": 929,
+        "absEnd": 937,
+        "ja": "5番。高校のダンス部で女の生徒と男の生徒が話しています。"
+      },
+      {
+        "relStart": 58.265,
+        "relEnd": 105.865,
+        "absStart": 938,
+        "absEnd": 986,
+        "ja": "男の生徒はダンスが上達になるために何をしたのが一番よかったと言っていますか？"
+      },
+      {
+        "relStart": 130.016,
+        "relEnd": 137.666,
+        "absStart": 1010,
+        "absEnd": 1018,
+        "ja": "先輩私まだダンス始めたばかりで音楽に合わせてうまく踊れないんです けど"
+      },
+      {
+        "relStart": 138.296,
+        "relEnd": 142.876,
+        "absStart": 1018,
+        "absEnd": 1023,
+        "ja": "先輩は始めたばかりの頃ってどんな練習してましたか？"
+      },
+      {
+        "relStart": 143.436,
+        "relEnd": 150.916,
+        "absStart": 1023,
+        "absEnd": 1031,
+        "ja": "ううん僕も最初は難しくってインターネットとかでうまい人が踊ってるのを結構見たよ。"
+      },
+      {
+        "relStart": 151.346,
+        "relEnd": 153.946,
+        "absStart": 1031,
+        "absEnd": 1034,
+        "ja": "それで踊れるようになったんですか？"
+      },
+      {
+        "relStart": 154.516,
+        "relEnd": 159.986,
+        "absStart": 1035,
+        "absEnd": 1040,
+        "ja": "うん。見ていて手や足の動かし方が少しずつわかってきたんだよね。"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 9,
+    "start": 990,
+    "end": 1110,
+    "segments": [
+      {
+        "relStart": 0,
+        "relEnd": 1,
+        "absStart": 990,
+        "absEnd": 991,
+        "ja": "結構見たよ。"
+      },
+      {
+        "relStart": 1,
+        "relEnd": 4,
+        "absStart": 991,
+        "absEnd": 994,
+        "ja": "それで踊れるようになったんですか？"
+      },
+      {
+        "relStart": 4,
+        "relEnd": 10,
+        "absStart": 994,
+        "absEnd": 1000,
+        "ja": "うん見ていて手や足の動かし方が少しずつわかってきたんだよね。"
+      },
+      {
+        "relStart": 10,
+        "relEnd": 15,
+        "absStart": 1000,
+        "absEnd": 1005,
+        "ja": "ダンス仲間には最初に足の動きだけ練習している人もいるよ。"
+      },
+      {
+        "relStart": 15,
+        "relEnd": 21,
+        "absStart": 1005,
+        "absEnd": 1011,
+        "ja": "他には踊っているとき音楽をしっかり聴くようにしているっていう人も多いよ。"
+      },
+      {
+        "relStart": 21,
+        "relEnd": 22,
+        "absStart": 1011,
+        "absEnd": 1012,
+        "ja": "なるほど。"
+      },
+      {
+        "relStart": 23,
+        "relEnd": 28,
+        "absStart": 1013,
+        "absEnd": 1018,
+        "ja": "でもやっぱり僕にとっては他の人のダンスをたくさん見たことが役に立ったな。"
+      },
+      {
+        "relStart": 29,
+        "relEnd": 33,
+        "absStart": 1019,
+        "absEnd": 1023,
+        "ja": "鏡で自分の動きを確認したりもしたけど、それだけじゃだめだったよ。"
+      },
+      {
+        "relStart": 34,
+        "relEnd": 35,
+        "absStart": 1024,
+        "absEnd": 1025,
+        "ja": "そうなんですね。"
+      },
+      {
+        "relStart": 36,
+        "relEnd": 37,
+        "absStart": 1026,
+        "absEnd": 1027,
+        "ja": "ありがとうございました。"
+      },
+      {
+        "relStart": 43,
+        "relEnd": 50,
+        "absStart": 1033,
+        "absEnd": 1040,
+        "ja": "男の生徒はダンスが上手になるために何をしたのが一番よかったと言っていますか？"
+      },
+      {
+        "relStart": 102,
+        "relEnd": 103,
+        "absStart": 1092,
+        "absEnd": 1093,
+        "ja": "6番"
+      },
+      {
+        "relStart": 104,
+        "relEnd": 108,
+        "absStart": 1094,
+        "absEnd": 1098,
+        "ja": "大学で先生が学生に話しています。"
+      },
+      {
+        "relStart": 109,
+        "relEnd": 114,
+        "absStart": 1099,
+        "absEnd": 1104,
+        "ja": "大学の図書館ではいつから本が借りられなくなりますか？"
+      },
+      {
+        "relStart": 138,
+        "relEnd": 142,
+        "absStart": 1128,
+        "absEnd": 1132,
+        "ja": "来週8月1日から夏休みですね。"
+      },
+      {
+        "relStart": 143,
+        "relEnd": 149,
+        "absStart": 1133,
+        "absEnd": 1139,
+        "ja": "この授業のレポートのために大学の図書館を利用する人も多いと思いますが、"
+      },
+      {
+        "relStart": 149,
+        "relEnd": 155,
+        "absStart": 1139,
+        "absEnd": 1145,
+        "ja": "夏休みの後半工事のため図書館が一時閉館になるそうです。"
+      },
+      {
+        "relStart": 156,
+        "relEnd": 159,
+        "absStart": 1146,
+        "absEnd": 1149,
+        "ja": "図書館での貸出しは9月4日までです。"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 10,
+    "start": 1100,
+    "end": 1220,
+    "segments": [
+      {
+        "relStart": 0,
+        "relEnd": 5,
+        "absStart": 1100,
+        "absEnd": 1105,
+        "ja": "休み の 後半 工事 の ため 図書 館 が 1 時 閉館 に なる そう です 。"
+      },
+      {
+        "relStart": 6,
+        "relEnd": 16,
+        "absStart": 1106,
+        "absEnd": 1116,
+        "ja": " 図書 館 で の 貸し出し は 9 月 4 日 まで で その 翌日 から 3 週間 図書 館 が 利用 でき なく なる の で 注意 し て ください 。"
+      },
+      {
+        "relStart": 18,
+        "relEnd": 28,
+        "absStart": 1118,
+        "absEnd": 1128,
+        "ja": " 新 学 期 は 9 月 27 日 から です が 図書 館 は その 前日 26 日 から また 利用 できる よう に なり ます 。"
+      },
+      {
+        "relStart": 29,
+        "relEnd": 39,
+        "absStart": 1129,
+        "absEnd": 1139,
+        "ja": " 閉館 前 に 借り た 本 は 閉館 期間 中 借り た まま で いい そう です が レポート は 早め に 済ま せ て おき ましょう 。"
+      },
+      {
+        "relStart": 44,
+        "relEnd": 49,
+        "absStart": 1144,
+        "absEnd": 1149,
+        "ja": " 大学 の 図書 館 で は いつ から 本 が 借り られ なく なり ます か ?"
+      },
+      {
+        "relStart": 56,
+        "relEnd": 57,
+        "absStart": 1156,
+        "absEnd": 1157,
+        "ja": " 1 番 。"
+      },
+      {
+        "relStart": 58,
+        "relEnd": 62,
+        "absStart": 1158,
+        "absEnd": 1162,
+        "ja": " 会社 で 男 の 人 と 女 の 人 が 話し て い ます 。"
+      },
+      {
+        "relStart": 64,
+        "relEnd": 69,
+        "absStart": 1164,
+        "absEnd": 1169,
+        "ja": " 週末 久しぶり に 妹 の 子供 に 会っ て 一緒 に 公園 に 行っ た ん だ 。"
+      },
+      {
+        "relStart": 71,
+        "relEnd": 78,
+        "absStart": 1171,
+        "absEnd": 1178,
+        "ja": " そう し たら 落ち て い た 黄色い 葉っぱ を 拾っ て はい 、 プレゼントっ て くれ た ん だ 。"
+      },
+      {
+        "relStart": 79,
+        "relEnd": 81,
+        "absStart": 1179,
+        "absEnd": 1181,
+        "ja": " それ は 可愛い ね 。"
+      },
+      {
+        "relStart": 82,
+        "relEnd": 85,
+        "absStart": 1182,
+        "absEnd": 1185,
+        "ja": " 確か 女の子 だ よ ね 。"
+      },
+      {
+        "relStart": 85,
+        "relEnd": 86,
+        "absStart": 1185,
+        "absEnd": 1186,
+        "ja": " 芽子 さん 。"
+      },
+      {
+        "relStart": 86,
+        "relEnd": 87,
+        "absStart": 1186,
+        "absEnd": 1187,
+        "ja": " いく つ ?"
+      },
+      {
+        "relStart": 87,
+        "relEnd": 89,
+        "absStart": 1187,
+        "absEnd": 1189,
+        "ja": " 4 歳 に なっ た ところ 。"
+      },
+      {
+        "relStart": 90,
+        "relEnd": 99,
+        "absStart": 1190,
+        "absEnd": 1199,
+        "ja": " それ で ありがとうっ て 受け取っ たら 芽 が ありがとうっ て 言っ て くれ て 、 ありがとうっ て 言っ た ん だ よ 。"
+      },
+      {
+        "relStart": 100,
+        "relEnd": 104,
+        "absStart": 1200,
+        "absEnd": 1204,
+        "ja": " 笑顔 で もう 涙 が 出 そう に なっ た よ 。"
+      },
+      {
+        "relStart": 105,
+        "relEnd": 110,
+        "absStart": 1205,
+        "absEnd": 1210,
+        "ja": " うわあ 、 その 言葉 が ね 、 心 に 残っ てる ん だ 。"
+      },
+      {
+        "relStart": 112,
+        "relEnd": 115,
+        "absStart": 1212,
+        "absEnd": 1215,
+        "ja": " 気づか さ れる よ ね 。"
+      },
+      {
+        "relStart": 115,
+        "relEnd": 116,
+        "absStart": 1215,
+        "absEnd": 1216,
+        "ja": " 大切 な こと に 。"
+      },
+      {
+        "relStart": 116,
+        "relEnd": 119,
+        "absStart": 1216,
+        "absEnd": 1219,
+        "ja": " そう な ん だ よ 。"
+      },
+      {
+        "relStart": 119,
+        "relEnd": 120,
+        "absStart": 1219,
+        "absEnd": 1220,
+        "ja": " まだ 4 歳 な の に 。"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 11,
+    "start": 1210,
+    "end": 1330,
+    "segments": [
+      {
+        "relStart": 0.045,
+        "relEnd": 0.945,
+        "absStart": 1210,
+        "absEnd": 1211,
+        "ja": "てるんだ。"
+      },
+      {
+        "relStart": 2.126,
+        "relEnd": 3.736,
+        "absStart": 1212,
+        "absEnd": 1214,
+        "ja": "気付かされるよね。"
+      },
+      {
+        "relStart": 3.996,
+        "relEnd": 5.096,
+        "absStart": 1214,
+        "absEnd": 1215,
+        "ja": "大切なことに。"
+      },
+      {
+        "relStart": 5.756,
+        "relEnd": 7.376,
+        "absStart": 1216,
+        "absEnd": 1217,
+        "ja": "そうなんだよ。"
+      },
+      {
+        "relStart": 7.696,
+        "relEnd": 9.386,
+        "absStart": 1218,
+        "absEnd": 1219,
+        "ja": "まだ4歳なのに。"
+      },
+      {
+        "relStart": 15.016,
+        "relEnd": 17.656,
+        "absStart": 1225,
+        "absEnd": 1228,
+        "ja": "男の人が言いたいことは何ですか?"
+      },
+      {
+        "relStart": 19.646,
+        "relEnd": 20.306,
+        "absStart": 1230,
+        "absEnd": 1230,
+        "ja": "1"
+      },
+      {
+        "relStart": 21.056,
+        "relEnd": 23.906,
+        "absStart": 1231,
+        "absEnd": 1234,
+        "ja": "妹がプレゼントを喜んでくれた。"
+      },
+      {
+        "relStart": 26.686,
+        "relEnd": 29.836,
+        "absStart": 1237,
+        "absEnd": 1240,
+        "ja": "妹の笑顔がかわいかった。"
+      },
+      {
+        "relStart": 33.326,
+        "relEnd": 36.316,
+        "absStart": 1243,
+        "absEnd": 1246,
+        "ja": "妹と遊んで楽しかった。"
+      },
+      {
+        "relStart": 39.466,
+        "relEnd": 42.456,
+        "absStart": 1249,
+        "absEnd": 1252,
+        "ja": "妹の言葉に感動した。"
+      },
+      {
+        "relStart": 51.107,
+        "relEnd": 55.487,
+        "absStart": 1261,
+        "absEnd": 1265,
+        "ja": "2番。テレビでアナウンサーが話しています。"
+      },
+      {
+        "relStart": 57.087,
+        "relEnd": 62.667,
+        "absStart": 1267,
+        "absEnd": 1273,
+        "ja": "出勤しないで家で仕事をしてもいいという会社が増えていますね。"
+      },
+      {
+        "relStart": 63.857,
+        "relEnd": 75.317,
+        "absStart": 1274,
+        "absEnd": 1285,
+        "ja": "今までとは違う働き方によって通勤時間がなくなり趣味の時間や家族との時間を多く持てるようになったという声をよく聞きます。"
+      },
+      {
+        "relStart": 76.437,
+        "relEnd": 90.727,
+        "absStart": 1286,
+        "absEnd": 1301,
+        "ja": "一方人と直接会わずに仕事をすることでコミュニケーションが取りにくいと感じたり何かあっても相談しにくくストレスを感じたりする人も増えているそうです。"
+      },
+      {
+        "relStart": 97.587,
+        "relEnd": 100.567,
+        "absStart": 1308,
+        "absEnd": 1311,
+        "ja": "アナウンサーは何について話していますか?"
+      },
+      {
+        "relStart": 102.397,
+        "relEnd": 103.017,
+        "absStart": 1312,
+        "absEnd": 1313,
+        "ja": "1"
+      },
+      {
+        "relStart": 103.747,
+        "relEnd": 106.327,
+        "absStart": 1314,
+        "absEnd": 1316,
+        "ja": "会社を辞める人が増えた理由"
+      },
+      {
+        "relStart": 109.287,
+        "relEnd": 113.257,
+        "absStart": 1319,
+        "absEnd": 1323,
+        "ja": "人間関係の上手な作り方"
+      },
+      {
+        "relStart": 116.327,
+        "relEnd": 120.357,
+        "absStart": 1326,
+        "absEnd": 1330,
+        "ja": "家で仕事をすることのいい点"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 12,
+    "start": 1320,
+    "end": 1440,
+    "segments": [
+      {
+        "relStart": 6.749,
+        "relEnd": 11.239,
+        "absStart": 1327,
+        "absEnd": 1331
+      },
+      {
+        "relStart": 14.399,
+        "relEnd": 17.709,
+        "absStart": 1334,
+        "absEnd": 1338
+      },
+      {
+        "relStart": 26.604,
+        "relEnd": 33.684,
+        "absStart": 1347,
+        "absEnd": 1354,
+        "ja": "3番。テレビで女の人がスポーツ教室の先生にインタビューしています。"
+      },
+      {
+        "relStart": 35.314,
+        "relEnd": 43.104,
+        "absStart": 1355,
+        "absEnd": 1363,
+        "ja": "こちらでは子供に走り方を教える走り方教室というのが人気だそうですね。"
+      },
+      {
+        "relStart": 43.834,
+        "relEnd": 49.344,
+        "absStart": 1364,
+        "absEnd": 1369,
+        "ja": "はい。早く走れるようになりたいというお子さんは多いですね。"
+      },
+      {
+        "relStart": 50.184,
+        "relEnd": 60.524,
+        "absStart": 1370,
+        "absEnd": 1381,
+        "ja": "うちの教室では最新のスポーツ科学によって証明された走る時の姿勢、腕や足の動かし方などを教えています。"
+      },
+      {
+        "relStart": 61.354,
+        "relEnd": 69.464,
+        "absStart": 1381,
+        "absEnd": 1389,
+        "ja": "ただ速く走るためにはどうしたら速くなるかを子供たちが自分で考えることが重要です。"
+      },
+      {
+        "relStart": 71.184,
+        "relEnd": 83.584,
+        "absStart": 1391,
+        "absEnd": 1404,
+        "ja": "言われたことを練習するのではなく地面を強く蹴ることやスタートは体を低くすることがなぜ必要なのかを意識しながら練習するように言っています。"
+      },
+      {
+        "relStart": 89.924,
+        "relEnd": 94.274,
+        "absStart": 1410,
+        "absEnd": 1414,
+        "ja": "スポーツ教室の先生は何について話していますか？"
+      },
+      {
+        "relStart": 96.344,
+        "relEnd": 97.944,
+        "absStart": 1416,
+        "absEnd": 1418,
+        "ja": "1"
+      },
+      {
+        "relStart": 97.944,
+        "relEnd": 99.884,
+        "absStart": 1418,
+        "absEnd": 1420,
+        "ja": "この教室の指導の仕方。"
+      },
+      {
+        "relStart": 102.504,
+        "relEnd": 105.804,
+        "absStart": 1423,
+        "absEnd": 1426,
+        "ja": "2"
+      },
+      {
+        "relStart": 105.804,
+        "relEnd": 107.604,
+        "absStart": 1426,
+        "absEnd": 1428,
+        "ja": "スポーツと科学の関係。"
+      },
+      {
+        "relStart": 109.804,
+        "relEnd": 112.724,
+        "absStart": 1430,
+        "absEnd": 1433,
+        "ja": "3"
+      },
+      {
+        "relStart": 112.724,
+        "relEnd": 114.124,
+        "absStart": 1433,
+        "absEnd": 1434,
+        "ja": "今日の練習の内容。"
+      },
+      {
+        "relStart": 115.544,
+        "relEnd": 118.664,
+        "absStart": 1436,
+        "absEnd": 1439,
+        "ja": "4"
+      },
+      {
+        "relStart": 118.664,
+        "relEnd": 120.404,
+        "absStart": 1439,
+        "absEnd": 1440,
+        "ja": "子供に合った走り方。"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 13,
+    "start": 1430,
+    "end": 1550,
+    "segments": [
+      {
+        "relStart": 5.405,
+        "relEnd": 8.785,
+        "absStart": 1435,
+        "absEnd": 1439,
+        "ja": "子供 に あっ た 走り 方 。"
+      },
+      {
+        "relStart": 10.972,
+        "relEnd": 16.592,
+        "absStart": 1441,
+        "absEnd": 1447,
+        "ja": "1 番 休み の 間 友達 の 家 に 止め て もらい まし た 。"
+      },
+      {
+        "relStart": 17.842,
+        "relEnd": 21.672,
+        "absStart": 1448,
+        "absEnd": 1452,
+        "ja": "帰る 時 友達 の 両親 に 挨拶 し ます 。"
+      },
+      {
+        "relStart": 22.562,
+        "relEnd": 23.702,
+        "absStart": 1453,
+        "absEnd": 1454,
+        "ja": "何 と 言い ます か ?"
+      },
+      {
+        "relStart": 26.542,
+        "relEnd": 28.522,
+        "absStart": 1457,
+        "absEnd": 1459,
+        "ja": "1 お 世話 に なり まし た 。"
+      },
+      {
+        "relStart": 30.642,
+        "relEnd": 32.552,
+        "absStart": 1461,
+        "absEnd": 1463,
+        "ja": "2 お 邪魔 し ます 。"
+      },
+      {
+        "relStart": 35.152,
+        "relEnd": 37.792,
+        "absStart": 1465,
+        "absEnd": 1468,
+        "ja": "3 気 を つけ て 帰っ て ください 。"
+      },
+      {
+        "relStart": 48.012,
+        "relEnd": 52.372,
+        "absStart": 1478,
+        "absEnd": 1482,
+        "ja": "2 番 カフェ で 窓側 の 席 が 空き まし た 。"
+      },
+      {
+        "relStart": 53.072,
+        "relEnd": 55.702,
+        "absStart": 1483,
+        "absEnd": 1486,
+        "ja": "席 を 代わ れる か どう か 聞き たい です 。"
+      },
+      {
+        "relStart": 57.012,
+        "relEnd": 59.502,
+        "absStart": 1487,
+        "absEnd": 1490,
+        "ja": "店員 に 何 と 言い ます か ?"
+      },
+      {
+        "relStart": 61.922,
+        "relEnd": 65.312,
+        "absStart": 1492,
+        "absEnd": 1495,
+        "ja": "1 あの 席 に 変わっ て もらえ ます か ?"
+      },
+      {
+        "relStart": 67.582,
+        "relEnd": 71.692,
+        "absStart": 1498,
+        "absEnd": 1502,
+        "ja": "2 窓側 の 席 に 座ら ない と いけ ませ ん か ?"
+      },
+      {
+        "relStart": 73.912,
+        "relEnd": 77.292,
+        "absStart": 1504,
+        "absEnd": 1507,
+        "ja": "3 あっち の 席 に 移れ ます か ?"
+      },
+      {
+        "relStart": 87.892,
+        "relEnd": 91.132,
+        "absStart": 1518,
+        "absEnd": 1521,
+        "ja": "3 番 靴 の 紐 を 結び たい です 。"
+      },
+      {
+        "relStart": 92.482,
+        "relEnd": 95.342,
+        "absStart": 1522,
+        "absEnd": 1525,
+        "ja": "アイス クリーム が ある の で 結べ ませ ん 。"
+      },
+      {
+        "relStart": 96.652,
+        "relEnd": 98.712,
+        "absStart": 1527,
+        "absEnd": 1529,
+        "ja": "友達 に 何 と 言い ます か ?"
+      },
+      {
+        "relStart": 101.212,
+        "relEnd": 103.562,
+        "absStart": 1531,
+        "absEnd": 1534,
+        "ja": "1 紐 結ぼう か ?"
+      },
+      {
+        "relStart": 107.032,
+        "relEnd": 109.132,
+        "absStart": 1537,
+        "absEnd": 1539,
+        "ja": "2 これ 持っ て て もらえる ?"
+      },
+      {
+        "relStart": 151.522,
+        "relEnd": 154.512,
+        "absStart": 1582,
+        "absEnd": 1585,
+        "ja": "3 アイス クリーム ちょっと くれる ?"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 14,
+    "start": 1540,
+    "end": 1660,
+    "segments": [
+      {
+        "relStart": 1.25,
+        "relEnd": 1.9,
+        "absStart": 1541,
+        "absEnd": 1542,
+        "ja": "3"
+      },
+      {
+        "relStart": 2.5,
+        "relEnd": 4.96,
+        "absStart": 1543,
+        "absEnd": 1545,
+        "ja": "アイス クリーム ちょっと くれる ?"
+      },
+      {
+        "relStart": 15.31,
+        "relEnd": 16.35,
+        "absStart": 1555,
+        "absEnd": 1556,
+        "ja": "4 番"
+      },
+      {
+        "relStart": 16.89,
+        "relEnd": 22.38,
+        "absStart": 1557,
+        "absEnd": 1562,
+        "ja": "雨 です 。 課長 が 傘 を 持っ て い ませ ん 。 何 と 言い ます か ?"
+      },
+      {
+        "relStart": 24.3,
+        "relEnd": 28.16,
+        "absStart": 1564,
+        "absEnd": 1568,
+        "ja": "1 傘 お 使い に なり ませ ん か ?"
+      },
+      {
+        "relStart": 30.13,
+        "relEnd": 34.02,
+        "absStart": 1570,
+        "absEnd": 1574,
+        "ja": "2 傘 貸し て いただけ ます か ?"
+      },
+      {
+        "relStart": 36.19,
+        "relEnd": 39.87,
+        "absStart": 1576,
+        "absEnd": 1580,
+        "ja": "3 傘 お 預かり し ましょう か ?"
+      },
+      {
+        "relStart": 47.96,
+        "relEnd": 48.78,
+        "absStart": 1588,
+        "absEnd": 1589,
+        "ja": "1 番"
+      },
+      {
+        "relStart": 49.33,
+        "relEnd": 53.64,
+        "absStart": 1589,
+        "absEnd": 1594,
+        "ja": "山田 君 、 ポケット から 財布 が 落ち そう だ よ 。ぴ"
+      },
+      {
+        "relStart": 56.41,
+        "relEnd": 59.81,
+        "absStart": 1596,
+        "absEnd": 1600,
+        "ja": "1 あ 、 本当 だ 。 ありがとう 。"
+      },
+      {
+        "relStart": 62.01,
+        "relEnd": 65.17,
+        "absStart": 1602,
+        "absEnd": 1605,
+        "ja": "2 え ? 落とし た の 気づか なかっ た 。"
+      },
+      {
+        "relStart": 68.32,
+        "relEnd": 70.82,
+        "absStart": 1608,
+        "absEnd": 1611,
+        "ja": "3 財布 なくし た の ?"
+      },
+      {
+        "relStart": 119.09,
+        "relEnd": 119.95,
+        "absStart": 1659,
+        "absEnd": 1660,
+        "ja": "2 番"
+      },
+      {
+        "relStart": 120.61,
+        "relEnd": 127.48,
+        "absStart": 1661,
+        "absEnd": 1667,
+        "ja": "やん さん 、 レポート まだ 出し て ませ ん よ ね ? 今日 中 に 持っ て くる よう に ね 。"
+      },
+      {
+        "relStart": 129.58,
+        "relEnd": 133.02,
+        "absStart": 1670,
+        "absEnd": 1673,
+        "ja": "1 で は 、 明日 出せ ば いい です か ?"
+      },
+      {
+        "relStart": 135.53,
+        "relEnd": 138.41,
+        "absStart": 1676,
+        "absEnd": 1678,
+        "ja": "2 今日 、 必ず 出し ます 。"
+      },
+      {
+        "relStart": 140.54,
+        "relEnd": 143.99,
+        "absStart": 1681,
+        "absEnd": 1684,
+        "ja": "3 今日 は 出さ なく て も いい ん です ね 。"
+      },
+      {
+        "relStart": 152.28,
+        "relEnd": 153.3,
+        "absStart": 1692,
+        "absEnd": 1693,
+        "ja": "3 番"
+      },
+      {
+        "relStart": 154.27,
+        "relEnd": 157.94,
+        "absStart": 1694,
+        "absEnd": 1698,
+        "ja": "明日 の 卒業 式 いい 天気 だ と いい ね 。"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 15,
+    "start": 1650,
+    "end": 1770,
+    "segments": [
+      {
+        "relStart": 2.219,
+        "relEnd": 3.429,
+        "absStart": 1652,
+        "absEnd": 1653,
+        "ja": "3番"
+      },
+      {
+        "relStart": 4.195,
+        "relEnd": 7.735,
+        "absStart": 1654,
+        "absEnd": 1658,
+        "ja": "明日の卒業式 いい天気だといいね。"
+      },
+      {
+        "relStart": 10.456,
+        "relEnd": 11.236,
+        "absStart": 1660,
+        "absEnd": 1661,
+        "ja": "1"
+      },
+      {
+        "relStart": 11.966,
+        "relEnd": 13.566,
+        "absStart": 1662,
+        "absEnd": 1664,
+        "ja": "晴れるの? よかった。"
+      },
+      {
+        "relStart": 15.636,
+        "relEnd": 18.006,
+        "absStart": 1666,
+        "absEnd": 1668,
+        "ja": "晴れてほしいよね。"
+      },
+      {
+        "relStart": 20.306,
+        "relEnd": 23.366,
+        "absStart": 1670,
+        "absEnd": 1673,
+        "ja": "晴れない方がいいの?"
+      },
+      {
+        "relStart": 31.954,
+        "relEnd": 33.174,
+        "absStart": 1682,
+        "absEnd": 1683,
+        "ja": "4番"
+      },
+      {
+        "relStart": 33.724,
+        "relEnd": 40.594,
+        "absStart": 1684,
+        "absEnd": 1691,
+        "ja": "森さんの結婚祝い 先輩たちで買われるんですよね。 私も参加させてください。"
+      },
+      {
+        "relStart": 42.664,
+        "relEnd": 45.184,
+        "absStart": 1693,
+        "absEnd": 1695,
+        "ja": "買いたくないんだね。"
+      },
+      {
+        "relStart": 48.014,
+        "relEnd": 50.364,
+        "absStart": 1698,
+        "absEnd": 1700,
+        "ja": "え? 僕が参加するの?"
+      },
+      {
+        "relStart": 52.884,
+        "relEnd": 55.484,
+        "absStart": 1703,
+        "absEnd": 1705,
+        "ja": "ああ、是非一緒に。"
+      },
+      {
+        "relStart": 64.049,
+        "relEnd": 64.849,
+        "absStart": 1714,
+        "absEnd": 1715,
+        "ja": "5番"
+      },
+      {
+        "relStart": 65.599,
+        "relEnd": 70.829,
+        "absStart": 1716,
+        "absEnd": 1721,
+        "ja": "先輩 僕 テニス部をやめようかと思ってるんです。"
+      },
+      {
+        "relStart": 72.849,
+        "relEnd": 75.549,
+        "absStart": 1723,
+        "absEnd": 1726,
+        "ja": "続けることにしたんだね。"
+      },
+      {
+        "relStart": 78.979,
+        "relEnd": 80.609,
+        "absStart": 1729,
+        "absEnd": 1731,
+        "ja": "え? やめ ちゃっ た の?"
+      },
+      {
+        "relStart": 83.219,
+        "relEnd": 85.519,
+        "absStart": 1733,
+        "absEnd": 1736,
+        "ja": "何かあったの?"
+      },
+      {
+        "relStart": 94.019,
+        "relEnd": 94.889,
+        "absStart": 1744,
+        "absEnd": 1745,
+        "ja": "6番"
+      },
+      {
+        "relStart": 95.849,
+        "relEnd": 96.659,
+        "absStart": 1746,
+        "absEnd": 1747,
+        "ja": "あれ?"
+      },
+      {
+        "relStart": 97.099,
+        "relEnd": 97.949,
+        "absStart": 1747,
+        "absEnd": 1748,
+        "ja": "課長は?"
+      },
+      {
+        "relStart": 98.659,
+        "relEnd": 103.119,
+        "absStart": 1749,
+        "absEnd": 1753,
+        "ja": "中野 さん 課長 が 今 どちら に いらっしゃる か 知っ てる?"
+      },
+      {
+        "relStart": 105.749,
+        "relEnd": 109.849,
+        "absStart": 1756,
+        "absEnd": 1760,
+        "ja": "あ さっき 出掛け られ まし た けど"
+      },
+      {
+        "relStart": 112.599,
+        "relEnd": 115.589,
+        "absStart": 1763,
+        "absEnd": 1766,
+        "ja": "課長 は 知ら ない と 思い ます よ。"
+      },
+      {
+        "relStart": 118.499,
+        "relEnd": 119.829,
+        "absStart": 1768,
+        "absEnd": 1770,
+        "ja": "どちら でも よさ そう です。"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 16,
+    "start": 1760,
+    "end": 1880,
+    "segments": [
+      {
+        "relStart": 1.763,
+        "relEnd": 2.503,
+        "absStart": 1762,
+        "absEnd": 1763,
+        "ja": "2"
+      },
+      {
+        "relStart": 3.013,
+        "relEnd": 5.413,
+        "absStart": 1763,
+        "absEnd": 1765,
+        "ja": "課長は知らないと思いますよ。"
+      },
+      {
+        "relStart": 7.353,
+        "relEnd": 10.373,
+        "absStart": 1767,
+        "absEnd": 1770,
+        "ja": "どちらでもよさそうです。"
+      },
+      {
+        "relStart": 18.724,
+        "relEnd": 22.464,
+        "absStart": 1779,
+        "absEnd": 1782,
+        "ja": "7番。明日の試合、心配だな。"
+      },
+      {
+        "relStart": 23.084,
+        "relEnd": 27.244,
+        "absStart": 1783,
+        "absEnd": 1787,
+        "ja": "僕、試合のたびに緊張でお腹が痛くなるんだ。"
+      },
+      {
+        "relStart": 29.544,
+        "relEnd": 33.724,
+        "absStart": 1790,
+        "absEnd": 1794,
+        "ja": "1. 初めてなの?それは緊張するね。"
+      },
+      {
+        "relStart": 36.314,
+        "relEnd": 40.944,
+        "absStart": 1796,
+        "absEnd": 1801,
+        "ja": "2. 今まで1回だけだったんでしょ?大丈夫だよ。"
+      },
+      {
+        "relStart": 43.684,
+        "relEnd": 48.014,
+        "absStart": 1804,
+        "absEnd": 1808,
+        "ja": "3. そっか、毎回なんだ。大変だね。"
+      },
+      {
+        "relStart": 56.635,
+        "relEnd": 65.655,
+        "absStart": 1817,
+        "absEnd": 1826,
+        "ja": "8番。あの、資料にのせるグラフの作り方、もう一度教えていただいてもいいでしょうか?"
+      },
+      {
+        "relStart": 67.755,
+        "relEnd": 70.385,
+        "absStart": 1828,
+        "absEnd": 1830,
+        "ja": "1. 私が作るんですか?"
+      },
+      {
+        "relStart": 72.435,
+        "relEnd": 75.185,
+        "absStart": 1832,
+        "absEnd": 1835,
+        "ja": "2. 教えていただけますか?"
+      },
+      {
+        "relStart": 77.295,
+        "relEnd": 81.335,
+        "absStart": 1837,
+        "absEnd": 1841,
+        "ja": "3. ああ、難しかったですか?"
+      },
+      {
+        "relStart": 89.467,
+        "relEnd": 97.437,
+        "absStart": 1849,
+        "absEnd": 1857,
+        "ja": "9番。この洗濯機買って20年でしょ?いつ壊れてもおかしくないよね。"
+      },
+      {
+        "relStart": 99.637,
+        "relEnd": 102.397,
+        "absStart": 1860,
+        "absEnd": 1862,
+        "ja": "1. いつ壊れたの?"
+      },
+      {
+        "relStart": 104.387,
+        "relEnd": 107.827,
+        "absStart": 1864,
+        "absEnd": 1868,
+        "ja": "2. よく壊れないで動いてるよね。"
+      },
+      {
+        "relStart": 109.917,
+        "relEnd": 112.507,
+        "absStart": 1870,
+        "absEnd": 1873,
+        "ja": "3. とうとう壊れちゃったんだね。"
+      }
+    ]
+  },
+  {
+    "chunkIdx": 17,
+    "start": 1870,
+    "end": 1886.66775,
+    "segments": [
+      {
+        "relStart": 0.817,
+        "relEnd": 2.927,
+        "absStart": 1871,
+        "absEnd": 1873,
+        "ja": "とうとう壊れちゃったんだね。"
+      },
+      {
+        "relStart": 11.667,
+        "relEnd": 14.867,
+        "absStart": 1882,
+        "absEnd": 1885,
+        "ja": "これで聴解試験を終わります。"
+      }
+    ]
+  }
+]
