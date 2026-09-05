@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Award,
+  BookOpen,
   Flame,
   House,
   Layers,
   LogIn,
-  Search,
   Settings,
   Video,
   Zap,
@@ -19,7 +19,7 @@ import { useAuth } from '../features/auth/authContext'
 
 const NAV_TABS: Array<{ id: Page; label: string; icon: LucideIcon; badge?: string }> = [
   { id: 'home', label: 'Trang chủ', icon: House },
-  { id: 'dictionary', label: 'Từ Điển', icon: Search },
+  { id: 'dictionary', label: 'Từ Điển', icon: BookOpen },
   { id: 'review', label: 'Ôn Tập SRS', icon: Layers, badge: 'Anki' },
   { id: 'jlpt', label: 'Thi JLPT', icon: Award },
   { id: 'video', label: 'Video AI', icon: Video },
