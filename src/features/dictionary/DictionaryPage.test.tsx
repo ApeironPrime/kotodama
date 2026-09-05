@@ -171,8 +171,8 @@ describe('DictionaryPage Feature Suite', () => {
     const inputRef = { current: null }
     renderWithClient(<DictionaryPage inputRef={inputRef} />)
 
-    // Click top tab "Hán tự"
-    const kanjiTab = screen.getByRole('button', { name: 'Hán tự' })
+    // Hán tự is now an internal dictionary tab, rather than a separate page.
+    const kanjiTab = screen.getByRole('tab', { name: 'Hán tự' })
     fireEvent.click(kanjiTab)
 
     await waitFor(() => {

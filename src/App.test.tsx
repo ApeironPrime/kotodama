@@ -59,7 +59,7 @@ describe('application journeys', () => {
 
     const input = await screen.findByRole('textbox', { name: 'Từ cần tra' }, { timeout: 8000 })
     expect(input).toBeTruthy()
-    expect(screen.getByText('TỪ ĐIỂN NHẬT - VIỆT (VNJP DICTIONARY)')).toBeTruthy()
-    expect(screen.getByText('Sẵn sàng tra cứu')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Phân tích' })).toBeTruthy()
+    expect(screen.getByRole('tablist', { name: 'Loại nội dung từ điển' })).toBeTruthy()
   })
 })

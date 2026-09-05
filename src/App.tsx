@@ -15,10 +15,7 @@ const AuthLifecyclePage = lazy(() => import('./features/auth/AuthLifecyclePage')
 const LocalProfilePage = lazy(() => import('./features/account/ProfilePage'))
 const AccountSecurityPage = lazy(() => import('./features/account/AccountSecurityPage'))
 const AccountAdminPage = lazy(() => import('./features/account/AccountAdminPage'))
-const VocabularyPage = lazy(() => import('./features/vocabulary/VocabularyPage'))
 const DictionaryPage = lazy(() => import('./features/dictionary/DictionaryPage'))
-const BunpoPage = lazy(() => import('./features/nhaikanji/BunpoPage'))
-const KanjiPage = lazy(() => import('./features/nhaikanji/KanjiPage'))
 const JlptPage = lazy(() => import('./features/nhaikanji/JlptPage'))
 const OnboardingPage = lazy(() => import('./features/learning/OnboardingPage'))
 const ReviewPage = lazy(() => import('./features/srs/ReviewPage'))
@@ -56,7 +53,10 @@ function AppContent() {
       window.scrollTo(0, 0)
     }
   }, [page])
-  const goTo = (nextPage: Page) => navigate(PAGE_PATHS[nextPage])
+  const goTo = (nextPage: Page) => {
+    const dictionarySections: Page[] = ['vocabulary', 'bunpo', 'kanji']
+    navigate(PAGE_PATHS[dictionarySections.includes(nextPage) ? 'dictionary' : nextPage])
+  }
   const focusSearch = () => {
     searchInputRef.current?.focus()
     searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -86,6 +86,7 @@ function AppContent() {
       </div>
     )
   if (status === 'loading') return <PageSkeleton label="Đang khôi phục phiên đăng nhập…" />
+  if (page === 'vocabulary' || page === 'bunpo' || page === 'kanji') return <Navigate to={PAGE_PATHS.dictionary} replace />
   const pageAccess = getPageAccess(page, user)
   if (pageAccess === 'login-required')
     return (
@@ -120,10 +121,7 @@ function AppContent() {
           <Suspense fallback={<PageSkeleton label="Đang tải trang…" />}>
             {page === 'home' && <HomePage setPage={goTo} isAuthenticated={isAuthenticated} />}
             {page === 'onboarding' && <OnboardingPage onNavigate={goTo} />}
-            {page === 'vocabulary' && <VocabularyPage onGoToSrs={() => goTo('review')} />}
-            {page === 'bunpo' && <BunpoPage onGoToSrs={() => goTo('review')} />}
             {page === 'dictionary' && <DictionaryPage inputRef={searchInputRef} onReview={() => goTo('review')} />}
-            {page === 'kanji' && <KanjiPage />}
             {page === 'jlpt' && <JlptPage />}
             {page === 'review' && <ReviewPage onDictionary={() => goTo('dictionary')} />}
             {page === 'video' && <VideoLearning />}

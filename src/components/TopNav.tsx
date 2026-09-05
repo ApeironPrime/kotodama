@@ -2,15 +2,12 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Award,
-  BookOpen,
   Flame,
-  GraduationCap,
   House,
   Layers,
   LogIn,
   Search,
   Settings,
-  Sparkles,
   Video,
   Zap,
   type LucideIcon,
@@ -22,9 +19,6 @@ import { useAuth } from '../features/auth/authContext'
 
 const NAV_TABS: Array<{ id: Page; label: string; icon: LucideIcon; badge?: string }> = [
   { id: 'home', label: 'Trang chủ', icon: House },
-  { id: 'kanji', label: 'Hán Tự', icon: Sparkles },
-  { id: 'vocabulary', label: 'Từ Vựng', icon: BookOpen },
-  { id: 'bunpo', label: 'Ngữ Pháp', icon: GraduationCap },
   { id: 'dictionary', label: 'Từ Điển', icon: Search },
   { id: 'review', label: 'Ôn Tập SRS', icon: Layers, badge: 'Anki' },
   { id: 'jlpt', label: 'Thi JLPT', icon: Award },
@@ -104,7 +98,7 @@ export default function TopNav({
               </button>
             ))}
           </div>
-          {page === 'vocabulary' && (
+          {page === 'dictionary' && (
             <Button variant="secondary" size="sm" className="nav-search-button" onClick={onSearchFocus}>
               Tìm từ
             </Button>

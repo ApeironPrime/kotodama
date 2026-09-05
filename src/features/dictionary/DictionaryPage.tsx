@@ -5,11 +5,16 @@ import {
   ArrowRight,
   Bookmark,
   BookmarkPlus,
+  BrainCircuit,
   BookOpen,
   Check,
+  GraduationCap,
   Layers,
+  Languages,
   Loader2,
+  MessageSquareText,
   PenTool,
+  RotateCcw,
   Search,
   Sparkles,
   Volume2,
@@ -24,6 +29,14 @@ import { useAuth } from '../auth/authContext'
 
 const POPULAR_SEARCHES = ['学校', '先生', '勉強', '食べる', '感じ', '日本語', '桜', '時間', '犬', '雨']
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
+const DICTIONARY_TABS = [
+  { id: 'vocab', label: 'Tra từ', icon: Search },
+  { id: 'kanji', label: 'Hán tự', icon: Languages },
+  { id: 'grammar', label: 'Ngữ pháp', icon: GraduationCap },
+  { id: 'sentences', label: 'Mẫu câu', icon: MessageSquareText },
+] as const
+
+type DictionaryTab = (typeof DICTIONARY_TABS)[number]['id']
 
 function speakJapanese(text: string) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
@@ -36,15 +49,25 @@ function speakJapanese(text: string) {
 
 export default function DictionaryPage({
   inputRef,
+  onReview,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>
   onReview?: () => void
 }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'vocab' | 'kanji' | 'grammar' | 'sentences'>('vocab')
+  const [activeTab, setActiveTab] = useState<DictionaryTab>('vocab')
   const [input, setInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const saved = window.localStorage.getItem('kotodama_dictionary_recent_searches')
+      const parsed = saved ? JSON.parse(saved) : []
+      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string').slice(0, 4) : []
+    } catch {
+      return []
+    }
+  })
   const [savedWordIds, setSavedWordIds] = useState<Set<number>>(new Set())
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
 
@@ -151,6 +174,20 @@ export default function DictionaryPage({
     }
   }
 
+  const rememberSearch = (value: string) => {
+    const normalized = value.trim()
+    if (!normalized) return
+    setRecentSearches((previous) => {
+      const next = [normalized, ...previous.filter((item) => item !== normalized)].slice(0, 4)
+      try {
+        window.localStorage.setItem('kotodama_dictionary_recent_searches', JSON.stringify(next))
+      } catch {
+        // Keeping a search history is a convenience only.
+      }
+      return next
+    })
+  }
+
   // Auto-search debounced as user types
   useEffect(() => {
     const trimmed = input.trim()
@@ -212,12 +249,19 @@ export default function DictionaryPage({
     const trimmed = input.trim()
     if (trimmed) {
       setSearchTerm(trimmed)
+      rememberSearch(trimmed)
     }
   }
 
   const handleQuickSearch = (keyword: string) => {
     setInput(keyword)
     setSearchTerm(keyword)
+    rememberSearch(keyword)
+  }
+
+  const selectTab = (tab: DictionaryTab) => {
+    setActiveTab(tab)
+    if (tab === 'vocab') setMainCardTab('basic')
   }
 
   const toggleSaveWord = (id: number) => {
@@ -249,188 +293,72 @@ export default function DictionaryPage({
   const kanjiSummary = activeKanjiDetailData?.summary
   const kanjiInfo = activeKanjiDetailData?.detail?.kanjiInfo
   const nhaiExamples: KanjiVocabExample[] = kanjiInfo?.kanjialiveData?.examples || []
+  const savedCount = Array.isArray(savedTermsData) ? savedTermsData.length : 0
+  const srsProgress = Math.min(100, savedCount * 5)
 
   return (
-    <section className="dictionary-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem' }}>
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.8rem',
-          fontWeight: 700,
-          color: 'var(--color-text-muted)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: '0.75rem',
-        }}
-      >
-        <Search size={14} /> TỪ ĐIỂN NHẬT - VIỆT (VNJP DICTIONARY)
-      </div>
+    <section className="dictionary-page">
+      <div className="dictionary-shell">
+        <form className="dictionary-querybar" onSubmit={submit}>
+          <div className="dictionary-querybar__field">
+            <Search aria-hidden="true" size={20} />
+            <Input
+              ref={inputRef}
+              aria-label="Từ cần tra"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder={
+                activeTab === 'kanji'
+                  ? 'Tìm Kanji, âm Hán Việt, On/Kun hoặc nghĩa…'
+                  : activeTab === 'grammar'
+                    ? 'Tìm mẫu ngữ pháp tiếng Nhật…'
+                    : activeTab === 'sentences'
+                      ? 'Tìm mẫu câu chứa từ khóa…'
+                      : 'Nhập Kanji, Kana, Romaji hoặc nghĩa tiếng Việt…'
+              }
+            />
+          </div>
+          <Button type="submit" size="lg" className="dictionary-querybar__submit">
+            {isLoading || isKanjiListLoading || isBunpoLoading ? (
+              <Loader2 aria-label="Đang tra cứu" size={18} className="animate-spin" />
+            ) : (
+              <>
+                <BrainCircuit aria-hidden="true" size={18} />
+                Phân tích
+              </>
+            )}
+          </Button>
+          <div className="dictionary-querybar__suggestions" aria-label="Từ gợi ý">
+            {POPULAR_SEARCHES.slice(0, 5).map((item) => (
+              <button key={item} type="button" onClick={() => handleQuickSearch(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+        </form>
 
-      {/* Top Type Selector Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '2px',
-          background: 'rgba(255, 255, 255, 0.04)',
-          padding: '4px',
-          borderRadius: '8px',
-          marginBottom: '1.25rem',
-          maxWidth: '560px',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab('vocab')
-            setMainCardTab('basic')
-          }}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: activeTab === 'vocab' ? 'rgba(255, 77, 109, 0.2)' : 'transparent',
-            color: activeTab === 'vocab' ? 'var(--rose-300)' : 'var(--color-text-secondary)',
-          }}
-        >
-          Từ vựng
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('kanji')}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: activeTab === 'kanji' ? 'rgba(255, 77, 109, 0.2)' : 'transparent',
-            color: activeTab === 'kanji' ? 'var(--rose-300)' : 'var(--color-text-secondary)',
-          }}
-        >
-          Hán tự
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('grammar')}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: activeTab === 'grammar' ? 'rgba(255, 77, 109, 0.2)' : 'transparent',
-            color: activeTab === 'grammar' ? 'var(--rose-300)' : 'var(--color-text-secondary)',
-          }}
-        >
-          Ngữ pháp
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('sentences')}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: activeTab === 'sentences' ? 'rgba(255, 77, 109, 0.2)' : 'transparent',
-            color: activeTab === 'sentences' ? 'var(--rose-300)' : 'var(--color-text-secondary)',
-          }}
-        >
-          Mẫu câu
-        </button>
-      </div>
-
-      {/* Search Header */}
-      <form
-        onSubmit={submit}
-        style={{
-          display: 'flex',
-          gap: '0.75rem',
-          marginBottom: '1rem',
-          maxWidth: '820px',
-        }}
-      >
-        <div style={{ position: 'relative', flex: 1 }}>
-          <Input
-            ref={inputRef}
-            aria-label="Từ cần tra"
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder={
-              activeTab === 'kanji'
-                ? 'Tìm chữ Kanji (間, 学), âm Hán Việt (gian, hoc), On/Kun hoặc nghĩa...'
-                : activeTab === 'grammar'
-                  ? 'Tìm ngữ pháp tiếng Nhật (から, ても, んです)...'
-                  : activeTab === 'sentences'
-                    ? 'Tìm mẫu câu chứa từ khóa...'
-                    : 'Gõ từ vựng tiếng Nhật, Hiragana, Romaji hoặc tiếng Việt...'
-            }
-            style={{ paddingLeft: '2.5rem', height: '46px', fontSize: '1rem' }}
-          />
-          <Search
-            size={18}
-            style={{
-              position: 'absolute',
-              left: '12px',
-              top: '14px',
-              color: 'var(--color-text-muted)',
-            }}
-          />
+        <div className="dictionary-tabs" role="tablist" aria-label="Loại nội dung từ điển">
+          {DICTIONARY_TABS.map((tab) => {
+            const Icon = tab.icon
+            const selected = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={selected ? 'is-active' : ''}
+                onClick={() => selectTab(tab.id)}
+              >
+                <Icon aria-hidden="true" size={17} />
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
-        <Button
-          type="submit"
-          size="lg"
-          style={{
-            background: '#2563eb',
-            color: '#ffffff',
-            fontWeight: 700,
-            padding: '0 1.75rem',
-            borderRadius: '8px',
-          }}
-        >
-          {isLoading || isKanjiListLoading || isBunpoLoading ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            'Tìm Kiếm'
-          )}
-        </Button>
-      </form>
 
-      {/* Quick Search Chips */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Gợi ý:</span>
-        {POPULAR_SEARCHES.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => handleQuickSearch(item)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '999px',
-              padding: '3px 12px',
-              fontSize: '0.82rem',
-              color: 'var(--color-text-secondary)',
-              cursor: 'pointer',
-            }}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+        <div className="dictionary-workspace">
+          <div className="dictionary-workspace__main">
 
       {/* ========================================================================= */}
       {/* 1. VIEW: TAB HÁN TỰ (KANJI SEARCH & DIRECTORY) */}
@@ -1880,6 +1808,66 @@ export default function DictionaryPage({
           )}
         </>
       )}
+
+          </div>
+
+          <aside className="dictionary-sidepanel" aria-label="Tiện ích từ điển">
+            <Card className="dictionary-sidepanel__card" padding="md">
+              <div className="dictionary-sidepanel__eyebrow">
+                <Bookmark aria-hidden="true" size={15} /> SỔ TAY HỌC
+              </div>
+              <strong>{savedCount} mục đã lưu</strong>
+              <p>Thêm từ, mẫu câu hoặc Hán tự để ôn tập theo SRS.</p>
+              <div
+                className="dictionary-sidepanel__progress"
+                role="progressbar"
+                aria-label="Tiến độ sổ tay học"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={srsProgress}
+              >
+                <span style={{ width: `${srsProgress}%` }} />
+              </div>
+              {onReview && (
+                <Button variant="primary" fullWidth onClick={onReview}>
+                  <RotateCcw aria-hidden="true" size={16} /> Ôn tập ngay
+                </Button>
+              )}
+            </Card>
+
+            <Card className="dictionary-sidepanel__card" padding="md">
+              <h2>
+                <Layers aria-hidden="true" size={16} /> Cụm từ gợi ý
+              </h2>
+              <div className="dictionary-sidepanel__chips">
+                {POPULAR_SEARCHES.slice(0, 6).map((item) => (
+                  <button key={item} type="button" onClick={() => handleQuickSearch(item)}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="dictionary-sidepanel__card" padding="md">
+              <h2>
+                <RotateCcw aria-hidden="true" size={16} /> Đã tra gần đây
+              </h2>
+              {recentSearches.length > 0 ? (
+                <div className="dictionary-sidepanel__history">
+                  {recentSearches.map((item) => (
+                    <button key={item} type="button" onClick={() => handleQuickSearch(item)}>
+                      <span>{item}</span>
+                      <ArrowRight aria-hidden="true" size={16} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="dictionary-sidepanel__empty">Các mục bạn tra sẽ xuất hiện tại đây.</p>
+              )}
+            </Card>
+          </aside>
+        </div>
+      </div>
 
       {/* MODAL CHI TIẾT KANJI (KHI CLICK VÀO CARD TRONG GRID HÁN TỰ) */}
       {selectedKanjiModal && (
