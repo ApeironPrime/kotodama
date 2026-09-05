@@ -68,10 +68,60 @@ export const apiPaths = {
     jlptExamDetail: (examId: string) => `/api/v1/nhaikanji/jlpt/exams/${encodeURIComponent(examId)}`,
     jlptSubmit: '/api/v1/nhaikanji/jlpt/submit',
   },
+  pronunciation: {
+    research: {
+      attempts: '/api/v1/pronunciation/research/attempts',
+      mine: '/api/v1/pronunciation/research/attempts/mine',
+      reviewQueue: '/api/v1/pronunciation/research/review-queue',
+      labels: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/labels`,
+      audio: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/audio/content`,
+    },
+  },
 } as const
 
 type ApiEnvelope<T> = { data: T; meta?: Record<string, unknown> }
 type ErrorBody = { message?: unknown; code?: unknown; error?: { message?: unknown; code?: unknown } }
+type RetriableRequestConfig = AxiosRequestConfig & {
+  skipSessionExpiry?: boolean
+  _kotodamaSessionRetried?: boolean
+}
+
+const ACCESS_TOKEN_KEY = 'kotodama.access-token'
+let refreshInFlight: Promise<string> | null = null
+
+function readAccessToken() {
+  try {
+    return window.sessionStorage.getItem(ACCESS_TOKEN_KEY) || window.localStorage.getItem(ACCESS_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+function saveAccessToken(token: string) {
+  try {
+    window.sessionStorage.setItem(ACCESS_TOKEN_KEY, token)
+    window.localStorage.setItem(ACCESS_TOKEN_KEY, token)
+  } catch {
+    // Keep the current request usable even if browser storage is unavailable.
+  }
+}
+
+async function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = apiClient
+      .post<ApiEnvelope<{ accessToken?: unknown }> | { accessToken?: unknown }>(apiPaths.auth.refresh)
+      .then((response) => {
+        const payload = unwrapApiData(response.data)
+        if (typeof payload.accessToken !== 'string' || !payload.accessToken) throw new Error('Invalid refresh response')
+        saveAccessToken(payload.accessToken)
+        return payload.accessToken
+      })
+      .finally(() => {
+        refreshInFlight = null
+      })
+  }
+  return refreshInFlight
+}
 
 export interface DictionaryKanji {
   character: string
@@ -165,13 +215,7 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  let accessToken: string | null = null
-  try {
-    accessToken =
-      window.sessionStorage.getItem('kotodama.access-token') || window.localStorage.getItem('kotodama.access-token')
-  } catch {
-    // ignore
-  }
+  const accessToken = readAccessToken()
   if (accessToken && shouldAttachAccessToken(config.url)) config.headers.set('Authorization', `Bearer ${accessToken}`)
   if (!['GET', 'HEAD', 'OPTIONS'].includes(String(config.method).toUpperCase())) {
     const csrfToken = readBrowserCookie('kotodama_csrf')
@@ -182,11 +226,20 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const config = error.config as (AxiosRequestConfig & { skipSessionExpiry?: boolean }) | undefined
+  async (error) => {
+    const config = error.config as RetriableRequestConfig | undefined
     const shouldLeaveSessionUntouched = config?.skipSessionExpiry || isAuthEndpoint(config?.url)
-    if (error.response?.status === 401 && !shouldLeaveSessionUntouched)
+    if (error.response?.status === 401 && !shouldLeaveSessionUntouched && config && !config._kotodamaSessionRetried) {
+      config._kotodamaSessionRetried = true
+      try {
+        await refreshAccessToken()
+        return apiClient.request(config)
+      } catch {
+        window.dispatchEvent(new Event('kotodama:unauthorized'))
+      }
+    } else if (error.response?.status === 401 && !shouldLeaveSessionUntouched) {
       window.dispatchEvent(new Event('kotodama:unauthorized'))
+    }
     return Promise.reject(error)
   }
 )

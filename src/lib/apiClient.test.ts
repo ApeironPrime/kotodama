@@ -115,29 +115,49 @@ describe('API error contract', () => {
     })
   })
 
-  it('attaches browser credentials and signals an expired protected session', async () => {
-    const getItem = vi.fn(() => 'access-token')
+  it('attaches browser credentials, refreshes once, then retries an expired protected request', async () => {
+    const storage = new Map([['kotodama.access-token', 'expired-access-token']])
+    const getItem = vi.fn((key: string) => storage.get(key) ?? null)
+    const setItem = vi.fn((key: string, value: string) => storage.set(key, value))
     const dispatchEvent = vi.fn()
-    vi.stubGlobal('window', { sessionStorage: { getItem }, dispatchEvent })
+    vi.stubGlobal('window', { sessionStorage: { getItem, setItem }, localStorage: { getItem, setItem }, dispatchEvent })
     vi.stubGlobal('document', { cookie: 'kotodama_csrf=csrf-token; other=value' })
 
     await apiClient.request({
       method: 'POST',
       url: '/api/v1/courses',
       adapter: async (config) => {
-        expect(config.headers.get('Authorization')).toBe('Bearer access-token')
+        expect(config.headers.get('Authorization')).toBe('Bearer expired-access-token')
         expect(config.headers.get('X-CSRF-Token')).toBe('csrf-token')
         return { data: {}, status: 200, statusText: 'OK', headers: {}, config }
       },
     })
 
-    await expect(
-      apiClient.request({
-        method: 'GET',
-        url: '/api/v1/courses',
-        adapter: async (config) => Promise.reject({ config, response: { status: 401 } }),
-      })
-    ).rejects.toMatchObject({ response: { status: 401 } })
-    expect(dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'kotodama:unauthorized' }))
+    const defaultAdapter = apiClient.defaults.adapter
+    apiClient.defaults.adapter = async (config) => {
+      expect(config.url).toBe('/api/v1/auth/refresh')
+      return { data: { data: { accessToken: 'fresh-access-token' } }, status: 200, statusText: 'OK', headers: {}, config }
+    }
+    let protectedAttempts = 0
+    try {
+      await expect(
+        apiClient.request({
+          method: 'GET',
+          url: '/api/v1/courses',
+          adapter: async (config) => {
+            protectedAttempts += 1
+            if (protectedAttempts === 1) return Promise.reject({ config, response: { status: 401 } })
+            expect(config.headers.get('Authorization')).toBe('Bearer fresh-access-token')
+            return { data: { ok: true }, status: 200, statusText: 'OK', headers: {}, config }
+          },
+        })
+      ).resolves.toMatchObject({ data: { ok: true } })
+    } finally {
+      if (defaultAdapter) apiClient.defaults.adapter = defaultAdapter
+      else delete apiClient.defaults.adapter
+    }
+
+    expect(protectedAttempts).toBe(2)
+    expect(dispatchEvent).not.toHaveBeenCalled()
   })
 })
