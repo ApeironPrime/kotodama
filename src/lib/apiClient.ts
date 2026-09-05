@@ -68,15 +68,6 @@ export const apiPaths = {
     jlptExamDetail: (examId: string) => `/api/v1/nhaikanji/jlpt/exams/${encodeURIComponent(examId)}`,
     jlptSubmit: '/api/v1/nhaikanji/jlpt/submit',
   },
-  pronunciation: {
-    research: {
-      attempts: '/api/v1/pronunciation/research/attempts',
-      mine: '/api/v1/pronunciation/research/attempts/mine',
-      reviewQueue: '/api/v1/pronunciation/research/review-queue',
-      labels: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/labels`,
-      audio: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/audio/content`,
-    },
-  },
 } as const
 
 type ApiEnvelope<T> = { data: T; meta?: Record<string, unknown> }
