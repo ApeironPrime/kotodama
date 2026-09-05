@@ -346,14 +346,14 @@ describe('NhaiKanji Frontend Feature Suite', () => {
 
     renderWithClient(<JlptPage />)
 
-    expect(screen.getByText('Luyện Thi JLPT Trực Tuyến')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Thi thử JLPT' })).toBeTruthy()
 
     await waitFor(() => {
-      expect(screen.getByText('Vào làm bài')).toBeTruthy()
+      expect(screen.getByText('Làm bài')).toBeTruthy()
     })
 
     // Click vào làm bài
-    fireEvent.click(screen.getByText('Vào làm bài'))
+    fireEvent.click(screen.getByText('Làm bài'))
 
     await waitFor(() => {
       expect(screen.getByText('田中さんは【学生】です。')).toBeTruthy()
@@ -446,10 +446,10 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     renderWithClient(<JlptPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Vào làm bài')).toBeTruthy()
+      expect(screen.getByText('Làm bài')).toBeTruthy()
     })
 
-    fireEvent.click(screen.getByText('Vào làm bài'))
+    fireEvent.click(screen.getByText('Làm bài'))
 
     await waitFor(() => {
       expect(screen.getByText('アルバイトをしすぎていること')).toBeTruthy()
@@ -626,11 +626,11 @@ describe('NhaiKanji Frontend Feature Suite', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText(/180 ĐIỂM/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getByRole('button', { name: /Thi Thử Ngay/i })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Thi thử' })).toBeTruthy()
     })
 
-    // Click Thi Thử Ngay button
-    fireEvent.click(screen.getByRole('button', { name: /Thi Thử Ngay/i }))
+    // Click the full mock exam button.
+    fireEvent.click(screen.getByRole('button', { name: 'Thi thử' }))
 
     // Verify Question Palette and question rendering
     await waitFor(() => {
