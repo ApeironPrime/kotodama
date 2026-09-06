@@ -773,7 +773,8 @@ async function route(request, response) {
   if (request.method === 'GET' && path === '/api/v1/dictionary/analyze') {
     const text = url.searchParams.get('text') ?? ''
     if (!text.trim()) return fail(response, 422, 'Cần nhập câu tiếng Nhật để phân tích.', 'TEXT_REQUIRED')
-    const analysis = await dictionaryService.analyzeSentence(text)
+    const translate = url.searchParams.get('translate') === '1'
+    const analysis = await dictionaryService.analyzeSentence(text, { translate })
     return respond(analysis)
   }
 

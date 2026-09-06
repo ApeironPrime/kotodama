@@ -47,7 +47,8 @@ export const apiPaths = {
   dictionary: {
     search: (keyword: string, limit = 20) =>
       `/api/v1/dictionary/search?keyword=${encodeURIComponent(keyword)}&limit=${limit}`,
-    analyze: (text: string) => `/api/v1/dictionary/analyze?text=${encodeURIComponent(text)}`,
+    analyze: (text: string, translate = false) =>
+      `/api/v1/dictionary/analyze?text=${encodeURIComponent(text)}${translate ? '&translate=1' : ''}`,
     word: (word: string) => `/api/v1/dictionary/word/${encodeURIComponent(word)}`,
     kanji: (char: string) => `/api/v1/dictionary/kanji/${encodeURIComponent(char)}`,
   },
@@ -162,6 +163,7 @@ export interface DictionarySearchResult {
 export interface DictionarySentenceAnalysis {
   input: string
   translation?: string | null
+  translationSource?: 'dictionary' | 'machine' | 'not-requested' | 'unavailable' | null
   reading?: string | null
   tokens: Array<{ text: string; known: boolean }>
   results: DictionaryWordItem[]

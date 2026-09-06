@@ -32,9 +32,18 @@ export function DictionarySentenceDetail({
       <Card className="dictionary-word-section" padding="lg">
         <h2><BookOpenCheck size={18} /> Nghĩa của câu</h2>
         {analysis.translation ? (
-          <p className="dictionary-sentence-detail__translation">{analysis.translation}</p>
+          <>
+            <p className="dictionary-sentence-detail__translation">{analysis.translation}</p>
+            <span className="dictionary-sentence-detail__translation-source">
+              {analysis.translationSource === 'machine' ? 'Dịch máy — kiểm tra ngữ cảnh' : 'Bản dịch từ kho dữ liệu'}
+            </span>
+          </>
         ) : (
-          <p className="dictionary-sentence-detail__pending">Kho từ điển chưa có bản dịch nguyên câu này. Các thành phần đã nhận diện ở bên dưới để bạn tra nghĩa trong ngữ cảnh.</p>
+          <p className="dictionary-sentence-detail__pending">
+            {analysis.translationSource === 'not-requested'
+              ? 'Nhấn Phân tích để dịch nguyên câu bằng AI. Khi đang gõ, hệ thống chỉ nhận diện thành phần câu để tránh gọi AI liên tục.'
+              : 'Chưa thể lấy bản dịch máy lúc này. Bạn vẫn có thể tra các thành phần câu ở bên dưới.'}
+          </p>
         )}
       </Card>
 

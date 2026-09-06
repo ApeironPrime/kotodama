@@ -67,6 +67,7 @@ export default function DictionaryPage({
   const [activeTab, setActiveTab] = useState<DictionaryTab>('vocab')
   const [input, setInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [translateSentence, setTranslateSentence] = useState(false)
   const [selectedResultIndex, setSelectedResultIndex] = useState(0)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     try {
@@ -202,8 +203,10 @@ export default function DictionaryPage({
     const trimmed = input.trim()
     if (!trimmed) {
       setSearchTerm('')
+      setTranslateSentence(false)
       return
     }
+    setTranslateSentence(false)
     const timer = window.setTimeout(() => {
       setSearchTerm(trimmed)
     }, 200)
@@ -220,10 +223,10 @@ export default function DictionaryPage({
   // 1. Query từ điển chung VNJP
   const sentenceSearch = isSentenceQuery(searchTerm)
   const { data, isLoading, isError } = useQuery<DictionarySearchResult | DictionarySentenceAnalysis>({
-    queryKey: ['dictionary-search', searchTerm, sentenceSearch],
+    queryKey: ['dictionary-search', searchTerm, sentenceSearch, translateSentence],
     queryFn: () =>
       requestApi<DictionarySearchResult | DictionarySentenceAnalysis>({
-        url: sentenceSearch ? apiPaths.dictionary.analyze(searchTerm) : apiPaths.dictionary.search(searchTerm, 20),
+        url: sentenceSearch ? apiPaths.dictionary.analyze(searchTerm, translateSentence) : apiPaths.dictionary.search(searchTerm, 20),
       }),
     enabled: Boolean(searchTerm) && (activeTab === 'vocab' || activeTab === 'sentences'),
     staleTime: 1000 * 60 * 10,
@@ -260,6 +263,7 @@ export default function DictionaryPage({
     const trimmed = input.trim()
     if (trimmed) {
       setSearchTerm(trimmed)
+      setTranslateSentence(isSentenceQuery(trimmed))
       rememberSearch(trimmed)
     }
   }
@@ -267,12 +271,14 @@ export default function DictionaryPage({
   const handleQuickSearch = (keyword: string) => {
     setInput(keyword)
     setSearchTerm(keyword)
+    setTranslateSentence(false)
     rememberSearch(keyword)
   }
 
   const clearSearch = () => {
     setInput('')
     setSearchTerm('')
+    setTranslateSentence(false)
     setSelectedResultIndex(0)
     inputRef.current?.focus()
   }

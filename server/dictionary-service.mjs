@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { log, logError } from './logger.mjs'
+import { translateJapaneseToVietnamese } from './translation-provider.mjs'
 
 let DatabaseSync = null
 try {
@@ -684,7 +685,7 @@ export function createDictionaryService(dbPath) {
     return {
       available: false,
       search: () => [],
-      analyzeSentence: (text) => ({ input: String(text || ''), tokens: [], results: [], suggestions: [], grammarHints: [] }),
+      analyzeSentence: (text) => ({ input: String(text || ''), translation: null, translationSource: 'unavailable', tokens: [], results: [], suggestions: [], grammarHints: [] }),
       getWordDetail: () => null,
       getKanjiDetail: () => null,
     }
@@ -694,7 +695,7 @@ export function createDictionaryService(dbPath) {
     return {
       available: false,
       search: () => [],
-      analyzeSentence: (text) => ({ input: String(text || ''), tokens: [], results: [], suggestions: [], grammarHints: [] }),
+      analyzeSentence: (text) => ({ input: String(text || ''), translation: null, translationSource: 'unavailable', tokens: [], results: [], suggestions: [], grammarHints: [] }),
       getWordDetail: () => null,
       getKanjiDetail: () => null,
     }
@@ -709,7 +710,7 @@ export function createDictionaryService(dbPath) {
     return {
       available: false,
       search: () => [],
-      analyzeSentence: (text) => ({ input: String(text || ''), tokens: [], results: [], suggestions: [], grammarHints: [] }),
+      analyzeSentence: (text) => ({ input: String(text || ''), translation: null, translationSource: 'unavailable', tokens: [], results: [], suggestions: [], grammarHints: [] }),
       getWordDetail: () => null,
       getKanjiDetail: () => null,
     }
@@ -1342,9 +1343,20 @@ export function createDictionaryService(dbPath) {
       return res[0] || null
     },
 
-    async analyzeSentence(text) {
+    async analyzeSentence(text, { translate = false } = {}) {
       const input = String(text ?? '').trim().slice(0, 240)
       const exactSentence = stmtSentenceExact.get(input) || null
+      let translation = exactSentence?.sentence_vi || null
+      let translationSource = translation ? 'dictionary' : 'not-requested'
+      if (!translation && translate) {
+        try {
+          translation = await translateJapaneseToVietnamese(input)
+          if (translation) translationSource = 'machine'
+        } catch (error) {
+          translationSource = 'unavailable'
+          log('warn', 'dictionary.machine-translation-unavailable', { message: error.message })
+        }
+      }
       const segmenter = typeof Intl?.Segmenter === 'function' ? new Intl.Segmenter('ja', { granularity: 'word' }) : null
       const segments = segmenter
         ? Array.from(segmenter.segment(input)).map((item) => String(item.segment)).filter(Boolean)
@@ -1417,7 +1429,8 @@ export function createDictionaryService(dbPath) {
 
       return {
         input,
-        translation: exactSentence?.sentence_vi || null,
+        translation,
+        translationSource,
         reading: exactSentence?.furigana || null,
         tokens: segments.map((text, index) => ({ text, known: covered.has(index) || particles.has(text) || auxiliaryTokens.has(text) })),
         results: found.slice(0, 12),
