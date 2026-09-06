@@ -111,7 +111,8 @@ test('sends an audio chunk to Gemini and parses its structured transcript', asyn
       fileName: 'chunk.m4a',
       config: { provider: 'gemini', apiKey: 'test-key', model: 'gemini-3.5-flash-lite', timeoutMs: 10_000 },
       fetchImpl: async (url, options) => {
-        assert.match(String(url), /models\/gemini-3\.5-flash-lite:generateContent\?key=test-key$/)
+        assert.match(String(url), /models\/gemini-3\.5-flash-lite:generateContent$/)
+        assert.equal(options.headers['x-goog-api-key'], 'test-key')
         const body = JSON.parse(options.body)
         assert.equal(body.generationConfig.responseMimeType, 'application/json')
         assert.equal(body.contents[0].parts[1].inline_data.mime_type, 'audio/mp4')

@@ -11,10 +11,13 @@ export async function translateJapaneseToVietnamese(text, {
   if (!source || !apiKey) return null
 
   const response = await fetchImpl(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       signal: AbortSignal.timeout(10_000),
       body: JSON.stringify({
         contents: [{

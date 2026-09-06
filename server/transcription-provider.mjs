@@ -333,10 +333,13 @@ async function transcribeJapaneseAudioWithGemini({ filePath, config, fetchImpl }
   const audio = await readFile(filePath)
   const mimeType = filePath.endsWith('.wav') ? 'audio/wav' : filePath.endsWith('.mp3') ? 'audio/mp3' : 'audio/mp4'
   const response = await fetchImpl(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent`,
     {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': config.apiKey,
+      },
       body: JSON.stringify({
         contents: [
           {

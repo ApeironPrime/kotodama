@@ -17,7 +17,8 @@ test('translates a Japanese sentence through the configured machine provider', a
   })
 
   assert.equal(translated, 'Tôi chuẩn bị bài trước giờ học.')
-  assert.match(request.url, /models\/test-model:generateContent\?key=test-key$/)
+  assert.match(request.url, /models\/test-model:generateContent$/)
+  assert.equal(request.options.headers['x-goog-api-key'], 'test-key')
   assert.match(request.options.body, /授業の前に予習をします。/)
 })
 
