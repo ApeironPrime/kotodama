@@ -346,14 +346,13 @@ describe('NhaiKanji Frontend Feature Suite', () => {
 
     renderWithClient(<JlptPage />)
 
-    expect(screen.getByRole('heading', { name: 'Thi thử JLPT' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Đề mô phỏng JLPT' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Đề mô phỏng N4/i }))
 
-    await waitFor(() => {
-      expect(screen.getByText('Làm bài')).toBeTruthy()
-    })
-
-    // Click vào làm bài
-    fireEvent.click(screen.getByText('Làm bài'))
+    await waitFor(() => expect(screen.getByText('Kỳ 1 — tháng 07')).toBeTruthy())
+    fireEvent.click(screen.getByText('Kỳ 1 — tháng 07'))
+    await waitFor(() => expect(screen.getByText('Thi phần này')).toBeTruthy())
+    fireEvent.click(screen.getByText('Thi phần này'))
 
     await waitFor(() => {
       expect(screen.getByText('田中さんは【学生】です。')).toBeTruthy()
@@ -445,11 +444,11 @@ describe('NhaiKanji Frontend Feature Suite', () => {
 
     renderWithClient(<JlptPage />)
 
-    await waitFor(() => {
-      expect(screen.getByText('Làm bài')).toBeTruthy()
-    })
-
-    fireEvent.click(screen.getByText('Làm bài'))
+    fireEvent.click(screen.getByRole('button', { name: /Đề mô phỏng N3/i }))
+    await waitFor(() => expect(screen.getByText('Kỳ thi — tháng —')).toBeTruthy())
+    fireEvent.click(screen.getByText('Kỳ thi — tháng —'))
+    await waitFor(() => expect(screen.getByText('Thi phần này')).toBeTruthy())
+    fireEvent.click(screen.getByText('Thi phần này'))
 
     await waitFor(() => {
       expect(screen.getByText('アルバイトをしすぎていること')).toBeTruthy()
@@ -624,13 +623,11 @@ describe('NhaiKanji Frontend Feature Suite', () => {
 
     renderWithClient(<JlptPage />)
 
-    await waitFor(() => {
-      expect(screen.getAllByText(/180 ĐIỂM/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getByRole('button', { name: 'Thi thử' })).toBeTruthy()
-    })
-
-    // Click the full mock exam button.
-    fireEvent.click(screen.getByRole('button', { name: 'Thi thử' }))
+    fireEvent.click(screen.getByRole('button', { name: /Đề mô phỏng N3/i }))
+    await waitFor(() => expect(screen.getByText('Kỳ 2 — tháng 12')).toBeTruthy())
+    fireEvent.click(screen.getByText('Kỳ 2 — tháng 12'))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Thi toàn đề' })).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Thi toàn đề' }))
 
     // Verify Question Palette and question rendering
     await waitFor(() => {

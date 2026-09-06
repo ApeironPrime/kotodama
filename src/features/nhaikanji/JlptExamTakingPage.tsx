@@ -24,6 +24,13 @@ import { Button, Badge } from '../../components/ui'
 interface JlptExamTakingPageProps {
   examId: string
   onBack: () => void
+  mode?: 'exam' | 'review'
+}
+
+function formatExamTitle(exam: { level?: string; year?: number | string; session?: number | string }) {
+  const rawSession = String(exam.session ?? '').trim()
+  const month = rawSession === '1' || rawSession === '01' ? '07' : rawSession === '2' || rawSession === '02' ? '12' : rawSession || '—'
+  return `JLPT ${exam.level || 'N3'} — Tháng ${month}, năm ${exam.year || '—'}`
 }
 
 // Dedicated Standalone Audio Player Component for Mondai & Question
@@ -633,10 +640,11 @@ interface ExamSectionGroup {
   questionCount: number
 }
 
-export function JlptExamTakingPage({ examId, onBack }: JlptExamTakingPageProps) {
+export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTakingPageProps) {
+  const isReviewMode = mode === 'review'
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [timeLeft, setTimeLeft] = useState<number>(0)
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(isReviewMode)
   const [result, setResult] = useState<JlptSubmissionResult | null>(null)
   const [activeSectionIdx, setActiveSectionIdx] = useState(0)
   const [expandedScripts, setExpandedScripts] = useState<Record<string, boolean>>({})
@@ -910,7 +918,7 @@ export function JlptExamTakingPage({ examId, onBack }: JlptExamTakingPageProps) 
                 </Badge>
               )}
               <h1 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 800, color: 'var(--color-text, #0f172a)' }}>
-                {exam.title || `${exam.level} - ${exam.sectionLabel || 'Đề thi'}`}
+                {formatExamTitle(exam)}
               </h1>
             </div>
             <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.125rem' }}>
@@ -947,7 +955,11 @@ export function JlptExamTakingPage({ examId, onBack }: JlptExamTakingPageProps) 
             </Button>
           )}
 
-          {isSubmitted && (
+          {isReviewMode && (
+            <Badge variant="secondary">Chế độ học đáp án</Badge>
+          )}
+
+          {isSubmitted && !isReviewMode && (
             <Button variant="secondary" size="sm" onClick={handleRetake}>
               <RotateCcw size={16} /> Làm lại
             </Button>
@@ -1118,7 +1130,7 @@ export function JlptExamTakingPage({ examId, onBack }: JlptExamTakingPageProps) 
       {/* Official Certificate Result View on Submission */}
       {isSubmitted && result && (
         <div style={{ marginTop: '1.5rem' }}>
-          <JlptCertificate result={result} examTitle={exam.title} onRetake={handleRetake} onBack={onBack} />
+          <JlptCertificate result={result} examTitle={formatExamTitle(exam)} onRetake={handleRetake} onBack={onBack} />
         </div>
       )}
 

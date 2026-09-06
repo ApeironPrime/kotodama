@@ -131,7 +131,7 @@ describe('DictionaryPage Feature Suite', () => {
     },
   }
 
-  it('searches for vocabulary and switches to NhaiKanji detailed tab with story and audio vocab', async () => {
+  it('searches for vocabulary and renders its learning-reference detail', async () => {
     vi.mocked(requestApi).mockResolvedValue(sampleSearchResult)
     vi.mocked(nhaikanjiApi.fetchKanjiDetail).mockResolvedValue(sampleNhaiKanjiDetail)
 
@@ -142,20 +142,16 @@ describe('DictionaryPage Feature Suite', () => {
     fireEvent.change(input, { target: { value: '間' } })
 
     await waitFor(() => {
-      expect(screen.getByText('あいだ')).toBeTruthy()
+      expect(screen.getAllByText('あいだ').length).toBeGreaterThan(0)
       expect(screen.getByText('ở giữa, khoảng cách, khoảng thời gian')).toBeTruthy()
     })
 
-    // Click tab "Chi tiết (NhaiKanji)"
-    const detailTabBtn = screen.getByText(/Chi tiết \(NhaiKanji\)/i)
-    fireEvent.click(detailTabBtn)
-
     await waitFor(() => {
-      expect(screen.getByText(/Chiết tự & Mẹo nhớ Hán tự/i)).toBeTruthy()
-      expect(screen.getByText(/Cổng \(門\) ở Nhật \(日\) là cánh cổng thời gian/i)).toBeTruthy()
-      expect(screen.getByText('何時間')).toBeTruthy()
-      expect(screen.getByText('Bao nhiêu tiếng')).toBeTruthy()
-      expect(screen.getByText('何時間ねましたか。')).toBeTruthy()
+      expect(screen.getByText('Tổng quan')).toBeTruthy()
+      expect(screen.getByText('Câu ví dụ')).toBeTruthy()
+      expect(screen.getByText('Phân tích Kanji')).toBeTruthy()
+      expect(screen.getByText('長い間さがしていた本が見つかった。')).toBeTruthy()
+      expect(screen.getByText('Tôi đã tìm thấy cuốn sách mà tôi tìm kiếm suốt bấy lâu.')).toBeTruthy()
     })
   })
 

@@ -26,6 +26,7 @@ import { KanjiCanvas } from '../nhaikanji/KanjiCanvas'
 import { KanjiDetailModal } from '../nhaikanji/KanjiDetailModal'
 import { srsApi } from '../srs/srsApi'
 import { useAuth } from '../auth/authContext'
+import { DictionaryWordDetail } from './DictionaryWordDetail'
 
 const POPULAR_SEARCHES = ['学校', '先生', '勉強', '食べる', '感じ', '日本語', '桜', '時間', '犬', '雨']
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
@@ -644,8 +645,19 @@ export default function DictionaryPage({
             />
           )}
 
+          {activeTab === 'vocab' && !isLoading && results.length > 0 && primaryWord && (
+            <DictionaryWordDetail
+              word={primaryWord}
+              results={results}
+              isSaved={Boolean(savedSrs[primaryWord.word])}
+              onSave={() => handleSaveToSrs(primaryWord.word, primaryWord.meanings[0] || '', primaryWord.reading || '')}
+              onSpeak={speakJapanese}
+              onSearch={handleQuickSearch}
+            />
+          )}
+
           {/* Main 2-Column Content View */}
-          {!isLoading && results.length > 0 && primaryWord && (
+          {activeTab === 'sentences' && !isLoading && results.length > 0 && primaryWord && (
             <div
               style={{
                 display: 'grid',
