@@ -26,13 +26,11 @@ const NAV_TABS: Array<{ id: Page; label: string; icon: LucideIcon; badge?: strin
 ]
 
 export default function TopNav({
-  onSearchFocus,
   page,
   navigate,
   isAuthenticated,
   userName,
 }: {
-  onSearchFocus: () => void
   page: Page
   navigate: (page: Page) => void
   isAuthenticated: boolean
@@ -98,11 +96,6 @@ export default function TopNav({
               </button>
             ))}
           </div>
-          {page === 'dictionary' && (
-            <Button variant="secondary" size="sm" className="nav-search-button" onClick={onSearchFocus}>
-              Tìm từ
-            </Button>
-          )}
           <div className="nav-actions">
             <div
               className="nav-stat nav-stat--streak"

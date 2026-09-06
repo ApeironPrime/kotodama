@@ -57,10 +57,6 @@ function AppContent() {
     const dictionarySections: Page[] = ['vocabulary', 'bunpo', 'kanji']
     navigate(PAGE_PATHS[dictionarySections.includes(nextPage) ? 'dictionary' : nextPage])
   }
-  const focusSearch = () => {
-    searchInputRef.current?.focus()
-    searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
   const isAuthenticated = status === 'authenticated'
   useEffect(() => {
     if (sessionExpired && page && page !== 'login')
@@ -74,7 +70,6 @@ function AppContent() {
     return (
       <div className="app-shell">
         <TopNav
-          onSearchFocus={focusSearch}
           page="home"
           navigate={goTo}
           isAuthenticated={isAuthenticated}
@@ -105,7 +100,6 @@ function AppContent() {
   return (
     <div className="app-shell">
       <TopNav
-        onSearchFocus={focusSearch}
         page={page}
         navigate={goTo}
         isAuthenticated={isAuthenticated}
