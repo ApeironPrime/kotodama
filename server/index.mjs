@@ -770,6 +770,13 @@ async function route(request, response) {
     return respond({ results, count: results.length })
   }
 
+  if (request.method === 'GET' && path === '/api/v1/dictionary/analyze') {
+    const text = url.searchParams.get('text') ?? ''
+    if (!text.trim()) return fail(response, 422, 'Cần nhập câu tiếng Nhật để phân tích.', 'TEXT_REQUIRED')
+    const analysis = await dictionaryService.analyzeSentence(text)
+    return respond(analysis)
+  }
+
   const wordDetailMatch = path.match(/^\/api\/v1\/dictionary\/word\/(.+)$/)
   if (request.method === 'GET' && wordDetailMatch) {
     const word = decodeURIComponent(wordDetailMatch[1])

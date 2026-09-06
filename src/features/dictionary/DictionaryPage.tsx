@@ -20,7 +20,7 @@ import {
   X,
   Volume2,
 } from 'lucide-react'
-import { apiPaths, requestApi, type DictionarySearchResult } from '../../lib/apiClient'
+import { apiPaths, requestApi, type DictionarySearchResult, type DictionarySentenceAnalysis } from '../../lib/apiClient'
 import { nhaikanjiApi } from '../nhaikanji/nhaikanjiApi'
 import type { BunpoItem, KanjiSummary, KanjiVocabExample } from '../nhaikanji/nhaikanjiTypes'
 import { KanjiCanvas } from '../nhaikanji/KanjiCanvas'
@@ -39,6 +39,11 @@ const DICTIONARY_TABS = [
 ] as const
 
 type DictionaryTab = (typeof DICTIONARY_TABS)[number]['id']
+
+function isSentenceQuery(value: string) {
+  const japaneseCharacters = value.match(/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/gu)?.length ?? 0
+  return japaneseCharacters >= 6 && (/[。！？!?]/.test(value) || /[はがをにでとのもへ]([\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}])/u.test(value))
+}
 
 function speakJapanese(text: string) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
@@ -212,11 +217,12 @@ export default function DictionaryPage({
   }, [searchTerm])
 
   // 1. Query từ điển chung VNJP
-  const { data, isLoading, isError } = useQuery<DictionarySearchResult>({
-    queryKey: ['dictionary-search', searchTerm],
+  const sentenceSearch = isSentenceQuery(searchTerm)
+  const { data, isLoading, isError } = useQuery<DictionarySearchResult | DictionarySentenceAnalysis>({
+    queryKey: ['dictionary-search', searchTerm, sentenceSearch],
     queryFn: () =>
-      requestApi<DictionarySearchResult>({
-        url: apiPaths.dictionary.search(searchTerm, 20),
+      requestApi<DictionarySearchResult | DictionarySentenceAnalysis>({
+        url: sentenceSearch ? apiPaths.dictionary.analyze(searchTerm) : apiPaths.dictionary.search(searchTerm, 20),
       }),
     enabled: Boolean(searchTerm) && (activeTab === 'vocab' || activeTab === 'sentences'),
     staleTime: 1000 * 60 * 10,
@@ -285,6 +291,7 @@ export default function DictionaryPage({
   }
 
   const results = data?.results ?? []
+  const sentenceAnalysis = data && 'tokens' in data ? data : null
   const primaryWord = results[selectedResultIndex] ?? results[0]
 
   // Tìm Kanji đang chọn cho tab "Chi tiết"
@@ -675,6 +682,34 @@ export default function DictionaryPage({
                 </Button>
               }
             />
+          )}
+
+          {sentenceAnalysis && !isLoading && !isError && (
+            <section className="dictionary-sentence-analysis" aria-label="Phân tích câu">
+              <div className="dictionary-sentence-analysis__heading">
+                <strong>Đã tách câu thành các mục có thể tra</strong>
+                <span>Chọn kết quả phía dưới để xem chi tiết</span>
+              </div>
+              <div className="dictionary-sentence-analysis__tokens" aria-label="Các thành phần trong câu">
+                {sentenceAnalysis.tokens.map((token, index) => (
+                  <span key={`${token.text}-${index}`} className={token.known ? 'is-known' : 'is-unknown'}>{token.text}</span>
+                ))}
+              </div>
+              {sentenceAnalysis.suggestions.length > 0 && (
+                <div className="dictionary-sentence-analysis__suggestions">
+                  {sentenceAnalysis.suggestions.map((item) => (
+                    <button type="button" key={`${item.input}-${item.suggestion}`} onClick={() => handleQuickSearch(item.suggestion)}>
+                      Có phải bạn muốn tra <b>{item.suggestion}</b>{item.reading ? ` (${item.reading})` : ''} thay cho “{item.input}”?
+                    </button>
+                  ))}
+                </div>
+              )}
+              {sentenceAnalysis.grammarHints.length > 0 && (
+                <div className="dictionary-sentence-analysis__hints">
+                  {sentenceAnalysis.grammarHints.map((hint) => <p key={hint}>{hint}</p>)}
+                </div>
+              )}
+            </section>
           )}
 
           {activeTab === 'vocab' && !isLoading && results.length > 0 && primaryWord && (

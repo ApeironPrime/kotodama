@@ -2604,6 +2604,19 @@ html[data-accent='white'] .ui-button--primary {
 
 /* Detailed dictionary result: a single, scannable learning reference. */
 .dictionary-vocab-results { display: grid; gap: var(--space-4); }
+.dictionary-sentence-analysis { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid color-mix(in srgb, var(--color-info) 32%, var(--color-border)); border-radius: var(--radius-xl); background: color-mix(in srgb, var(--color-info) 7%, var(--color-bg-surface)); }
+.dictionary-sentence-analysis__heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.dictionary-sentence-analysis__heading strong { color: var(--color-text); font-size: var(--font-size-sm); }
+.dictionary-sentence-analysis__heading span { color: var(--color-text-muted); font-size: var(--font-size-xs); }
+.dictionary-sentence-analysis__tokens { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.dictionary-sentence-analysis__tokens span { border: 1px solid var(--color-border); border-radius: var(--radius-pill); color: var(--color-text-secondary); background: var(--color-bg-elevated); font-family: var(--font-jp); padding: .3rem .6rem; }
+.dictionary-sentence-analysis__tokens .is-known { border-color: color-mix(in srgb, var(--color-success) 42%, var(--color-border)); color: color-mix(in srgb, var(--color-success) 70%, var(--color-text)); background: color-mix(in srgb, var(--color-success) 10%, var(--color-bg-elevated)); }
+.dictionary-sentence-analysis__tokens .is-unknown { border-color: color-mix(in srgb, var(--color-warning) 48%, var(--color-border)); color: color-mix(in srgb, var(--color-warning) 70%, var(--color-text)); }
+.dictionary-sentence-analysis__suggestions, .dictionary-sentence-analysis__hints { display: grid; gap: var(--space-2); }
+.dictionary-sentence-analysis__suggestions button { width: fit-content; max-width: 100%; border: 0; border-radius: var(--radius-md); color: var(--color-text-secondary); background: transparent; cursor: pointer; font: inherit; font-size: var(--font-size-sm); padding: var(--space-2); text-align: left; }
+.dictionary-sentence-analysis__suggestions button:hover { color: var(--color-accent); background: var(--color-accent-subtle); }
+.dictionary-sentence-analysis__suggestions b { color: var(--color-accent); font-family: var(--font-jp); }
+.dictionary-sentence-analysis__hints p { margin: 0; padding: var(--space-2) var(--space-3); border-left: .2rem solid var(--color-warning); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--line-height-relaxed); }
 .dictionary-vocab-results__meta { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .dictionary-vocab-results__meta b { color: var(--color-accent); }
 .dictionary-vocab-results__meta small { color: var(--color-text-muted); }

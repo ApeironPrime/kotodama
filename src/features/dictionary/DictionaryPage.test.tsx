@@ -13,6 +13,7 @@ vi.mock('../../lib/apiClient', () => ({
     dictionary: {
       search: (q: string, limit?: number) =>
         `/api/v1/dictionary/search?keyword=${encodeURIComponent(q)}&limit=${limit || 20}`,
+      analyze: (text: string) => `/api/v1/dictionary/analyze?text=${encodeURIComponent(text)}`,
       wordDetail: (w: string) => `/api/v1/dictionary/word/${encodeURIComponent(w)}`,
     },
     nhaikanji: {
@@ -171,6 +172,30 @@ describe('DictionaryPage Feature Suite', () => {
     await waitFor(() => {
       expect(screen.getByText('Sẵn sàng tra cứu')).toBeTruthy()
       expect((input as HTMLInputElement).value).toBe('')
+    })
+  })
+
+  it('analyzes a Japanese sentence into dictionary entries without forcing a correction', async () => {
+    vi.mocked(requestApi).mockResolvedValue({
+      input: '授業の前に予習をします。',
+      tokens: [
+        { text: '授業', known: true },
+        { text: 'の', known: true },
+        { text: '予習', known: true },
+      ],
+      results: sampleSearchResult.results,
+      suggestions: [],
+      grammarHints: [],
+    })
+
+    const inputRef = { current: null }
+    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Từ cần tra' }), { target: { value: '授業の前に予習をします。' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Đã tách câu thành các mục có thể tra')).toBeTruthy()
+      expect(screen.getByText('授業')).toBeTruthy()
+      expect(screen.getByText('予習')).toBeTruthy()
     })
   })
 

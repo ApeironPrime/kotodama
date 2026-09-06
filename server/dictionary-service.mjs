@@ -684,6 +684,7 @@ export function createDictionaryService(dbPath) {
     return {
       available: false,
       search: () => [],
+      analyzeSentence: (text) => ({ input: String(text || ''), tokens: [], results: [], suggestions: [], grammarHints: [] }),
       getWordDetail: () => null,
       getKanjiDetail: () => null,
     }
@@ -693,6 +694,7 @@ export function createDictionaryService(dbPath) {
     return {
       available: false,
       search: () => [],
+      analyzeSentence: (text) => ({ input: String(text || ''), tokens: [], results: [], suggestions: [], grammarHints: [] }),
       getWordDetail: () => null,
       getKanjiDetail: () => null,
     }
@@ -707,6 +709,7 @@ export function createDictionaryService(dbPath) {
     return {
       available: false,
       search: () => [],
+      analyzeSentence: (text) => ({ input: String(text || ''), tokens: [], results: [], suggestions: [], grammarHints: [] }),
       getWordDetail: () => null,
       getKanjiDetail: () => null,
     }
@@ -1331,6 +1334,87 @@ export function createDictionaryService(dbPath) {
     async getWordDetail(wordText) {
       const res = await this.search(wordText, { limit: 1 })
       return res[0] || null
+    },
+
+    async analyzeSentence(text) {
+      const input = String(text ?? '').trim().slice(0, 240)
+      const segmenter = typeof Intl?.Segmenter === 'function' ? new Intl.Segmenter('ja', { granularity: 'word' }) : null
+      const segments = segmenter
+        ? Array.from(segmenter.segment(input)).map((item) => String(item.segment)).filter(Boolean)
+        : input.match(/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]+/gu) || []
+      const particles = new Set(['は', 'が', 'を', 'に', 'で', 'と', 'の', 'も', 'へ', 'や', 'か', 'ね', 'よ', 'ぞ', 'さ'])
+      const auxiliaryTokens = new Set(['し', 'ます', 'た', 'ない', 'です', 'だ', 'て', 'れる', 'られる', 'せる', 'させる'])
+      const candidates = new Map()
+      const addCandidate = (value, indexes) => {
+        const word = String(value || '').trim()
+        if (!word || particles.has(word) || auxiliaryTokens.has(word) || !/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(word)) return
+        if (!candidates.has(word)) candidates.set(word, indexes)
+      }
+
+      for (let index = 0; index < segments.length; index += 1) {
+        if (particles.has(segments[index])) continue
+        for (let width = 1; width <= 3 && index + width <= segments.length; width += 1) {
+          const chunk = segments.slice(index, index + width)
+          if (chunk.some((part) => /^[、。！？!?]$/.test(part) || particles.has(part))) break
+          addCandidate(chunk.join(''), Array.from({ length: width }, (_, offset) => index + offset))
+        }
+        if (segments[index + 1] === 'を' && segments[index + 2] === 'し' && /^ま(す|した|せん)$/.test(segments[index + 3] || '')) {
+          addCandidate(`${segments[index]}する`, [index, index + 1, index + 2, index + 3])
+        }
+      }
+
+      const found = []
+      const foundWords = new Set()
+      const covered = new Set()
+      for (const [candidate, indexes] of Array.from(candidates.entries()).slice(0, 36)) {
+        const matches = await this.search(candidate, { limit: 5 })
+        const exact = matches.find((item) => item.word === candidate || item.reading === candidate)
+        if (!exact || foundWords.has(exact.word)) continue
+        foundWords.add(exact.word)
+        found.push(exact)
+        indexes.forEach((index) => covered.add(index))
+      }
+
+      const unknown = segments.filter((segment, index) => {
+        if (covered.has(index) || particles.has(segment) || auxiliaryTokens.has(segment) || /^[、。！？!?]$/.test(segment)) return false
+        return /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(segment)
+      })
+      const distance = (left, right) => {
+        const a = Array.from(left)
+        const b = Array.from(right)
+        const row = Array.from({ length: b.length + 1 }, (_, index) => index)
+        for (let i = 1; i <= a.length; i += 1) {
+          let previous = row[0]
+          row[0] = i
+          for (let j = 1; j <= b.length; j += 1) {
+            const next = Math.min(row[j] + 1, row[j - 1] + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1))
+            previous = row[j]
+            row[j] = next
+          }
+        }
+        return row[b.length]
+      }
+      const suggestions = []
+      for (const token of unknown.filter((item) => Array.from(item).length >= 2).slice(0, 4)) {
+        const nearby = await this.search(Array.from(token)[0], { limit: 20 })
+        const candidate = nearby.find((item) => {
+          const threshold = Array.from(token).length <= 4 ? 1 : 2
+          return distance(token, item.word) <= threshold || (item.reading && distance(token, item.reading) <= threshold)
+        })
+        if (candidate && !suggestions.some((item) => item.suggestion === candidate.word)) {
+          suggestions.push({ input: token, suggestion: candidate.word, reading: candidate.reading || null })
+        }
+      }
+      const lastWord = [...segments].reverse().find((segment) => /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(segment))
+      const grammarHints = lastWord && particles.has(lastWord) ? [`Câu đang kết thúc bằng trợ từ “${lastWord}”; có thể đang thiếu vị ngữ phía sau.`] : []
+
+      return {
+        input,
+        tokens: segments.map((text, index) => ({ text, known: covered.has(index) || particles.has(text) || auxiliaryTokens.has(text) })),
+        results: found.slice(0, 12),
+        suggestions,
+        grammarHints,
+      }
     },
 
     getKanjiDetail(char) {
