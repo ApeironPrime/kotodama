@@ -161,6 +161,8 @@ export interface DictionarySearchResult {
 
 export interface DictionarySentenceAnalysis {
   input: string
+  translation?: string | null
+  reading?: string | null
   tokens: Array<{ text: string; known: boolean }>
   results: DictionaryWordItem[]
   suggestions: Array<{ input: string; suggestion: string; reading?: string | null }>

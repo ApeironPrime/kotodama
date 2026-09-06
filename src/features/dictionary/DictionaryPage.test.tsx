@@ -178,6 +178,7 @@ describe('DictionaryPage Feature Suite', () => {
   it('analyzes a Japanese sentence into dictionary entries without forcing a correction', async () => {
     vi.mocked(requestApi).mockResolvedValue({
       input: '授業の前に予習をします。',
+      translation: 'Trước giờ học, tôi chuẩn bị bài.',
       tokens: [
         { text: '授業', known: true },
         { text: 'の', known: true },
@@ -193,9 +194,10 @@ describe('DictionaryPage Feature Suite', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Từ cần tra' }), { target: { value: '授業の前に予習をします。' } })
 
     await waitFor(() => {
-      expect(screen.getByText('Đã tách câu thành các mục có thể tra')).toBeTruthy()
-      expect(screen.getByText('授業')).toBeTruthy()
-      expect(screen.getByText('予習')).toBeTruthy()
+      expect(screen.getByText('Nghĩa của câu')).toBeTruthy()
+      expect(screen.getByText('Trước giờ học, tôi chuẩn bị bài.')).toBeTruthy()
+      expect(screen.getAllByText('授業の前に予習をします。').length).toBeGreaterThan(0)
+      expect(screen.getByText('間')).toBeTruthy()
     })
   })
 

@@ -28,6 +28,7 @@ import { KanjiDetailModal } from '../nhaikanji/KanjiDetailModal'
 import { srsApi } from '../srs/srsApi'
 import { useAuth } from '../auth/authContext'
 import { DictionaryWordDetail } from './DictionaryWordDetail'
+import { DictionarySentenceDetail } from './DictionarySentenceDetail'
 
 const POPULAR_SEARCHES = ['学校', '先生', '勉強', '食べる', '感じ', '日本語', '桜', '時間', '犬', '雨']
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
@@ -684,35 +685,11 @@ export default function DictionaryPage({
             />
           )}
 
-          {sentenceAnalysis && !isLoading && !isError && (
-            <section className="dictionary-sentence-analysis" aria-label="Phân tích câu">
-              <div className="dictionary-sentence-analysis__heading">
-                <strong>Đã tách câu thành các mục có thể tra</strong>
-                <span>Chọn kết quả phía dưới để xem chi tiết</span>
-              </div>
-              <div className="dictionary-sentence-analysis__tokens" aria-label="Các thành phần trong câu">
-                {sentenceAnalysis.tokens.map((token, index) => (
-                  <span key={`${token.text}-${index}`} className={token.known ? 'is-known' : 'is-unknown'}>{token.text}</span>
-                ))}
-              </div>
-              {sentenceAnalysis.suggestions.length > 0 && (
-                <div className="dictionary-sentence-analysis__suggestions">
-                  {sentenceAnalysis.suggestions.map((item) => (
-                    <button type="button" key={`${item.input}-${item.suggestion}`} onClick={() => handleQuickSearch(item.suggestion)}>
-                      Có phải bạn muốn tra <b>{item.suggestion}</b>{item.reading ? ` (${item.reading})` : ''} thay cho “{item.input}”?
-                    </button>
-                  ))}
-                </div>
-              )}
-              {sentenceAnalysis.grammarHints.length > 0 && (
-                <div className="dictionary-sentence-analysis__hints">
-                  {sentenceAnalysis.grammarHints.map((hint) => <p key={hint}>{hint}</p>)}
-                </div>
-              )}
-            </section>
+          {activeTab === 'vocab' && sentenceAnalysis && !isLoading && !isError && (
+            <DictionarySentenceDetail analysis={sentenceAnalysis} onSpeak={speakJapanese} onSearch={handleQuickSearch} />
           )}
 
-          {activeTab === 'vocab' && !isLoading && results.length > 0 && primaryWord && (
+          {activeTab === 'vocab' && !sentenceAnalysis && !isLoading && results.length > 0 && primaryWord && (
             <div className="dictionary-vocab-results">
               <div className="dictionary-vocab-results__meta" aria-live="polite">
                 <span><b>{results.length}</b> kết quả cho “{searchTerm}”</span>

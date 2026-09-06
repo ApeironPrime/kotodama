@@ -904,6 +904,12 @@ export function createDictionaryService(dbPath) {
     WHERE sentence_jp LIKE ? AND sentence_vi != ''
     LIMIT ?
   `)
+  const stmtSentenceExact = db.prepare(`
+    SELECT sentence_jp, furigana, sentence_vi
+    FROM maucau
+    WHERE sentence_jp = ? AND sentence_vi != ''
+    LIMIT 1
+  `)
 
   function enrichKanji(wordText) {
     const kanjiChars = extractKanjis(wordText)
@@ -1338,6 +1344,7 @@ export function createDictionaryService(dbPath) {
 
     async analyzeSentence(text) {
       const input = String(text ?? '').trim().slice(0, 240)
+      const exactSentence = stmtSentenceExact.get(input) || null
       const segmenter = typeof Intl?.Segmenter === 'function' ? new Intl.Segmenter('ja', { granularity: 'word' }) : null
       const segments = segmenter
         ? Array.from(segmenter.segment(input)).map((item) => String(item.segment)).filter(Boolean)
@@ -1410,6 +1417,8 @@ export function createDictionaryService(dbPath) {
 
       return {
         input,
+        translation: exactSentence?.sentence_vi || null,
+        reading: exactSentence?.furigana || null,
         tokens: segments.map((text, index) => ({ text, known: covered.has(index) || particles.has(text) || auxiliaryTokens.has(text) })),
         results: found.slice(0, 12),
         suggestions,
