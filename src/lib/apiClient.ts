@@ -141,6 +141,7 @@ export interface DictionaryWordItem {
   id: number
   word: string
   reading?: string | null
+  readingVariants?: string[]
   romaji?: string | null
   hanViet?: string | null
   jlpt?: string | null

@@ -55,6 +55,13 @@ function wordTypeLabel(pos?: string | null) {
   return labels.join(' · ') || pos
 }
 
+function cleanReadingTokens(value?: string | null) {
+  return String(value || '')
+    .split(/[\s、,;\/・]+/)
+    .map((item) => item.trim())
+    .filter((item, index, list) => item && list.indexOf(item) === index)
+}
+
 export function DictionaryWordDetail({
   word,
   results,
@@ -71,6 +78,13 @@ export function DictionaryWordDetail({
   onSearch: (word: string) => void
 }) {
   const forms = useMemo(() => conjugations(word), [word])
+  const readings = useMemo(() => {
+    const fromApi = [word.reading || '', ...(word.readingVariants || [])]
+    return fromApi.flatMap(cleanReadingTokens).filter((item, index, list) => list.indexOf(item) === index).slice(0, 8)
+  }, [word.reading, word.readingVariants])
+  const primaryReading = readings[0] || '—'
+  const readingVariants = readings.slice(1)
+  const romaji = (word.romaji || '').split(/\s+/)[0] || null
   const related = useMemo(() => {
     const merged = [...(word.relatedWords || []), ...results.slice(1).map((item) => ({ word: item.word, reading: item.reading || undefined, meaning: item.meanings[0] }))]
     return merged.filter((item, index, list) => item.word !== word.word && list.findIndex((candidate) => candidate.word === item.word) === index).slice(0, 6)
@@ -82,7 +96,7 @@ export function DictionaryWordDetail({
       <header className="dictionary-word-detail__hero">
         <div>
           <h1>{word.word}</h1>
-          <p>{word.reading || '—'}{word.romaji ? ` · ${word.romaji}` : ''}</p>
+          <p>{primaryReading}{romaji ? ` · ${romaji}` : ''}</p>
           <div className="dictionary-word-detail__badges">
             {word.jlpt && <Badge variant="danger">JLPT {word.jlpt}</Badge>}
             {type && <Badge variant="primary">{type}</Badge>}
@@ -100,18 +114,31 @@ export function DictionaryWordDetail({
           <Card className="dictionary-word-section" padding="lg">
             <h2><BookOpenCheck size={18} /> Tổng quan</h2>
             <div className="dictionary-overview">
-              <div className="dictionary-overview__word"><strong>{word.word}</strong><dl><div><dt>Furigana</dt><dd>{word.reading || '—'}</dd></div>{word.romaji && <div><dt>Romaji</dt><dd>{word.romaji}</dd></div>}<div><dt>Từ loại</dt><dd>{type || 'Chưa phân loại'}</dd></div></dl></div>
-              <div className="dictionary-overview__meanings"><div><span>VI TIẾNG VIỆT</span><strong>{word.meanings.join('; ') || 'Chưa có nghĩa tiếng Việt.'}</strong></div><aside><Sparkles size={16} /><p>Dữ liệu nghĩa, cách đọc và ví dụ được lấy từ kho từ điển gốc. Lưu từ vào SRS để ôn lại sau.</p></aside></div>
+              <div className="dictionary-overview__word">
+                <strong>{word.word}</strong>
+                <dl>
+                  <div><dt>Furigana</dt><dd>{primaryReading}</dd></div>
+                  {romaji && <div><dt>Romaji</dt><dd>{romaji}</dd></div>}
+                  <div><dt>Hán Việt</dt><dd>{word.hanViet || '—'}</dd></div>
+                  <div><dt>JLPT</dt><dd>{word.jlpt || 'Chưa phân loại'}</dd></div>
+                  <div><dt>Từ loại</dt><dd>{type || 'Chưa phân loại'}</dd></div>
+                </dl>
+              </div>
+              <div className="dictionary-overview__meanings">
+                <div><span>VI TIẾNG VIỆT</span><strong>{word.meanings.join('; ') || 'Chưa có nghĩa tiếng Việt.'}</strong></div>
+                {readingVariants.length > 0 && <div className="dictionary-reading-variants"><span>CÁCH ĐỌC KHÁC</span><div>{readingVariants.map((reading) => <button type="button" key={reading} onClick={() => onSpeak(word.word || reading)}>{reading}</button>)}</div></div>}
+                <aside><Sparkles size={16} /><p>Dữ liệu nghĩa, cách đọc và ví dụ lấy từ kho từ điển. Các cách đọc ít phổ biến được giữ riêng để không làm rối mục từ chính.</p></aside>
+              </div>
             </div>
           </Card>
 
           {forms.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><Layers3 size={18} /> Chia động từ</h2><div className="dictionary-conjugation"><div className="dictionary-conjugation__head"><span>Thể</span><span>Tiếng Nhật</span></div>{forms.map((form) => <div key={form.label}><span>{form.label}</span><strong>{form.value}</strong></div>)}</div></Card>}
 
-          {word.examples && word.examples.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><MessageCircleMore size={18} /> Câu ví dụ</h2><div className="dictionary-examples">{word.examples.map((example, index) => <article key={`${example.sentenceJp}-${index}`}><div><span>Ví dụ {index + 1}</span><strong>{example.sentenceJp}</strong>{example.furigana && <small>{example.furigana}</small>}{example.sentenceVi && <p><b>VI</b> {example.sentenceVi}</p>}</div><button type="button" onClick={() => onSpeak(example.sentenceJp)} aria-label="Nghe câu ví dụ"><Volume2 size={16} /></button></article>)}</div></Card>}
-
-          {related.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><Link2 size={18} /> Từ tương tự</h2><div className="dictionary-related-grid">{related.map((item) => <button type="button" key={item.word} onClick={() => onSearch(item.word)}><strong>{item.word}</strong>{item.reading && <small>{item.reading}</small>}<span>{item.meaning || 'Xem nghĩa chi tiết'}</span><ChevronRight size={16} /></button>)}</div></Card>}
-
           {word.kanjis.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><span className="dictionary-kanji-heading">漢</span> Phân tích Kanji</h2><div className="dictionary-kanji-grid">{word.kanjis.map((kanji) => <article key={kanji.character}><strong>{kanji.character}</strong><div><span>Âm On</span><b>{kanji.onyomi || '—'}</b></div><div><span>Âm Kun</span><b>{kanji.kunyomi || '—'}</b></div><div><span>Số nét</span><b>{kanji.strokeCount || '—'}</b></div><div><span>JLPT</span><b>{kanji.jlpt || '—'}</b></div></article>)}</div></Card>}
+
+          {related.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><Link2 size={18} /> Từ tương ứng</h2><p className="dictionary-word-section__hint">Các từ cùng nhóm hoặc kết quả gần với từ đang tra.</p><div className="dictionary-related-grid">{related.map((item) => <button type="button" key={item.word} onClick={() => onSearch(item.word)}><strong>{item.word}</strong>{item.reading && <small>{cleanReadingTokens(item.reading)[0] || item.reading}</small>}<span>{item.meaning || 'Xem nghĩa chi tiết'}</span><ChevronRight size={16} /></button>)}</div></Card>}
+
+          {word.examples && word.examples.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><MessageCircleMore size={18} /> Câu ví dụ</h2><div className="dictionary-examples">{word.examples.map((example, index) => <article key={`${example.sentenceJp}-${index}`}><div><span>Ví dụ {index + 1}</span><strong>{example.sentenceJp}</strong>{example.furigana && <small>{example.furigana}</small>}{example.sentenceVi && <p><b>VI</b> {example.sentenceVi}</p>}</div><button type="button" onClick={() => onSpeak(example.sentenceJp)} aria-label="Nghe câu ví dụ"><Volume2 size={16} /></button></article>)}</div></Card>}
         </div>
       </section>
     </div>

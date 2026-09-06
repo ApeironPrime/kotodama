@@ -2619,12 +2619,16 @@ html[data-accent='white'] .ui-button--primary {
 .dictionary-word-detail__hero h1 { margin: 0; color: var(--color-text); font: 750 clamp(2.5rem, 5vw, 4.5rem) / 1 var(--font-jp); letter-spacing: .02em; }
 .dictionary-word-detail__hero p { margin: var(--space-2) 0 0; color: var(--color-text-secondary); font: 500 var(--font-size-lg) var(--font-jp); }
 .dictionary-word-detail__badges { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.dictionary-word-detail__badges > span { display: inline-flex; align-items: center; min-height: 1.8rem; padding: .25rem .6rem; border: 1px solid var(--color-border); border-radius: var(--radius-pill); color: var(--color-text-secondary); background: var(--color-bg-elevated); font-size: var(--font-size-xs); font-weight: 750; }
+.dictionary-word-detail__badges > span:nth-child(1) { border-color: color-mix(in srgb, var(--color-accent) 38%, var(--color-border)); color: var(--color-accent); background: var(--color-accent-subtle); }
+.dictionary-word-detail__badges > span:nth-child(2) { border-color: color-mix(in srgb, var(--color-info) 36%, var(--color-border)); color: var(--color-info); background: color-mix(in srgb, var(--color-info) 10%, var(--color-bg-elevated)); }
 .dictionary-word-detail__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }
 .dictionary-word-detail__listen { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg-elevated); color: var(--color-text-secondary); cursor: pointer; }
 .dictionary-word-detail__listen:hover, .dictionary-examples button:hover { border-color: var(--color-accent); color: var(--color-accent); }
 .dictionary-word-section { border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-bg-surface); }
 .dictionary-word-section > h2 { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-5); color: var(--color-text); font: 750 var(--font-size-lg) var(--font-sans); }
 .dictionary-word-section > h2 > svg, .dictionary-kanji-heading { color: var(--color-accent); }
+.dictionary-word-section__hint { margin: calc(var(--space-4) * -1) 0 var(--space-4); color: var(--color-text-muted); font-size: var(--font-size-sm); }
 .dictionary-overview { display: grid; grid-template-columns: minmax(13rem, .9fr) minmax(18rem, 1.1fr); gap: var(--space-6); align-items: start; }
 .dictionary-overview__word > strong { color: var(--color-text); font: 750 clamp(3rem, 6vw, 5.4rem) / 1 var(--font-jp); }
 .dictionary-overview dl { display: grid; gap: var(--space-2); margin: var(--space-5) 0 0; }
@@ -2634,6 +2638,9 @@ html[data-accent='white'] .ui-button--primary {
 .dictionary-overview__meanings { display: grid; gap: var(--space-3); }
 .dictionary-overview__meanings > div, .dictionary-overview__meanings aside { padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-bg-elevated); }
 .dictionary-overview__meanings strong { display: block; margin-top: var(--space-2); color: var(--color-text); font: 700 var(--font-size-lg) / var(--line-height-relaxed) var(--font-sans); }
+.dictionary-reading-variants > div { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.dictionary-reading-variants button { border: 1px solid var(--color-border); border-radius: var(--radius-pill); color: var(--color-text-secondary); background: var(--color-bg-surface); cursor: pointer; font: 600 var(--font-size-sm) var(--font-jp); padding: .35rem .6rem; }
+.dictionary-reading-variants button:hover { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-subtle); }
 .dictionary-overview__meanings aside { display: flex; gap: var(--space-2); border-color: color-mix(in srgb, var(--color-accent) 32%, var(--color-border)); background: var(--color-accent-subtle); color: var(--color-text-secondary); }
 .dictionary-overview__meanings aside svg { flex: 0 0 auto; color: var(--color-accent); }
 .dictionary-overview__meanings aside p { margin: 0; font-size: var(--font-size-sm); line-height: var(--line-height-relaxed); }

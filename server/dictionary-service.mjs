@@ -1051,11 +1051,17 @@ export function createDictionaryService(dbPath) {
       relatedWords = getRelatedWords(row.word)
     }
 
+    const readings = String(row.reading || '')
+      .split(/[\s、,;\/・]+/)
+      .map((item) => item.trim())
+      .filter((item, index, list) => item && list.indexOf(item) === index)
+
     return {
       id: row.id,
       word: row.word,
-      reading: row.reading,
-      romaji: row.romaji && !/[\u3040-\u30ff]/.test(row.romaji) ? row.romaji : row.reading ? kanaToRomaji(row.reading) : null,
+      reading: readings[0] || null,
+      readingVariants: readings.slice(1, 8),
+      romaji: row.romaji && !/[\u3040-\u30ff\s]/.test(row.romaji) ? row.romaji : readings[0] ? kanaToRomaji(readings[0]) : null,
       hanViet: hanViet || null,
       jlpt: jlpt || null,
       partOfSpeech: row.part_of_speech || 'Danh từ chung',
@@ -1149,11 +1155,17 @@ export function createDictionaryService(dbPath) {
           }
 
           if (masterRows.length > 0) {
-            return masterRows.map((r, idx) => ({
+            return masterRows.map((r, idx) => {
+              const readings = String(r.reading || '')
+                .split(/[\s、,;\/・]+/)
+                .map((item) => item.trim())
+                .filter((item, index, list) => item && list.indexOf(item) === index)
+              return {
               id: 2000000 + idx,
               word: r.word,
-              reading: r.reading,
-              romaji: r.reading ? kanaToRomaji(r.reading) : null,
+              reading: readings[0] || null,
+              readingVariants: readings.slice(1, 8),
+              romaji: readings[0] ? kanaToRomaji(readings[0]) : null,
               hanViet: r.han_viet || null,
               jlpt: r.jlpt || null,
               partOfSpeech: r.pos || 'Danh từ',
@@ -1165,7 +1177,8 @@ export function createDictionaryService(dbPath) {
                 furigana: e.furigana || null,
                 sentenceVi: e.vi,
               })),
-            }))
+              }
+            })
           }
         } catch {}
       }
