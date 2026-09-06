@@ -2615,6 +2615,7 @@ html[data-accent='white'] .ui-button--primary {
 .dictionary-result-picker span { grid-area: reading; align-self: center; color: var(--color-text-muted); font: 500 var(--font-size-sm) var(--font-jp); }
 .dictionary-result-picker small { grid-area: meaning; overflow: hidden; color: var(--color-text-secondary); font-size: var(--font-size-xs); line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .dictionary-word-detail { display: grid; gap: var(--space-5); }
+.dictionary-word-detail__content { display: grid; gap: 1.25rem; }
 .dictionary-word-detail__hero { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-5); padding: var(--space-5) var(--space-1) var(--space-5); border-bottom: 1px solid var(--color-border); }
 .dictionary-word-detail__hero h1 { margin: 0; color: var(--color-text); font: 750 clamp(2.5rem, 5vw, 4.5rem) / 1 var(--font-jp); letter-spacing: .02em; }
 .dictionary-word-detail__hero p { margin: var(--space-2) 0 0; color: var(--color-text-secondary); font: 500 var(--font-size-lg) var(--font-jp); }
