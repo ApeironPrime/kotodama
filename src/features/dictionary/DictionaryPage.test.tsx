@@ -155,6 +155,25 @@ describe('DictionaryPage Feature Suite', () => {
     })
   })
 
+  it('lets the learner clear a query and return to the ready state', async () => {
+    vi.mocked(requestApi).mockResolvedValue(sampleSearchResult)
+
+    const inputRef = { current: null }
+    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+
+    const input = screen.getByRole('textbox', { name: 'Từ cần tra' })
+    fireEvent.change(input, { target: { value: '間' } })
+
+    await waitFor(() => expect(screen.getByText('Tổng quan')).toBeTruthy())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa từ đang tìm' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Sẵn sàng tra cứu')).toBeTruthy()
+      expect((input as HTMLInputElement).value).toBe('')
+    })
+  })
+
   it('switches to Kanji tab and renders NhaiKanji grid with level filters', async () => {
     vi.mocked(nhaikanjiApi.fetchKanjiList).mockResolvedValue({
       items: [sampleNhaiKanjiDetail.summary],

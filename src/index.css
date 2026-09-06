@@ -2439,6 +2439,22 @@ html[data-accent='white'] .ui-button--primary {
   outline: 0;
   box-shadow: none;
 }
+.dictionary-querybar__clear {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+.dictionary-querybar__clear:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
 .dictionary-querybar__submit {
   min-height: 2.75rem;
   white-space: nowrap;
@@ -2587,6 +2603,17 @@ html[data-accent='white'] .ui-button--primary {
 }
 
 /* Detailed dictionary result: a single, scannable learning reference. */
+.dictionary-vocab-results { display: grid; gap: var(--space-4); }
+.dictionary-vocab-results__meta { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.dictionary-vocab-results__meta b { color: var(--color-accent); }
+.dictionary-vocab-results__meta small { color: var(--color-text-muted); }
+.dictionary-result-picker { display: flex; gap: var(--space-2); overflow-x: auto; padding: 0 0 var(--space-1); scroll-snap-type: x proximity; }
+.dictionary-result-picker button { display: grid; grid-template-columns: auto 1fr; grid-template-areas: 'word reading' 'meaning meaning'; flex: 0 0 min(17rem, 80vw); gap: .2rem .55rem; min-height: 5.25rem; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text); background: var(--color-bg-surface); cursor: pointer; text-align: left; scroll-snap-align: start; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
+.dictionary-result-picker button:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border)); }
+.dictionary-result-picker button.is-active { border-color: var(--color-accent); background: var(--color-accent-subtle); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 24%, transparent); }
+.dictionary-result-picker strong { grid-area: word; font: 700 var(--font-size-xl) var(--font-jp); }
+.dictionary-result-picker span { grid-area: reading; align-self: center; color: var(--color-text-muted); font: 500 var(--font-size-sm) var(--font-jp); }
+.dictionary-result-picker small { grid-area: meaning; overflow: hidden; color: var(--color-text-secondary); font-size: var(--font-size-xs); line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .dictionary-word-detail { display: grid; gap: var(--space-5); }
 .dictionary-word-detail__hero { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-5); padding: var(--space-5) var(--space-1) var(--space-5); border-bottom: 1px solid var(--color-border); }
 .dictionary-word-detail__hero h1 { margin: 0; color: var(--color-text); font: 750 clamp(2.5rem, 5vw, 4.5rem) / 1 var(--font-jp); letter-spacing: .02em; }
@@ -2638,7 +2665,7 @@ html[data-accent='white'] .ui-button--primary {
 .dictionary-kanji-grid article > strong { grid-row: span 2; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--color-accent) 35%, var(--color-border)); border-radius: var(--radius-md); background: var(--color-accent-subtle); color: var(--color-accent); font: 750 4rem / 1 var(--font-jp); }
 .dictionary-kanji-grid article > div { display: grid; gap: .25rem; min-width: 0; padding: var(--space-2); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); }
 .dictionary-kanji-grid b { overflow-wrap: anywhere; color: var(--color-text); font: 650 var(--font-size-sm) var(--font-jp); }
-@media (max-width: 48rem) { .dictionary-word-detail__hero { padding-inline: 0; } .dictionary-word-detail__actions { justify-content: flex-start; } .dictionary-overview { grid-template-columns: 1fr; } .dictionary-related-grid { grid-template-columns: 1fr; } .dictionary-kanji-grid article { grid-template-columns: 5rem 1fr; } .dictionary-kanji-grid article > strong { grid-row: span 4; font-size: 3rem; } }
+@media (max-width: 48rem) { .dictionary-vocab-results__meta { align-items: flex-start; flex-direction: column; gap: var(--space-1); } .dictionary-word-detail__hero { padding-inline: 0; } .dictionary-word-detail__actions { justify-content: flex-start; } .dictionary-overview { grid-template-columns: 1fr; } .dictionary-related-grid { grid-template-columns: 1fr; } .dictionary-kanji-grid article { grid-template-columns: 5rem 1fr; } .dictionary-kanji-grid article > strong { grid-row: span 4; font-size: 3rem; } }
 @media (max-width: 68rem) {
   .dictionary-querybar {
     grid-template-columns: minmax(0, 1fr) auto;

@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Search,
   Sparkles,
+  X,
   Volume2,
 } from 'lucide-react'
 import { apiPaths, requestApi, type DictionarySearchResult } from '../../lib/apiClient'
@@ -60,6 +61,7 @@ export default function DictionaryPage({
   const [activeTab, setActiveTab] = useState<DictionaryTab>('vocab')
   const [input, setInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedResultIndex, setSelectedResultIndex] = useState(0)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     try {
       const saved = window.localStorage.getItem('kotodama_dictionary_recent_searches')
@@ -206,6 +208,7 @@ export default function DictionaryPage({
   useEffect(() => {
     setActiveKanjiIndex(0)
     setDetailSubTab('info')
+    setSelectedResultIndex(0)
   }, [searchTerm])
 
   // 1. Query từ điển chung VNJP
@@ -260,6 +263,13 @@ export default function DictionaryPage({
     rememberSearch(keyword)
   }
 
+  const clearSearch = () => {
+    setInput('')
+    setSearchTerm('')
+    setSelectedResultIndex(0)
+    inputRef.current?.focus()
+  }
+
   const selectTab = (tab: DictionaryTab) => {
     setActiveTab(tab)
     if (tab === 'vocab') setMainCardTab('basic')
@@ -275,7 +285,7 @@ export default function DictionaryPage({
   }
 
   const results = data?.results ?? []
-  const primaryWord = results[0]
+  const primaryWord = results[selectedResultIndex] ?? results[0]
 
   // Tìm Kanji đang chọn cho tab "Chi tiết"
   const kanjiListInPrimary = primaryWord?.kanjis ?? []
@@ -318,6 +328,16 @@ export default function DictionaryPage({
                       : 'Nhập Kanji, Kana, Romaji hoặc nghĩa tiếng Việt…'
               }
             />
+            {input && (
+              <button
+                className="dictionary-querybar__clear"
+                type="button"
+                onClick={clearSearch}
+                aria-label="Xóa từ đang tìm"
+              >
+                <X aria-hidden="true" size={16} />
+              </button>
+            )}
           </div>
           <Button type="submit" size="lg" className="dictionary-querybar__submit">
             {isLoading || isKanjiListLoading || isBunpoLoading ? (
@@ -645,15 +665,49 @@ export default function DictionaryPage({
             />
           )}
 
-          {activeTab === 'vocab' && !isLoading && results.length > 0 && primaryWord && (
-            <DictionaryWordDetail
-              word={primaryWord}
-              results={results}
-              isSaved={Boolean(savedSrs[primaryWord.word])}
-              onSave={() => handleSaveToSrs(primaryWord.word, primaryWord.meanings[0] || '', primaryWord.reading || '')}
-              onSpeak={speakJapanese}
-              onSearch={handleQuickSearch}
+          {!isLoading && isError && (
+            <EmptyState
+              title="Chưa thể kết nối kho từ điển"
+              description="Kiểm tra kết nối rồi thử tra lại. Từ bạn vừa nhập vẫn được giữ nguyên trong ô tìm kiếm."
+              action={
+                <Button onClick={() => void queryClient.invalidateQueries({ queryKey: ['dictionary-search', searchTerm] })}>
+                  Thử lại
+                </Button>
+              }
             />
+          )}
+
+          {activeTab === 'vocab' && !isLoading && results.length > 0 && primaryWord && (
+            <div className="dictionary-vocab-results">
+              <div className="dictionary-vocab-results__meta" aria-live="polite">
+                <span><b>{results.length}</b> kết quả cho “{searchTerm}”</span>
+                <small>Chọn một mục để xem nghĩa và ví dụ</small>
+              </div>
+              {results.length > 1 && (
+                <div className="dictionary-result-picker" aria-label="Các kết quả tìm thấy">
+                  {results.slice(0, 8).map((item, index) => (
+                    <button
+                      key={`${item.id}-${item.word}-${index}`}
+                      type="button"
+                      className={primaryWord === item ? 'is-active' : ''}
+                      onClick={() => setSelectedResultIndex(index)}
+                    >
+                      <strong>{item.word}</strong>
+                      <span>{item.reading || '—'}</span>
+                      <small>{item.meanings[0] || 'Xem nghĩa chi tiết'}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <DictionaryWordDetail
+                word={primaryWord}
+                results={results}
+                isSaved={Boolean(savedSrs[primaryWord.word])}
+                onSave={() => handleSaveToSrs(primaryWord.word, primaryWord.meanings[0] || '', primaryWord.reading || '')}
+                onSpeak={speakJapanese}
+                onSearch={handleQuickSearch}
+              />
+            </div>
           )}
 
           {/* Main 2-Column Content View */}
