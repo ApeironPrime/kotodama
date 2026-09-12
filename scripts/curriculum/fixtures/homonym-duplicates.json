@@ -1,0 +1,46 @@
+[
+  {
+    "word": "角",
+    "reading": "かど",
+    "han_viet": "GIÁC",
+    "meaning": "Góc đường, góc phố",
+    "level": "N5",
+    "lesson": "Minna Bài 20",
+    "source": "Minna no Nihongo N5",
+    "example": "次の角を右へ曲がります",
+    "example_vi": "Rẽ phải ở góc phố tiếp theo"
+  },
+  {
+    "word": "角",
+    "reading": "つの",
+    "han_viet": "GIÁC",
+    "meaning": "Sừng (động vật)",
+    "level": "N3",
+    "lesson": "Mimi Kara N3 Unit 1",
+    "source": "VNJPClub (SPEED_MASTER)",
+    "example": "牛に角があります",
+    "example_vi": "Con bò có sừng"
+  },
+  {
+    "word": "かける",
+    "reading": "かける",
+    "han_viet": "",
+    "meaning": "Đeo (kính)",
+    "level": "N5",
+    "lesson": "Minna Bài 22",
+    "source": "Minna no Nihongo N5",
+    "example": "眼鏡をかけます",
+    "example_vi": "Tôi đeo kính"
+  },
+  {
+    "word": "かける",
+    "reading": "かける",
+    "han_viet": "",
+    "meaning": "Treo (áo, tranh)",
+    "level": "N5",
+    "lesson": "Minna Bài 30",
+    "source": "VNJPClub (MINNA)",
+    "example": "コートをかけます",
+    "example_vi": "Treo áo khoác"
+  }
+]

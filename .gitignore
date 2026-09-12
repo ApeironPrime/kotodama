@@ -1,6 +1,8 @@
 # Logs
 logs
 *.log
+__pycache__/
+.pytest_cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -45,3 +47,25 @@ coverage/
 *.db-shm
 *.db-wal
 
+# Local ML environments, downloaded checkpoints and private training data
+.venv-model-a/
+ml/model_a/.venv/
+ml/model_a/.download-tools/
+ml/model_a/artifacts/
+ml/model_a/data/manifests/*.jsonl
+ml/model_a/data/recordings/
+ml/model_a/data/external/
+ml/model_a/data/feature_exports/
+ml/model_a/data/samples/*
+!ml/model_a/data/samples/.gitkeep
+ml/model_a/cloud/kotodama-source.zip
+
+# Model B local environment, extracted prosody features and private recordings
+ml/model_b/.venv/
+ml/model_b/.python-packages/
+ml/model_b/artifacts/
+ml/model_b/data/recordings/
+ml/model_b/data/features/
+ml/model_b/data/manifests/*.jsonl
+ml/model_b/data/recordings/
+ml/model_b/data/comparisons/

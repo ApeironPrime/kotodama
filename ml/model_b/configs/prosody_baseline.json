@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "kotodama-model-b-b1-v1",
+  "pitch": {
+    "timeStepSeconds": 0.01,
+    "floorHz": 50.0,
+    "ceilingHz": 800.0,
+    "method": "raw_ac_fallback"
+  },
+  "normalization": {
+    "unit": "semitones_relative_to_utterance_median",
+    "minimumVoicedFrames": 3
+  },
+  "limits": {
+    "minimumMoraDurationMs": 10.0
+  }
+}

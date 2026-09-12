@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
 const port = 8891
@@ -56,6 +57,7 @@ test('admin API enforces role, CSRF, audit actions and last-admin protection', a
       BOOTSTRAP_ADMIN_PASSWORD: password,
       BOOTSTRAP_ADMIN_NAME: 'Integration Admin',
       MEDIA_STORAGE_PATH: storageRoot,
+      NHAIKANJI_DATA_PATH: fileURLToPath(new URL('./fixtures/nhaikanji', import.meta.url)),
     },
     stdio: 'ignore',
   })

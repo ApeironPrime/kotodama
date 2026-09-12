@@ -1,0 +1,87 @@
+{
+  "土": {
+    "kanji": "土",
+    "kanjiInfo": {
+      "id": "土",
+      "hanzi": "THỔ",
+      "meaning": "Đất",
+      "story": "Cắm cây thập (十) xuống 1 (一) mảnh đất (土)",
+      "jlptLevel": "N5",
+      "kanjialiveData": {
+        "rad_name_ja": "つち",
+        "onyomi_ja": "ド、ト",
+        "kunyomi_ja": "つち",
+        "rad_utf": "⼟",
+        "rad_meaning": "earth",
+        "examples": [
+          {
+            "id": 18427,
+            "word": "土",
+            "reading": "つち",
+            "meaning": "Đất",
+            "yinHan": "THỔ"
+          },
+          {
+            "id": 18428,
+            "word": "土曜日",
+            "reading": "どようび",
+            "meaning": "Thứ bảy",
+            "yinHan": "THỔ DIỆU NHẬT"
+          }
+        ]
+      }
+    }
+  },
+  "日": {
+    "kanji": "日",
+    "kanjiInfo": {
+      "id": "日",
+      "hanzi": "NHẬT",
+      "meaning": "Ngày (mặt trời)",
+      "story": "Mặt trời",
+      "jlptLevel": "N5",
+      "kanjialiveData": {
+        "rad_name_ja": "ひ",
+        "onyomi_ja": "ニチ、ジツ",
+        "kunyomi_ja": "ひ、か",
+        "rad_utf": "⽇",
+        "rad_meaning": "sun",
+        "examples": [
+          {
+            "id": 18429,
+            "word": "日本",
+            "reading": "にほん",
+            "meaning": "Nhật Bản",
+            "yinHan": "NHẬT BẢN"
+          }
+        ]
+      }
+    }
+  },
+  "語": {
+    "kanji": "語",
+    "kanjiInfo": {
+      "id": "語",
+      "hanzi": "NGỮ",
+      "meaning": "Ngôn ngữ",
+      "story": "Lời nói của ta là ngôn ngữ",
+      "jlptLevel": "N4",
+      "kanjialiveData": {
+        "rad_name_ja": "ごんべん",
+        "onyomi_ja": "ゴ",
+        "kunyomi_ja": "かた、かたる",
+        "rad_utf": "言",
+        "rad_meaning": "words",
+        "examples": [
+          {
+            "id": 18430,
+            "word": "日本語",
+            "reading": "にほんご",
+            "meaning": "tiếng Nhật",
+            "yinHan": "NHẬT BẢN NGỮ"
+          }
+        ]
+      }
+    }
+  }
+}

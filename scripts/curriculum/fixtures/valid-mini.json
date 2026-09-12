@@ -1,0 +1,35 @@
+[
+  {
+    "word": "本",
+    "reading": "ほん",
+    "han_viet": "BẢN",
+    "meaning": "Sách",
+    "level": "N5",
+    "lesson": "Minna Bài 1",
+    "source": "Minna no Nihongo N5",
+    "example": "これは本です",
+    "example_vi": "Đây là cuốn sách"
+  },
+  {
+    "word": "学生",
+    "reading": "がくせい",
+    "han_viet": "HỌC SINH",
+    "meaning": "Học sinh, sinh viên",
+    "level": "N5",
+    "lesson": "Minna Bài 1",
+    "source": "Minna no Nihongo N5",
+    "example": "私は学生です",
+    "example_vi": "Tôi là học sinh"
+  },
+  {
+    "word": "先生",
+    "reading": "せんせい",
+    "han_viet": "TIÊN SINH",
+    "meaning": "Giáo viên",
+    "level": "N5",
+    "lesson": "Minna Bài 1",
+    "source": "Minna no Nihongo N5",
+    "example": "あの人は先生です",
+    "example_vi": "Người kia là giáo viên"
+  }
+]

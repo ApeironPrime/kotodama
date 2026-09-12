@@ -1,9 +1,9 @@
 import { Button, EmptyState, PageShell } from './ui'
 import type { Page } from '../types/app'
 
-export function PageSkeleton({ label = 'Đang tải nội dung…' }: { label?: string }) {
+export function PageSkeleton({ label = 'Đang tải nội dung…', compact = false }: { label?: string; compact?: boolean }) {
   return (
-    <div className="app-loading" role="status" aria-live="polite">
+    <div className={`app-loading${compact ? ' app-loading--content' : ''}`} role="status" aria-live="polite">
       <div className="app-loading__mark" aria-hidden="true" />
       <div>
         <strong>{label}</strong>

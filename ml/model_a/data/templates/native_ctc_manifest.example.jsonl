@@ -1,0 +1,2 @@
+{"schemaVersion":"a7-native-ctc-v1","recordingId":"native_001","audioPath":"native_001.wav","speakerId":"native_spk_001","split":"train","phonemesCtc":"k i cl t e o k a i m a sh i t a","labelSource":"native"}
+{"schemaVersion":"a7-native-ctc-v1","recordingId":"native_002","audioPath":"native_002.wav","speakerId":"native_spk_002","split":"validation","phonemesCtc":"g e ts U y o o b i d e s U","labelSource":"native"}

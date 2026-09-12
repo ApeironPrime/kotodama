@@ -57,7 +57,7 @@ function wordTypeLabel(pos?: string | null) {
 
 function cleanReadingTokens(value?: string | null) {
   return String(value || '')
-    .split(/[\s、,;\/・]+/)
+    .split(/[\s、,;/・]+/)
     .map((item) => item.trim())
     .filter((item, index, list) => item && list.indexOf(item) === index)
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -135,7 +135,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const grammars = grammarData?.items || []
   const currentCard = grammars[currentIndex] || null
 
-  const playAudio = (url?: string, fallbackText?: string) => {
+  const playAudio = useCallback((url?: string, fallbackText?: string) => {
     if (audioRef.current) {
       audioRef.current.pause()
     }
@@ -155,7 +155,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     } else if (fallbackText) {
       speakJapanese(fallbackText)
     }
-  }
+  }, [])
 
   // Keyboard shortcut listener for in-lesson flashcard
   const handleNextCard = () => {
@@ -171,6 +171,39 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       setCurrentIndex((i) => i - 1)
     }
   }
+
+  const handleSaveToSrs = useCallback(async (item: CurriculumGrammar) => {
+    try {
+      const summaryMeaning =
+        item.groups && item.groups.length > 1
+          ? item.groups
+              .map((g) => g.meaning || g.usage)
+              .filter(Boolean)
+              .join(' / ')
+          : item.shortMeaning || item.explanation
+
+      await srsApi.addCard({
+        type: 'grammar',
+        term: item.pattern,
+        meaning: summaryMeaning,
+        structure: item.structure,
+        explanation: item.explanation,
+        jlptLevel: (item.level || 'N3').toUpperCase(),
+        groups: item.groups,
+        examples: item.examples?.map((e) => ({
+          jp: e.jp,
+          jp_furigana: e.jp_furigana,
+          jp_ruby: e.jp_ruby,
+          vi: e.vi,
+          audio: e.audio,
+        })),
+      })
+      setSavedSrs((prev) => ({ ...prev, [`grammar_${item.id}`]: true, [`grammar_term_${item.pattern}`]: true }))
+      await queryClient.invalidateQueries({ queryKey: ['srs'] })
+    } catch (err) {
+      console.error('Không thể lưu ngữ pháp vào SRS:', err)
+    }
+  }, [queryClient])
 
   // Keyboard shortcut listener for in-lesson flashcard
   useEffect(() => {
@@ -203,40 +236,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedLesson, studyMode, currentCard, isFlipped, grammars.length])
-
-  const handleSaveToSrs = async (item: CurriculumGrammar) => {
-    try {
-      const summaryMeaning =
-        item.groups && item.groups.length > 1
-          ? item.groups
-              .map((g) => g.meaning || g.usage)
-              .filter(Boolean)
-              .join(' / ')
-          : item.shortMeaning || item.explanation
-
-      await srsApi.addCard({
-        type: 'grammar',
-        term: item.pattern,
-        meaning: summaryMeaning,
-        structure: item.structure,
-        explanation: item.explanation,
-        jlptLevel: (item.level || 'N3').toUpperCase(),
-        groups: item.groups,
-        examples: item.examples?.map((e) => ({
-          jp: e.jp,
-          jp_furigana: e.jp_furigana,
-          jp_ruby: e.jp_ruby,
-          vi: e.vi,
-          audio: e.audio,
-        })),
-      })
-      setSavedSrs((prev) => ({ ...prev, [`grammar_${item.id}`]: true, [`grammar_term_${item.pattern}`]: true }))
-      await queryClient.invalidateQueries({ queryKey: ['srs'] })
-    } catch (err) {
-      console.error('Không thể lưu ngữ pháp vào SRS:', err)
-    }
-  }
+  }, [selectedLesson, studyMode, currentCard, isFlipped, grammars.length, handleSaveToSrs, playAudio])
 
   /** Check if a grammar item is saved — matches both local ID key and server term key */
   const isGrammarSaved = (item: CurriculumGrammar) =>

@@ -108,11 +108,65 @@
   --color-warning: var(--amber-400);
   --color-danger: var(--rose-500);
   --color-info: var(--blue-500);
+  --color-success-subtle: rgb(16 185 129 / 15%);
+  --color-warning-subtle: rgb(251 191 36 / 15%);
+  --color-danger-subtle: rgb(255 77 109 / 15%);
+  --color-info-subtle: rgb(77 139 255 / 15%);
+
+  /* Semantic JLPT level tokens (Light theme default) */
+  --color-jlpt-n5: #059669;
+  --color-jlpt-n5-bg: rgb(5 150 105 / 12%);
+  --color-jlpt-n4: #2563eb;
+  --color-jlpt-n4-bg: rgb(37 99 235 / 12%);
+  --color-jlpt-n3: #d97706;
+  --color-jlpt-n3-bg: rgb(217 119 6 / 12%);
+  --color-jlpt-n2: #db2777;
+  --color-jlpt-n2-bg: rgb(219 39 119 / 12%);
+  --color-jlpt-n1: #dc2626;
+  --color-jlpt-n1-bg: rgb(220 38 38 / 12%);
+
   --color-language-jp: var(--rose-500);
   --color-language-en: var(--blue-500);
   --color-language-fr: var(--violet-500);
   --color-language-ko: var(--orange-500);
   --color-language-zh: var(--emerald-500);
+
+  /* High contrast media player and subtitle tokens */
+  --color-media-screen-bg: var(--neutral-950);
+  --color-sub-overlay-bg: rgb(0 0 0 / 78%);
+  --color-sub-overlay-shadow: 0 2px 8px rgb(0 0 0 / 40%);
+  --color-sub-text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+  --color-sub-text-ja: var(--white);
+  --color-sub-text-vi: rgb(255 255 255 / 90%);
+  --color-media-error-bg: rgb(220 38 38 / 90%);
+  --color-media-error-text: var(--white);
+
+  /* Cinematic dark streaming tokens (Task T09) */
+  --anime-cinematic-bg: var(--neutral-950);
+  --anime-cinematic-surface: var(--neutral-925);
+  --anime-cinematic-elevated: var(--neutral-900);
+  --anime-cinematic-card: var(--neutral-900);
+  --anime-cinematic-overlay: var(--neutral-875);
+  --anime-cinematic-hover: var(--neutral-850);
+  --anime-cinematic-border: var(--neutral-800);
+  --anime-cinematic-border-subtle: var(--neutral-875);
+  --anime-cinematic-text: var(--white);
+  --anime-cinematic-text-secondary: var(--neutral-100);
+  --anime-cinematic-text-muted: rgb(234 234 224 / 65%);
+  --anime-scrim-hero: linear-gradient(90deg, rgb(9 9 15 / 96%) 0%, rgb(9 9 15 / 82%) 55%, rgb(9 9 15 / 35%) 100%);
+  --anime-scrim-hero-bottom: linear-gradient(0deg, rgb(9 9 15 / 100%) 0%, rgb(9 9 15 / 65%) 40%, transparent 100%);
+  --anime-scrim-card: linear-gradient(180deg, rgb(9 9 15 / 0%) 0%, rgb(9 9 15 / 20%) 40%, rgb(9 9 15 / 92%) 100%);
+  --anime-scrim-detail-hub: linear-gradient(180deg, rgb(9 9 15 / 80%) 0%, rgb(13 13 21 / 95%) 100%);
+  --anime-episode-row-bg: rgb(17 17 25 / 75%);
+  --anime-episode-row-hover: rgb(23 23 34 / 90%);
+  --anime-episode-row-active: rgb(30 30 44 / 95%);
+  --anime-pill-sub-bg: rgb(16 185 129 / 20%);
+  --anime-pill-sub-text: var(--emerald-400);
+  --anime-pill-raw-bg: rgb(255 77 109 / 18%);
+  --anime-pill-raw-text: var(--rose-400);
+  --anime-canvas-max-width: 100rem;
+  --anime-episode-placeholder-bg: rgb(17 17 25 / 85%);
+  --anime-episode-placeholder-border: var(--neutral-800);
 
   /* Elevation, motion, and layers */
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 24%);
@@ -166,5 +220,38 @@
 @media (max-width: 800px) {
   :root {
     --page-gutter: var(--page-gutter-compact);
+  }
+}
+
+/* Dark and Custom theme semantic color overrides */
+[data-theme='dark'],
+.dark,
+.dark-theme {
+  --color-jlpt-n5: #34d399;
+  --color-jlpt-n5-bg: rgb(52 211 153 / 18%);
+  --color-jlpt-n4: #60a5fa;
+  --color-jlpt-n4-bg: rgb(96 165 250 / 18%);
+  --color-jlpt-n3: #fbbf24;
+  --color-jlpt-n3-bg: rgb(251 191 36 / 18%);
+  --color-jlpt-n2: #f472b6;
+  --color-jlpt-n2-bg: rgb(244 114 182 / 18%);
+  --color-jlpt-n1: #f87171;
+  --color-jlpt-n1-bg: rgb(248 113 113 / 18%);
+  --color-success-subtle: rgb(52 211 153 / 20%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-jlpt-n5: #34d399;
+    --color-jlpt-n5-bg: rgb(52 211 153 / 18%);
+    --color-jlpt-n4: #60a5fa;
+    --color-jlpt-n4-bg: rgb(96 165 250 / 18%);
+    --color-jlpt-n3: #fbbf24;
+    --color-jlpt-n3-bg: rgb(251 191 36 / 18%);
+    --color-jlpt-n2: #f472b6;
+    --color-jlpt-n2-bg: rgb(244 114 182 / 18%);
+    --color-jlpt-n1: #f87171;
+    --color-jlpt-n1-bg: rgb(248 113 113 / 18%);
+    --color-success-subtle: rgb(52 211 153 / 20%);
   }
 }

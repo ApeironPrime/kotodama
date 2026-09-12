@@ -1062,7 +1062,7 @@ export function createDictionaryService(dbPath) {
     }
 
     const readings = String(row.reading || '')
-      .split(/[\s、,;\/・]+/)
+      .split(/[\s、,;/・]+/)
       .map((item) => item.trim())
       .filter((item, index, list) => item && list.indexOf(item) === index)
 
@@ -1167,7 +1167,7 @@ export function createDictionaryService(dbPath) {
           if (masterRows.length > 0) {
             return masterRows.map((r, idx) => {
               const readings = String(r.reading || '')
-                .split(/[\s、,;\/・]+/)
+                .split(/[\s、,;/・]+/)
                 .map((item) => item.trim())
                 .filter((item, index, list) => item && list.indexOf(item) === index)
               return {

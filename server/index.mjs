@@ -1,4 +1,5 @@
 import http from 'node:http'
+import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
@@ -26,6 +27,8 @@ import { normalizeYouTubeUrl } from './youtube-provider.mjs'
 import { createDictionaryService } from './dictionary-service.mjs'
 import { nhaiKanjiService } from './nhaikanji-service.mjs'
 import { CurriculumService } from './curriculum-service.mjs'
+import { CurriculumCatalogService, CatalogApiError } from './curriculum-catalog-service.mjs'
+import { AnimeCatalogService, AnimeApiError, generateETag, isRequestLocalLoopback } from './anime-catalog-service.mjs'
 import { SrsService } from './srs-service.mjs'
 import { SrsStore } from './srs-store.mjs'
 import { evaluateShadowingAttempt } from './shadowing-scorer.mjs'
@@ -38,7 +41,8 @@ import {
 import { tmpdir } from 'node:os'
 import { extname, join, resolve } from 'node:path'
 
-const distDir = resolve('dist')
+const projectRoot = fileURLToPath(new URL('..', import.meta.url))
+const distDir = resolve(projectRoot, 'dist')
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
@@ -102,6 +106,21 @@ const emailService = createEmailService(config)
 const mediaStorage = createMediaStorage(config)
 const dictionaryService = createDictionaryService(config.dictionary?.dbPath)
 const curriculumService = new CurriculumService()
+const rawCurriculumStorage = process.env.CURRICULUM_STORAGE || 'sqlite'
+const curriculumStorage = rawCurriculumStorage.trim().toLowerCase()
+const curriculumCatalogService = new CurriculumCatalogService({
+  storage: curriculumStorage,
+  pool: curriculumStorage === 'postgres' || curriculumStorage === 'postgresql' ? database : null,
+  sqlitePath: process.env.CURRICULUM_SQLITE_PATH || resolve(projectRoot, 'tmp/curriculum/curriculum.db'),
+})
+const rawAnimeStorage = process.env.ANIME_STORAGE || 'sqlite'
+const animeStorage = rawAnimeStorage.trim().toLowerCase()
+const animeCatalogService = new AnimeCatalogService({
+  storage: animeStorage,
+  pool: animeStorage === 'postgres' || animeStorage === 'postgresql' ? database : null,
+  sqlitePath: process.env.ANIME_SQLITE_PATH || resolve(projectRoot, 'tmp/anime/anime.db'),
+  dictionaryDir: process.env.ANIME_DICTIONARY_DIR || resolve('D:/Project/data/aanime_scraper/dictionary/shards'),
+})
 const srsStore = database ? new SrsStore(database) : null
 const srsService = srsStore ? new SrsService(srsStore) : null
 const production = config.production
@@ -112,7 +131,7 @@ const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
 const allowedOrigins = configuredOrigins?.length
   ? configuredOrigins
   : production
-    ? (Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL) ? ['*'] : [])
+    ? (process.env.RENDER || process.env.RENDER_EXTERNAL_URL ? ['*'] : [])
     : [
         'http://127.0.0.1:5173',
         'http://127.0.0.1:5174',
@@ -571,7 +590,8 @@ async function route(request, response) {
     !path.startsWith('/api/v1/shadowing/') &&
     !path.startsWith('/api/v1/nhaikanji/') &&
     !path.startsWith('/api/v1/curriculum/') &&
-    !path.startsWith('/api/v1/srs/')
+    !path.startsWith('/api/v1/srs/') &&
+    !path.startsWith('/api/v1/anime/')
   )
     return fail(response, 404, 'Không tìm thấy endpoint.', 'NOT_FOUND')
 
@@ -642,6 +662,281 @@ async function route(request, response) {
     const result = nhaiKanjiService.submitJlptExam(examId, answers || {})
     if (!result) return fail(response, 404, 'Không tìm thấy đề thi này để chấm.', 'EXAM_NOT_FOUND')
     return respond(result)
+  }
+
+  // --- Curriculum Catalog Library Endpoints (Task T04) ---
+  if (request.method === 'GET' && path === '/api/v1/curriculum/catalog') {
+    try {
+      const level = url.searchParams.get('level')
+      const q = url.searchParams.get('q') || url.searchParams.get('query')
+      const page = url.searchParams.get('page')
+      const limit = url.searchParams.get('limit')
+      const result = await curriculumCatalogService.getCatalog({ level, q, page, limit })
+      return respond(result)
+    } catch (err) {
+      if (err instanceof CatalogApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('curriculum.catalog.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải danh mục giáo trình.', 'SERVER_ERROR')
+    }
+  }
+
+  const curriculumTermsMatch = path.match(/^\/api\/v1\/curriculum\/courses\/([^/]+)\/units\/([^/]+)\/terms$/)
+  if (request.method === 'GET' && curriculumTermsMatch) {
+    try {
+      const courseCode = decodeURIComponent(curriculumTermsMatch[1])
+      const unitKey = decodeURIComponent(curriculumTermsMatch[2])
+      const q = url.searchParams.get('q') || url.searchParams.get('query')
+      const page = url.searchParams.get('page')
+      const limit = url.searchParams.get('limit')
+      const result = await curriculumCatalogService.getUnitTerms(courseCode, unitKey, { page, limit, q })
+      return respond(result)
+    } catch (err) {
+      if (err instanceof CatalogApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('curriculum.terms.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải từ vựng bài học.', 'SERVER_ERROR')
+    }
+  }
+
+  const curriculumUnitMatch = path.match(/^\/api\/v1\/curriculum\/courses\/([^/]+)\/units\/([^/]+)$/)
+  if (request.method === 'GET' && curriculumUnitMatch) {
+    try {
+      const courseCode = decodeURIComponent(curriculumUnitMatch[1])
+      const unitKey = decodeURIComponent(curriculumUnitMatch[2])
+      const result = await curriculumCatalogService.getUnitDetail(courseCode, unitKey)
+      return respond(result)
+    } catch (err) {
+      if (err instanceof CatalogApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('curriculum.unit.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải chi tiết bài học.', 'SERVER_ERROR')
+    }
+  }
+
+  const curriculumCourseMatch = path.match(/^\/api\/v1\/curriculum\/courses\/([^/]+)$/)
+  if (request.method === 'GET' && curriculumCourseMatch) {
+    try {
+      const courseCode = decodeURIComponent(curriculumCourseMatch[1])
+      const result = await curriculumCatalogService.getCourseDetail(courseCode)
+      return respond(result)
+    } catch (err) {
+      if (err instanceof CatalogApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('curriculum.course.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải thông tin khóa học.', 'SERVER_ERROR')
+    }
+  }
+
+  // --- Anime Learning Endpoints (Task T04) ---
+  if (request.method === 'GET' && path === '/api/v1/anime/catalog') {
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const q = url.searchParams.get('q') || url.searchParams.get('query')
+      const level = url.searchParams.get('level')
+      const genre = url.searchParams.get('genre')
+      const page = url.searchParams.get('page')
+      const limit = url.searchParams.get('limit')
+      const result = await animeCatalogService.getCatalog({ q, level, genre, page, limit, isLocalLoopback })
+      const etag = generateETag(result)
+      if (request.headers['if-none-match'] === etag) {
+        response.writeHead(304, { ...cors, ETag: etag, 'Cache-Control': 'public, max-age=60' })
+        return response.end()
+      }
+      return respond(result, 200, { ETag: etag, 'Cache-Control': 'public, max-age=60' })
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.catalog.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải danh mục anime.', 'SERVER_ERROR')
+    }
+  }
+
+  const animeSeriesEpisodesMatch = path.match(/^\/api\/v1\/anime\/series\/([^/]+)\/episodes$/)
+  if (request.method === 'GET' && animeSeriesEpisodesMatch) {
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const slug = decodeURIComponent(animeSeriesEpisodesMatch[1])
+      const page = url.searchParams.get('page')
+      const limit = url.searchParams.get('limit')
+      const result = await animeCatalogService.getSeriesEpisodes(slug, { page, limit, isLocalLoopback })
+      const etag = generateETag(result)
+      if (request.headers['if-none-match'] === etag) {
+        response.writeHead(304, { ...cors, ETag: etag, 'Cache-Control': 'public, max-age=60' })
+        return response.end()
+      }
+      return respond(result, 200, { ETag: etag, 'Cache-Control': 'public, max-age=60' })
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.series_episodes.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải danh sách tập anime.', 'SERVER_ERROR')
+    }
+  }
+
+  const animeSeriesDetailMatch = path.match(/^\/api\/v1\/anime\/series\/([^/]+)$/)
+  if (request.method === 'GET' && animeSeriesDetailMatch) {
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const slug = decodeURIComponent(animeSeriesDetailMatch[1])
+      const result = await animeCatalogService.getSeriesDetail(slug, { isLocalLoopback })
+      const etag = generateETag(result)
+      if (request.headers['if-none-match'] === etag) {
+        response.writeHead(304, { ...cors, ETag: etag, 'Cache-Control': 'public, max-age=60' })
+        return response.end()
+      }
+      return respond(result, 200, { ETag: etag, 'Cache-Control': 'public, max-age=60' })
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.series_detail.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải chi tiết anime series.', 'SERVER_ERROR')
+    }
+  }
+
+  const animeSubtitlesMatch = path.match(/^\/api\/v1\/anime\/episodes\/([^/]+)\/subtitles$/)
+  if (request.method === 'GET' && animeSubtitlesMatch) {
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const episodeId = decodeURIComponent(animeSubtitlesMatch[1])
+      const from = url.searchParams.get('from')
+      const to = url.searchParams.get('to')
+      const lang = url.searchParams.get('lang')
+      const result = await animeCatalogService.getEpisodeSubtitles(episodeId, { from, to, lang, isLocalLoopback })
+      const etag = generateETag(result)
+      if (request.headers['if-none-match'] === etag) {
+        response.writeHead(304, { ...cors, ETag: etag, 'Cache-Control': 'public, max-age=60' })
+        return response.end()
+      }
+      return respond(result, 200, { ETag: etag, 'Cache-Control': 'public, max-age=60' })
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.subtitles.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải phụ đề tập phim.', 'SERVER_ERROR')
+    }
+  }
+
+  const animeEpisodeDetailMatch = path.match(/^\/api\/v1\/anime\/episodes\/([^/]+)$/)
+  if (request.method === 'GET' && animeEpisodeDetailMatch) {
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const episodeId = decodeURIComponent(animeEpisodeDetailMatch[1])
+      const result = await animeCatalogService.getEpisodeDetail(episodeId, { isLocalLoopback })
+      const etag = generateETag(result)
+      if (request.headers['if-none-match'] === etag) {
+        response.writeHead(304, { ...cors, ETag: etag, 'Cache-Control': 'public, max-age=60' })
+        return response.end()
+      }
+      return respond(result, 200, { ETag: etag, 'Cache-Control': 'public, max-age=60' })
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.episode_detail.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải chi tiết tập phim.', 'SERVER_ERROR')
+    }
+  }
+
+  const animeDictionaryMatch = path.match(/^\/api\/v1\/anime\/dictionary\/([^/]+)$/)
+  if (request.method === 'GET' && animeDictionaryMatch) {
+    try {
+      const wordId = decodeURIComponent(animeDictionaryMatch[1])
+      const result = await animeCatalogService.getDictionaryWord(wordId)
+      const etag = generateETag(result)
+      if (request.headers['if-none-match'] === etag) {
+        response.writeHead(304, { ...cors, ETag: etag, 'Cache-Control': 'public, max-age=86400, immutable' })
+        return response.end()
+      }
+      return respond(result, 200, { ETag: etag, 'Cache-Control': 'public, max-age=86400, immutable' })
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.dictionary.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tra cứu từ điển anime.', 'SERVER_ERROR')
+    }
+  }
+
+  // --- Anime Watch Progress Endpoints (Task T07, REQUIRE AUTHENTICATION) ---
+  if (request.method === 'GET' && path === '/api/v1/anime/progress') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    const episodeId = url.searchParams.get('episodeId')
+    if (!episodeId) {
+      return fail(response, 400, 'Thiếu tham số episodeId.', 'MISSING_EPISODE_ID')
+    }
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const result = await animeCatalogService.getProgress(episodeId, user.id, { isLocalLoopback })
+      return respond(result)
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.progress.get.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải tiến độ xem.', 'SERVER_ERROR')
+    }
+  }
+
+  if (request.method === 'POST' && path === '/api/v1/anime/progress') {
+    const user = await requireUser(request, response)
+    if (!user) return
+
+    if (body.userId !== undefined || body.user_id !== undefined) {
+      return fail(response, 400, 'Không được truyền userId trong payload.', 'INVALID_PAYLOAD')
+    }
+
+    const { episodeId, position, duration } = body
+    if (!episodeId) {
+      return fail(response, 400, 'Thiếu tham số episodeId.', 'MISSING_EPISODE_ID')
+    }
+    if (typeof position !== 'number' || !Number.isFinite(position) || position < 0) {
+      return fail(response, 400, 'Vị trí phát (position) phải là số thực hữu hạn >= 0.', 'INVALID_POSITION')
+    }
+    if (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0) {
+      return fail(response, 400, 'Thời lượng (duration) phải là số thực hữu hạn >= 0.', 'INVALID_DURATION')
+    }
+
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const result = await animeCatalogService.saveProgress(
+        { episodeId, position, duration },
+        user.id,
+        { isLocalLoopback }
+      )
+      return respond(result)
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.progress.save.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi lưu tiến độ xem.', 'SERVER_ERROR')
+    }
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/anime/progress/continue') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    try {
+      const isLocalLoopback = isRequestLocalLoopback(request)
+      const result = await animeCatalogService.getContinueWatching(user.id, { isLocalLoopback })
+      return respond(result)
+    } catch (err) {
+      if (err instanceof AnimeApiError) {
+        return fail(response, err.status, err.message, err.code)
+      }
+      logError('anime.progress.continue.failed', err)
+      return fail(response, 500, 'Lỗi hệ thống khi tải danh sách xem tiếp.', 'SERVER_ERROR')
+    }
   }
 
   // --- Curriculum Endpoints ---
@@ -1473,7 +1768,24 @@ const server = http.createServer((request, response) => {
   })
 })
 const host = process.env.HOST ?? '0.0.0.0'
-server.listen(port, host, () => log('info', 'server.started', { port, host, persistence: authStore.mode }))
+
+const isMain = Boolean(
+  process.argv[1] &&
+    (resolve(process.argv[1]) === fileURLToPath(import.meta.url) ||
+      resolve(process.argv[1]) === resolve('server/index.mjs'))
+)
+
+if (isMain) {
+  server.listen(port, host, () =>
+    log('info', 'server.started', {
+      port,
+      host,
+      persistence: authStore.mode,
+      curriculumStorage: curriculumCatalogService.getStorageType(),
+      animeStorage: animeCatalogService.getStorageType(),
+    })
+  )
+}
 
 async function shutdown() {
   clearInterval(cleanupInterval)
@@ -1483,3 +1795,5 @@ async function shutdown() {
 
 process.once('SIGTERM', shutdown)
 process.once('SIGINT', shutdown)
+
+export { route, server, animeCatalogService, isRequestLocalLoopback }

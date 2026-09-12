@@ -1,0 +1,20 @@
+{
+  "modelId": "prj-beatrice/japanese-hubert-base-phoneme-ctc-v2",
+  "localFilesOnly": true,
+  "sampleRate": 16000,
+  "maxAudioSeconds": 8,
+  "perDeviceTrainBatchSize": 1,
+  "perDeviceEvalBatchSize": 1,
+  "gradientAccumulationSteps": 8,
+  "headLearningRate": 0.0001,
+  "encoderLearningRate": 0.00001,
+  "numTrainEpochs": 12,
+  "loggingSteps": 10,
+  "evalSteps": 100,
+  "saveSteps": 100,
+  "saveTotalLimit": 2,
+  "freezeFeatureExtractor": true,
+  "unfreezeLastEncoderBlocks": 2,
+  "gradientCheckpointing": true,
+  "fp16": true
+}

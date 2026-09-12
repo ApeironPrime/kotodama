@@ -1,0 +1,33 @@
+{
+  "n4": {
+    "tests": [
+      {
+        "id": "mock-n4-fixture",
+        "title": "N4 Fixture Exam",
+        "level": "N4",
+        "year": "2024",
+        "session": "07",
+        "section": "vocab",
+        "sectionLabel": "Từ vựng",
+        "sectionLabelJP": "言語知識",
+        "timeLimit": 30,
+        "parts": [
+          {
+            "questions": [
+              {
+                "id": "q1",
+                "question": "テスト問題",
+                "options": [
+                  {
+                    "id": 1,
+                    "text": "A"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

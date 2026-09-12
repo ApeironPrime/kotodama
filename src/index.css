@@ -5,6 +5,8 @@
 @import './styles/tokens.css';
 @import './styles/ui.css';
 @import './styles/nhaikanji.css';
+@import './styles/curriculum-catalog.css';
+@import './styles/anime.css';
 
 * {
   box-sizing: border-box;
@@ -4404,6 +4406,10 @@ input::placeholder {
   margin-top: var(--space-1);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+.app-loading--content {
+  min-height: clamp(18rem, 45vh, 34rem);
+  background: transparent;
 }
 .app-state-page {
   display: grid;

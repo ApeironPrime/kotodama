@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Award,
   BookOpen,
+  Clapperboard,
   Flame,
   House,
   Layers,
@@ -22,6 +23,7 @@ const NAV_TABS: Array<{ id: Page; label: string; icon: LucideIcon; badge?: strin
   { id: 'dictionary', label: 'Từ Điển', icon: BookOpen },
   { id: 'review', label: 'Ôn Tập SRS', icon: Layers, badge: 'Anki' },
   { id: 'jlpt', label: 'Thi JLPT', icon: Award },
+  { id: 'anime', label: 'Anime', icon: Clapperboard },
   { id: 'video', label: 'Video AI', icon: Video },
 ]
 

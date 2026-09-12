@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "kotodama-model-b-b2-v1",
+  "comparison": {
+    "minimumVoicedFramesPerMora": 3,
+    "dtwCost": "absolute_semitone_distance",
+    "moraTopology": "must_match_reference"
+  },
+  "output": {
+    "returnsScores": false,
+    "returnsEvidence": true
+  }
+}

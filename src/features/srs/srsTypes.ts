@@ -34,6 +34,13 @@ export interface SrsCard {
   nextReviewDate: string
   groups?: GrammarUsageGroup[] | undefined
   examples?: SrsExample[] | undefined
+  courseCode?: string | undefined
+  unitId?: string | undefined
+  termId?: string | undefined
+  sourceRecordId?: string | undefined
+  sourceContext?: string | undefined
+  created?: boolean | undefined
+  alreadySaved?: boolean | undefined
 }
 
 export interface SrsHeatmapDay {
@@ -71,6 +78,10 @@ export interface CurriculumWord {
   unitTitle: string
   lessonTitle: string
   indexNum: number
+  termId?: string | undefined
+  courseCode?: string | undefined
+  unitId?: string | undefined
+  sourceContext?: string | undefined
   word: string
   reading: string
   hanViet: string

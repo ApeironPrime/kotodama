@@ -49,6 +49,7 @@ describe('application journeys', () => {
   it('opens the login page from the home primary action', async () => {
     renderApp('/')
 
+
     fireEvent.click(await screen.findByRole('button', { name: /Đăng nhập để bắt đầu/i }, { timeout: 8000 }))
 
     expect(await screen.findByRole('heading', { name: 'Chào mừng trở lại' }, { timeout: 8000 })).toBeTruthy()
@@ -61,5 +62,29 @@ describe('application journeys', () => {
     expect(input).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Phân tích' })).toBeTruthy()
     expect(screen.getByRole('tablist', { name: 'Loại nội dung từ điển' })).toBeTruthy()
+  })
+
+  it('keeps visitor on dictionary page without redirecting to login when session is expired', async () => {
+    renderApp('/tra-tu', { ...anonymousAuth, sessionExpired: true })
+
+    const input = await screen.findByRole('textbox', { name: 'Từ cần tra' }, { timeout: 8000 })
+    expect(input).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Chào mừng trở lại' })).toBeNull()
+  })
+
+  it('keeps visitor on JLPT page without redirecting to login when session is expired', async () => {
+    renderApp('/jlpt', { ...anonymousAuth, sessionExpired: true })
+
+    expect(await screen.findByRole('heading', { name: 'Đề mô phỏng JLPT' }, { timeout: 8000 })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Chào mừng trở lại' })).toBeNull()
+  })
+
+  it('opens the Anime route from the public navigation', async () => {
+    renderApp('/anime')
+
+    expect(await screen.findByRole('heading', { name: 'Học tiếng Nhật qua Anime' }, { timeout: 8000 })).toBeTruthy()
+    const animeNavigationItems = screen.getAllByRole('button', { name: 'Anime' })
+    expect(animeNavigationItems).toHaveLength(2)
+    expect(animeNavigationItems.every((item) => item.getAttribute('aria-current') === 'page')).toBe(true)
   })
 })

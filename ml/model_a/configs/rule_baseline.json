@@ -1,0 +1,23 @@
+{
+  "version": "a4-baseline-v1",
+  "audioQuality": {
+    "maxClippingRatio": 0.01,
+    "minEstimatedSnrDb": 10.0
+  },
+  "tsToCh": {
+    "expectedPhone": "ts",
+    "competitorPhone": "ch",
+    "maxGop": -0.8,
+    "maxPosteriorMargin": -0.1
+  },
+  "sokuon": {
+    "expectedPhone": "cl",
+    "maxGop": -0.5,
+    "maxDurationMs": 25.0
+  },
+  "longVowel": {
+    "vowels": ["a", "i", "u", "e", "o", "I", "U"],
+    "minimumReferenceVowels": 2,
+    "minRelativeDuration": 1.35
+  }
+}

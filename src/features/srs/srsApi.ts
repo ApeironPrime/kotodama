@@ -45,8 +45,26 @@ export const srsApi = {
     })
   },
 
-  async fetchSavedTerms(): Promise<Array<{ term: string; type: string }>> {
-    return requestApi<Array<{ term: string; type: string }>>({
+  async fetchSavedTerms(): Promise<
+    Array<{
+      term: string
+      type: string
+      sourceContext?: string
+      courseCode?: string
+      unitId?: string
+      termId?: string
+    }>
+  > {
+    return requestApi<
+      Array<{
+        term: string
+        type: string
+        sourceContext?: string
+        courseCode?: string
+        unitId?: string
+        termId?: string
+      }>
+    >({
       url: '/api/v1/srs/saved-terms',
     })
   },

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "futsuu-n-desu",
+    "pattern": "TTT + んです",
+    "structure": "TTT + んです",
+    "shortMeaning": "Nhấn mạnh ý muốn nói/giải thích",
+    "bookId": "mina-bunpo-n4",
+    "bookName": "Minna no Nihongo II (第26〜50課)",
+    "level": "N4",
+    "lessonId": "lesson1",
+    "lessonTitle": "Bài 26"
+  },
+  {
+    "id": "wa-desu",
+    "pattern": "N1 は N2 です",
+    "structure": "N₁ は N₂ です",
+    "shortMeaning": "N1 là N2",
+    "bookId": "mina-bunpo-n5",
+    "bookName": "Minna no Nihongo I (第1〜25課)",
+    "level": "N5",
+    "lessonId": "lesson1",
+    "lessonTitle": "Bài 1"
+  }
+]

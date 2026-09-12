@@ -1,0 +1,7 @@
+# Install PyTorch/TorchAudio separately with the CUDA wheel selected for the GPU.
+transformers>=4.48,<6
+soundfile>=0.13,<1
+# Prebuilt Windows wheel; imported in code as `pyopenjtalk`.
+pyopenjtalk-plus>=0.4,<1
+numpy>=1.26,<3
+pytest>=8,<10

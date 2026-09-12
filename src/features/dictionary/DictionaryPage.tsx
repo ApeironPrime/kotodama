@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, EmptyState, Input } from '../../components/ui'
 import {
@@ -32,8 +32,10 @@ import { DictionarySentenceDetail } from './DictionarySentenceDetail'
 
 const POPULAR_SEARCHES = ['学校', '先生', '勉強', '食べる', '感じ', '日本語', '桜', '時間', '犬', '雨']
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
+const VocabularyPage = lazy(() => import('../vocabulary/VocabularyPage'))
 const DICTIONARY_TABS = [
   { id: 'vocab', label: 'Tra từ', icon: Search },
+  { id: 'vocabulary', label: 'Từ vựng', icon: BookOpen },
   { id: 'kanji', label: 'Hán tự', icon: Languages },
   { id: 'grammar', label: 'Ngữ pháp', icon: GraduationCap },
   { id: 'sentences', label: 'Mẫu câu', icon: MessageSquareText },
@@ -64,7 +66,20 @@ export default function DictionaryPage({
 }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<DictionaryTab>('vocab')
+  const [activeTab, setActiveTab] = useState<DictionaryTab>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const tabParam = params.get('tab')
+        if (tabParam && ['vocab', 'vocabulary', 'kanji', 'grammar', 'sentences'].includes(tabParam)) {
+          return tabParam as DictionaryTab
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return 'vocab'
+  })
   const [input, setInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [translateSentence, setTranslateSentence] = useState(false)
@@ -286,6 +301,19 @@ export default function DictionaryPage({
   const selectTab = (tab: DictionaryTab) => {
     setActiveTab(tab)
     if (tab === 'vocab') setMainCardTab('basic')
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      try {
+        const url = new URL(window.location.href)
+        if (tab === 'vocab') {
+          url.searchParams.delete('tab')
+        } else {
+          url.searchParams.set('tab', tab)
+        }
+        window.history.replaceState({}, '', url.toString())
+      } catch {
+        // ignore
+      }
+    }
   }
 
   const toggleSaveWord = (id: number) => {
@@ -651,7 +679,23 @@ export default function DictionaryPage({
       )}
 
       {/* ========================================================================= */}
-      {/* 3. VIEW: TAB TỪ VỰNG & MẪU CÂU (MAIN VNJP & NHAIKANJI INTEGRATION) */}
+      {/* 3. VIEW: TAB THƯ VIỆN TỪ VỰNG */}
+      {/* ========================================================================= */}
+      {activeTab === 'vocabulary' && (
+        <Suspense
+          fallback={
+            <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+              <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-accent)' }} />
+              <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Đang mở thư viện từ vựng...</p>
+            </div>
+          }
+        >
+          <VocabularyPage {...(onReview ? { onGoToSrs: onReview } : {})} />
+        </Suspense>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. VIEW: TAB TRA TỪ & MẪU CÂU (MAIN VNJP & NHAIKANJI INTEGRATION) */}
       {/* ========================================================================= */}
       {(activeTab === 'vocab' || activeTab === 'sentences') && (
         <>

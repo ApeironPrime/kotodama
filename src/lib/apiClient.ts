@@ -70,6 +70,60 @@ export const apiPaths = {
     jlptExamDetail: (examId: string) => `/api/v1/nhaikanji/jlpt/exams/${encodeURIComponent(examId)}`,
     jlptSubmit: '/api/v1/nhaikanji/jlpt/submit',
   },
+  pronunciation: {
+    research: {
+      attempts: '/api/v1/pronunciation/research/attempts',
+      mine: '/api/v1/pronunciation/research/attempts/mine',
+      reviewQueue: '/api/v1/pronunciation/research/review-queue',
+      labels: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/labels`,
+      audio: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/audio/content`,
+    },
+  },
+  anime: {
+    catalog: (params?: {
+      q?: string | undefined
+      level?: string | undefined
+      genre?: string | undefined
+      page?: number | undefined
+      limit?: number | undefined
+    }) => {
+      const searchParams = new URLSearchParams()
+      if (params?.q?.trim()) searchParams.set('q', params.q.trim())
+      if (params?.level && params.level !== 'ALL') searchParams.set('level', params.level)
+      if (params?.genre && params.genre !== 'ALL') searchParams.set('genre', params.genre)
+      if (params?.page && params.page > 1) searchParams.set('page', String(params.page))
+      if (params?.limit) searchParams.set('limit', String(params.limit))
+      const query = searchParams.toString()
+      return `/api/v1/anime/catalog${query ? `?${query}` : ''}`
+    },
+    seriesDetail: (slug: string) => `/api/v1/anime/series/${encodeURIComponent(slug)}`,
+    seriesEpisodes: (slug: string, params?: { page?: number | undefined; limit?: number | undefined }) => {
+      const searchParams = new URLSearchParams()
+      if (params?.page && params.page > 1) searchParams.set('page', String(params.page))
+      if (params?.limit) searchParams.set('limit', String(params.limit))
+      const query = searchParams.toString()
+      return `/api/v1/anime/series/${encodeURIComponent(slug)}/episodes${query ? `?${query}` : ''}`
+    },
+    episodeDetail: (episodeId: string) => `/api/v1/anime/episodes/${encodeURIComponent(episodeId)}`,
+    episodeSubtitles: (
+      episodeId: string,
+      params?: { from?: number | undefined; to?: number | undefined; lang?: string | undefined }
+    ) => {
+      const searchParams = new URLSearchParams()
+      if (params?.from !== undefined && params.from !== null) searchParams.set('from', String(params.from))
+      if (params?.to !== undefined && params.to !== null) searchParams.set('to', String(params.to))
+      if (params?.lang) searchParams.set('lang', params.lang)
+      const query = searchParams.toString()
+      return `/api/v1/anime/episodes/${encodeURIComponent(episodeId)}/subtitles${query ? `?${query}` : ''}`
+    },
+    dictionaryWord: (wordId: number | string) =>
+      `/api/v1/anime/dictionary/${encodeURIComponent(String(wordId))}`,
+    progress: (episodeId?: string) =>
+      episodeId
+        ? `/api/v1/anime/progress?episodeId=${encodeURIComponent(episodeId)}`
+        : '/api/v1/anime/progress',
+    continueWatching: () => '/api/v1/anime/progress/continue',
+  },
 } as const
 
 type ApiEnvelope<T> = { data: T; meta?: Record<string, unknown> }

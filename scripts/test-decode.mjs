@@ -31,8 +31,12 @@ function decodeYkhp(raw) {
   s = s.replace(/([A-Za-z0-9+/=]{16,})/g, (m) => {
     try {
       const decoded = Buffer.from(m, 'base64').toString('utf8')
-      // If it contains vietnamese or valid html/jp characters, use it
-      if (/[\p{L}\p{N}<>]/u.test(decoded) && !/[\x00-\x08\x0E-\x1F]/.test(decoded)) {
+      // If it contains vietnamese or valid html/jp characters and no control characters, use it
+      const hasControlChars = [...decoded].some((ch) => {
+        const code = ch.charCodeAt(0)
+        return code <= 8 || (code >= 14 && code <= 31)
+      })
+      if (/[\p{L}\p{N}<>]/u.test(decoded) && !hasControlChars) {
         return decoded
       }
     } catch {}

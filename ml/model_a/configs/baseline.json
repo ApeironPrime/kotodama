@@ -1,0 +1,13 @@
+{
+  "modelId": "prj-beatrice/japanese-hubert-base-phoneme-ctc-v2",
+  "sampleRate": 16000,
+  "maxAudioSeconds": 10,
+  "preferredDevice": "cuda",
+  "referenceVocabulary": [
+    "a", "i", "u", "e", "o", "I", "U",
+    "k", "kw", "ky", "g", "gw", "gy", "s", "sh", "z", "j",
+    "t", "ts", "ch", "d", "dy", "n", "ny", "h", "hy",
+    "f", "fy", "b", "by", "p", "py", "m", "my",
+    "r", "ry", "w", "y", "N", "cl", "pau", "sil"
+  ]
+}

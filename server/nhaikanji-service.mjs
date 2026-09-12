@@ -37,12 +37,77 @@ function parseCSVLine(text) {
   return result
 }
 
+function firstUsefulMeaning(item) {
+  const exampleMeaning = Array.isArray(item.examples)
+    ? item.examples.find((example) => typeof example?.m === 'string' && example.m.trim())?.m
+    : ''
+  if (exampleMeaning) return exampleMeaning.trim().replace(/\s+/g, ' ')
+
+  const firstLine = typeof item.detail === 'string' ? item.detail.split(/\r?\n/)[0] : ''
+  return firstLine.replace(/^\s*\d+[.)]\s*/, '').trim()
+}
+
+function compositionDescription(item) {
+  if (!Array.isArray(item.compDetail) || item.compDetail.length === 0) return ''
+  const components = item.compDetail
+    .filter((component) => typeof component?.w === 'string' && component.w)
+    .map((component) => `${component.w}${component.h ? ` (${component.h})` : ''}`)
+  return components.length ? `Cấu tạo: ${components.join(' + ')}` : ''
+}
+
+function normalizeMazziKanji(item) {
+  const composition = compositionDescription(item)
+  const examples = Array.isArray(item.examples)
+    ? item.examples
+        .filter((example) => typeof example?.w === 'string' && example.w)
+        .map((example, index) => ({
+          id: `${item.id ?? item.mobileId ?? item.kanji}-${index}`,
+          word: example.w.trim(),
+          reading: typeof example.p === 'string' ? example.p.trim() : '',
+          meaning: typeof example.m === 'string' ? example.m.trim() : '',
+          yinHan: typeof example.h === 'string' ? example.h.trim() : '',
+        }))
+    : []
+  const summary = {
+    kanji: item.kanji,
+    hanzi: typeof item.mean === 'string' ? item.mean.trim() : '',
+    meaning_vi: firstUsefulMeaning(item),
+    meaning_en: '',
+    jlpt_level: typeof item.level === 'string' ? item.level.trim().toUpperCase() : '',
+    onyomi: typeof item.on === 'string' ? item.on.trim() : '',
+    kunyomi: typeof item.kun === 'string' ? item.kun.trim() : '',
+    stroke_count: item.stroke_count ?? '',
+    radical_utf: typeof item.comp === 'string' && item.comp.trim() ? item.comp.trim() : '—',
+    radical_name_ja: composition ? 'Thành phần cấu tạo' : '',
+    radical_meaning: composition,
+    story: composition,
+    num_vocab_examples: examples.length,
+  }
+  const detail = {
+    kanji: item.kanji,
+    kanjiInfo: {
+      id: String(item.id ?? item.mobileId ?? item.kanji),
+      hanzi: summary.hanzi,
+      meaning: typeof item.detail === 'string' ? item.detail.trim() : summary.meaning_vi,
+      story: composition,
+      jlptLevel: summary.jlpt_level,
+      kanjialiveData: {
+        rad_name_ja: summary.radical_name_ja,
+        onyomi_ja: summary.onyomi,
+        kunyomi_ja: summary.kunyomi,
+        rad_utf: summary.radical_utf,
+        rad_meaning: summary.radical_meaning,
+        examples,
+      },
+    },
+  }
+  return { summary, detail }
+}
+
 export class NhaiKanjiService {
   constructor(options = {}) {
-    this.dataPath =
-      options.dataPath ||
-      process.env.NHAIKANJI_DATA_PATH ||
-      'D:/VKU/data/drive-download-20260828T102340Z-1-002/nhaikanji_data'
+    this.mazziDataPath = options.mazziDataPath || process.env.MAZII_CRAWLER_DATA_PATH || ''
+    this.dataPath = options.dataPath || process.env.NHAIKANJI_DATA_PATH || ''
 
     this.kanjiSummaryList = []
     this.kanjiMap = new Map() // kanji char -> summary object
@@ -53,6 +118,41 @@ export class NhaiKanjiService {
     this.isLoaded = false
   }
 
+  loadMazziKanjiCourses() {
+    if (!this.mazziDataPath) return false
+
+    const courseFile = path.join(this.mazziDataPath, 'courses', 'kanji_all_levels.json')
+    if (!fs.existsSync(courseFile)) {
+      console.warn(`[NhaiKanjiService] MAZII_CRAWLER_DATA_PATH has no Kanji course data: ${courseFile}`)
+      return false
+    }
+
+    try {
+      const records = JSON.parse(fs.readFileSync(courseFile, 'utf8'))
+      if (!Array.isArray(records)) throw new Error('kanji_all_levels.json must contain an array')
+
+      this.fullKanjiData = {}
+      for (const item of records) {
+        if (!item || typeof item.kanji !== 'string' || !item.kanji.trim() || this.kanjiMap.has(item.kanji)) continue
+        const normalized = normalizeMazziKanji(item)
+        normalized.summary.normalizedHanzi = removeVietnameseTones(normalized.summary.hanzi)
+        normalized.summary.normalizedMeaning = removeVietnameseTones(normalized.summary.meaning_vi)
+        this.kanjiSummaryList.push(normalized.summary)
+        this.kanjiMap.set(normalized.summary.kanji, normalized.summary)
+        this.fullKanjiData[normalized.summary.kanji] = normalized.detail
+      }
+
+      if (this.kanjiSummaryList.length === 0) throw new Error('Kanji course data contains no valid entries')
+      return true
+    } catch (err) {
+      console.warn('[NhaiKanjiService] Failed to load Mazii Kanji courses:', err.message)
+      this.kanjiSummaryList = []
+      this.kanjiMap.clear()
+      this.fullKanjiData = null
+      return false
+    }
+  }
+
   ensureLoaded() {
     if (this.isLoaded) {
       this.reloadFullMaster()
@@ -60,52 +160,62 @@ export class NhaiKanjiService {
     }
 
     try {
-      // 1. Load Kanji Summary CSV
-      const summaryFile = path.join(this.dataPath, 'kanji_summary.csv')
-      if (fs.existsSync(summaryFile)) {
-        let raw = fs.readFileSync(summaryFile, 'utf8').replace(/^\uFEFF/, '')
-        const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0)
-        if (lines.length > 1) {
-          const headers = parseCSVLine(lines[0]).map((h) => h.trim().replace(/^\uFEFF/, ''))
-          for (let i = 1; i < lines.length; i++) {
-            const cols = parseCSVLine(lines[i])
-            const row = {}
-            headers.forEach((h, idx) => {
-              row[h] = (cols[idx] || '').trim()
-            })
-            if (row.kanji) {
-              row.normalizedHanzi = removeVietnameseTones(row.hanzi)
-              row.normalizedMeaning = removeVietnameseTones(row.meaning_vi)
-              this.kanjiSummaryList.push(row)
-              this.kanjiMap.set(row.kanji, row)
+      // 1. Prefer the explicitly configured, levelled Kanji course source.
+      // It is normalized here so the existing Kanji page and detail modal keep one API contract.
+      const loadedMazziCourses = this.loadMazziKanjiCourses()
+
+      // 2. Fall back to the legacy NhaiKanji CSV only when no course source was configured/usable.
+      if (!loadedMazziCourses && this.dataPath) {
+        const summaryFile = path.join(this.dataPath, 'kanji_summary.csv')
+        if (fs.existsSync(summaryFile)) {
+          let raw = fs.readFileSync(summaryFile, 'utf8').replace(/^\uFEFF/, '')
+          const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0)
+          if (lines.length > 1) {
+            const headers = parseCSVLine(lines[0]).map((h) => h.trim().replace(/^\uFEFF/, ''))
+            for (let i = 1; i < lines.length; i++) {
+              const cols = parseCSVLine(lines[i])
+              const row = {}
+              headers.forEach((h, idx) => {
+                row[h] = (cols[idx] || '').trim()
+              })
+              if (row.kanji) {
+                row.normalizedHanzi = removeVietnameseTones(row.hanzi)
+                row.normalizedMeaning = removeVietnameseTones(row.meaning_vi)
+                this.kanjiSummaryList.push(row)
+                this.kanjiMap.set(row.kanji, row)
+              }
             }
           }
         }
       }
 
-      // 2. Load Bunpo data
-      const bunpoFile = path.join(this.dataPath, 'bunpo_data.json')
-      if (fs.existsSync(bunpoFile)) {
-        const rawBunpo = fs.readFileSync(bunpoFile, 'utf8')
-        this.bunpoList = JSON.parse(rawBunpo).map((item) => ({
-          ...item,
-          normalizedPattern: removeVietnameseTones(item.pattern),
-          normalizedMeaning: removeVietnameseTones(item.shortMeaning || ''),
-        }))
+      // 3. Load Bunpo data
+      if (this.dataPath) {
+        const bunpoFile = path.join(this.dataPath, 'bunpo_data.json')
+        if (fs.existsSync(bunpoFile)) {
+          const rawBunpo = fs.readFileSync(bunpoFile, 'utf8')
+          this.bunpoList = JSON.parse(rawBunpo).map((item) => ({
+            ...item,
+            normalizedPattern: removeVietnameseTones(item.pattern),
+            normalizedMeaning: removeVietnameseTones(item.shortMeaning || ''),
+          }))
+        }
       }
 
-      // 3. Load JLPT Full Master (N1 -> N5 từ Corodomo với Từ vựng, Ngữ pháp, Đọc hiểu có bài đọc, Nghe hiểu có Audio)
+      // 4. Load JLPT Full Master (N1 -> N5 từ Corodomo với Từ vựng, Ngữ pháp, Đọc hiểu có bài đọc, Nghe hiểu có Audio)
       this.fullMasterFile = path.resolve(process.cwd(), 'data', 'jlpt_full_master.json')
       this.fullMasterMtime = 0
       this.toanMasterFile = path.resolve(process.cwd(), 'data', 'jlpt_n3_toan_master.json')
       this.toanMasterMtime = 0
       this.reloadFullMaster()
 
-      // 4. Load JLPT Exams Master dự phòng
-      const jlptFile = path.join(this.dataPath, 'de_thi_jlpt', 'jlpt_all_exams_master.json')
-      if (fs.existsSync(jlptFile)) {
-        const rawJlpt = fs.readFileSync(jlptFile, 'utf8')
-        this.jlptExamsMaster = JSON.parse(rawJlpt)
+      // 5. Load JLPT Exams Master dự phòng
+      if (this.dataPath) {
+        const jlptFile = path.join(this.dataPath, 'de_thi_jlpt', 'jlpt_all_exams_master.json')
+        if (fs.existsSync(jlptFile)) {
+          const rawJlpt = fs.readFileSync(jlptFile, 'utf8')
+          this.jlptExamsMaster = JSON.parse(rawJlpt)
+        }
       }
 
       this.isLoaded = true
@@ -140,6 +250,10 @@ export class NhaiKanjiService {
 
   loadFullKanjiJson() {
     if (this.fullKanjiData) return this.fullKanjiData
+    if (!this.dataPath) {
+      this.fullKanjiData = {}
+      return this.fullKanjiData
+    }
     try {
       const fullFile = path.join(this.dataPath, 'kanji_full_data.json')
       if (fs.existsSync(fullFile)) {

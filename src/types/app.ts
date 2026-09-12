@@ -6,6 +6,7 @@ export type Page =
   | 'dictionary'
   | 'kanji'
   | 'jlpt'
+  | 'anime'
   | 'review'
   | 'video'
   | 'courses'
@@ -39,6 +40,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { page: 'dictionary', path: '/tra-tu', title: 'Tra từ điển tiếng Nhật' },
   { page: 'kanji', path: '/kanji', title: 'Hán tự & Chiết tự' },
   { page: 'jlpt', path: '/jlpt', title: 'Luyện thi JLPT' },
+  { page: 'anime', path: '/anime', title: 'Học tiếng Nhật qua Anime' },
   { page: 'review', path: '/on-tap', title: 'Ôn tập SRS' },
   { page: 'video', path: '/video-ai', title: 'Video AI' },
   { page: 'courses', path: '/khoa-hoc', title: 'Khóa học' },
