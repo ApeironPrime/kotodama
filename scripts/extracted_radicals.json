@@ -1,0 +1,3124 @@
+{
+  "radicals": [
+    [
+      "⼀",
+      {
+        "nameJa": "いち",
+        "en": "one, horizontal stroke"
+      }
+    ],
+    [
+      "⼆",
+      {
+        "nameJa": "に",
+        "en": "two"
+      }
+    ],
+    [
+      "⼞",
+      {
+        "nameJa": "くにがまえ",
+        "en": "border, territorial boundaries"
+      }
+    ],
+    [
+      "⼋",
+      {
+        "nameJa": "はち",
+        "en": "eight"
+      }
+    ],
+    [
+      "⼄",
+      {
+        "nameJa": "おつ",
+        "en": "the second"
+      }
+    ],
+    [
+      "⼗",
+      {
+        "nameJa": "じゅう",
+        "en": "ten"
+      }
+    ],
+    [
+      "⽩",
+      {
+        "nameJa": "しろ",
+        "en": "white"
+      }
+    ],
+    [
+      "⼌",
+      {
+        "nameJa": "けいがまえ",
+        "en": "to enclose"
+      }
+    ],
+    [
+      "⺅",
+      {
+        "nameJa": "にんべん",
+        "en": "person"
+      }
+    ],
+    [
+      "⽇",
+      {
+        "nameJa": "ひ",
+        "en": "sun, day, time"
+      }
+    ],
+    [
+      "⽉",
+      {
+        "nameJa": "つき",
+        "en": "moon, month, period"
+      }
+    ],
+    [
+      "⽕",
+      {
+        "nameJa": "ひ",
+        "en": "fire"
+      }
+    ],
+    [
+      "⽔",
+      {
+        "nameJa": "みず",
+        "en": "water"
+      }
+    ],
+    [
+      "⽊",
+      {
+        "nameJa": "き",
+        "en": "tree, wood"
+      }
+    ],
+    [
+      "⾦",
+      {
+        "nameJa": "かね",
+        "en": "metal, gold, mineral"
+      }
+    ],
+    [
+      "⼟",
+      {
+        "nameJa": "つち",
+        "en": "earth"
+      }
+    ],
+    [
+      "⼲",
+      {
+        "nameJa": "かん",
+        "en": "to dry, shield"
+      }
+    ],
+    [
+      "𠆢",
+      {
+        "nameJa": "ひとやね",
+        "en": "person"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "ひへん",
+        "en": "sun, day, time"
+      }
+    ],
+    [
+      "⾨",
+      {
+        "nameJa": "もんがまえ",
+        "en": "gate, door"
+      }
+    ],
+    [
+      "⼑",
+      {
+        "nameJa": "かたな",
+        "en": "knife, sword"
+      }
+    ],
+    [
+      "⼣",
+      {
+        "nameJa": "ゆうべ",
+        "en": "evening"
+      }
+    ],
+    [
+      "⼯",
+      {
+        "nameJa": "たくみ",
+        "en": "work, carpenter, skill"
+      }
+    ],
+    [
+      "⼝",
+      {
+        "nameJa": "くち",
+        "en": "mouth"
+      }
+    ],
+    [
+      "⼁",
+      {
+        "nameJa": "たてぼう",
+        "en": "vertical stroke"
+      }
+    ],
+    [
+      "⻃",
+      {
+        "nameJa": "にし",
+        "en": "cover, west"
+      }
+    ],
+    [
+      "⼔",
+      {
+        "nameJa": "さじ",
+        "en": "spoon"
+      }
+    ],
+    [
+      "⽅",
+      {
+        "nameJa": "ほう",
+        "en": "direction, flag"
+      }
+    ],
+    [
+      "⼈",
+      {
+        "nameJa": "ひと",
+        "en": "person"
+      }
+    ],
+    [
+      "⽥",
+      {
+        "nameJa": "た",
+        "en": "rice paddy"
+      }
+    ],
+    [
+      "⼥",
+      {
+        "nameJa": "おんな",
+        "en": "woman"
+      }
+    ],
+    [
+      "⼦",
+      {
+        "nameJa": "こ",
+        "en": "child, son"
+      }
+    ],
+    [
+      "⽗",
+      {
+        "nameJa": "ちち",
+        "en": "father"
+      }
+    ],
+    [
+      "⽏",
+      {
+        "nameJa": "なかれ",
+        "en": "not, mother"
+      }
+    ],
+    [
+      "⼜",
+      {
+        "nameJa": "また",
+        "en": "again, right hand"
+      }
+    ],
+    [
+      "⽬",
+      {
+        "nameJa": "め",
+        "en": "eye"
+      }
+    ],
+    [
+      "⽿",
+      {
+        "nameJa": "みみ",
+        "en": "ear"
+      }
+    ],
+    [
+      "⼿",
+      {
+        "nameJa": "て",
+        "en": "hand"
+      }
+    ],
+    [
+      "⾜",
+      {
+        "nameJa": "あし",
+        "en": "foot, leg"
+      }
+    ],
+    [
+      "⼤",
+      {
+        "nameJa": "だい",
+        "en": "large, big"
+      }
+    ],
+    [
+      "⼩",
+      {
+        "nameJa": "しょう",
+        "en": "small"
+      }
+    ],
+    [
+      "⾼",
+      {
+        "nameJa": "たかい",
+        "en": "high"
+      }
+    ],
+    [
+      "⼧",
+      {
+        "nameJa": "うかんむり",
+        "en": "roof, house"
+      }
+    ],
+    [
+      "⻑",
+      {
+        "nameJa": "ながい",
+        "en": "long"
+      }
+    ],
+    [
+      "⽄",
+      {
+        "nameJa": "おのづくり",
+        "en": "axe"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "おんなへん",
+        "en": "woman"
+      }
+    ],
+    [
+      "⼉",
+      {
+        "nameJa": "ひとあし",
+        "en": "human legs"
+      }
+    ],
+    [
+      "⾏",
+      {
+        "nameJa": "ぎょうがまえ",
+        "en": "to go"
+      }
+    ],
+    [
+      "⼱",
+      {
+        "nameJa": "はば",
+        "en": "cloth"
+      }
+    ],
+    [
+      "⾷",
+      {
+        "nameJa": "しょく",
+        "en": "food, to eat"
+      }
+    ],
+    [
+      "⻟",
+      {
+        "nameJa": "しょくへん",
+        "en": "food, to eat"
+      }
+    ],
+    [
+      "⾒",
+      {
+        "nameJa": "みる",
+        "en": "to see"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "ごんべん",
+        "en": "words, to speak, say"
+      }
+    ],
+    [
+      "⾙",
+      {
+        "nameJa": "かい",
+        "en": "shell, property, wealth"
+      }
+    ],
+    [
+      "⼐",
+      {
+        "nameJa": "かんにょう",
+        "en": "container, open box"
+      }
+    ],
+    [
+      "⼊",
+      {
+        "nameJa": "いる",
+        "en": "to enter"
+      }
+    ],
+    [
+      "⽴",
+      {
+        "nameJa": "たつ",
+        "en": "to stand"
+      }
+    ],
+    [
+      "⽣",
+      {
+        "nameJa": "うまれる",
+        "en": "birth, to be born, live"
+      }
+    ],
+    [
+      "⺡",
+      {
+        "nameJa": "さんずい",
+        "en": "water"
+      }
+    ],
+    [
+      "⽓",
+      {
+        "nameJa": "きがまえ",
+        "en": "steam, air"
+      }
+    ],
+    [
+      "⾬",
+      {
+        "nameJa": "あめ",
+        "en": "rain"
+      }
+    ],
+    [
+      "⻗",
+      {
+        "nameJa": "あめかんむり",
+        "en": "rain"
+      }
+    ],
+    [
+      "⼭",
+      {
+        "nameJa": "やま",
+        "en": "mountain"
+      }
+    ],
+    [
+      "川",
+      {
+        "nameJa": "さんぼんがわ",
+        "en": "river"
+      }
+    ],
+    [
+      "⽯",
+      {
+        "nameJa": "いし",
+        "en": "stone"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "やまかんむり",
+        "en": "mountain"
+      }
+    ],
+    [
+      "⺾",
+      {
+        "nameJa": "くさかんむり",
+        "en": "grass"
+      }
+    ],
+    [
+      "⽵",
+      {
+        "nameJa": "たけ",
+        "en": "bamboo"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "きへん",
+        "en": "tree, wood"
+      }
+    ],
+    [
+      "⽝",
+      {
+        "nameJa": "いぬ",
+        "en": "dog"
+      }
+    ],
+    [
+      "⽜",
+      {
+        "nameJa": "うし",
+        "en": "cow"
+      }
+    ],
+    [
+      "⿂",
+      {
+        "nameJa": "うお",
+        "en": "fish"
+      }
+    ],
+    [
+      "⿃",
+      {
+        "nameJa": "とり",
+        "en": "bird"
+      }
+    ],
+    [
+      "⾁",
+      {
+        "nameJa": "にく",
+        "en": "flesh, meat"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "うしへん",
+        "en": "cow"
+      }
+    ],
+    [
+      "⽶",
+      {
+        "nameJa": "こめ",
+        "en": "rice"
+      }
+    ],
+    [
+      "⾞",
+      {
+        "nameJa": "くるま",
+        "en": "vehicle, wheel, car"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "たへん",
+        "en": "rice paddy"
+      }
+    ],
+    [
+      "⼨",
+      {
+        "nameJa": "すん",
+        "en": "inch, (2.25 cm)"
+      }
+    ],
+    [
+      "⾳",
+      {
+        "nameJa": "おと",
+        "en": "sound, noise"
+      }
+    ],
+    [
+      "⾔",
+      {
+        "nameJa": "げん",
+        "en": "words, to speak, say"
+      }
+    ],
+    [
+      "⼢",
+      {
+        "nameJa": "なつあし",
+        "en": "to go slowly"
+      }
+    ],
+    [
+      "⽲",
+      {
+        "nameJa": "のぎへん",
+        "en": "grain"
+      }
+    ],
+    [
+      "⼎",
+      {
+        "nameJa": "にすい",
+        "en": "ice"
+      }
+    ],
+    [
+      "⻌",
+      {
+        "nameJa": "しんにょう",
+        "en": "road, walk, to advance"
+      }
+    ],
+    [
+      "⼛",
+      {
+        "nameJa": "む",
+        "en": "private, Katakana Mu"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "いとへん",
+        "en": "thread"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "あなかんむり",
+        "en": "hole, cave"
+      }
+    ],
+    [
+      "⾵",
+      {
+        "nameJa": "かぜ",
+        "en": "wind"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "つちへん",
+        "en": "earth"
+      }
+    ],
+    [
+      "⼚",
+      {
+        "nameJa": "がんだれ",
+        "en": "cliff"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "さとへん",
+        "en": "village, (3.93 km)"
+      }
+    ],
+    [
+      "⾕",
+      {
+        "nameJa": "たに",
+        "en": "valley"
+      }
+    ],
+    [
+      "⺣",
+      {
+        "nameJa": "れっか",
+        "en": "fire"
+      }
+    ],
+    [
+      "⺉",
+      {
+        "nameJa": "りっとう",
+        "en": "knife, sword"
+      }
+    ],
+    [
+      "⼻",
+      {
+        "nameJa": "ぎょうにんべん",
+        "en": "step, stride, street, to go"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "とだれ",
+        "en": "door"
+      }
+    ],
+    [
+      "⾃",
+      {
+        "nameJa": "みずから",
+        "en": "self"
+      }
+    ],
+    [
+      "⼂",
+      {
+        "nameJa": "てん",
+        "en": "dot"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "にくづき",
+        "en": "meat, flesh"
+      }
+    ],
+    [
+      "⼸",
+      {
+        "nameJa": "ゆみ",
+        "en": "bow（in archery）"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "ほうへん",
+        "en": "direction, flag"
+      }
+    ],
+    [
+      "⻏",
+      {
+        "nameJa": "おおざと",
+        "en": "village, country, city"
+      }
+    ],
+    [
+      "⼇",
+      {
+        "nameJa": "なべぶた",
+        "en": "lid, top"
+      }
+    ],
+    [
+      "⼴",
+      {
+        "nameJa": "まだれ",
+        "en": "slanting roof"
+      }
+    ],
+    [
+      "⼕",
+      {
+        "nameJa": "はこがまえ",
+        "en": "box"
+      }
+    ],
+    [
+      "⾥",
+      {
+        "nameJa": "さと",
+        "en": "village, (3.93 km)"
+      }
+    ],
+    [
+      "⺭",
+      {
+        "nameJa": "しめすへん",
+        "en": "altar, festival, religious service"
+      }
+    ],
+    [
+      "⻖",
+      {
+        "nameJa": "こざとへん",
+        "en": "hill, mound"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "はちがしら",
+        "en": "eight"
+      }
+    ],
+    [
+      "⼫",
+      {
+        "nameJa": "しかばね",
+        "en": "corpse, awning"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "うまへん",
+        "en": "horse"
+      }
+    ],
+    [
+      "⾛",
+      {
+        "nameJa": "はしる",
+        "en": "to run"
+      }
+    ],
+    [
+      "⽌",
+      {
+        "nameJa": "とめる",
+        "en": "to stop"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "のかんむり",
+        "en": "diagonal sweeping stroke"
+      }
+    ],
+    [
+      "⽨",
+      {
+        "nameJa": "はつがしら",
+        "en": "outspread legs, departure"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "ふねへん",
+        "en": "ship, boat"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "かねへん",
+        "en": "metal, gold, mineral"
+      }
+    ],
+    [
+      "⾊",
+      {
+        "nameJa": "いろ",
+        "en": "color"
+      }
+    ],
+    [
+      "⿊",
+      {
+        "nameJa": "くろ",
+        "en": "black"
+      }
+    ],
+    [
+      "⾚",
+      {
+        "nameJa": "あか",
+        "en": "red"
+      }
+    ],
+    [
+      "⻘",
+      {
+        "nameJa": "あお",
+        "en": "blue, green"
+      }
+    ],
+    [
+      "⻩",
+      {
+        "nameJa": "き",
+        "en": "yellow"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "やへん",
+        "en": "arrow"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "くるまへん",
+        "en": "vehicle, wheel, car"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "ゆみへん",
+        "en": "bow（in archery）"
+      }
+    ],
+    [
+      "⺘",
+      {
+        "nameJa": "てへん",
+        "en": "hand"
+      }
+    ],
+    [
+      "⾫",
+      {
+        "nameJa": "ふるとり",
+        "en": "small bird"
+      }
+    ],
+    [
+      "⼒",
+      {
+        "nameJa": "ちから",
+        "en": "power"
+      }
+    ],
+    [
+      "⽻",
+      {
+        "nameJa": "はね",
+        "en": "feather, wing"
+      }
+    ],
+    [
+      "⺙",
+      {
+        "nameJa": "ぼくづくり",
+        "en": "activity, to strike, hit"
+      }
+    ],
+    [
+      "⺹",
+      {
+        "nameJa": "おいかんむり",
+        "en": "old, old-age"
+      }
+    ],
+    [
+      "⼼",
+      {
+        "nameJa": "こころ",
+        "en": "heart, mind, spirit"
+      }
+    ],
+    [
+      "⺮",
+      {
+        "nameJa": "たけかんむり",
+        "en": "bamboo"
+      }
+    ],
+    [
+      "⽋",
+      {
+        "nameJa": "あくび",
+        "en": "to lack, yawn"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "さむらいかんむり",
+        "en": "man, scholar, samurai"
+      }
+    ],
+    [
+      "⽧",
+      {
+        "nameJa": "やまいだれ",
+        "en": "sickness"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "くちへん",
+        "en": "mouth"
+      }
+    ],
+    [
+      "⽫",
+      {
+        "nameJa": "さら",
+        "en": "plate, bowl"
+      }
+    ],
+    [
+      "⾣",
+      {
+        "nameJa": "ひよみのとり",
+        "en": "sake jar, bird"
+      }
+    ],
+    [
+      "⻨",
+      {
+        "nameJa": "むぎ",
+        "en": "wheat"
+      }
+    ],
+    [
+      "⾺",
+      {
+        "nameJa": "うま",
+        "en": "horse"
+      }
+    ],
+    [
+      "⾍",
+      {
+        "nameJa": "むし",
+        "en": "worm, insect, bug"
+      }
+    ],
+    [
+      "⽑",
+      {
+        "nameJa": "け",
+        "en": "hair"
+      }
+    ],
+    [
+      "⽂",
+      {
+        "nameJa": "ぶん",
+        "en": "literature, letters"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "いしへん",
+        "en": "stone"
+      }
+    ],
+    [
+      "⾴",
+      {
+        "nameJa": "おおがい",
+        "en": "head, page"
+      }
+    ],
+    [
+      "⼍",
+      {
+        "nameJa": "わかんむり",
+        "en": "cover, crown"
+      }
+    ],
+    [
+      "⽃",
+      {
+        "nameJa": "ますづくり",
+        "en": "big dipper, ladle, 18 liters"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "おうへん",
+        "en": "jewelry, jeweled king"
+      }
+    ],
+    [
+      "⺌",
+      {
+        "nameJa": "しょうかんむり",
+        "en": "small"
+      }
+    ],
+    [
+      "⽟",
+      {
+        "nameJa": "たま",
+        "en": "jewelry"
+      }
+    ],
+    [
+      "⽷",
+      {
+        "nameJa": "いと",
+        "en": "thread"
+      }
+    ],
+    [
+      "⾐",
+      {
+        "nameJa": "ころも",
+        "en": "clothing"
+      }
+    ],
+    [
+      "⺝",
+      {
+        "nameJa": "つきへん",
+        "en": "moon, month, period"
+      }
+    ],
+    [
+      "⼃",
+      {
+        "nameJa": "の",
+        "en": "diagonal sweeping stroke"
+      }
+    ],
+    [
+      "⽀",
+      {
+        "nameJa": "しにょう",
+        "en": "branch"
+      }
+    ],
+    [
+      "⼅",
+      {
+        "nameJa": "はねぼう",
+        "en": "vertical stroke with a hook"
+      }
+    ],
+    [
+      "⼾",
+      {
+        "nameJa": "と",
+        "en": "door"
+      }
+    ],
+    [
+      "⺓",
+      {
+        "nameJa": "いとがしら",
+        "en": "young, slight"
+      }
+    ],
+    [
+      "⼓",
+      {
+        "nameJa": "つつみがまえ",
+        "en": "to wrap"
+      }
+    ],
+    [
+      "⽪",
+      {
+        "nameJa": "けがわ",
+        "en": "skin, hide"
+      }
+    ],
+    [
+      "⽤",
+      {
+        "nameJa": "もちいる",
+        "en": "to use"
+      }
+    ],
+    [
+      "⺨",
+      {
+        "nameJa": "けものへん",
+        "en": "beast"
+      }
+    ],
+    [
+      "⽰",
+      {
+        "nameJa": "しめす",
+        "en": "altar, festival, religious service"
+      }
+    ],
+    [
+      "⾈",
+      {
+        "nameJa": "ふね",
+        "en": "ship, boat"
+      }
+    ],
+    [
+      "⾎",
+      {
+        "nameJa": "ち",
+        "en": "blood"
+      }
+    ],
+    [
+      "⽈",
+      {
+        "nameJa": "ひらび",
+        "en": "to say"
+      }
+    ],
+    [
+      "⼙",
+      {
+        "nameJa": "ふしづくり",
+        "en": "stamp, seal"
+      }
+    ],
+    [
+      "⽸",
+      {
+        "nameJa": "みずがめ",
+        "en": "earthen jar"
+      }
+    ],
+    [
+      "⼽",
+      {
+        "nameJa": "ほこ",
+        "en": "spear, weapon"
+      }
+    ],
+    [
+      "⼷",
+      {
+        "nameJa": "いぐるみ",
+        "en": "javelin"
+      }
+    ],
+    [
+      "⽍",
+      {
+        "nameJa": "がつ",
+        "en": "death & dying, to decompose"
+      }
+    ],
+    [
+      "氺",
+      {
+        "nameJa": "したみず",
+        "en": "water"
+      }
+    ],
+    [
+      "⾖",
+      {
+        "nameJa": "まめ",
+        "en": "bean"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "すんづくり",
+        "en": "inch, (2.25 cm)"
+      }
+    ],
+    [
+      "⾓",
+      {
+        "nameJa": "つの",
+        "en": "horn, corner"
+      }
+    ],
+    [
+      "⼺",
+      {
+        "nameJa": "さんづくり",
+        "en": "hair-style, light rays"
+      }
+    ],
+    [
+      "⾉",
+      {
+        "nameJa": "こん",
+        "en": "boundary"
+      }
+    ],
+    [
+      "⾝",
+      {
+        "nameJa": "み",
+        "en": "body"
+      }
+    ],
+    [
+      "⾂",
+      {
+        "nameJa": "しん",
+        "en": "retainer, minister"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "はくへん",
+        "en": "white"
+      }
+    ],
+    [
+      "⺃",
+      {
+        "nameJa": "おつ",
+        "en": "the second"
+      }
+    ],
+    [
+      "⾮",
+      {
+        "nameJa": "あらず",
+        "en": "wrong, non-"
+      }
+    ],
+    [
+      "⺖",
+      {
+        "nameJa": "りっしんべん",
+        "en": "heart, mind, spirit"
+      }
+    ],
+    [
+      "⼡",
+      {
+        "nameJa": "のまた",
+        "en": "to follow"
+      }
+    ],
+    [
+      "⾯",
+      {
+        "nameJa": "めん",
+        "en": "face, surface"
+      }
+    ],
+    [
+      "⽎",
+      {
+        "nameJa": "るまた",
+        "en": "lance shaft, action"
+      }
+    ],
+    [
+      "⺍",
+      {
+        "nameJa": "つ",
+        "en": "Katakana Tsu"
+      }
+    ],
+    [
+      "⼵",
+      {
+        "nameJa": "えんにょう",
+        "en": "to move, stretch"
+      }
+    ],
+    [
+      "⾶",
+      {
+        "nameJa": "とぶ",
+        "en": "to fly"
+      }
+    ],
+    [
+      "⾸",
+      {
+        "nameJa": "くび",
+        "en": "head"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "そうにょう",
+        "en": "to run"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "こめへん",
+        "en": "rice"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "がつへん",
+        "en": "death & dying, to decompose"
+      }
+    ],
+    [
+      "⽞",
+      {
+        "nameJa": "げん",
+        "en": "darkness"
+      }
+    ],
+    [
+      "酉",
+      {
+        "nameJa": "ひよみのとり",
+        "en": "wine, alcohol"
+      }
+    ],
+    [
+      "⻂",
+      {
+        "nameJa": "ころもへん",
+        "en": "clothing"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "ひへん",
+        "en": "fire"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "かいへん",
+        "en": "shell, property, wealth"
+      }
+    ],
+    [
+      "⻭",
+      {
+        "nameJa": "は",
+        "en": "tooth"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "つのへん",
+        "en": "horn, corner"
+      }
+    ],
+    [
+      "⻊",
+      {
+        "nameJa": "あしへん",
+        "en": "foot, leg"
+      }
+    ],
+    [
+      "⾠",
+      {
+        "nameJa": "しんのたつ",
+        "en": "Fifth zodiac sign, 7–9 A.M."
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "よこめ",
+        "en": "eye"
+      }
+    ],
+    [
+      "⺫",
+      {
+        "nameJa": "あみがしら",
+        "en": "net"
+      }
+    ],
+    [
+      "⾟",
+      {
+        "nameJa": "からい",
+        "en": "bitter"
+      }
+    ],
+    [
+      "⽦",
+      {
+        "nameJa": "ひき",
+        "en": "bolt of cloth"
+      }
+    ],
+    [
+      "⿐",
+      {
+        "nameJa": "はな",
+        "en": "nose"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "みみへん",
+        "en": "ear"
+      }
+    ],
+    [
+      "⼠",
+      {
+        "nameJa": "さむらい",
+        "en": "man, scholar, samurai"
+      }
+    ],
+    [
+      "⽚",
+      {
+        "nameJa": "かた",
+        "en": "split wood"
+      }
+    ],
+    [
+      "⽒",
+      {
+        "nameJa": "うじ",
+        "en": "family, clan"
+      }
+    ],
+    [
+      "⽐",
+      {
+        "nameJa": "くらべる",
+        "en": "to compare"
+      }
+    ],
+    [
+      "二",
+      {
+        "nameJa": "に",
+        "en": "two"
+      }
+    ],
+    [
+      "⽢",
+      {
+        "nameJa": "あまい",
+        "en": "sweet"
+      }
+    ],
+    [
+      "⼘",
+      {
+        "nameJa": "ぼく",
+        "en": "oracle"
+      }
+    ],
+    [
+      "丶",
+      {
+        "nameJa": "けいがまえ",
+        "en": "dot"
+      }
+    ],
+    [
+      "玄",
+      {
+        "nameJa": "げん",
+        "en": "dark, profound"
+      }
+    ],
+    [
+      "⽳",
+      {
+        "nameJa": "あな",
+        "en": "hole, cave"
+      }
+    ],
+    [
+      "一",
+      {
+        "nameJa": "つき",
+        "en": "one"
+      }
+    ],
+    [
+      "水",
+      {
+        "nameJa": "さんずい",
+        "en": "water"
+      }
+    ],
+    [
+      "⼏",
+      {
+        "nameJa": "きにょう",
+        "en": "table"
+      }
+    ],
+    [
+      "⺷",
+      {
+        "nameJa": "ひつじ",
+        "en": "sheep"
+      }
+    ],
+    [
+      "刀",
+      {
+        "nameJa": "りっとう",
+        "en": "knife, sword"
+      }
+    ],
+    [
+      "⾆",
+      {
+        "nameJa": "した",
+        "en": "tongue"
+      }
+    ],
+    [
+      "口",
+      {
+        "nameJa": "くち",
+        "en": "mouth, opening"
+      }
+    ],
+    [
+      "小",
+      {
+        "nameJa": "しょう",
+        "en": "small, insignificant"
+      }
+    ],
+    [
+      "力",
+      {
+        "nameJa": "れっか",
+        "en": "power, force"
+      }
+    ],
+    [
+      "女",
+      {
+        "nameJa": "おんな",
+        "en": "woman, female"
+      }
+    ],
+    [
+      "阜",
+      {
+        "nameJa": "こざとへん",
+        "en": "mound, dam (阝 left)"
+      }
+    ],
+    [
+      "木",
+      {
+        "nameJa": "き",
+        "en": "tree"
+      }
+    ],
+    [
+      "殳",
+      {
+        "nameJa": "たつ",
+        "en": "weapon, lance"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "かたへん",
+        "en": "split wood"
+      }
+    ],
+    [
+      "手",
+      {
+        "nameJa": "てへん",
+        "en": "hand"
+      }
+    ],
+    [
+      "山",
+      {
+        "nameJa": "やま",
+        "en": "mountain"
+      }
+    ],
+    [
+      "尸",
+      {
+        "nameJa": "しかばね",
+        "en": "corpse"
+      }
+    ],
+    [
+      "大",
+      {
+        "nameJa": "すん",
+        "en": "big, very"
+      }
+    ],
+    [
+      "肉",
+      {
+        "nameJa": "つき",
+        "en": "meat"
+      }
+    ],
+    [
+      "宀",
+      {
+        "nameJa": "うかんむり",
+        "en": "roof"
+      }
+    ],
+    [
+      "火",
+      {
+        "nameJa": "ひ",
+        "en": "fire"
+      }
+    ],
+    [
+      "⾰",
+      {
+        "nameJa": "つくりがわ",
+        "en": "leather"
+      }
+    ],
+    [
+      "⾹",
+      {
+        "nameJa": "かおり",
+        "en": "scent"
+      }
+    ],
+    [
+      "⼰",
+      {
+        "nameJa": "おのれ",
+        "en": "self"
+      }
+    ],
+    [
+      "艸",
+      {
+        "nameJa": "くさかんむり",
+        "en": "grass"
+      }
+    ],
+    [
+      "人",
+      {
+        "nameJa": "にんべん",
+        "en": "man, human"
+      }
+    ],
+    [
+      "衣",
+      {
+        "nameJa": "りゅう",
+        "en": "clothes"
+      }
+    ],
+    [
+      "疒",
+      {
+        "nameJa": "やまいだれ",
+        "en": "sickness"
+      }
+    ],
+    [
+      "⾻",
+      {
+        "nameJa": "ほね",
+        "en": "bone"
+      }
+    ],
+    [
+      "心",
+      {
+        "nameJa": "こころ",
+        "en": "heart"
+      }
+    ],
+    [
+      "八",
+      {
+        "nameJa": "あまい",
+        "en": "eight"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "めへん",
+        "en": "eye"
+      }
+    ],
+    [
+      "石",
+      {
+        "nameJa": "いし",
+        "en": "stone"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "とりへん",
+        "en": "sake jar, bird"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "こへん",
+        "en": "child, son"
+      }
+    ],
+    [
+      "禾",
+      {
+        "nameJa": "のぎへん",
+        "en": "grain"
+      }
+    ],
+    [
+      "至",
+      {
+        "nameJa": "いたる",
+        "en": "arrive"
+      }
+    ],
+    [
+      "⽡",
+      {
+        "nameJa": "かわら",
+        "en": "tile"
+      }
+    ],
+    [
+      "糸",
+      {
+        "nameJa": "いと",
+        "en": "silk"
+      }
+    ],
+    [
+      "⾗",
+      {
+        "nameJa": "いのこ",
+        "en": "pig"
+      }
+    ],
+    [
+      "土",
+      {
+        "nameJa": "つち",
+        "en": "earth"
+      }
+    ],
+    [
+      "⿅",
+      {
+        "nameJa": "しか",
+        "en": "deer"
+      }
+    ],
+    [
+      "斗",
+      {
+        "nameJa": "ますづくり",
+        "en": "dipper"
+      }
+    ],
+    [
+      "彡",
+      {
+        "nameJa": "さんづくり",
+        "en": "bristle, beard"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "はばへん",
+        "en": "cloth"
+      }
+    ],
+    [
+      "言",
+      {
+        "nameJa": "げん",
+        "en": "speech"
+      }
+    ],
+    [
+      "足",
+      {
+        "nameJa": "あし",
+        "en": "foot"
+      }
+    ],
+    [
+      "广",
+      {
+        "nameJa": "まだれ",
+        "en": "house on cliff"
+      }
+    ],
+    [
+      "米",
+      {
+        "nameJa": "こめ",
+        "en": "rice"
+      }
+    ],
+    [
+      "⺐",
+      {
+        "nameJa": "だいのまげあし",
+        "en": "lame leg"
+      }
+    ],
+    [
+      "雨",
+      {
+        "nameJa": "あめ",
+        "en": "rain"
+      }
+    ],
+    [
+      "頁",
+      {
+        "nameJa": "おおがい",
+        "en": "leaf"
+      }
+    ],
+    [
+      "食",
+      {
+        "nameJa": "しょくへん",
+        "en": "eat, food"
+      }
+    ],
+    [
+      "目",
+      {
+        "nameJa": "あみがしら",
+        "en": "eye"
+      }
+    ],
+    [
+      "",
+      {
+        "nameJa": "たつへん",
+        "en": "to stand"
+      }
+    ],
+    [
+      "网",
+      {
+        "nameJa": "あみめ",
+        "en": "net"
+      }
+    ],
+    [
+      "⾽",
+      {
+        "nameJa": "かみかんむり",
+        "en": "long hair"
+      }
+    ],
+    [
+      "金",
+      {
+        "nameJa": "かね",
+        "en": "metal, gold"
+      }
+    ],
+    [
+      "攴",
+      {
+        "nameJa": "ぼくづくり",
+        "en": "rap"
+      }
+    ],
+    [
+      "彳",
+      {
+        "nameJa": "ぎょうにんべん",
+        "en": "step"
+      }
+    ],
+    [
+      "⾇",
+      {
+        "nameJa": "まいあし",
+        "en": "contrary, to err"
+      }
+    ],
+    [
+      "虫",
+      {
+        "nameJa": "むし",
+        "en": "insect"
+      }
+    ],
+    [
+      "貝",
+      {
+        "nameJa": "",
+        "en": "shell"
+      }
+    ],
+    [
+      "玉",
+      {
+        "nameJa": "たま",
+        "en": "jade (king)"
+      }
+    ],
+    [
+      "魚",
+      {
+        "nameJa": "うお",
+        "en": "fish"
+      }
+    ],
+    [
+      "竹",
+      {
+        "nameJa": "たけ",
+        "en": "bamboo"
+      }
+    ],
+    [
+      "乛",
+      {
+        "nameJa": "かめ",
+        "en": "second"
+      }
+    ],
+    [
+      "又",
+      {
+        "nameJa": "てん",
+        "en": "right hand"
+      }
+    ],
+    [
+      "几",
+      {
+        "nameJa": "きにょう",
+        "en": "table"
+      }
+    ],
+    [
+      "丿",
+      {
+        "nameJa": "なべぶた",
+        "en": "slash"
+      }
+    ],
+    [
+      "巾",
+      {
+        "nameJa": "はば",
+        "en": "turban, scarf"
+      }
+    ],
+    [
+      "己",
+      {
+        "nameJa": "おのれ",
+        "en": "oneself"
+      }
+    ],
+    [
+      "厂",
+      {
+        "nameJa": "がんだれ",
+        "en": "cliff"
+      }
+    ],
+    [
+      "幺",
+      {
+        "nameJa": "やま",
+        "en": "short, tiny"
+      }
+    ],
+    [
+      "斤",
+      {
+        "nameJa": "くるま",
+        "en": "axe"
+      }
+    ],
+    [
+      "勹",
+      {
+        "nameJa": "つつみがまえ",
+        "en": "wrap, embrace"
+      }
+    ],
+    [
+      "弓",
+      {
+        "nameJa": "ゆみ",
+        "en": "bow"
+      }
+    ],
+    [
+      "屮",
+      {
+        "nameJa": "の",
+        "en": "sprout"
+      }
+    ],
+    [
+      "凵",
+      {
+        "nameJa": "いち",
+        "en": "container, open mouth"
+      }
+    ],
+    [
+      "子",
+      {
+        "nameJa": "こ",
+        "en": "child, seed"
+      }
+    ],
+    [
+      "十",
+      {
+        "nameJa": "の",
+        "en": "ten, complete"
+      }
+    ],
+    [
+      "爪",
+      {
+        "nameJa": "つめかんむり",
+        "en": "claw"
+      }
+    ],
+    [
+      "日",
+      {
+        "nameJa": "ひ",
+        "en": "sun, day"
+      }
+    ],
+    [
+      "尢",
+      {
+        "nameJa": "だいのまげあし",
+        "en": "lame"
+      }
+    ],
+    [
+      "⼶",
+      {
+        "nameJa": "にじゅうあし",
+        "en": "folded hands"
+      }
+    ],
+    [
+      "田",
+      {
+        "nameJa": "いとがしら",
+        "en": "field"
+      }
+    ],
+    [
+      "卩",
+      {
+        "nameJa": "ふしづくり",
+        "en": "kneel"
+      }
+    ],
+    [
+      "矛",
+      {
+        "nameJa": "ほこ",
+        "en": "spear"
+      }
+    ],
+    [
+      "瓦",
+      {
+        "nameJa": "かわら",
+        "en": "tile"
+      }
+    ],
+    [
+      "牙",
+      {
+        "nameJa": "きば",
+        "en": "fang"
+      }
+    ],
+    [
+      "⽮",
+      {
+        "nameJa": "や",
+        "en": "arrow"
+      }
+    ],
+    [
+      "辵",
+      {
+        "nameJa": "しんにょう",
+        "en": "walk"
+      }
+    ],
+    [
+      "囗",
+      {
+        "nameJa": "くにがまえ",
+        "en": "enclosure"
+      }
+    ],
+    [
+      "工",
+      {
+        "nameJa": "たくみ",
+        "en": "work"
+      }
+    ],
+    [
+      "⾄",
+      {
+        "nameJa": "いたる",
+        "en": "to arrive, reach"
+      }
+    ],
+    [
+      "臼",
+      {
+        "nameJa": "うす",
+        "en": "mortar"
+      }
+    ],
+    [
+      "亠",
+      {
+        "nameJa": "なべぶた",
+        "en": "lid"
+      }
+    ],
+    [
+      "弋",
+      {
+        "nameJa": "いち",
+        "en": "shoot, arrow"
+      }
+    ],
+    [
+      "而",
+      {
+        "nameJa": "しこうして",
+        "en": "beard"
+      }
+    ],
+    [
+      "瓜",
+      {
+        "nameJa": "うり",
+        "en": "melon"
+      }
+    ],
+    [
+      "止",
+      {
+        "nameJa": "いち",
+        "en": "stop"
+      }
+    ],
+    [
+      "士",
+      {
+        "nameJa": "さむらい",
+        "en": "scholar, bachelor"
+      }
+    ],
+    [
+      "巛",
+      {
+        "nameJa": "まがりがわ",
+        "en": "river"
+      }
+    ],
+    [
+      "戈",
+      {
+        "nameJa": "じゅう",
+        "en": "spear, halberd"
+      }
+    ],
+    [
+      "匚",
+      {
+        "nameJa": "はこがまえ",
+        "en": "box"
+      }
+    ],
+    [
+      "邑",
+      {
+        "nameJa": "むら",
+        "en": "town (阝 right)"
+      }
+    ],
+    [
+      "冫",
+      {
+        "nameJa": "にすい",
+        "en": "ice"
+      }
+    ],
+    [
+      "廴",
+      {
+        "nameJa": "えんにょう",
+        "en": "long stride"
+      }
+    ],
+    [
+      "儿",
+      {
+        "nameJa": "しろ",
+        "en": "legs"
+      }
+    ],
+    [
+      "牛",
+      {
+        "nameJa": "うし",
+        "en": "cow"
+      }
+    ],
+    [
+      "廾",
+      {
+        "nameJa": "にじゅうあし",
+        "en": "two hands, twenty"
+      }
+    ],
+    [
+      "辰",
+      {
+        "nameJa": "しんのたつ",
+        "en": "morning"
+      }
+    ],
+    [
+      "寸",
+      {
+        "nameJa": "けいがしら",
+        "en": "thumb, inch"
+      }
+    ],
+    [
+      "丨",
+      {
+        "nameJa": "くち",
+        "en": "line"
+      }
+    ],
+    [
+      "示",
+      {
+        "nameJa": "しめすへん",
+        "en": "sign"
+      }
+    ],
+    [
+      "虍",
+      {
+        "nameJa": "とらがしら",
+        "en": "tiger stripes"
+      }
+    ],
+    [
+      "戶",
+      {
+        "nameJa": "と",
+        "en": "door, house"
+      }
+    ],
+    [
+      "文",
+      {
+        "nameJa": "あらず",
+        "en": "script, literature"
+      }
+    ],
+    [
+      "釆",
+      {
+        "nameJa": "のごめ",
+        "en": "divide, distinguish, choose"
+      }
+    ],
+    [
+      "犬",
+      {
+        "nameJa": "しょう",
+        "en": "dog"
+      }
+    ],
+    [
+      "皿",
+      {
+        "nameJa": "しん",
+        "en": "dish"
+      }
+    ],
+    [
+      "歹",
+      {
+        "nameJa": "がつ",
+        "en": "death, decay"
+      }
+    ],
+    [
+      "走",
+      {
+        "nameJa": "はしる",
+        "en": "run"
+      }
+    ],
+    [
+      "冖",
+      {
+        "nameJa": "わかんむり",
+        "en": "cover"
+      }
+    ],
+    [
+      "車",
+      {
+        "nameJa": "くるま",
+        "en": "cart, car"
+      }
+    ],
+    [
+      "甘",
+      {
+        "nameJa": "あまい",
+        "en": "sweet"
+      }
+    ],
+    [
+      "方",
+      {
+        "nameJa": "ほう",
+        "en": "square"
+      }
+    ],
+    [
+      "穴",
+      {
+        "nameJa": "あな",
+        "en": "cave"
+      }
+    ],
+    [
+      "自",
+      {
+        "nameJa": "みずから",
+        "en": "self"
+      }
+    ],
+    [
+      "豸",
+      {
+        "nameJa": "むじなへん",
+        "en": "cat, badger"
+      }
+    ],
+    [
+      "⽾",
+      {
+        "nameJa": "らいすき",
+        "en": "plow"
+      }
+    ],
+    [
+      "耳",
+      {
+        "nameJa": "りゅう",
+        "en": "ear"
+      }
+    ],
+    [
+      "耒",
+      {
+        "nameJa": "らいすき",
+        "en": "plow"
+      }
+    ],
+    [
+      "无",
+      {
+        "nameJa": "こん",
+        "en": "perish"
+      }
+    ],
+    [
+      "立",
+      {
+        "nameJa": "たつ",
+        "en": "stand, erect"
+      }
+    ],
+    [
+      "匸",
+      {
+        "nameJa": "かくしがまえ",
+        "en": "hiding enclosure"
+      }
+    ],
+    [
+      "羽",
+      {
+        "nameJa": "はね",
+        "en": "feather"
+      }
+    ],
+    [
+      "鬼",
+      {
+        "nameJa": "あさ",
+        "en": "ghost, demon"
+      }
+    ],
+    [
+      "門",
+      {
+        "nameJa": "もんがまえ",
+        "en": "gate"
+      }
+    ],
+    [
+      "月",
+      {
+        "nameJa": "つき",
+        "en": "moon, month"
+      }
+    ],
+    [
+      "舟",
+      {
+        "nameJa": "ふね",
+        "en": "boat"
+      }
+    ],
+    [
+      "麻",
+      {
+        "nameJa": "あさ",
+        "en": "hemp, flax"
+      }
+    ],
+    [
+      "爻",
+      {
+        "nameJa": "だい",
+        "en": "mix, twine, cross"
+      }
+    ],
+    [
+      "曰",
+      {
+        "nameJa": "ひ",
+        "en": "say"
+      }
+    ],
+    [
+      "匕",
+      {
+        "nameJa": "さじ",
+        "en": "spoon"
+      }
+    ],
+    [
+      "羊",
+      {
+        "nameJa": "ひつじ",
+        "en": "sheep"
+      }
+    ],
+    [
+      "聿",
+      {
+        "nameJa": "ふでづくり",
+        "en": "brush"
+      }
+    ],
+    [
+      "彐",
+      {
+        "nameJa": "けいがしら",
+        "en": "pig snout"
+      }
+    ],
+    [
+      "隹",
+      {
+        "nameJa": "ふるとり",
+        "en": "small bird"
+      }
+    ],
+    [
+      "赤",
+      {
+        "nameJa": "あか",
+        "en": "red, naked"
+      }
+    ],
+    [
+      "欠",
+      {
+        "nameJa": "ふるとり",
+        "en": "lack, yawn"
+      }
+    ],
+    [
+      "生",
+      {
+        "nameJa": "うまれる",
+        "en": "life"
+      }
+    ],
+    [
+      "疋",
+      {
+        "nameJa": "ひき",
+        "en": "bolt of cloth"
+      }
+    ],
+    [
+      "見",
+      {
+        "nameJa": "みる",
+        "en": "see"
+      }
+    ],
+    [
+      "禸",
+      {
+        "nameJa": "ひと",
+        "en": "track"
+      }
+    ],
+    [
+      "鼓",
+      {
+        "nameJa": "つづみ",
+        "en": "drum"
+      }
+    ],
+    [
+      "鳥",
+      {
+        "nameJa": "まだれ",
+        "en": "bird"
+      }
+    ],
+    [
+      "鼠",
+      {
+        "nameJa": "ねずみ",
+        "en": "rat, mouse"
+      }
+    ],
+    [
+      "青",
+      {
+        "nameJa": "たつ",
+        "en": "blue"
+      }
+    ],
+    [
+      "馬",
+      {
+        "nameJa": "つき",
+        "en": "horse"
+      }
+    ],
+    [
+      "革",
+      {
+        "nameJa": "つくりがわ",
+        "en": "leather, rawhide"
+      }
+    ],
+    [
+      "豕",
+      {
+        "nameJa": "なべぶた",
+        "en": "pig"
+      }
+    ],
+    [
+      "辛",
+      {
+        "nameJa": "からい",
+        "en": "bitter"
+      }
+    ],
+    [
+      "風",
+      {
+        "nameJa": "たつ",
+        "en": "wind"
+      }
+    ],
+    [
+      "黍",
+      {
+        "nameJa": "きび",
+        "en": "millet"
+      }
+    ],
+    [
+      "黑",
+      {
+        "nameJa": "くろ",
+        "en": "black"
+      }
+    ],
+    [
+      "皮",
+      {
+        "nameJa": "けがわ",
+        "en": "skin"
+      }
+    ],
+    [
+      "行",
+      {
+        "nameJa": "ぎょうがまえ",
+        "en": "go, do"
+      }
+    ],
+    [
+      "骨",
+      {
+        "nameJa": "ほね",
+        "en": "bone"
+      }
+    ],
+    [
+      "⾅",
+      {
+        "nameJa": "うす",
+        "en": "mortar, quern"
+      }
+    ],
+    [
+      "隶",
+      {
+        "nameJa": "さむらい",
+        "en": "slave, capture"
+      }
+    ],
+    [
+      "龍",
+      {
+        "nameJa": "りゅう",
+        "en": "dragon"
+      }
+    ],
+    [
+      "麥",
+      {
+        "nameJa": "むぎ",
+        "en": "wheat"
+      }
+    ],
+    [
+      "髟",
+      {
+        "nameJa": "かみかんむり",
+        "en": "long hair"
+      }
+    ],
+    [
+      "鼻",
+      {
+        "nameJa": "はな",
+        "en": "nose"
+      }
+    ],
+    [
+      "矢",
+      {
+        "nameJa": "や",
+        "en": "arrow"
+      }
+    ],
+    [
+      "韋",
+      {
+        "nameJa": "なめしがわ",
+        "en": "tanned leather"
+      }
+    ],
+    [
+      "西",
+      {
+        "nameJa": "にし",
+        "en": "west"
+      }
+    ],
+    [
+      "色",
+      {
+        "nameJa": "いろ",
+        "en": "colour, prettiness"
+      }
+    ],
+    [
+      "鹵",
+      {
+        "nameJa": "しお",
+        "en": "salt"
+      }
+    ],
+    [
+      "鹿",
+      {
+        "nameJa": "しか",
+        "en": "deer"
+      }
+    ],
+    [
+      "音",
+      {
+        "nameJa": "おと",
+        "en": "sound"
+      }
+    ],
+    [
+      "鬯",
+      {
+        "nameJa": "みずがめ",
+        "en": "herbs, sacrificial wine"
+      }
+    ]
+  ],
+  "phrases": [
+    "Fifth zodiac sign, 7–9 A.M.",
+    "Katakana Tsu",
+    "activity, to strike, hit",
+    "again, right hand",
+    "altar, festival, religious service",
+    "arrive",
+    "arrow",
+    "axe",
+    "bamboo",
+    "bean",
+    "beard",
+    "beast",
+    "big dipper, ladle, 18 liters",
+    "big, very",
+    "bird",
+    "birth, to be born, live",
+    "bitter",
+    "black",
+    "blood",
+    "blue",
+    "blue, green",
+    "boat",
+    "body",
+    "bolt of cloth",
+    "bone",
+    "border, territorial boundaries",
+    "boundary",
+    "bow",
+    "bow（in archery）",
+    "box",
+    "branch",
+    "bristle, beard",
+    "brush",
+    "cart, car",
+    "cat, badger",
+    "cave",
+    "child, seed",
+    "child, son",
+    "claw",
+    "cliff",
+    "cloth",
+    "clothes",
+    "clothing",
+    "color",
+    "colour, prettiness",
+    "container, open box",
+    "container, open mouth",
+    "contrary, to err",
+    "corpse",
+    "corpse, awning",
+    "cover",
+    "cover, crown",
+    "cover, west",
+    "cow",
+    "dark, profound",
+    "darkness",
+    "death & dying, to decompose",
+    "death, decay",
+    "deer",
+    "diagonal sweeping stroke",
+    "dipper",
+    "direction, flag",
+    "dish",
+    "divide, distinguish, choose",
+    "dog",
+    "door",
+    "door, house",
+    "dot",
+    "dragon",
+    "drum",
+    "ear",
+    "earth",
+    "earthen jar",
+    "eat, food",
+    "eight",
+    "enclosure",
+    "evening",
+    "eye",
+    "face, surface",
+    "family, clan",
+    "fang",
+    "father",
+    "feather",
+    "feather, wing",
+    "field",
+    "fire",
+    "fish",
+    "flesh, meat",
+    "folded hands",
+    "food, to eat",
+    "foot",
+    "foot, leg",
+    "gate",
+    "gate, door",
+    "ghost, demon",
+    "go, do",
+    "grain",
+    "grass",
+    "hair",
+    "hair-style, light rays",
+    "hand",
+    "head",
+    "head, page",
+    "heart",
+    "heart, mind, spirit",
+    "hemp, flax",
+    "herbs, sacrificial wine",
+    "hiding enclosure",
+    "high",
+    "hill, mound",
+    "hole, cave",
+    "horn, corner",
+    "horse",
+    "house on cliff",
+    "human legs",
+    "ice",
+    "inch, (2.25 cm)",
+    "insect",
+    "jade (king)",
+    "javelin",
+    "jewelry",
+    "jewelry, jeweled king",
+    "kneel",
+    "knife, sword",
+    "lack, yawn",
+    "lame",
+    "lame leg",
+    "lance shaft, action",
+    "large, big",
+    "leaf",
+    "leather",
+    "leather, rawhide",
+    "legs",
+    "lid",
+    "lid, top",
+    "life",
+    "line",
+    "literature, letters",
+    "long",
+    "long hair",
+    "long stride",
+    "man, human",
+    "man, scholar, samurai",
+    "meat",
+    "meat, flesh",
+    "melon",
+    "metal, gold",
+    "metal, gold, mineral",
+    "millet",
+    "mix, twine, cross",
+    "moon, month",
+    "moon, month, period",
+    "morning",
+    "mortar",
+    "mortar, quern",
+    "mound, dam (阝 left)",
+    "mountain",
+    "mouth",
+    "mouth, opening",
+    "net",
+    "nose",
+    "not, mother",
+    "old, old-age",
+    "one",
+    "one, horizontal stroke",
+    "oneself",
+    "oracle",
+    "outspread legs, departure",
+    "perish",
+    "person",
+    "pig",
+    "pig snout",
+    "plate, bowl",
+    "plow",
+    "power",
+    "power, force",
+    "private, Katakana Mu",
+    "rain",
+    "rap",
+    "rat, mouse",
+    "red",
+    "red, naked",
+    "retainer, minister",
+    "rice",
+    "rice paddy",
+    "right hand",
+    "river",
+    "road, walk, to advance",
+    "roof",
+    "roof, house",
+    "run",
+    "sake jar, bird",
+    "salt",
+    "say",
+    "scent",
+    "scholar, bachelor",
+    "script, literature",
+    "second",
+    "see",
+    "self",
+    "sheep",
+    "shell",
+    "shell, property, wealth",
+    "ship, boat",
+    "shoot, arrow",
+    "short, tiny",
+    "sickness",
+    "sign",
+    "silk",
+    "skin",
+    "skin, hide",
+    "slanting roof",
+    "slash",
+    "slave, capture",
+    "small",
+    "small bird",
+    "small, insignificant",
+    "sound",
+    "sound, noise",
+    "spear",
+    "spear, halberd",
+    "spear, weapon",
+    "speech",
+    "split wood",
+    "spoon",
+    "sprout",
+    "square",
+    "stamp, seal",
+    "stand, erect",
+    "steam, air",
+    "step",
+    "step, stride, street, to go",
+    "stone",
+    "stop",
+    "sun, day",
+    "sun, day, time",
+    "sweet",
+    "table",
+    "tanned leather",
+    "ten",
+    "ten, complete",
+    "the second",
+    "thread",
+    "thumb, inch",
+    "tiger stripes",
+    "tile",
+    "to arrive, reach",
+    "to compare",
+    "to dry, shield",
+    "to enclose",
+    "to enter",
+    "to fly",
+    "to follow",
+    "to go",
+    "to go slowly",
+    "to lack, yawn",
+    "to move, stretch",
+    "to run",
+    "to say",
+    "to see",
+    "to stand",
+    "to stop",
+    "to use",
+    "to wrap",
+    "tongue",
+    "tooth",
+    "town (阝 right)",
+    "track",
+    "tree",
+    "tree, wood",
+    "turban, scarf",
+    "two",
+    "two hands, twenty",
+    "valley",
+    "vehicle, wheel, car",
+    "vertical stroke",
+    "vertical stroke with a hook",
+    "village, (3.93 km)",
+    "village, country, city",
+    "walk",
+    "water",
+    "weapon, lance",
+    "west",
+    "wheat",
+    "white",
+    "wind",
+    "wine, alcohol",
+    "woman",
+    "woman, female",
+    "words, to speak, say",
+    "work",
+    "work, carpenter, skill",
+    "worm, insect, bug",
+    "wrap, embrace",
+    "wrong, non-",
+    "yellow",
+    "young, slight"
+  ]
+}

@@ -1,6 +1,24 @@
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$localEnvPath = Join-Path $projectRoot '.env.local'
+
+if (-not (Test-Path -LiteralPath $localEnvPath)) {
+  Write-Host 'Thieu .env.local voi DATABASE_URL tro toi PostgreSQL local.' -ForegroundColor Red
+  exit 1
+}
+
+Write-Host 'Dang kiem tra PostgreSQL local va cap nhat database...' -ForegroundColor Cyan
+Push-Location $projectRoot
+try {
+  & npm.cmd run db:migrate:local
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host 'PostgreSQL local chua san sang. Web se khong mo cho den khi database ket noi duoc.' -ForegroundColor Red
+    exit 1
+  }
+} finally {
+  Pop-Location
+}
 
 function Test-ListeningPort([int] $Port) {
   return $null -ne (Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue)
@@ -27,9 +45,15 @@ function Wait-ForHttp([string] $Url, [int] $TimeoutSeconds = 45) {
 }
 
 if (-not (Test-ListeningPort 8787)) {
-  Start-KotodamaWindow -Title 'Kotodama API' -NpmCommand 'run api'
+  Start-KotodamaWindow -Title 'Kotodama API' -NpmCommand 'run api:local'
 } else {
-  Write-Host 'Kotodama API dang chay (port 8787).' -ForegroundColor DarkYellow
+  $listener = Get-NetTCPConnection -State Listen -LocalPort 8787 -ErrorAction SilentlyContinue | Select-Object -First 1
+  $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($listener.OwningProcess)" -ErrorAction SilentlyContinue).CommandLine
+  if ($commandLine -notmatch 'env-file=\.env\.local') {
+    Write-Host 'Port 8787 dang duoc su dung boi API khac. Hay dong API cu roi bat lai Kotodama.' -ForegroundColor Red
+    exit 1
+  }
+  Write-Host 'Kotodama API local dang chay (port 8787).' -ForegroundColor DarkYellow
 }
 
 if (-not (Test-ListeningPort 5173)) {
@@ -38,7 +62,9 @@ if (-not (Test-ListeningPort 5173)) {
   Write-Host 'Kotodama Web dang chay (port 5173).' -ForegroundColor DarkYellow
 }
 
-if ((Wait-ForHttp 'http://127.0.0.1:8787/health') -and (Wait-ForHttp 'http://127.0.0.1:5173/')) {
+if ((Wait-ForHttp 'http://127.0.0.1:8787/health') -and
+    (Wait-ForHttp 'http://127.0.0.1:5173/') -and
+    (Wait-ForHttp 'http://127.0.0.1:5173/src/main.tsx')) {
   Start-Process 'http://127.0.0.1:5173/'
   Write-Host 'Da mo Kotodama tren trinh duyet.' -ForegroundColor Cyan
 } else {

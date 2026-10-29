@@ -351,8 +351,8 @@ describe('NhaiKanji Frontend Feature Suite', () => {
 
     await waitFor(() => expect(screen.getByText('Kỳ 1 — tháng 07')).toBeTruthy())
     fireEvent.click(screen.getByText('Kỳ 1 — tháng 07'))
-    await waitFor(() => expect(screen.getByText('Thi phần này')).toBeTruthy())
-    fireEvent.click(screen.getByText('Thi phần này'))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Làm phần này' })).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Làm phần này' }))
 
     await waitFor(() => {
       expect(screen.getByText('田中さんは【学生】です。')).toBeTruthy()
@@ -391,6 +391,7 @@ describe('NhaiKanji Frontend Feature Suite', () => {
               id: 'q7',
               number: 7,
               question: '7 番',
+              image: '/fixtures/listening-diagram.png',
               options: [
                 'レポートはよくできていなかったこと',
                 'アルバイトをしすぎていること',
@@ -447,12 +448,15 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     fireEvent.click(screen.getByRole('button', { name: /Đề mô phỏng N3/i }))
     await waitFor(() => expect(screen.getByText('Kỳ thi — tháng —')).toBeTruthy())
     fireEvent.click(screen.getByText('Kỳ thi — tháng —'))
-    await waitFor(() => expect(screen.getByText('Thi phần này')).toBeTruthy())
-    fireEvent.click(screen.getByText('Thi phần này'))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Làm phần này' })).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Làm phần này' }))
 
     await waitFor(() => {
       expect(screen.getByText('アルバイトをしすぎていること')).toBeTruthy()
     })
+    const listeningImage = screen.getByRole('img', { name: 'Minh họa câu 7' })
+    expect(listeningImage.className).toContain('jlpt-question-image__asset')
+    expect(listeningImage.closest('figure')?.className).toContain('jlpt-question-image--listening')
 
     // Chọn đáp án 2
     fireEvent.click(screen.getByText('アルバイトをしすぎていること'))
@@ -495,7 +499,7 @@ describe('NhaiKanji Frontend Feature Suite', () => {
               id: 'toan-q1',
               number: 1,
               text: '【案内】します。',
-              options: ['あんない', 'あんないい', 'あんないし', 'あんないじん'],
+              options: ['1. あんない', '2. あんないい', '3. あんないし', '4. あんないじん'],
               correctAnswer: 1,
             },
           ],
@@ -510,6 +514,7 @@ describe('NhaiKanji Frontend Feature Suite', () => {
               passage: '<p>Đây là đoạn văn đọc hiểu mẫu</p>',
               options: ['Đáp án 1', 'Đáp án 2', 'Đáp án 3', 'Đáp án 4'],
               correctAnswer: 1,
+              script: 'Đây là ghi chú thứ tự, không phải lời thoại nghe.',
             },
           ],
         },
@@ -633,6 +638,8 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     await waitFor(() => {
       expect(screen.getAllByText(/Từ vựng/i).length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText('【案内】します。')).toBeTruthy()
+      expect(screen.getByRole('button', { name: '1 あんない' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: '1 1. あんない' })).toBeNull()
     })
 
     // Click option
@@ -653,6 +660,7 @@ describe('NhaiKanji Frontend Feature Suite', () => {
       expect(screen.getByText(/Mức CEFR:/i)).toBeTruthy()
       expect(screen.getByText('B1')).toBeTruthy()
       expect(screen.getAllByText('180').length).toBeGreaterThanOrEqual(1)
+      expect(screen.queryByText('Đây là ghi chú thứ tự, không phải lời thoại nghe.')).toBeNull()
     })
   })
 })

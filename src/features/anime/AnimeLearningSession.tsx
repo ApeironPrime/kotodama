@@ -1,25 +1,31 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, RotateCcw, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Headphones, Keyboard, Mic, RotateCcw, ShieldAlert, SpellCheck, Volume2 } from 'lucide-react'
 import { isRequestCancelled } from '../../lib/apiClient'
 import { useAuth } from '../auth/authContext'
 import type { AnimeEpisodeDetail, AnimeSubtitleCue, AnimeSubtitleToken } from './animePlaybackTypes'
 import { animePlaybackApi } from './animePlaybackApi'
 import { AnimePlayer } from './AnimePlayer'
+import { AnimeActiveSentence, AnimeLearningPractice, type AnimeLearningMode } from './AnimeLearningModes'
+import { AnimePracticeCueList } from './AnimePracticeCueList'
 import { AnimeResumePrompt } from './AnimeResumePrompt'
 import { AnimeWordPopover } from './AnimeWordPopover'
-import { SubtitleOverlay } from './SubtitleOverlay'
 import { SubtitleTranscript } from './SubtitleTranscript'
 import { useSubtitleEngine } from './useSubtitleEngine'
+import { deduplicateAndSortCues } from './subtitleEngineUtils'
 
 export interface AnimeLearningSessionProps {
   episodeId: string
   onBackToEpisodes: () => void
 }
 
-export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
-  episodeId,
-  onBackToEpisodes,
-}) => {
+const LEARNING_MODES = [
+  { id: 'shadowing', label: 'Shadowing', icon: Volume2 },
+  { id: 'pronunciation', label: 'Phát âm', icon: Mic },
+  { id: 'listening', label: 'Luyện nghe', icon: Headphones },
+  { id: 'exercise', label: 'Bài tập', icon: SpellCheck },
+] as const
+
+export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ episodeId, onBackToEpisodes }) => {
   const { status, user } = useAuth()
   const isAuthenticated = status === 'authenticated' && Boolean(user)
   const isAuthenticatedRef = useRef<boolean>(isAuthenticated)
@@ -35,6 +41,18 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
   // Player state
   const [currentTime, setCurrentTime] = useState<number>(0)
   const [seekTarget, setSeekTarget] = useState<number | null>(null)
+  const [playRequest, setPlayRequest] = useState(0)
+  const [pauseRequest, setPauseRequest] = useState(0)
+  const [mode, setMode] = useState<AnimeLearningMode>('shadowing')
+  const [selectedCueId, setSelectedCueId] = useState<number | null>(null)
+  const [loopSentence, setLoopSentence] = useState(false)
+  const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
+  const [videoHidden, setVideoHidden] = useState(false)
+  const [shortcutsVisible, setShortcutsVisible] = useState(false)
+  const [completedCueIds, setCompletedCueIds] = useState<Set<number>>(() => new Set())
+  const [practiceCues, setPracticeCues] = useState<AnimeSubtitleCue[]>([])
+  const [isPracticeLoading, setIsPracticeLoading] = useState(false)
+  const practiceLoadedEpisodeRef = useRef<string | null>(null)
 
   // T07: Resume prompt & token popover state
   const [resumePromptPosition, setResumePromptPosition] = useState<number | null>(null)
@@ -65,6 +83,8 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
     episodeId: episodeDetail?.episode_id || null,
     hasSubtitles: Boolean(episodeDetail?.has_subtitles),
     currentTime,
+    windowSize: 600,
+    prefetchThreshold: 60,
   })
 
   // Active cue IDs set for transcript highlighting
@@ -72,135 +92,185 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
     return new Set(subtitleEngine.activeCues.map((c) => c.cue_id))
   }, [subtitleEngine.activeCues])
 
+  // The transcript remains windowed during normal playback. Practice modes load
+  // the complete track in bounded API windows so their sentence navigation is
+  // not limited to the first two minutes.
+  useEffect(() => {
+    if (mode === 'shadowing' || !episodeDetail?.has_subtitles || practiceLoadedEpisodeRef.current === episodeDetail.episode_id) return
+    let cancelled = false
+    setIsPracticeLoading(true)
+    const load = async () => {
+      let all: AnimeSubtitleCue[] = []
+      const expected = episodeDetail.subtitle_track?.cue_count || 0
+      try {
+        for (let from = 0; from < 7200; from += 600) {
+          const result = await animePlaybackApi.fetchEpisodeSubtitles(episodeDetail.episode_id, { from, to: from + 600, lang: 'all' })
+          if (cancelled) return
+          all = deduplicateAndSortCues(all, result.cues || []).cues
+          setPracticeCues(all)
+          if ((expected > 0 && all.length >= expected) || (from > 0 && !result.cues?.length)) break
+        }
+        if (!cancelled) practiceLoadedEpisodeRef.current = episodeDetail.episode_id
+      } catch {
+        // Retain already fetched sentences; the windowed transcript still works.
+      } finally {
+        if (!cancelled) setIsPracticeLoading(false)
+      }
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [episodeDetail, mode])
+
+  const availablePracticeCues = practiceCues.length ? practiceCues : subtitleEngine.cues
+  const selectedPracticeCue = availablePracticeCues.find((cue) => cue.cue_id === selectedCueId) || availablePracticeCues[0] || null
+  const shadowingCue = (loopSentence ? subtitleEngine.cues.find((cue) => cue.cue_id === selectedCueId) : subtitleEngine.activeCues[0]) || subtitleEngine.cues.find((cue) => cue.cue_id === selectedCueId) || subtitleEngine.cues[0] || null
+
+  useEffect(() => {
+    const active = subtitleEngine.activeCues[0]
+    if (mode === 'shadowing' && !loopSentence && active) setSelectedCueId(active.cue_id)
+  }, [subtitleEngine.activeCues, mode, loopSentence])
+
+  useEffect(() => {
+    if (mode !== 'shadowing' || !loopSentence || !shadowingCue || !isPlayingRef.current) return
+    if (currentTime >= shadowingCue.end - 0.08) setSeekTarget(shadowingCue.start)
+  }, [currentTime, loopSentence, mode, shadowingCue])
+
   // Save progress flush handler
-  const flushProgress = useCallback(
-    async (pos: number, dur: number) => {
-      const epId = activeEpisodeIdRef.current
+  const flushProgress = useCallback(async (pos: number, dur: number) => {
+    const epId = activeEpisodeIdRef.current
+    if (
+      !isAuthenticatedRef.current ||
+      !epId ||
+      !isDirtyRef.current ||
+      !hasPlayedRef.current ||
+      isFlushingRef.current ||
+      retryCountRef.current >= 3
+    ) {
+      return
+    }
+
+    isFlushingRef.current = true
+    try {
+      await animePlaybackApi.saveWatchProgress({
+        episodeId: epId,
+        position: pos,
+        duration: dur,
+      })
+      isDirtyRef.current = false
+      retryCountRef.current = 0
+      lastSavedPosRef.current = pos
+      lastSavedTimeRef.current = Date.now()
+    } catch {
+      // Keep dirty state on failure, retry on next flush up to 3 times
+      isDirtyRef.current = true
+      retryCountRef.current += 1
+    } finally {
+      isFlushingRef.current = false
+    }
+  }, [])
+
+  // Fetch episode details
+  const loadEpisodeDetail = useCallback(async (targetId: string) => {
+    const requestId = ++episodeRequestIdRef.current
+
+    if (detailAbortControllerRef.current) {
+      detailAbortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    detailAbortControllerRef.current = controller
+
+    setIsLoading(true)
+    setError(null)
+    setIsForbidden(false)
+    setEpisodeDetail(null)
+    setCurrentTime(0)
+    setSeekTarget(null)
+    setPlayRequest(0)
+    setPauseRequest(0)
+    setMode('shadowing')
+    setSelectedCueId(null)
+    setLoopSentence(false)
+    setExercisePickerOpen(false)
+    setVideoHidden(false)
+    setCompletedCueIds(new Set())
+    setPracticeCues([])
+    practiceLoadedEpisodeRef.current = null
+    setResumePromptPosition(null)
+    setActiveTokenContext(null)
+
+    // Reset progress tracking state
+    isPlayingRef.current = false
+    hasPlayedRef.current = false
+    isDirtyRef.current = false
+    retryCountRef.current = 0
+    isFlushingRef.current = false
+    lastSavedPosRef.current = 0
+    lastSavedTimeRef.current = Date.now()
+    currentTimeRef.current = 0
+    durationRef.current = 0
+
+    try {
+      const data = await animePlaybackApi.fetchEpisodeDetail(targetId, {
+        signal: controller.signal,
+      })
+
+      // Drop stale response if another request has been started
+      if (requestId !== episodeRequestIdRef.current || activeEpisodeIdRef.current !== targetId) {
+        return
+      }
+
+      setEpisodeDetail(data)
+      setError(null)
+
+      // T07: Fetch progress once after episode detail loaded and playback permitted
+      if (isAuthenticatedRef.current && data.media_source?.playback_allowed) {
+        if (progressAbortControllerRef.current) {
+          progressAbortControllerRef.current.abort()
+        }
+        const progController = new AbortController()
+        progressAbortControllerRef.current = progController
+
+        animePlaybackApi
+          .fetchWatchProgress(targetId, { signal: progController.signal })
+          .then((progress) => {
+            if (requestId !== episodeRequestIdRef.current || activeEpisodeIdRef.current !== targetId) return
+            if (progress && progress.last_playback_position > 5 && !progress.is_completed) {
+              setResumePromptPosition(progress.last_playback_position)
+            }
+          })
+          .catch(() => {})
+      }
+    } catch (err: unknown) {
+      // Drop stale or aborted response: NEVER overwrite UI state for old requests
+      if (requestId !== episodeRequestIdRef.current || activeEpisodeIdRef.current !== targetId) {
+        return
+      }
       if (
-        !isAuthenticatedRef.current ||
-        !epId ||
-        !isDirtyRef.current ||
-        !hasPlayedRef.current ||
-        isFlushingRef.current ||
-        retryCountRef.current >= 3
+        isRequestCancelled(err) ||
+        (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'AbortError')
       ) {
         return
       }
 
-      isFlushingRef.current = true
-      try {
-        await animePlaybackApi.saveWatchProgress({
-          episodeId: epId,
-          position: pos,
-          duration: dur,
-        })
-        isDirtyRef.current = false
-        retryCountRef.current = 0
-        lastSavedPosRef.current = pos
-        lastSavedTimeRef.current = Date.now()
-      } catch {
-        // Keep dirty state on failure, retry on next flush up to 3 times
-        isDirtyRef.current = true
-        retryCountRef.current += 1
-      } finally {
-        isFlushingRef.current = false
+      const isForbiddenStatus =
+        (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 403) ||
+        (err &&
+          typeof err === 'object' &&
+          'code' in err &&
+          (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
+
+      if (isForbiddenStatus) {
+        setIsForbidden(true)
+        setError('Tập phim này đang bị hạn chế truy cập do chưa được duyệt bản quyền.')
+      } else {
+        setError('Không thể tải thông tin tập phim. Vui lòng thử lại.')
       }
-    },
-    []
-  )
-
-  // Fetch episode details
-  const loadEpisodeDetail = useCallback(
-    async (targetId: string) => {
-      const requestId = ++episodeRequestIdRef.current
-
-      if (detailAbortControllerRef.current) {
-        detailAbortControllerRef.current.abort()
+    } finally {
+      if (requestId === episodeRequestIdRef.current && activeEpisodeIdRef.current === targetId) {
+        setIsLoading(false)
       }
-      const controller = new AbortController()
-      detailAbortControllerRef.current = controller
-
-      setIsLoading(true)
-      setError(null)
-      setIsForbidden(false)
-      setEpisodeDetail(null)
-      setCurrentTime(0)
-      setSeekTarget(null)
-      setResumePromptPosition(null)
-      setActiveTokenContext(null)
-
-      // Reset progress tracking state
-      isPlayingRef.current = false
-      hasPlayedRef.current = false
-      isDirtyRef.current = false
-      retryCountRef.current = 0
-      isFlushingRef.current = false
-      lastSavedPosRef.current = 0
-      lastSavedTimeRef.current = Date.now()
-      currentTimeRef.current = 0
-      durationRef.current = 0
-
-      try {
-        const data = await animePlaybackApi.fetchEpisodeDetail(targetId, {
-          signal: controller.signal,
-        })
-
-        // Drop stale response if another request has been started
-        if (requestId !== episodeRequestIdRef.current || activeEpisodeIdRef.current !== targetId) {
-          return
-        }
-
-        setEpisodeDetail(data)
-        setError(null)
-
-        // T07: Fetch progress once after episode detail loaded and playback permitted
-        if (isAuthenticatedRef.current && data.media_source?.playback_allowed) {
-          if (progressAbortControllerRef.current) {
-            progressAbortControllerRef.current.abort()
-          }
-          const progController = new AbortController()
-          progressAbortControllerRef.current = progController
-
-          animePlaybackApi
-            .fetchWatchProgress(targetId, { signal: progController.signal })
-            .then((progress) => {
-              if (requestId !== episodeRequestIdRef.current || activeEpisodeIdRef.current !== targetId) return
-              if (progress && progress.last_playback_position > 5 && !progress.is_completed) {
-                setResumePromptPosition(progress.last_playback_position)
-              }
-            })
-            .catch(() => {})
-        }
-      } catch (err: unknown) {
-        // Drop stale or aborted response: NEVER overwrite UI state for old requests
-        if (requestId !== episodeRequestIdRef.current || activeEpisodeIdRef.current !== targetId) {
-          return
-        }
-        if (
-          isRequestCancelled(err) ||
-          (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'AbortError')
-        ) {
-          return
-        }
-
-        const isForbiddenStatus =
-          (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 403) ||
-          (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
-
-        if (isForbiddenStatus) {
-          setIsForbidden(true)
-          setError('Tập phim này đang bị hạn chế truy cập do chưa được duyệt bản quyền.')
-        } else {
-          setError('Không thể tải thông tin tập phim. Vui lòng thử lại.')
-        }
-      } finally {
-        if (requestId === episodeRequestIdRef.current && activeEpisodeIdRef.current === targetId) {
-          setIsLoading(false)
-        }
-      }
-    },
-    []
-  )
+    }
+  }, [])
 
   useEffect(() => {
     activeEpisodeIdRef.current = episodeId
@@ -282,6 +352,26 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
     setSeekTarget(time)
   }
 
+  const handleChoosePracticeCue = useCallback((cue: AnimeSubtitleCue) => {
+    setSelectedCueId(cue.cue_id)
+    setSeekTarget(cue.start)
+  }, [])
+
+  const replayCue = () => {
+    const cue = mode === 'shadowing' ? shadowingCue : selectedPracticeCue
+    if (!cue) return
+    setSeekTarget(cue.start)
+    setPlayRequest((value) => value + 1)
+  }
+
+  const changeMode = (nextMode: AnimeLearningMode) => {
+    if (nextMode === 'exercise') setExercisePickerOpen(true)
+    if (nextMode === mode) return
+    setMode(nextMode)
+    setLoopSentence(false)
+    setPauseRequest((value) => value + 1)
+  }
+
   const handlePlayerSeeked = () => {
     setSeekTarget(null)
   }
@@ -303,11 +393,7 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
     lastSavedPosRef.current = 0
   }
 
-  const handleSelectToken = (
-    cue: AnimeSubtitleCue,
-    token: AnimeSubtitleToken,
-    triggerEl: HTMLElement
-  ) => {
+  const handleSelectToken = (cue: AnimeSubtitleCue, token: AnimeSubtitleToken, triggerEl: HTMLElement) => {
     setActiveTokenContext({ cue, token, triggerEl })
   }
 
@@ -316,11 +402,7 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
   // -------------------------------------------------------------
   if (isLoading) {
     return (
-      <section
-        className="anime-session"
-        aria-label="Đang tải phiên học anime"
-        aria-live="polite"
-      >
+      <section className="anime-session" aria-label="Đang tải phiên học anime" aria-live="polite">
         <div className="anime-session-header-skeleton">
           <div className="anime-session-skeleton-line anime-session-skeleton-line--breadcrumb" />
           <div className="anime-session-skeleton-line anime-session-skeleton-line--title" />
@@ -355,11 +437,7 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
           <p className="anime-state-card__desc">
             Tập phim này đang bị hạn chế truy cập theo chính sách bản quyền công khai.
           </p>
-          <button
-            type="button"
-            onClick={onBackToEpisodes}
-            className="anime-btn anime-btn--secondary"
-          >
+          <button type="button" onClick={onBackToEpisodes} className="anime-btn anime-btn--secondary">
             <ArrowLeft size={16} aria-hidden="true" />
             <span>Quay lại danh sách tập</span>
           </button>
@@ -378,19 +456,11 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
           <h2 className="anime-state-card__title">Không thể tải tập phim</h2>
           <p className="anime-state-card__desc">{error || 'Có lỗi xảy ra khi tải dữ liệu tập phim.'}</p>
           <div className="anime-session-actions">
-            <button
-              type="button"
-              onClick={() => loadEpisodeDetail(episodeId)}
-              className="anime-btn anime-btn--primary"
-            >
+            <button type="button" onClick={() => loadEpisodeDetail(episodeId)} className="anime-btn anime-btn--primary">
               <RotateCcw size={16} aria-hidden="true" />
               <span>Thử lại</span>
             </button>
-            <button
-              type="button"
-              onClick={onBackToEpisodes}
-              className="anime-btn anime-btn--secondary"
-            >
+            <button type="button" onClick={onBackToEpisodes} className="anime-btn anime-btn--secondary">
               <ArrowLeft size={16} aria-hidden="true" />
               <span>Quay lại danh sách tập</span>
             </button>
@@ -403,13 +473,16 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
   // -------------------------------------------------------------
   // RENDER ACTIVE LEARNING SESSION
   // -------------------------------------------------------------
-  const episodeTitle = episodeDetail.title
-    ? `Tập ${episodeDetail.episode_number}: ${episodeDetail.title}`
-    : `Tập ${episodeDetail.episode_number}`
+  const episodeLabel = `Tập ${episodeDetail.episode_number}`
+  const specificTitle = episodeDetail.title?.trim()
+  const episodeTitle =
+    specificTitle && specificTitle.toLocaleLowerCase('vi') !== episodeLabel.toLocaleLowerCase('vi')
+      ? `${episodeLabel}: ${specificTitle}`
+      : episodeLabel
 
   return (
     <section className="anime-session" aria-label={`Phiên học: ${episodeDetail.series_title_vi} - ${episodeTitle}`}>
-      {/* Session Breadcrumb & Header */}
+      {/* Dedicated learning-studio header from the supplied reference. */}
       <header className="anime-session-header">
         <div className="anime-session-nav">
           <button
@@ -419,40 +492,30 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
             aria-label="Quay lại danh sách tập"
           >
             <ArrowLeft size={18} aria-hidden="true" />
-            <span>Quay lại danh sách tập</span>
+            <span className="anime-session-back-text">Quay lại danh sách tập</span>
           </button>
           <span className="anime-session-breadcrumb-separator" aria-hidden="true">
             /
           </span>
-          <span className="anime-session-breadcrumb-series">
-            {episodeDetail.series_title_vi}
-          </span>
+          <span className="anime-session-breadcrumb-series"><span>{episodeDetail.series_title_vi}</span><h1 className="anime-session-breadcrumb-episode">{episodeTitle}</h1></span>
           {episodeDetail.season_label && (
             <>
               <span className="anime-session-breadcrumb-separator" aria-hidden="true">
                 /
               </span>
-              <span className="anime-session-breadcrumb-season">
-                {episodeDetail.season_label}
-              </span>
+              <span className="anime-session-breadcrumb-season">{episodeDetail.season_label}</span>
             </>
           )}
         </div>
 
-        <div className="anime-session-title-bar">
-          <h1 className="anime-session-title">{episodeTitle}</h1>
-          <div className="anime-session-badges">
-            {episodeDetail.has_subtitles ? (
-              <span className="anime-episode-badge anime-episode-badge--subbed">
-                Có phụ đề
-              </span>
-            ) : (
-              <span className="anime-episode-badge anime-episode-badge--raw">
-                Chưa có phụ đề
-              </span>
-            )}
-          </div>
-        </div>
+        <span className="anime-session-subtitle-status">{episodeDetail.has_subtitles ? 'Có phụ đề' : 'Chưa có phụ đề'}</span>
+        <nav className="anime-learning-mode-nav" aria-label="Chế độ học với video">
+          {LEARNING_MODES.map(({ id, label, icon: Icon }) => (
+            <button key={id} type="button" className={mode === id ? 'is-active' : ''} aria-current={mode === id ? 'page' : undefined} onClick={() => changeMode(id)}>
+              <Icon size={17} aria-hidden="true" />{label}
+            </button>
+          ))}
+        </nav>
       </header>
 
       {/* 2-Column Responsive Layout */}
@@ -477,20 +540,44 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
             onPlaybackStateChange={handlePlaybackStateChange}
             onError={() => {}}
             seekTarget={seekTarget}
+            playRequest={playRequest}
+            pauseRequest={pauseRequest}
+            hideVideo={videoHidden && mode !== 'shadowing'}
             onBackToEpisodes={onBackToEpisodes}
-          >
-            <SubtitleOverlay
-              activeCues={subtitleEngine.activeCues}
-              showJapanese={subtitleEngine.showJapanese}
-              showVietnamese={subtitleEngine.showVietnamese}
-              onSelectToken={handleSelectToken}
-            />
-          </AnimePlayer>
+          />
+          {mode !== 'shadowing' && <div className="anime-session-player-tools">
+            <button type="button" onClick={() => setVideoHidden((value) => !value)} aria-pressed={videoHidden}>
+              {videoHidden ? <Eye size={17} /> : <EyeOff size={17} />}{videoHidden ? 'Hiện video' : 'Ẩn video'}
+            </button>
+            <button type="button" onClick={() => setShortcutsVisible((value) => !value)} aria-expanded={shortcutsVisible}>
+              <Keyboard size={17} /> Phím tắt
+            </button>
+            {shortcutsVisible && <span role="status">← → chuyển câu · Space phát/dừng video · M tắt tiếng · F toàn màn hình</span>}
+          </div>}
+          {mode !== 'shadowing' && <AnimePracticeCueList
+            cues={availablePracticeCues}
+            selectedCueId={selectedPracticeCue?.cue_id ?? null}
+            mode={mode}
+            totalCues={episodeDetail.subtitle_track?.cue_count || availablePracticeCues.length}
+            completedCueIds={completedCueIds}
+            onChooseCue={handleChoosePracticeCue}
+          />}
+          {mode === 'shadowing' && <AnimeActiveSentence
+            cue={shadowingCue}
+            onReplay={replayCue}
+            onSelectToken={handleSelectToken}
+            showJapanese={subtitleEngine.showJapanese}
+            showVietnamese={subtitleEngine.showVietnamese}
+            loop={loopSentence}
+            onToggleLoop={() => setLoopSentence((value) => !value)}
+            onToggleJapanese={() => subtitleEngine.setShowJapanese(!subtitleEngine.showJapanese)}
+            onToggleVietnamese={() => subtitleEngine.setShowVietnamese(!subtitleEngine.showVietnamese)}
+          />}
         </div>
 
         {/* Right Column: Subtitle Transcript & Sync Controls */}
         <div className="anime-session-transcript-column">
-          <SubtitleTranscript
+          {mode === 'shadowing' ? <SubtitleTranscript
             cues={subtitleEngine.cues}
             activeCueIds={activeCueIds}
             hasSubtitles={Boolean(episodeDetail.has_subtitles)}
@@ -511,7 +598,22 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({
             onRetry={subtitleEngine.retry}
             onSelectToken={handleSelectToken}
             episodeId={episodeDetail.episode_id}
-          />
+            totalCues={episodeDetail.subtitle_track?.cue_count || subtitleEngine.cues.length}
+          /> : <AnimeLearningPractice
+            mode={mode}
+            cues={availablePracticeCues}
+            cue={selectedPracticeCue}
+            totalCues={episodeDetail.subtitle_track?.cue_count || availablePracticeCues.length}
+            isLoading={isPracticeLoading}
+            onChooseCue={handleChoosePracticeCue}
+            onReplay={replayCue}
+            onPause={() => setPauseRequest((value) => value + 1)}
+            pickerOpen={exercisePickerOpen}
+            onClosePicker={() => setExercisePickerOpen(false)}
+            videoHidden={videoHidden}
+            onToggleVideo={() => setVideoHidden((value) => !value)}
+            onCompleteCue={(cueId) => setCompletedCueIds((previous) => new Set(previous).add(cueId))}
+          />}
         </div>
       </div>
 

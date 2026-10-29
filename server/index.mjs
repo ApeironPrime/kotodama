@@ -1,7 +1,7 @@
 import http from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
-import { createReadStream } from 'node:fs'
+import { createReadStream, existsSync, readFileSync, readdirSync } from 'node:fs'
 import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
 import {
   hashPassword,
@@ -123,6 +123,114 @@ const animeCatalogService = new AnimeCatalogService({
 })
 const srsStore = database ? new SrsStore(database) : null
 const srsService = srsStore ? new SrsService(srsStore) : null
+
+// Pre-indexed kanji illustration cache
+let kanjiIllustrationMap = null
+function getKanjiIllustrationFile(char) {
+  if (!char) return null
+  if (!kanjiIllustrationMap) {
+    kanjiIllustrationMap = new Map()
+    let dataRoot = resolve(projectRoot, '..', 'data', 'kanji_illustrations')
+    if (process.env.KANJI_DATA_PATH) {
+      const p = process.env.KANJI_DATA_PATH
+      const dir = p.endsWith('.json') ? resolve(p, '..') : p
+      dataRoot = resolve(dir, 'kanji_illustrations')
+    }
+    if (!existsSync(dataRoot) && existsSync('D:/Project/data/kanji_illustrations')) {
+      dataRoot = 'D:/Project/data/kanji_illustrations'
+    }
+
+    const sttLevelMap = new Map()
+    const jsonPath = existsSync('D:/Project/data/kanji_hack_nao_n1_n5.json')
+      ? 'D:/Project/data/kanji_hack_nao_n1_n5.json'
+      : (process.env.KANJI_DATA_PATH && existsSync(process.env.KANJI_DATA_PATH) ? process.env.KANJI_DATA_PATH : null)
+    if (jsonPath) {
+      try {
+        const rawJson = JSON.parse(readFileSync(jsonPath, 'utf8'))
+        for (const lvl of ['N5', 'N4', 'N3', 'N2', 'N1']) {
+          for (const item of (rawJson[lvl] || [])) {
+            if (item.stt && item.kanji) {
+              sttLevelMap.set(`${item.stt}_${lvl.toUpperCase()}`, item.kanji)
+            }
+          }
+        }
+      } catch (err) {
+        logError('kanji.illustration-index-json-failed', err)
+      }
+    }
+
+    const tapDirs = ['Tap_1', 'Tap_2', 'Tap_3']
+    for (const tapDir of tapDirs) {
+      const dirPath = join(dataRoot, tapDir)
+      if (!existsSync(dirPath)) continue
+      try {
+        const files = readdirSync(dirPath)
+        for (const f of files) {
+          if (!f.endsWith('.png')) continue
+          const fullPath = join(dirPath, f)
+          const parts = f.replace('.png', '').split('_')
+          const rawChar = parts[1]
+          const stt = parseInt(parts[0], 10)
+          const lvl = parts[parts.length - 1]?.toUpperCase()
+
+          // 1. Direct CJK character in filename
+          if (rawChar && /[\u4e00-\u9fff]/.test(rawChar)) {
+            kanjiIllustrationMap.set(rawChar, fullPath)
+            continue
+          }
+
+          // 2. Decode Latin1 / CP1252 to UTF-8
+          if (rawChar) {
+            try {
+              const decoded = Buffer.from(rawChar, 'latin1').toString('utf8')
+              if (/[\u4e00-\u9fff]/.test(decoded)) {
+                kanjiIllustrationMap.set(decoded, fullPath)
+                continue
+              }
+            } catch {}
+          }
+
+          // 3. Match by STT + Level
+          if (!isNaN(stt) && lvl) {
+            const matchedKanji = sttLevelMap.get(`${stt}_${lvl}`)
+            if (matchedKanji && !kanjiIllustrationMap.has(matchedKanji)) {
+              kanjiIllustrationMap.set(matchedKanji, fullPath)
+            }
+          }
+        }
+      } catch (err) {
+        logError('kanji.illustration-index-dir-failed', err, { dirPath })
+      }
+    }
+  }
+
+  // 1. Fast cache lookup
+  if (kanjiIllustrationMap.has(char)) {
+    return kanjiIllustrationMap.get(char)
+  }
+
+  // 2. Fallback: search by substring in all taps
+  let dataRoot = resolve(projectRoot, '..', 'data', 'kanji_illustrations')
+  if (!existsSync(dataRoot) && existsSync('D:/Project/data/kanji_illustrations')) {
+    dataRoot = 'D:/Project/data/kanji_illustrations'
+  }
+  for (const tapDir of ['Tap_1', 'Tap_2', 'Tap_3']) {
+    const dirPath = join(dataRoot, tapDir)
+    if (!existsSync(dirPath)) continue
+    try {
+      const files = readdirSync(dirPath)
+      const found = files.find((f) => f.includes(`_${char}_`) || f.includes(char))
+      if (found) {
+        const fp = join(dirPath, found)
+        kanjiIllustrationMap.set(char, fp)
+        return fp
+      }
+    } catch {}
+  }
+
+  return null
+}
+
 const production = config.production
 const jwtSecret = config.jwtSecret
 const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
@@ -619,8 +727,25 @@ async function route(request, response) {
     const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
     const page = Number.parseInt(url.searchParams.get('page') || '1', 10) || 1
     const limit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
-    const result = nhaiKanjiService.getKanjiList({ level, query, page, limit })
+    const sort = url.searchParams.get('sort') || 'default'
+    const result = nhaiKanjiService.getKanjiList({ level, query, page, limit, sort })
     return respond(result)
+  }
+
+  const strokesMatch = path.match(/^\/api\/v1\/nhaikanji\/kanji\/([^/]+)\/strokes$/)
+  if (request.method === 'GET' && strokesMatch) {
+    const char = decodeURIComponent(strokesMatch[1])
+    const strokeData = await nhaiKanjiService.getKanjiStrokeData(char)
+    if (!strokeData) return fail(response, 404, 'Không tìm thấy dữ liệu bút pháp.', 'STROKES_NOT_FOUND')
+    return respond(strokeData)
+  }
+
+  const brushMatch = path.match(/^\/api\/v1\/nhaikanji\/kanji\/([^/]+)\/brush$/)
+  if (request.method === 'GET' && brushMatch) {
+    const char = decodeURIComponent(brushMatch[1])
+    const brushData = await nhaiKanjiService.getKanjiBrushData(char)
+    if (!brushData) return fail(response, 404, 'Không tìm thấy dữ liệu bút lông thư pháp.', 'BRUSH_DATA_NOT_FOUND')
+    return respond(brushData)
   }
 
   const nhaikanjiDetailMatch = path.match(/^\/api\/v1\/nhaikanji\/kanji\/(.+)$/)
@@ -629,6 +754,26 @@ async function route(request, response) {
     const detail = nhaiKanjiService.getKanjiDetail(char)
     if (!detail) return fail(response, 404, 'Không tìm thấy Hán tự này.', 'KANJI_NOT_FOUND')
     return respond(detail)
+  }
+
+  // Illustration image endpoint: GET /api/v1/nhaikanji/illustration/:kanji
+  const illustrationMatch = path.match(/^\/api\/v1\/nhaikanji\/illustration\/(.+)$/)
+  if (request.method === 'GET' && illustrationMatch) {
+    const char = decodeURIComponent(illustrationMatch[1])
+    const foundFile = getKanjiIllustrationFile(char)
+    if (!foundFile) return fail(response, 404, 'Không tìm thấy minh họa.', 'ILLUSTRATION_NOT_FOUND')
+    try {
+      await stat(foundFile)
+      response.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400',
+        ...cors,
+      })
+      createReadStream(foundFile).pipe(response)
+      return
+    } catch {
+      return fail(response, 404, 'Không tìm thấy minh họa.', 'ILLUSTRATION_NOT_FOUND')
+    }
   }
 
   if (request.method === 'GET' && path === '/api/v1/nhaikanji/bunpo') {
@@ -646,6 +791,191 @@ async function route(request, response) {
     const section = url.searchParams.get('section') || 'all'
     const result = nhaiKanjiService.getJlptExams({ level, section })
     return respond(result)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/nhaikanji/jlpt/attempts') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!database) return fail(response, 503, 'Lịch sử đồng bộ hiện không khả dụng.', 'JLPT_STORAGE_UNAVAILABLE')
+    const level = (url.searchParams.get('level') || 'N3').toUpperCase()
+    if (!/^N[1-5]$/.test(level)) return fail(response, 400, 'Cấp độ JLPT không hợp lệ.', 'INVALID_LEVEL')
+    const rows = await database.query(
+      `SELECT id, exam_id, level, mode, status, current_question, remaining_seconds,
+              result ->> 'scorePercentage' AS score_percentage, started_at, updated_at, finished_at
+         FROM jlpt_attempts
+        WHERE user_id = $1 AND level = $2
+        ORDER BY updated_at DESC
+        LIMIT 200`,
+      [user.id, level]
+    )
+    return respond({
+      attempts: rows.rows.map((row) => ({
+        id: row.id,
+        examId: row.exam_id,
+        level: row.level,
+        mode: row.mode,
+        status: row.status,
+        answers: {},
+        currentQuestion: Number(row.current_question || 0),
+        remainingSeconds: Number(row.remaining_seconds || 0),
+        scorePercentage:
+          row.score_percentage === null || row.score_percentage === undefined
+            ? undefined
+            : Number(row.score_percentage),
+        result: null,
+        startedAt: row.started_at,
+        updatedAt: row.updated_at,
+        finishedAt: row.finished_at,
+      })),
+    })
+  }
+
+  if (request.method === 'POST' && path === '/api/v1/nhaikanji/jlpt/attempts') {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!database) return fail(response, 503, 'Lịch sử đồng bộ hiện không khả dụng.', 'JLPT_STORAGE_UNAVAILABLE')
+    const examId = typeof body.examId === 'string' ? body.examId.trim() : ''
+    const mode = body.mode === 'review' ? 'review' : 'exam'
+    const exam = examId && nhaiKanjiService.getJlptExamDetail(examId)
+    if (!exam) return fail(response, 404, 'Không tìm thấy đề thi này.', 'EXAM_NOT_FOUND')
+    if (mode === 'review')
+      return fail(response, 422, 'Chế độ học đáp án không được lưu vào lịch sử thi.', 'INVALID_ATTEMPT_MODE')
+    const id = randomUUID()
+    const result = await database.query(
+      `INSERT INTO jlpt_attempts (id, user_id, exam_id, level, remaining_seconds, exam_snapshot)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+       RETURNING id, exam_id, level, mode, status, answers, current_question, remaining_seconds,
+                 exam_snapshot, result, started_at, updated_at, finished_at`,
+      [
+        id,
+        user.id,
+        examId,
+        String(exam.level || body.level || 'N3').toUpperCase(),
+        Math.max(0, Number(exam.timeLimit || 0) * 60),
+        JSON.stringify(exam),
+      ]
+    )
+    const row = result.rows[0]
+    return respond(
+      {
+        id: row.id,
+        examId: row.exam_id,
+        level: row.level,
+        mode: row.mode,
+        status: row.status,
+        answers: row.answers || {},
+        currentQuestion: Number(row.current_question || 0),
+        remainingSeconds: Number(row.remaining_seconds || 0),
+        examSnapshot: row.exam_snapshot,
+        result: row.result || null,
+        startedAt: row.started_at,
+        updatedAt: row.updated_at,
+        finishedAt: row.finished_at,
+      },
+      201
+    )
+  }
+
+  const jlptAttemptMatch = path.match(/^\/api\/v1\/nhaikanji\/jlpt\/attempts\/([0-9a-f-]+)(?:\/(submit))?$/i)
+  if (jlptAttemptMatch) {
+    const user = await requireUser(request, response)
+    if (!user) return
+    if (!database) return fail(response, 503, 'Lịch sử đồng bộ hiện không khả dụng.', 'JLPT_STORAGE_UNAVAILABLE')
+    const attemptId = jlptAttemptMatch[1]
+    const isAttemptSubmit = jlptAttemptMatch[2] === 'submit'
+
+    if (request.method === 'GET' && !isAttemptSubmit) {
+      const { rows } = await database.query(
+        `SELECT id, exam_id, level, mode, status, answers, current_question, remaining_seconds,
+                exam_snapshot, result, started_at, updated_at, finished_at
+           FROM jlpt_attempts WHERE id = $1 AND user_id = $2`,
+        [attemptId, user.id]
+      )
+      const row = rows[0]
+      if (!row) return fail(response, 404, 'Không tìm thấy lần làm bài.', 'ATTEMPT_NOT_FOUND')
+      return respond({
+        id: row.id,
+        examId: row.exam_id,
+        level: row.level,
+        mode: row.mode,
+        status: row.status,
+        answers: row.answers || {},
+        currentQuestion: Number(row.current_question || 0),
+        remainingSeconds:
+          row.status === 'in_progress'
+            ? Math.max(
+                0,
+                Number(row.remaining_seconds || 0) -
+                  Math.floor((Date.now() - new Date(row.updated_at).getTime()) / 1000)
+              )
+            : Number(row.remaining_seconds || 0),
+        examSnapshot: row.exam_snapshot,
+        result: row.result || null,
+        startedAt: row.started_at,
+        updatedAt: row.updated_at,
+        finishedAt: row.finished_at,
+      })
+    }
+
+    if (request.method === 'PUT' && !isAttemptSubmit) {
+      const answers = body.answers
+      const currentQuestion = body.currentQuestion
+      const remainingSeconds = body.remainingSeconds
+      if (
+        !answers ||
+        typeof answers !== 'object' ||
+        Array.isArray(answers) ||
+        Object.keys(answers).length > 1000 ||
+        !Number.isInteger(currentQuestion) ||
+        currentQuestion < 0 ||
+        !Number.isInteger(remainingSeconds) ||
+        remainingSeconds < 0
+      ) {
+        return fail(response, 422, 'Tiến độ làm bài không hợp lệ.', 'INVALID_ATTEMPT_PROGRESS')
+      }
+      const saved = await database.query(
+        `UPDATE jlpt_attempts
+            SET answers = $3::jsonb, current_question = $4, remaining_seconds = $5, updated_at = now()
+          WHERE id = $1 AND user_id = $2 AND status = 'in_progress'
+          RETURNING id`,
+        [attemptId, user.id, JSON.stringify(answers), currentQuestion, remainingSeconds]
+      )
+      if (!saved.rowCount) return fail(response, 404, 'Bài làm không còn mở hoặc không tồn tại.', 'ATTEMPT_NOT_FOUND')
+      return respond({ saved: true })
+    }
+
+    if (request.method === 'POST' && isAttemptSubmit) {
+      const found = await database.query(
+        `SELECT exam_id, exam_snapshot, status, answers, result FROM jlpt_attempts WHERE id = $1 AND user_id = $2`,
+        [attemptId, user.id]
+      )
+      const attempt = found.rows[0]
+      if (!attempt) return fail(response, 404, 'Không tìm thấy lần làm bài.', 'ATTEMPT_NOT_FOUND')
+      if (attempt.status === 'completed' && attempt.result) return respond(attempt.result)
+      const answers =
+        body.answers && typeof body.answers === 'object' && !Array.isArray(body.answers)
+          ? body.answers
+          : attempt.answers || {}
+      const result = nhaiKanjiService.submitJlptExam(attempt.exam_id, answers, attempt.exam_snapshot)
+      if (!result) return fail(response, 404, 'Không tìm thấy đề thi để chấm.', 'EXAM_NOT_FOUND')
+      const saved = await database.query(
+        `UPDATE jlpt_attempts
+            SET answers = $3::jsonb, result = $4::jsonb, status = 'completed',
+                finished_at = COALESCE(finished_at, now()), updated_at = now()
+          WHERE id = $1 AND user_id = $2 AND status = 'in_progress'
+          RETURNING result`,
+        [attemptId, user.id, JSON.stringify(answers), JSON.stringify(result)]
+      )
+      if (saved.rows[0]?.result) return respond(saved.rows[0].result)
+      const existing = await database.query('SELECT result FROM jlpt_attempts WHERE id = $1 AND user_id = $2', [
+        attemptId,
+        user.id,
+      ])
+      return existing.rows[0]?.result
+        ? respond(existing.rows[0].result)
+        : fail(response, 409, 'Không thể hoàn tất lần làm bài này.', 'ATTEMPT_SUBMIT_CONFLICT')
+    }
+    return fail(response, 405, 'Phương thức không được hỗ trợ.', 'METHOD_NOT_ALLOWED')
   }
 
   const jlptDetailMatch = path.match(/^\/api\/v1\/nhaikanji\/jlpt\/exams\/(.+)$/)

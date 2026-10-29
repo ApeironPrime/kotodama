@@ -6,12 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AnimePage from './AnimePage'
 import { animeApi } from './animeApi'
 import { animePlaybackApi } from './animePlaybackApi'
-import type {
-  AnimeCatalogData,
-  AnimeEpisodeSummary,
-  AnimeSeriesDetail,
-  AnimeSeriesSummary,
-} from './animeTypes'
+import type { AnimeCatalogData, AnimeEpisodeSummary, AnimeSeriesDetail, AnimeSeriesSummary } from './animeTypes'
 
 vi.mock('./animeApi', () => ({
   animeApi: {
@@ -164,6 +159,17 @@ describe('AnimePage Feature Suite (Task T05)', () => {
     expect(screen.getAllByText('37/37 tập có phụ đề').length).toBeGreaterThanOrEqual(1)
   })
 
+  it('features a subtitled series instead of a first catalog item with no learning subtitles', async () => {
+    vi.mocked(animeApi.fetchCatalog).mockResolvedValue({
+      items: [{ ...sampleSeries1, subbed_episodes_count: 0 }, sampleSeries2],
+      pagination: { page: 1, limit: 24, totalItems: 2, totalPages: 1 },
+    })
+
+    renderWithRouter('/anime')
+
+    expect(await screen.findByRole('button', { name: 'Mở danh sách tập Thiên Sứ Nhà Bên' })).toBeTruthy()
+  })
+
   // Test 2: Debounced search gửi đúng q, level/genre và reset page về 1; response cũ không ghi đè response mới
   it('2. debounced search sends correct q, resets page to 1, and stale response does not overwrite newer response', async () => {
     vi.useFakeTimers()
@@ -178,9 +184,7 @@ describe('AnimePage Feature Suite (Task T05)', () => {
       pagination: { page: 1, limit: 24, totalItems: 1, totalPages: 1 },
     })
 
-    vi.mocked(animeApi.fetchCatalog)
-      .mockReturnValueOnce(firstPromise)
-      .mockReturnValueOnce(secondPromise)
+    vi.mocked(animeApi.fetchCatalog).mockReturnValueOnce(firstPromise).mockReturnValueOnce(secondPromise)
 
     renderWithRouter('/anime')
 
@@ -195,9 +199,7 @@ describe('AnimePage Feature Suite (Task T05)', () => {
     })
 
     // Check that second call was triggered with 'Thiên Sứ'
-    expect(animeApi.fetchCatalog).toHaveBeenLastCalledWith(
-      expect.objectContaining({ q: 'Thiên Sứ', page: 1 })
-    )
+    expect(animeApi.fetchCatalog).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'Thiên Sứ', page: 1 }))
 
     // Resolve first (stale) response AFTER second request was already made
     await act(async () => {
@@ -258,7 +260,7 @@ describe('AnimePage Feature Suite (Task T05)', () => {
     })
 
     renderWithRouter('/anime')
- 
+
     const card = await screen.findByRole('button', {
       name: /Xem chi tiết và danh sách tập của Cuốn Sổ Tử Thần/,
     })
@@ -266,10 +268,7 @@ describe('AnimePage Feature Suite (Task T05)', () => {
 
     await waitFor(() => {
       expect(animeApi.fetchSeriesDetail).toHaveBeenCalledWith('death-note')
-      expect(animeApi.fetchSeriesEpisodes).toHaveBeenCalledWith(
-        'death-note',
-        expect.objectContaining({ page: 1 })
-      )
+      expect(animeApi.fetchSeriesEpisodes).toHaveBeenCalledWith('death-note', expect.objectContaining({ page: 1 }))
     })
 
     // Detail panel rendered
@@ -332,6 +331,8 @@ describe('AnimePage Feature Suite (Task T05)', () => {
 
     // Verify learning session header appears
     expect(await screen.findByRole('heading', { name: 'Tập 1: Tái sinh' })).toBeTruthy()
+    expect(screen.queryByLabelText('Danh mục anime')).toBeNull()
+    expect(screen.queryByLabelText('Tìm kiếm anime')).toBeNull()
 
     // Since media_source is null, verify fail-closed fallback is rendered and no iframe/video exists
     expect(screen.getByText('Nội dung chưa được cấp phép phát')).toBeTruthy()
@@ -360,7 +361,9 @@ describe('AnimePage Feature Suite (Task T05)', () => {
     const { unmount } = renderWithRouter('/anime')
 
     expect(await screen.findByRole('heading', { name: 'Nội dung đang được kiểm duyệt' })).toBeTruthy()
-    expect(screen.getAllByText('Thư viện chưa có nội dung được cấp phép để hiển thị công khai.').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('Thư viện chưa có nội dung được cấp phép để hiển thị công khai.').length
+    ).toBeGreaterThan(0)
     unmount()
 
     // 6b. Empty search results
@@ -387,9 +390,7 @@ describe('AnimePage Feature Suite (Task T05)', () => {
 
     renderWithRouter('/anime?series=unapproved-series')
 
-    expect(
-      await screen.findByText('Nội dung này chưa khả dụng do chính sách bản quyền.')
-    ).toBeTruthy()
+    expect(await screen.findByText('Nội dung này chưa khả dụng do chính sách bản quyền.')).toBeTruthy()
 
     // 6d. Network error and retry button
     vi.mocked(animeApi.fetchCatalog).mockRejectedValueOnce(new Error('Mất kết nối máy chủ'))
@@ -415,16 +416,12 @@ describe('AnimePage Feature Suite (Task T05)', () => {
 
     renderWithRouter('/anime?series=death-note')
 
-    // Check poster alt text (both card and detail have it)
-    const posterImgs = await screen.findAllByAltText('Cuốn Sổ Tử Thần')
-    expect(posterImgs.length).toBeGreaterThan(0)
-    const firstPoster = posterImgs[0]
-    expect(firstPoster).toBeDefined()
-
-    // Simulate broken image error
-    if (firstPoster) {
-      fireEvent.error(firstPoster)
-    }
+    // The cinematic backdrop is decorative; the actual title is readable text.
+    await screen.findByText('Tóm tắt nội dung')
+    const backdrop = document.querySelector<HTMLImageElement>('.anime-series-hub__backdrop-img')
+    expect(backdrop?.alt).toBe('')
+    expect(screen.getByRole('heading', { name: 'Cuốn Sổ Tử Thần' })).toBeTruthy()
+    if (backdrop) fireEvent.error(backdrop)
 
     // Escape key closes detail
     fireEvent.keyDown(window, { key: 'Escape' })
@@ -434,10 +431,9 @@ describe('AnimePage Feature Suite (Task T05)', () => {
     })
   })
 
-  // Test 8: Đồng bộ filter với detail (Requirement 2)
-  it('8. synchronizes filter changes with series detail: preserves detail if series is in new results, closes detail and removes URL params only after successful response if series is absent without closing while loading', async () => {
-    // 8a. Case 1: Filter changes and series is STILL in new catalog -> preserves detail
-    vi.mocked(animeApi.fetchCatalog).mockResolvedValueOnce({
+  // Test 8: Catalog and focused views must not appear on top of each other.
+  it('8. keeps catalog filters when returning from a focused series or episode view', async () => {
+    vi.mocked(animeApi.fetchCatalog).mockResolvedValue({
       items: [sampleSeries1, sampleSeries2],
       pagination: { page: 1, limit: 24, totalItems: 2, totalPages: 1 },
     })
@@ -448,66 +444,15 @@ describe('AnimePage Feature Suite (Task T05)', () => {
       pagination: { page: 1, limit: 50, totalItems: 2, totalPages: 1 },
     })
 
-    const { unmount } = renderWithRouter('/anime?series=death-note')
-
-    // Wait for detail to be visible
+    renderWithRouter('/anime?level=N3&series=death-note')
     expect(await screen.findByText('Tóm tắt nội dung')).toBeTruthy()
+    expect(screen.queryByLabelText('Tìm kiếm anime')).toBeNull()
+    expect(screen.queryByLabelText('Danh mục anime')).toBeNull()
 
-    // Now change filter to N3 (which still contains death-note)
-    vi.mocked(animeApi.fetchCatalog).mockResolvedValueOnce({
-      items: [sampleSeries1],
-      pagination: { page: 1, limit: 24, totalItems: 1, totalPages: 1 },
-    })
-
-    const n3Btn = screen.getByRole('button', { name: 'N3' })
-    fireEvent.click(n3Btn)
-
-    // Wait for catalog update, verify detail is STILL open
-    await waitFor(() => {
-      expect(animeApi.fetchCatalog).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'N3' })
-      )
-    })
-    expect(screen.getByText('Tóm tắt nội dung')).toBeTruthy()
-    expect(screen.getByRole('heading', { level: 2, name: 'Cuốn Sổ Tử Thần' })).toBeTruthy()
-
-    unmount()
-
-    // 8b. Case 2: Filter changes and series is NOT in new catalog -> NOT closed while loading, closed after response
-    vi.mocked(animeApi.fetchCatalog).mockResolvedValueOnce({
-      items: [sampleSeries1, sampleSeries2],
-      pagination: { page: 1, limit: 24, totalItems: 2, totalPages: 1 },
-    })
-
-    renderWithRouter('/anime?series=death-note')
-    expect(await screen.findByText('Tóm tắt nội dung')).toBeTruthy()
-
-    // Mock next catalog with delayed promise to verify it does NOT close while loading
-    let resolveDelayedCatalog: (data: AnimeCatalogData) => void = () => {}
-    const delayedPromise = new Promise<AnimeCatalogData>((resolve) => {
-      resolveDelayedCatalog = resolve
-    })
-    vi.mocked(animeApi.fetchCatalog).mockReturnValueOnce(delayedPromise)
-
-    // Click N4 filter (which will only return angel-next-door)
-    const n4Btn = screen.getByRole('button', { name: 'N4' })
-    fireEvent.click(n4Btn)
-
-    // While loading, detail panel must STILL be visible!
-    expect(screen.getByText('Tóm tắt nội dung')).toBeTruthy()
-
-    // Now resolve catalog response without death-note
-    await act(async () => {
-      resolveDelayedCatalog({
-        items: [sampleSeries2],
-        pagination: { page: 1, limit: 24, totalItems: 1, totalPages: 1 },
-      })
-    })
-
-    // Now detail panel MUST be closed!
-    await waitFor(() => {
-      expect(screen.queryByText('Tóm tắt nội dung')).toBeNull()
-    })
+    fireEvent.click(screen.getByRole('button', { name: /Quay lại danh mục anime/ }))
+    expect(await screen.findByLabelText('Tìm kiếm anime')).toBeTruthy()
+    expect(screen.queryByText('Tóm tắt nội dung')).toBeNull()
+    expect(animeApi.fetchCatalog).toHaveBeenCalledWith(expect.objectContaining({ level: 'N3' }))
   })
 
   // Test 9: Retry detail & episodes (Requirement 3)

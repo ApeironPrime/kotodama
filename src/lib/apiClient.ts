@@ -41,6 +41,7 @@ export const apiPaths = {
     jobs: (assetId: string) => `/api/v1/video/assets/${encodeURIComponent(assetId)}/jobs`,
     retry: (assetId: string) => `/api/v1/video/assets/${encodeURIComponent(assetId)}/retry`,
     transcript: (assetId: string) => `/api/v1/video/assets/${encodeURIComponent(assetId)}/transcript`,
+    learningContent: (assetId: string) => `/api/v1/video/assets/${encodeURIComponent(assetId)}/learning-content`,
     playbackSession: (assetId: string) => `/api/v1/video/assets/${encodeURIComponent(assetId)}/playback-session`,
     youtubeImports: '/api/v1/video/youtube-imports',
   },
@@ -60,15 +61,23 @@ export const apiPaths = {
     attempt: (id: string) => `/api/v1/shadowing/attempts/${encodeURIComponent(id)}`,
   },
   nhaikanji: {
-    kanjiList: (level = 'ALL', query = '', page = 1, limit = 50) =>
-      `/api/v1/nhaikanji/kanji?level=${encodeURIComponent(level)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+    kanjiList: (level = 'ALL', query = '', page = 1, limit = 50, sort?: string) => {
+      const base = `/api/v1/nhaikanji/kanji?level=${encodeURIComponent(level)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`
+      return sort && sort !== 'default' ? `${base}&sort=${encodeURIComponent(sort)}` : base
+    },
     kanjiDetail: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}`,
+    kanjiStrokes: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}/strokes`,
+    kanjiBrush: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}/brush`,
+    kanjiIllustration: (char: string) => `/api/v1/nhaikanji/illustration/${encodeURIComponent(char)}`,
     bunpoList: (level = 'ALL', bookId = 'all', query = '', page = 1, limit = 50) =>
       `/api/v1/nhaikanji/bunpo?level=${encodeURIComponent(level)}&bookId=${encodeURIComponent(bookId)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
     jlptExams: (level = 'ALL', section = 'all') =>
       `/api/v1/nhaikanji/jlpt/exams?level=${encodeURIComponent(level)}&section=${encodeURIComponent(section)}`,
     jlptExamDetail: (examId: string) => `/api/v1/nhaikanji/jlpt/exams/${encodeURIComponent(examId)}`,
     jlptSubmit: '/api/v1/nhaikanji/jlpt/submit',
+    jlptAttempts: (level = 'N3') => `/api/v1/nhaikanji/jlpt/attempts?level=${encodeURIComponent(level)}`,
+    jlptAttempt: (attemptId: string) => `/api/v1/nhaikanji/jlpt/attempts/${encodeURIComponent(attemptId)}`,
+    jlptAttemptSubmit: (attemptId: string) => `/api/v1/nhaikanji/jlpt/attempts/${encodeURIComponent(attemptId)}/submit`,
   },
   pronunciation: {
     research: {
@@ -76,7 +85,8 @@ export const apiPaths = {
       mine: '/api/v1/pronunciation/research/attempts/mine',
       reviewQueue: '/api/v1/pronunciation/research/review-queue',
       labels: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/labels`,
-      audio: (attemptId: string) => `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/audio/content`,
+      audio: (attemptId: string) =>
+        `/api/v1/pronunciation/research/attempts/${encodeURIComponent(attemptId)}/audio/content`,
     },
   },
   anime: {
@@ -116,12 +126,9 @@ export const apiPaths = {
       const query = searchParams.toString()
       return `/api/v1/anime/episodes/${encodeURIComponent(episodeId)}/subtitles${query ? `?${query}` : ''}`
     },
-    dictionaryWord: (wordId: number | string) =>
-      `/api/v1/anime/dictionary/${encodeURIComponent(String(wordId))}`,
+    dictionaryWord: (wordId: number | string) => `/api/v1/anime/dictionary/${encodeURIComponent(String(wordId))}`,
     progress: (episodeId?: string) =>
-      episodeId
-        ? `/api/v1/anime/progress?episodeId=${encodeURIComponent(episodeId)}`
-        : '/api/v1/anime/progress',
+      episodeId ? `/api/v1/anime/progress?episodeId=${encodeURIComponent(episodeId)}` : '/api/v1/anime/progress',
     continueWatching: () => '/api/v1/anime/progress/continue',
   },
 } as const

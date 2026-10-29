@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1125" role="img" aria-label="Trang sách mở dưới ánh trăng và đèn lồng">
+  <defs>
+    <linearGradient id="night" x2=".1" y2="1"><stop stop-color="#4a5557"/><stop offset=".52" stop-color="#8c968d"/><stop offset="1" stop-color="#d6c9b2"/></linearGradient>
+    <radialGradient id="moon"><stop stop-color="#f9e9cb"/><stop offset=".55" stop-color="#e9d9bb"/><stop offset="1" stop-color="#e9d9bb" stop-opacity="0"/></radialGradient>
+    <linearGradient id="page" x2="0" y2="1"><stop stop-color="#f1e8d3"/><stop offset="1" stop-color="#c6b69a"/></linearGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".45" numOctaves="3" seed="22"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".12"/></feComponentTransfer></filter>
+    <filter id="mist"><feGaussianBlur stdDeviation="26"/></filter>
+  </defs>
+  <rect width="900" height="1125" fill="url(#night)"/>
+  <path d="M0 0h900v1125H0z" filter="url(#grain)" opacity=".6"/>
+  <circle cx="595" cy="292" r="148" fill="url(#moon)"/>
+  <circle cx="595" cy="292" r="94" fill="#f1e3c9" opacity=".9"/>
+  <path d="M0 574c156-206 270-178 407-92 103-167 264-207 493-30v258H0Z" fill="#303b3d" opacity=".42"/>
+  <path d="M0 619c123-115 277-139 390-57 176-177 352-158 510-27v290H0Z" fill="#293636" opacity=".56"/>
+  <path d="M0 700c218-110 324-32 500-102 131-53 266-31 400 75v170H0Z" fill="#e5dfce" opacity=".25" filter="url(#mist)"/>
+  <g stroke="#262f30" fill="none" opacity=".87"><path d="M24 0v636M876 0v636M0 82h900M0 622h900" stroke-width="32"/><path d="M289 0v638m314-638v638M0 327h900" stroke-width="13"/></g>
+  <path d="M0 813q286-48 450-57 178-9 450 58v311H0Z" fill="#3c3e39"/>
+  <path d="M0 825q282-41 449-51 211-6 451 48" fill="none" stroke="#b5a790" stroke-width="11"/>
+  <ellipse cx="445" cy="903" rx="358" ry="148" fill="#d7c6a5" opacity=".14" filter="url(#mist)"/>
+  <path d="M105 814q141-61 342-9 187-57 345 12l-13 244q-174-61-331-1-181-65-331-1Z" fill="url(#page)" stroke="#7d705e" stroke-width="11"/>
+  <path d="M448 808v251" fill="none" stroke="#776958" stroke-width="10"/>
+  <path d="M136 847q155-45 282-9m-273 45q151-35 265-5m-251 43q137-31 244-4m-229 45q126-26 217-4m93-119q130-31 274 8m-270 32q134-28 266 12m-253 33q120-23 244 10m-232 33q116-19 224 11" fill="none" stroke="#5e655e" stroke-width="5" opacity=".36"/>
+  <path d="M0 1084q230-58 446-25 194-44 454 26v40H0Z" fill="#232927"/>
+  <path d="M168 0v190" stroke="#302e2c" stroke-width="8"/><path d="M106 186q62-46 124 0l-14 167q-46 35-94 0z" fill="#b94e38" stroke="#3a3430" stroke-width="9"/>
+  <path d="M123 214q45 22 91 0m-81 111q38-19 75 0" stroke="#f0d9b7" stroke-width="8" fill="none" opacity=".75"/>
+  <ellipse cx="166" cy="304" rx="120" ry="180" fill="#d98555" opacity=".17" filter="url(#mist)"/>
+  <g stroke="#b64b38" fill="none" opacity=".86"><rect x="750" y="108" width="77" height="77" stroke-width="5"/><path d="M764 130h50m-27-11v52m-18-20h42" stroke-width="5"/></g>
+</svg>

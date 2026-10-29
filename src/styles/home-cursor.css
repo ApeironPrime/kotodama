@@ -1,0 +1,74 @@
+@media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
+  html.has-custom-cursor,
+  html.has-custom-cursor *,
+  html.has-custom-cursor *::before,
+  html.has-custom-cursor *::after,
+  body.has-custom-cursor,
+  body.has-custom-cursor * {
+    cursor: none !important;
+  }
+
+  .kotodama-global-cursor-dot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2147483647 !important;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #b82e2e;
+    pointer-events: none;
+    box-shadow: 0 0 6px rgba(184, 46, 46, 0.75), 0 0 14px rgba(184, 46, 46, 0.45);
+    opacity: 0;
+    transition: opacity 0.2s ease, width 0.22s ease, height 0.22s ease, transform 0.08s ease-out;
+    will-change: transform;
+  }
+
+  .kotodama-global-cursor-dot.is-visible {
+    opacity: 1;
+  }
+
+  .kotodama-global-cursor-dot.is-down {
+    transform: translate3d(var(--cx, 0px), var(--cy, 0px), 0) translate(-50%, -50%) scale(0.65) !important;
+    background: #8e1f1f;
+  }
+
+  .kotodama-global-cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2147483646 !important;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(184, 46, 46, 0.45);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease, width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      height 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease,
+      background-color 0.25s ease, border-radius 0.25s ease, box-shadow 0.25s ease;
+    will-change: transform;
+  }
+
+  .kotodama-global-cursor-ring.is-visible {
+    opacity: 1;
+  }
+
+  .kotodama-global-cursor-ring.is-interactive {
+    width: 48px;
+    height: 48px;
+    border-color: rgba(184, 46, 46, 0.88);
+    background-color: rgba(184, 46, 46, 0.09);
+    box-shadow: 0 0 12px rgba(184, 46, 46, 0.15);
+  }
+
+  .kotodama-global-cursor-ring.is-seal {
+    width: 38px;
+    height: 38px;
+    border-radius: 2px;
+    border: none;
+    background: url('/assets/kotodama-seal-imprint.svg') center / contain no-repeat;
+    filter: drop-shadow(0 2px 8px rgba(184, 46, 46, 0.45));
+    transform-origin: center center;
+  }
+}

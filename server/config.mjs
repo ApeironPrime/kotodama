@@ -1,5 +1,13 @@
 import { join, resolve } from 'node:path'
 
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile()
+  } catch {
+    // Optional local .env file
+  }
+}
+
 function required(env, key, missing) {
   const value = env[key]?.trim()
   if (!value) missing.push(key)

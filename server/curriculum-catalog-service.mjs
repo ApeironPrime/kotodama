@@ -120,7 +120,9 @@ export class CurriculumCatalogService {
     // must never silently make unverified curriculum public in production.
     this.allowUnverifiedContent =
       options.allowUnverifiedContent === true ||
-      (process.env.NODE_ENV !== 'production' && isEnabled(process.env.CURRICULUM_LOCAL_UNVERIFIED_ACCESS))
+      (process.env.NODE_ENV !== 'production' &&
+        (isEnabled(process.env.CURRICULUM_LOCAL_UNVERIFIED_ACCESS) ||
+          (process.env.CURRICULUM_LOCAL_UNVERIFIED_ACCESS === undefined && normalizedStorage === 'sqlite')))
 
     if (normalizedStorage === 'postgres' || normalizedStorage === 'postgresql') {
       this.storage = 'postgres'

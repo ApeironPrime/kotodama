@@ -16,6 +16,33 @@ export type KanjiSummary = {
   next_kanji?: string
 }
 
+export interface KanjiStrokePath {
+  id: string
+  d: string
+  type?: string
+}
+
+export interface KanjiStrokeNumber {
+  num: number
+  x: number
+  y: number
+}
+
+export interface KanjiStrokeData {
+  kanji: string
+  code: string
+  strokeCount: number
+  strokes: KanjiStrokePath[]
+  numbers: KanjiStrokeNumber[]
+}
+
+export interface KanjiBrushData {
+  strokes: string[]
+  medians: number[][][]
+  radStrokes?: number[]
+}
+
+
 export type KanjiVocabExample = {
   id?: number | string
   word: string
@@ -102,6 +129,16 @@ export type JlptQuestion = {
   text?: string
   question?: string
   sentence?: string
+  starPrompt?: { before: string; after: string }
+  starCorrectOrder?: number[]
+  starPosition?: number | null
+  starPositionVerified?: boolean
+  starOrderVerified?: boolean
+  starVerificationSources?: string[]
+  starSourceExtracted?: boolean
+  sourceTextExtracted?: boolean
+  readingSourcePassage?: boolean
+  readingSourceMissing?: boolean
   underlined?: string
   options?: Array<JlptOption | string> | string[]
   audio?: string | null
@@ -211,4 +248,21 @@ export type JlptSubmissionResult = {
     isCorrect: boolean
     explanation?: string
   }>
+}
+
+export type JlptAttempt = {
+  id: string
+  examId: string
+  level: string
+  mode: 'exam' | 'review'
+  status: 'in_progress' | 'completed'
+  answers: Record<string, number | string>
+  currentQuestion: number
+  remainingSeconds: number
+  scorePercentage?: number
+  examSnapshot?: JlptExamDetail
+  startedAt: string
+  updatedAt: string
+  finishedAt?: string | null
+  result?: JlptSubmissionResult | null
 }

@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { translateRadicalMeaning } from './radical-dictionary.mjs'
 
 // Helper to remove Vietnamese diacritics for flexible search
 function removeVietnameseTones(str) {
@@ -55,6 +56,228 @@ function compositionDescription(item) {
   return components.length ? `Cấu tạo: ${components.join(' + ')}` : ''
 }
 
+function normalizeJlptExamMetadata(exam, defaults = {}) {
+  const rawYear = String(exam.year ?? '').trim()
+  const rawTitle = String(exam.title ?? '').trim()
+  const combined = `${rawYear} ${rawTitle}`
+  const year =
+    rawYear.match(/(?:19|20)\d{2}/)?.[0] ?? rawTitle.match(/(?:19|20)\d{2}/)?.[0] ?? defaults.year ?? exam.year
+  const inferredSession = combined.match(/(?:^|\D)(07|12)(?=\D|$)/)?.[1]
+  const rawSession = String(exam.session ?? '').trim()
+  const sessionLooksLikeYear = /^(?:19|20)\d{2}$/u.test(rawSession)
+  const rawYearLooksLikeSession = /^(?:07|12)$/u.test(rawYear)
+  const session =
+    (sessionLooksLikeYear ? undefined : exam.session) ??
+    inferredSession ??
+    (rawYearLooksLikeSession ? rawYear : undefined) ??
+    defaults.session ??
+    exam.session
+
+  return { ...exam, year, session }
+}
+
+function normalizeQuestionTextForExplanationMatch(question) {
+  return String(question?.sentence || question?.text || question?.question || '')
+    .replace(/<br\s*\/?\s*>/giu, ' ')
+    .replace(/<[^>]*>/gu, '')
+    .replace(/&nbsp;|&#160;/giu, ' ')
+    .replace(/&amp;/giu, '&')
+    .replace(/&quot;|&#34;/giu, '"')
+    .replace(/&apos;|&#39;/giu, "'")
+    .replace(/&lt;/giu, '<')
+    .replace(/&gt;/giu, '>')
+    .normalize('NFKC')
+    .replace(/[‐‑‒–—―]/gu, 'ー')
+    .replace(/[「」『』【】()（）［］:：,，、。.!！?？"“”]/gu, '')
+    .replace(/\s+/gu, '')
+    .replace(/^\[\s*\d+\s*\]/u, '')
+    .replace(/^\d+[)）.．、]?/u, '')
+    .replace(/^A(?=[一-龯ぁ-んァ-ン])/u, '')
+}
+
+function normalizeQuestionPassageForExplanationMatch(passage) {
+  return String(passage || '')
+    .replace(/<br\s*\/?\s*>/giu, ' ')
+    .replace(/<[^>]*>/gu, '')
+    .replace(/&nbsp;|&#160;/giu, ' ')
+    .replace(/&amp;/giu, '&')
+    .replace(/&quot;|&#34;/giu, '"')
+    .replace(/&apos;|&#39;/giu, "'")
+    .replace(/&lt;/giu, '<')
+    .replace(/&gt;/giu, '>')
+    .normalize('NFKC')
+    .replace(/【\s*(?:[1-5]|19|20|21|22|23)\s*】|[（(]\s*(?:19|20|21|22|23)\s*[）)]/gu, ' GAP ')
+    .replace(/[\s「」『』【】()（）［］:：,，、。.!！?？"“”]/gu, '')
+}
+
+function normalizeQuestionOptionsForExplanationMatch(question) {
+  if (!Array.isArray(question?.options)) return []
+  return question.options.map((option) => {
+    const text = typeof option === 'string' ? option : (option?.text ?? option?.value ?? '')
+    return String(text)
+      .normalize('NFKC')
+      .replace(/^\s*[1-4](?:[.．、]\s*|\s+)/u, '')
+      .replace(/\s+/gu, '')
+      .replace(/[。．.、,，]+$/gu, '')
+  })
+}
+
+function normalizeSectionQuestionOptionsForMatch(question) {
+  if (!Array.isArray(question?.options)) return []
+  return question.options.map((option) => {
+    const text = typeof option === 'string' ? option : (option?.text ?? option?.value ?? '')
+    return String(text)
+      .normalize('NFKC')
+      .replace(/[⓵①➀]/gu, '1')
+      .replace(/[⓶②➁]/gu, '2')
+      .replace(/[⓷③➂]/gu, '3')
+      .replace(/[⓸④➃]/gu, '4')
+      .replace(/好き/gu, 'すき')
+      .replace(/社長/gu, 'しゃちょう')
+      .replace(/食べ放題/gu, '食べほうだい')
+      .replace(/価格/gu, 'かかく')
+      .replace(/^\s*[1-4](?=$|[.．、\s])(?:[.．、]\s*|\s*)/u, '')
+      .replace(/\s+/gu, '')
+      .replace(/[。．.、,，]+$/gu, '')
+  })
+}
+
+function examSessionKey(exam) {
+  const year = String(exam?.year || '').trim()
+  if (/^\d{4}$/u.test(year)) {
+    const month = String(exam?.session || '')
+      .trim()
+      .padStart(2, '0')
+    return /^(07|12)$/u.test(month) ? `${year}${month}` : ''
+  }
+  const match = /^(07|12)\s+(\d{4})$/u.exec(year)
+  return match ? `${match[2]}${match[1]}` : ''
+}
+
+function hasSameQuestionContent(question, sourceQuestion, { ignoreQuestionNumber = false } = {}) {
+  if (!ignoreQuestionNumber && Number(question?.number) !== Number(sourceQuestion?.number)) return false
+  if (
+    Number(question?.correctAnswer ?? question?.answer) !==
+    Number(sourceQuestion?.correctAnswer ?? sourceQuestion?.answer)
+  )
+    return false
+
+  const questionText = normalizeQuestionTextForExplanationMatch(question)
+  if (!questionText || questionText !== normalizeQuestionTextForExplanationMatch(sourceQuestion)) return false
+
+  const options = normalizeQuestionOptionsForExplanationMatch(question)
+  const sourceOptions = normalizeQuestionOptionsForExplanationMatch(sourceQuestion)
+  return (
+    options.length === 4 &&
+    sourceOptions.length === 4 &&
+    options.every((option, index) => option === sourceOptions[index])
+  )
+}
+
+function hasSameSectionPositionQuestionContent(question, sourceQuestion) {
+  if (
+    Number(question?.correctAnswer ?? question?.answer) !==
+    Number(sourceQuestion?.correctAnswer ?? sourceQuestion?.answer)
+  ) {
+    return false
+  }
+
+  const questionText = normalizeQuestionTextForExplanationMatch(question)
+  if (!questionText || questionText !== normalizeQuestionTextForExplanationMatch(sourceQuestion)) return false
+
+  const options = normalizeSectionQuestionOptionsForMatch(question)
+  const sourceOptions = normalizeSectionQuestionOptionsForMatch(sourceQuestion)
+  const answer = Number(question?.correctAnswer ?? question?.answer)
+  if (options.length < 3 || options.length !== sourceOptions.length || !Number.isInteger(answer)) return false
+
+  const sectionUsesNumberOnlyChoices = options.every((option) => option === '')
+  return sectionUsesNumberOnlyChoices || options.every((option, index) => option === sourceOptions[index])
+}
+
+function firstQuestionImage(question) {
+  if (typeof question?.image === 'string' && question.image.trim()) return question.image.trim()
+  const html = String(question?.sentence || question?.text || question?.question || '')
+  const source = html.match(/<img\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1/iu)?.[2]
+  return source?.replace(/&amp;/giu, '&').trim() || ''
+}
+
+function hasSameStarOrderQuestionContent(question, sourceQuestion, explanation) {
+  if (Number(question?.number) !== Number(sourceQuestion?.number)) return false
+  const answer = Number(question?.correctAnswer ?? question?.answer)
+  if (answer !== Number(sourceQuestion?.correctAnswer ?? sourceQuestion?.answer)) return false
+
+  const options = normalizeQuestionOptionsForExplanationMatch(question)
+  const sourceOptions = normalizeQuestionOptionsForExplanationMatch(sourceQuestion)
+  if (
+    options.length !== 4 ||
+    sourceOptions.length !== 4 ||
+    !options.every((option, index) => option === sourceOptions[index])
+  ) {
+    return false
+  }
+
+  const sourceOrder = sourceQuestion?.starCorrectOrder
+  const verifiedSourceOrder =
+    sourceQuestion?.starOrderVerified === true &&
+    sourceQuestion?.starPositionVerified === true &&
+    Array.isArray(sourceOrder) &&
+    sourceOrder.length === 4 &&
+    sourceOrder.every((number) => Number.isInteger(number) && number >= 1 && number <= 4) &&
+    new Set(sourceOrder).size === 4 &&
+    Number.isInteger(sourceQuestion.starPosition) &&
+    sourceQuestion.starPosition >= 0 &&
+    sourceQuestion.starPosition < 4 &&
+    sourceOrder[sourceQuestion.starPosition] === answer
+  const orderMatch = String(explanation || '').match(
+    /(?:Thứ tự(?: bốn mảnh)?(?: ghép đúng)? là|thứ tự ghép là)\s*([1-4])\s*(?:→|->)\s*([1-4])\s*(?:→|->)\s*([1-4])\s*(?:→|->)\s*([1-4])/iu
+  )
+  const order = verifiedSourceOrder ? sourceOrder : orderMatch?.slice(1).map(Number)
+  if (!order || new Set(order).size !== 4 || order[sourceQuestion?.starPosition ?? 2] !== answer) return false
+
+  const assembled = order
+    .map((optionNumber) => options[optionNumber - 1])
+    .join('')
+    .normalize('NFKC')
+    .replace(/\s+/gu, '')
+    .replace(/[、。,.，]/gu, '')
+  const script = String(question?.script || '')
+    .replace(/<[^>]*>/gu, '')
+    .replace(/&nbsp;|&#160;|&#x0*a0;/giu, ' ')
+    .normalize('NFKC')
+    .replace(/\s+/gu, '')
+    .replace(/[、。,.，]/gu, '')
+  // Section copies sometimes retain the surrounding clause from the source
+  // sentence, while the full-mock source contains only the four ordered
+  // fragments. The source order, star position, answer and all four options
+  // have already been checked above, so the reconstructed fragment sequence
+  // may safely appear within that larger script.
+  return Boolean(script) && script.includes(assembled)
+}
+
+function hasSameClozeQuestionContent(question, sourceQuestion, sectionPart, sourcePart) {
+  if (Number(question?.number) !== Number(sourceQuestion?.number)) return false
+  if (
+    Number(question?.correctAnswer ?? question?.answer) !==
+    Number(sourceQuestion?.correctAnswer ?? sourceQuestion?.answer)
+  ) {
+    return false
+  }
+
+  const options = normalizeQuestionOptionsForExplanationMatch(question)
+  const sourceOptions = normalizeQuestionOptionsForExplanationMatch(sourceQuestion)
+  if (
+    options.length !== 4 ||
+    sourceOptions.length !== 4 ||
+    !options.every((option, index) => option === sourceOptions[index])
+  ) {
+    return false
+  }
+
+  const passage = normalizeQuestionPassageForExplanationMatch(sectionPart?.passage)
+  const sourcePassage = normalizeQuestionPassageForExplanationMatch(sourcePart?.passage)
+  return Boolean(passage && sourcePassage && passage === sourcePassage)
+}
+
 function normalizeMazziKanji(item) {
   const composition = compositionDescription(item)
   const examples = Array.isArray(item.examples)
@@ -104,8 +327,91 @@ function normalizeMazziKanji(item) {
   return { summary, detail }
 }
 
+function normalizeHackNaoKanji(item, level, index, allInLevel) {
+  const kanji = String(item?.kanji || '').trim()
+  const hanzi = String(item?.han_viet || (kanji === '那' ? 'NA' : '')).trim()
+  const meaningVi = String(item?.nghia || '').trim()
+  const jlptLevel = String(item?.cap_do || level || '').trim().toUpperCase()
+  const onyomi = Array.isArray(item?.am_on)
+    ? item.am_on.filter(Boolean).join(', ')
+    : String(item?.am_on || '').trim()
+  const kunyomi = Array.isArray(item?.am_kun)
+    ? item.am_kun.filter(Boolean).join(', ')
+    : String(item?.am_kun || '').trim()
+  const strokeCount =
+    typeof item?.so_net === 'number'
+      ? item.so_net
+      : Number.parseInt(String(item?.so_net || ''), 10) || ''
+  const radicalUtf = String(item?.bo_thu || '').trim() || '—'
+  const radicalNameJa = String(item?.ten_bo_thu || '').trim()
+  const radicalMeaning = translateRadicalMeaning(item?.nghia_bo_thu, radicalUtf)
+  const story = String(item?.cau_chuyen_ghi_nho || '').trim()
+
+  const examples = Array.isArray(item?.tu_vung_vi_du)
+    ? item.tu_vung_vi_du
+        .filter((ex) => ex && typeof ex.tu === 'string' && ex.tu.trim())
+        .map((ex, exIdx) => ({
+          id: `${kanji}-${exIdx}`,
+          word: ex.tu.trim(),
+          reading: typeof ex.cach_doc === 'string' ? ex.cach_doc.trim() : '',
+          meaning: typeof ex.nghia === 'string' ? ex.nghia.trim() : '',
+          yinHan: typeof ex.han_viet === 'string' ? ex.han_viet.trim() : '',
+          example: typeof ex.cau_vi_du === 'string' ? ex.cau_vi_du.trim() : '',
+          exampleVi: typeof ex.nghia_cau_vi_du === 'string' ? ex.nghia_cau_vi_du.trim() : '',
+        }))
+    : []
+
+  const prevKanji = index > 0 && allInLevel && allInLevel[index - 1] ? allInLevel[index - 1].kanji : undefined
+  const nextKanji = index < (allInLevel?.length ?? 0) - 1 && allInLevel && allInLevel[index + 1] ? allInLevel[index + 1].kanji : undefined
+
+  const summary = {
+    kanji,
+    hanzi,
+    meaning_vi: meaningVi,
+    meaning_en: radicalMeaning,
+    jlpt_level: jlptLevel,
+    onyomi,
+    kunyomi,
+    stroke_count: strokeCount,
+    radical_utf: radicalUtf,
+    radical_name_ja: radicalNameJa,
+    radical_meaning: radicalMeaning,
+    story,
+    num_vocab_examples: examples.length,
+    normalizedHanzi: removeVietnameseTones(hanzi),
+    normalizedMeaning: removeVietnameseTones(meaningVi),
+    ...(prevKanji ? { prev_kanji: prevKanji } : {}),
+    ...(nextKanji ? { next_kanji: nextKanji } : {}),
+  }
+
+  const detail = {
+    kanji,
+    kanjiInfo: {
+      id: String(item?.stt ?? kanji),
+      hanzi,
+      meaning: meaningVi,
+      story,
+      jlptLevel,
+      kanjialiveData: {
+        rad_name_ja: radicalNameJa,
+        onyomi_ja: onyomi,
+        kunyomi_ja: kunyomi,
+        rad_utf: radicalUtf,
+        rad_meaning: radicalMeaning,
+        examples,
+      },
+    },
+  }
+
+  return { summary, detail }
+}
+
 export class NhaiKanjiService {
   constructor(options = {}) {
+    this.kanjiDataPath =
+      options.kanjiDataPath !== undefined
+        ? options.kanjiDataPath
+        : (process.env.KANJI_DATA_PATH || '')
     this.mazziDataPath = options.mazziDataPath || process.env.MAZII_CRAWLER_DATA_PATH || ''
     this.dataPath = options.dataPath || process.env.NHAIKANJI_DATA_PATH || ''
 
@@ -116,6 +422,50 @@ export class NhaiKanjiService {
     this.jlptExamsMaster = null
 
     this.isLoaded = false
+  }
+
+  loadHackNaoKanji() {
+    const filePath = this.kanjiDataPath
+    if (!filePath || !fs.existsSync(filePath)) {
+      return false
+    }
+
+    try {
+      const content = fs.readFileSync(filePath, 'utf8')
+      const data = JSON.parse(content)
+
+      this.kanjiSummaryList = []
+      this.kanjiMap.clear()
+      this.fullKanjiData = {}
+
+      const levels = ['N5', 'N4', 'N3', 'N2', 'N1']
+      for (const lvl of levels) {
+        const items = data[lvl]
+        if (!Array.isArray(items)) continue
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i]
+          if (!item || typeof item.kanji !== 'string' || !item.kanji.trim() || this.kanjiMap.has(item.kanji)) continue
+
+          const normalized = normalizeHackNaoKanji(item, lvl, i, items)
+          this.kanjiSummaryList.push(normalized.summary)
+          this.kanjiMap.set(normalized.summary.kanji, normalized.summary)
+          this.fullKanjiData[normalized.summary.kanji] = normalized.detail
+        }
+      }
+
+      if (this.kanjiSummaryList.length === 0) {
+        throw new Error('Hack Nao Kanji JSON contains no valid entries')
+      }
+
+      return true
+    } catch (err) {
+      console.warn('[NhaiKanjiService] Failed to load Hack Nao Kanji:', err.message)
+      this.kanjiSummaryList = []
+      this.kanjiMap.clear()
+      this.fullKanjiData = null
+      return false
+    }
   }
 
   loadMazziKanjiCourses() {
@@ -160,29 +510,31 @@ export class NhaiKanjiService {
     }
 
     try {
-      // 1. Prefer the explicitly configured, levelled Kanji course source.
-      // It is normalized here so the existing Kanji page and detail modal keep one API contract.
-      const loadedMazziCourses = this.loadMazziKanjiCourses()
+      // 1. Primary canonical source: Hack Nao Kanji N1-N5 dataset.
+      const loadedHackNao = this.loadHackNaoKanji()
 
-      // 2. Fall back to the legacy NhaiKanji CSV only when no course source was configured/usable.
-      if (!loadedMazziCourses && this.dataPath) {
-        const summaryFile = path.join(this.dataPath, 'kanji_summary.csv')
-        if (fs.existsSync(summaryFile)) {
-          let raw = fs.readFileSync(summaryFile, 'utf8').replace(/^\uFEFF/, '')
-          const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0)
-          if (lines.length > 1) {
-            const headers = parseCSVLine(lines[0]).map((h) => h.trim().replace(/^\uFEFF/, ''))
-            for (let i = 1; i < lines.length; i++) {
-              const cols = parseCSVLine(lines[i])
-              const row = {}
-              headers.forEach((h, idx) => {
-                row[h] = (cols[idx] || '').trim()
-              })
-              if (row.kanji) {
-                row.normalizedHanzi = removeVietnameseTones(row.hanzi)
-                row.normalizedMeaning = removeVietnameseTones(row.meaning_vi)
-                this.kanjiSummaryList.push(row)
-                this.kanjiMap.set(row.kanji, row)
+      // 2. Fallbacks only when Hack Nao Kanji was not available (e.g. mock test environments)
+      if (!loadedHackNao) {
+        const loadedMazziCourses = this.loadMazziKanjiCourses()
+        if (!loadedMazziCourses && this.dataPath) {
+          const summaryFile = path.join(this.dataPath, 'kanji_summary.csv')
+          if (fs.existsSync(summaryFile)) {
+            let raw = fs.readFileSync(summaryFile, 'utf8').replace(/^\uFEFF/, '')
+            const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0)
+            if (lines.length > 1) {
+              const headers = parseCSVLine(lines[0]).map((h) => h.trim().replace(/^\uFEFF/, ''))
+              for (let i = 1; i < lines.length; i++) {
+                const cols = parseCSVLine(lines[i])
+                const row = {}
+                headers.forEach((h, idx) => {
+                  row[h] = (cols[idx] || '').trim()
+                })
+                if (row.kanji) {
+                  row.normalizedHanzi = removeVietnameseTones(row.hanzi)
+                  row.normalizedMeaning = removeVietnameseTones(row.meaning_vi)
+                  this.kanjiSummaryList.push(row)
+                  this.kanjiMap.set(row.kanji, row)
+                }
               }
             }
           }
@@ -207,6 +559,14 @@ export class NhaiKanjiService {
       this.fullMasterMtime = 0
       this.toanMasterFile = path.resolve(process.cwd(), 'data', 'jlpt_n3_toan_master.json')
       this.toanMasterMtime = 0
+      this.listeningImageAssetsFile = path.resolve(process.cwd(), 'data', 'jlpt_n3_listening_image_assets.json')
+      this.listeningImageAssetsMtime = 0
+      this.listeningImageAssets = {}
+      this.listeningImageAssetAliases = {}
+      this.listeningQuestionAliases = {}
+      this.curatedExplanationsFile = path.resolve(process.cwd(), 'data', 'jlpt_n3_explanations_curated.json')
+      this.curatedExplanationsMtime = 0
+      this.curatedExplanations = {}
       this.reloadFullMaster()
 
       // 5. Load JLPT Exams Master dự phòng
@@ -243,6 +603,25 @@ export class NhaiKanjiService {
           this.toanMasterMtime = stats.mtimeMs
         }
       }
+      if (this.listeningImageAssetsFile && fs.existsSync(this.listeningImageAssetsFile)) {
+        const stats = fs.statSync(this.listeningImageAssetsFile)
+        if (stats.mtimeMs > this.listeningImageAssetsMtime) {
+          const rawAssets = fs.readFileSync(this.listeningImageAssetsFile, 'utf8')
+          const parsedAssets = JSON.parse(rawAssets)
+          this.listeningImageAssets = parsedAssets.assets || {}
+          this.listeningImageAssetAliases = parsedAssets.aliases || {}
+          this.listeningQuestionAliases = parsedAssets.questionAliases || {}
+          this.listeningImageAssetsMtime = stats.mtimeMs
+        }
+      }
+      if (this.curatedExplanationsFile && fs.existsSync(this.curatedExplanationsFile)) {
+        const stats = fs.statSync(this.curatedExplanationsFile)
+        if (stats.mtimeMs > this.curatedExplanationsMtime) {
+          const rawExplanations = fs.readFileSync(this.curatedExplanationsFile, 'utf8')
+          this.curatedExplanations = JSON.parse(rawExplanations)
+          this.curatedExplanationsMtime = stats.mtimeMs
+        }
+      }
     } catch (err) {
       console.warn('[NhaiKanjiService] Failed to reload full master:', err.message)
     }
@@ -269,7 +648,7 @@ export class NhaiKanjiService {
     return this.fullKanjiData
   }
 
-  getKanjiList({ level, query = '', page = 1, limit = 50 }) {
+  getKanjiList({ level, query = '', page = 1, limit = 50, sort = 'default' }) {
     this.ensureLoaded()
     let results = this.kanjiSummaryList
 
@@ -293,6 +672,24 @@ export class NhaiKanjiService {
           (k.kunyomi && k.kunyomi.toLowerCase().includes(q))
         )
       })
+    }
+
+    if (sort === 'stroke_asc') {
+      results = [...results].sort((a, b) => {
+        const netA = typeof a.stroke_count === 'number' ? a.stroke_count : (Number.parseInt(a.stroke_count, 10) || 0)
+        const netB = typeof b.stroke_count === 'number' ? b.stroke_count : (Number.parseInt(b.stroke_count, 10) || 0)
+        if (netA !== netB) return netA - netB
+        return (a.normalizedHanzi || '').localeCompare(b.normalizedHanzi || '')
+      })
+    } else if (sort === 'stroke_desc') {
+      results = [...results].sort((a, b) => {
+        const netA = typeof a.stroke_count === 'number' ? a.stroke_count : (Number.parseInt(a.stroke_count, 10) || 0)
+        const netB = typeof b.stroke_count === 'number' ? b.stroke_count : (Number.parseInt(b.stroke_count, 10) || 0)
+        if (netA !== netB) return netB - netA
+        return (a.normalizedHanzi || '').localeCompare(b.normalizedHanzi || '')
+      })
+    } else if (sort === 'hanzi_az') {
+      results = [...results].sort((a, b) => (a.normalizedHanzi || '').localeCompare(b.normalizedHanzi || ''))
     }
 
     const total = results.length
@@ -323,6 +720,100 @@ export class NhaiKanjiService {
       summary: summary || null,
       detail: detail || null,
     }
+  }
+
+  async getKanjiStrokeData(kanjiChar) {
+    if (!kanjiChar) return null
+    const char = String(kanjiChar).trim()
+    if (!char) return null
+    const code = char.codePointAt(0).toString(16).padStart(5, '0')
+    const cacheDir = path.resolve(process.cwd(), 'data', 'kanjivg')
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
+
+    const cacheFile = path.join(cacheDir, `${code}.json`)
+    if (fs.existsSync(cacheFile)) {
+      try {
+        return JSON.parse(fs.readFileSync(cacheFile, 'utf8'))
+      } catch {}
+    }
+
+    const url = `https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg/kanji/${code}.svg`
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
+      if (!res.ok) {
+        return null
+      }
+      const svgText = await res.text()
+
+      const strokePathRegex = /<path[^>]*\bid="([^"]*-s\d+)"[^>]*\bd="([^"]+)"[^>]*>/g
+      const strokes = []
+      let m
+      while ((m = strokePathRegex.exec(svgText)) !== null) {
+        const id = m[1]
+        const d = m[2]
+        const typeMatch = m[0].match(/kvg:type="([^"]+)"/)
+        strokes.push({ id, d, type: typeMatch ? typeMatch[1] : undefined })
+      }
+
+      const numRegex = /<text transform="matrix\(([^)]+)\)">(\d+)<\/text>/g
+      const numbers = []
+      while ((m = numRegex.exec(svgText)) !== null) {
+        const parts = m[1].split(/\s+/).map(Number)
+        numbers.push({ num: parseInt(m[2], 10), x: parts[4], y: parts[5] })
+      }
+
+      const data = {
+        kanji: char,
+        code,
+        strokeCount: strokes.length,
+        strokes,
+        numbers,
+      }
+      fs.writeFileSync(cacheFile, JSON.stringify(data, null, 2))
+      return data
+    } catch {
+      return null
+    }
+  }
+
+  async getKanjiBrushData(kanjiChar) {
+    if (!kanjiChar) return null
+    const char = String(kanjiChar).trim()
+    if (!char) return null
+    const cacheDir = path.resolve(process.cwd(), 'data', 'hanzi_brush')
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
+
+    const encoded = encodeURIComponent(char)
+    const cacheFile = path.join(cacheDir, `${encoded}.json`)
+    if (fs.existsSync(cacheFile)) {
+      try {
+        return JSON.parse(fs.readFileSync(cacheFile, 'utf8'))
+      } catch {}
+    }
+
+    // 1. Japanese Kanji stroke outlines (AnimCJK via hanzi-writer-data-jp)
+    try {
+      const urlJp = `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@0/${encoded}.json`
+      const res = await fetch(urlJp, { signal: AbortSignal.timeout(5000) })
+      if (res.ok) {
+        const data = await res.json()
+        fs.writeFileSync(cacheFile, JSON.stringify(data, null, 2))
+        return data
+      }
+    } catch {}
+
+    // 2. Fallback: Standard Chinese Hanzi stroke outlines (MakeMeAHanzi via hanzi-writer-data 2.0)
+    try {
+      const urlCn = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encoded}.json`
+      const res = await fetch(urlCn, { signal: AbortSignal.timeout(5000) })
+      if (res.ok) {
+        const data = await res.json()
+        fs.writeFileSync(cacheFile, JSON.stringify(data, null, 2))
+        return data
+      }
+    } catch {}
+
+    return null
   }
 
   getBunpoList({ level, bookId, query = '', page = 1, limit = 50 }) {
@@ -368,6 +859,7 @@ export class NhaiKanjiService {
 
   getJlptExams({ level, section }) {
     this.ensureLoaded()
+    this.reloadFullMaster()
     let exams = []
 
     // 1. Nạp từ kho đề thi trọn gói ToanSensei (30 đề Full Mock Exam N3 từ 2010 đến 2025)
@@ -395,12 +887,13 @@ export class NhaiKanjiService {
     // 2. Nạp từ kho đề thi đầy đủ 199 đề thi N1-N5 (Corodomo Master - Luyện từng phần)
     if (this.jlptFullMaster && Array.isArray(this.jlptFullMaster) && this.jlptFullMaster.length > 0) {
       this.jlptFullMaster.forEach((t) => {
+        const metadata = normalizeJlptExamMetadata(t, { year: '2024', session: '12' })
         exams.push({
           id: t.id,
           title: t.title,
           level: t.level || 'N3',
-          year: t.year || '2024',
-          session: t.session || '12',
+          year: metadata.year,
+          session: metadata.session,
           section: t.section,
           sectionLabel: t.sectionLabel,
           sectionLabelJP: t.sectionLabelJP,
@@ -454,12 +947,175 @@ export class NhaiKanjiService {
 
   getJlptExamDetail(examId) {
     this.ensureLoaded()
+    this.reloadFullMaster()
+
+    const attachLocalListeningImages = (exam) => {
+      if (!Array.isArray(exam.parts) || !this.listeningImageAssets) return exam
+      let changed = false
+      const parts = exam.parts.map((part) => {
+        const isListeningPart =
+          Number(part?.sectionType) === 4 || String(exam?.section || '').toLowerCase() === 'listening'
+        if (!isListeningPart || !Array.isArray(part.questions)) return part
+        const questions = part.questions.map((question) => {
+          const assetKey = this.listeningImageAssets[question?.id]
+            ? question.id
+            : this.listeningImageAssetAliases[question?.id]
+          const asset = this.listeningImageAssets[assetKey]
+          const localFile = asset?.publicPath
+            ? path.join(process.cwd(), 'public', asset.publicPath.replace(/^\//u, ''))
+            : ''
+          const image = localFile && fs.existsSync(localFile) ? asset.publicPath : asset?.sourceUrl
+          if (!image || question.image === image) return question
+          changed = true
+          return { ...question, image }
+        })
+        return questions.every((question, index) => question === part.questions[index]) ? part : { ...part, questions }
+      })
+      return changed ? { ...exam, parts } : exam
+    }
+
+    const attachCuratedExplanations = (exam) => {
+      if (!Array.isArray(exam.parts) || !this.curatedExplanations) return exam
+      const session = String(exam.session ?? '').padStart(2, '0')
+      const sessionKey = examSessionKey(exam)
+      const fullMock = this.toanMockMaster?.find(
+        (candidate) =>
+          candidate.id !== exam.id &&
+          (candidate.isFullMock || candidate.section === 'full_mock') &&
+          String(candidate.level || '').toUpperCase() === String(exam.level || '').toUpperCase() &&
+          (sessionKey
+            ? examSessionKey(candidate) === sessionKey
+            : String(candidate.year ?? '') === String(exam.year ?? '') &&
+              String(candidate.session ?? '').padStart(2, '0') === session)
+      )
+      const fullMockQuestions = new Map(
+        (fullMock?.parts || []).flatMap((part) =>
+          (part.questions || []).map((question) => [Number(question.number), { question, part }])
+        )
+      )
+      const fullMockQuestionsById = new Map(
+        (fullMock?.parts || []).flatMap((part) =>
+          (part.questions || []).map((question) => [question.id, { question, part }])
+        )
+      )
+      const sectionTypes = {
+        vocabulary: [1],
+        vocab: [1],
+        'grammar-reading': [2, 3],
+        grammar: [2],
+        reading: [3],
+        listening: [4],
+      }[String(exam.section || '').toLowerCase()]
+      const positionalSourceQuestions = new Map()
+      if (fullMock && sectionTypes) {
+        const matchingParts = fullMock.parts.filter((part) => sectionTypes.includes(Number(part.sectionType)))
+        const samePartShape =
+          matchingParts.length === exam.parts.length &&
+          exam.parts.every(
+            (part, index) =>
+              Array.isArray(part.questions) &&
+              Array.isArray(matchingParts[index]?.questions) &&
+              part.questions.length === matchingParts[index].questions.length
+          )
+        if (samePartShape) {
+          exam.parts.forEach((part, partIndex) => {
+            part.questions.forEach((question, questionIndex) => {
+              const sourceQuestion = matchingParts[partIndex].questions[questionIndex]
+              if (
+                hasSameQuestionContent(question, sourceQuestion, { ignoreQuestionNumber: true }) ||
+                hasSameSectionPositionQuestionContent(question, sourceQuestion)
+              ) {
+                positionalSourceQuestions.set(question.id, {
+                  question: sourceQuestion,
+                  part: matchingParts[partIndex],
+                  matchedBySectionPosition: true,
+                })
+              }
+            })
+          })
+        }
+      }
+      let changed = false
+      const parts = exam.parts.map((part) => {
+        if (!Array.isArray(part.questions)) return part
+        const questions = part.questions.map((question) => {
+          const sourceEntry =
+            positionalSourceQuestions.get(question.id) ||
+            (this.listeningQuestionAliases?.[question.id]
+              ? {
+                  ...fullMockQuestionsById.get(this.listeningQuestionAliases[question.id]),
+                  matchedByListeningAlias: true,
+                }
+              : undefined) ||
+            fullMockQuestions.get(Number(question.number))
+          const sourceQuestion = sourceEntry?.question
+          const sourceExplanation = sourceQuestion?.explanation || this.curatedExplanations[sourceQuestion?.id]
+          const mirroredExplanation =
+            sourceQuestion &&
+            (hasSameQuestionContent(question, sourceQuestion, {
+              ignoreQuestionNumber: sourceEntry?.matchedBySectionPosition === true,
+            }) ||
+              sourceEntry?.matchedByListeningAlias === true ||
+              (sourceEntry?.matchedBySectionPosition === true &&
+                hasSameSectionPositionQuestionContent(question, sourceQuestion)) ||
+              hasSameStarOrderQuestionContent(question, sourceQuestion, sourceExplanation) ||
+              hasSameClozeQuestionContent(question, sourceQuestion, part, sourceEntry?.part))
+              ? sourceExplanation
+              : undefined
+          const generatedGrammarPatternNote = String(question.explanation || '').includes(
+            'Mẫu ngữ pháp được nhận diện từ dữ liệu N3 cục bộ'
+          )
+          const isFullMock =
+            question.examType === 'full_mock' || exam.isFullMock === true || exam.section === 'full_mock'
+          const hasVerifiedStarLayout = (candidate) =>
+            Array.isArray(candidate?.starCorrectOrder) &&
+            candidate.starCorrectOrder.length === 4 &&
+            Number.isInteger(candidate.starPosition) &&
+            candidate.starPosition >= 0 &&
+            candidate.starPosition < 4
+          const isStarQuestion =
+            hasVerifiedStarLayout(question) ||
+            (sourceQuestion?.starPositionVerified === true && hasVerifiedStarLayout(sourceQuestion))
+          const starExplanationMatches =
+            !isStarQuestion ||
+            !sourceQuestion ||
+            hasSameStarOrderQuestionContent(question, sourceQuestion, sourceExplanation || question.explanation)
+          const explanation = !starExplanationMatches
+            ? undefined
+            : generatedGrammarPatternNote
+              ? isFullMock
+                ? question.explanation
+                : mirroredExplanation
+              : question.explanation || this.curatedExplanations[question.id] || mirroredExplanation
+          const image =
+            !question.image && sourceEntry?.matchedBySectionPosition ? firstQuestionImage(sourceQuestion) : ''
+          if ((generatedGrammarPatternNote && !isFullMock && !mirroredExplanation) || !starExplanationMatches) {
+            if ((question.explanation === null || question.explanation === undefined) && !image) return question
+            changed = true
+            return {
+              ...question,
+              explanation: null,
+              ...(question.image || !image ? {} : { image }),
+            }
+          }
+          if ((!explanation || question.explanation) && !image) return question
+          changed = true
+          return {
+            ...question,
+            ...(question.explanation || !explanation ? {} : { explanation }),
+            ...(question.image || !image ? {} : { image }),
+          }
+        })
+        return questions.every((question, index) => question === part.questions[index]) ? part : { ...part, questions }
+      })
+      return changed ? { ...exam, parts } : exam
+    }
 
     // 1. Tìm trong kho đề Full Mock Exam ToanSensei
     if (this.toanMockMaster && Array.isArray(this.toanMockMaster)) {
       const found = this.toanMockMaster.find((e) => e.id === examId)
       if (found) {
-        return found
+        return attachLocalListeningImages(attachCuratedExplanations(normalizeJlptExamMetadata(found)))
       }
     }
 
@@ -467,7 +1123,9 @@ export class NhaiKanjiService {
     if (this.jlptFullMaster && Array.isArray(this.jlptFullMaster)) {
       const found = this.jlptFullMaster.find((e) => e.id === examId)
       if (found) {
-        return found
+        return attachLocalListeningImages(
+          attachCuratedExplanations(normalizeJlptExamMetadata(found, { year: '2024', session: '12' }))
+        )
       }
     }
 
@@ -487,8 +1145,8 @@ export class NhaiKanjiService {
     return null
   }
 
-  submitJlptExam(examId, answers = {}) {
-    const exam = this.getJlptExamDetail(examId)
+  submitJlptExam(examId, answers = {}, examSnapshot = null) {
+    const exam = examSnapshot && examSnapshot.id === examId ? examSnapshot : this.getJlptExamDetail(examId)
     if (!exam) return null
 
     let totalQuestions = 0
@@ -515,7 +1173,7 @@ export class NhaiKanjiService {
         let targetGroup = sectionGroups.grammar
         if (sectionType === 1 || exam.section === 'vocab' || title.includes('文字') || title.includes('語彙')) {
           targetGroup = sectionGroups.vocab
-        } else if (sectionType === 2 || title.includes('文法')) {
+        } else if (sectionType === 2 || title.includes('文法') || (exam.section === 'grammar-reading' && partIdx < 3)) {
           targetGroup = sectionGroups.grammar
         } else if (
           sectionType === 3 ||
@@ -755,4 +1413,10 @@ export class NhaiKanjiService {
   }
 }
 
-export const nhaiKanjiService = new NhaiKanjiService()
+export const nhaiKanjiService = new NhaiKanjiService({
+  kanjiDataPath:
+    process.env.KANJI_DATA_PATH ||
+    (fs.existsSync('D:/Project/data/kanji_hack_nao_n1_n5.json')
+      ? 'D:/Project/data/kanji_hack_nao_n1_n5.json'
+      : path.resolve(process.cwd(), 'data', 'kanji_hack_nao_n1_n5.json')),
+})

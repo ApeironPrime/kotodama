@@ -7,6 +7,7 @@
   --font-serif: var(--font-display);
   --font-sans: 'DM Sans', system-ui, sans-serif;
   --font-jp: 'Noto Sans JP', sans-serif;
+  --font-jp-serif: 'Shippori Mincho', 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-size-2xs: 0.625rem;
   --font-size-xs: 0.6875rem;

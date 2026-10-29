@@ -1,19 +1,19 @@
 import { useMemo } from 'react'
 import {
   BookOpenCheck,
-  BookmarkPlus,
   Check,
   ChevronRight,
   Layers3,
   Link2,
   MessageCircleMore,
-  Sparkles,
   Volume2,
 } from 'lucide-react'
-import { Badge, Button, Card } from '../../components/ui'
 import type { DictionaryWordItem } from '../../lib/apiClient'
+import { sumiAudio } from './sumiAudio'
 
 type Conjugation = { label: string; value: string }
+
+const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
 
 function conjugations(word: DictionaryWordItem): Conjugation[] {
   const pos = word.partOfSpeech || ''
@@ -96,51 +96,196 @@ export function DictionaryWordDetail({
       <header className="dictionary-word-detail__hero">
         <div>
           <h1>{word.word}</h1>
-          <p>{primaryReading}{romaji ? ` · ${romaji}` : ''}</p>
-          <div className="dictionary-word-detail__badges">
-            {word.jlpt && <Badge variant="danger">JLPT {word.jlpt}</Badge>}
-            {type && <Badge variant="primary">{type}</Badge>}
-            {word.hanViet && <Badge variant="secondary">Hán Việt: {word.hanViet}</Badge>}
+          <div className="dictionary-word-detail__meta-line">
+            <span className="dictionary-word-detail__primary-reading">{primaryReading}</span>
+            {romaji && <span className="dictionary-word-detail__romaji">({romaji})</span>}
+            {word.hanViet && (
+              <span className="dictionary-hanviet-seal">
+                <span className="dictionary-hanviet-seal__mark">漢</span>
+                {word.hanViet}
+              </span>
+            )}
+            {word.jlpt && <span className="dictionary-jlpt-tag">JLPT {word.jlpt}</span>}
+            {type && <span className="dictionary-pos-tag">{type}</span>}
           </div>
         </div>
+
         <div className="dictionary-word-detail__actions">
-          <button type="button" className="dictionary-word-detail__listen" onClick={() => onSpeak(word.word || word.reading || '')} aria-label={`Nghe ${word.word}`}><Volume2 size={18} /></button>
-          <Button variant={isSaved ? 'secondary' : 'primary'} onClick={onSave}>{isSaved ? <><Check size={17} /> Đã thêm vào SRS</> : <><BookmarkPlus size={17} /> Thêm vào bộ thẻ</>}</Button>
+          <button
+            type="button"
+            className="dictionary-listen-btn"
+            onClick={() => onSpeak(word.word || word.reading || '')}
+            aria-label={`Nghe phát âm ${word.word}`}
+            title="Nghe phát âm chuẩn"
+          >
+            <Volume2 size={18} />
+          </button>
+          <button
+            type="button"
+            className={`dictionary-hanko-action-btn ${isSaved ? 'is-saved' : ''}`}
+            onClick={() => {
+              try {
+                sumiAudio.playHankoStamp()
+              } catch {
+                // ignore
+              }
+              onSave()
+            }}
+            aria-label={isSaved ? 'Đã lưu vào bộ thẻ SRS' : 'Lưu từ vào bộ thẻ SRS'}
+          >
+            <span className="dictionary-hanko-action-btn__seal" aria-hidden="true">
+              {isSaved ? '印' : '蔵'}
+            </span>
+            <span>{isSaved ? 'Đã dập dấu ôn tập' : 'Lưu vào bộ thẻ'}</span>
+            {isSaved && <Check size={14} aria-hidden="true" />}
+          </button>
         </div>
       </header>
 
-      <section className="dictionary-word-detail__layout">
-        <div className="dictionary-word-detail__content">
-          <Card className="dictionary-word-section" padding="lg">
-            <h2><BookOpenCheck size={18} /> Tổng quan</h2>
-            <div className="dictionary-overview">
-              <div className="dictionary-overview__word">
-                <strong>{word.word}</strong>
-                <dl>
-                  <div><dt>Furigana</dt><dd>{primaryReading}</dd></div>
-                  {romaji && <div><dt>Romaji</dt><dd>{romaji}</dd></div>}
-                  <div><dt>Hán Việt</dt><dd>{word.hanViet || '—'}</dd></div>
-                  <div><dt>JLPT</dt><dd>{word.jlpt || 'Chưa phân loại'}</dd></div>
-                  <div><dt>Từ loại</dt><dd>{type || 'Chưa phân loại'}</dd></div>
-                </dl>
+      <div className="dictionary-word-detail__content">
+        <section className="dictionary-word-section">
+          <h2><BookOpenCheck size={18} /> Tổng quan</h2>
+          <div className="dictionary-definitions-list">
+            {word.meanings.length > 0 ? (
+              word.meanings.map((meaning, idx) => (
+                <div key={idx} className="dictionary-definition-item">
+                  <span className="dictionary-definition-num" aria-hidden="true">
+                    {CIRCLED_NUMBERS[idx] || `${idx + 1}.`}
+                  </span>
+                  <span className="dictionary-definition-text">{meaning}</span>
+                </div>
+              ))
+            ) : (
+              <div className="dictionary-definition-item">
+                <span className="dictionary-definition-text">Chưa có nghĩa tiếng Việt.</span>
               </div>
-              <div className="dictionary-overview__meanings">
-                <div><span>VI TIẾNG VIỆT</span><strong>{word.meanings.join('; ') || 'Chưa có nghĩa tiếng Việt.'}</strong></div>
-                {readingVariants.length > 0 && <div className="dictionary-reading-variants"><span>CÁCH ĐỌC KHÁC</span><div>{readingVariants.map((reading) => <button type="button" key={reading} onClick={() => onSpeak(word.word || reading)}>{reading}</button>)}</div></div>}
-                <aside><Sparkles size={16} /><p>Dữ liệu nghĩa, cách đọc và ví dụ lấy từ kho từ điển. Các cách đọc ít phổ biến được giữ riêng để không làm rối mục từ chính.</p></aside>
-              </div>
+            )}
+          </div>
+
+          {readingVariants.length > 0 && (
+            <div className="dictionary-reading-variants-row">
+              <span className="dictionary-reading-variants-label">Cách đọc khác:</span>
+              {readingVariants.map((reading) => (
+                <button
+                  type="button"
+                  key={reading}
+                  className="dictionary-reading-variant-chip"
+                  onClick={() => onSpeak(word.word || reading)}
+                  title={`Nghe cách đọc ${reading}`}
+                >
+                  {reading}
+                </button>
+              ))}
             </div>
-          </Card>
+          )}
+        </section>
 
-          {forms.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><Layers3 size={18} /> Chia động từ</h2><div className="dictionary-conjugation"><div className="dictionary-conjugation__head"><span>Thể</span><span>Tiếng Nhật</span></div>{forms.map((form) => <div key={form.label}><span>{form.label}</span><strong>{form.value}</strong></div>)}</div></Card>}
+        {forms.length > 0 && (
+          <section className="dictionary-word-section">
+            <h2><Layers3 size={18} /> Chia động từ</h2>
+            <div className="dictionary-conjugation">
+              {forms.map((form) => (
+                <div key={form.label} className="dictionary-conjugation-item">
+                  <span>{form.label}</span>
+                  <strong>{form.value}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-          {word.kanjis.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><span className="dictionary-kanji-heading">漢</span> Phân tích Kanji</h2><div className="dictionary-kanji-grid">{word.kanjis.map((kanji) => <article key={kanji.character}><strong>{kanji.character}</strong><div><span>Âm On</span><b>{kanji.onyomi || '—'}</b></div><div><span>Âm Kun</span><b>{kanji.kunyomi || '—'}</b></div><div><span>Số nét</span><b>{kanji.strokeCount || '—'}</b></div><div><span>JLPT</span><b>{kanji.jlpt || '—'}</b></div></article>)}</div></Card>}
+        {word.kanjis.length > 0 && (
+          <section className="dictionary-word-section">
+            <h2><span className="dictionary-kanji-heading">漢</span> Phân tích Kanji</h2>
+            <div className="dictionary-kanji-grid">
+              {word.kanjis.map((kanji) => (
+                <article key={kanji.character} className="dictionary-kanji-card">
+                  <strong>{kanji.character}</strong>
+                  <div className="dictionary-kanji-card__details">
+                    <div className="dictionary-kanji-card__row">
+                      <span>Âm On:</span>
+                      <b>{kanji.onyomi || '—'}</b>
+                    </div>
+                    <div className="dictionary-kanji-card__row">
+                      <span>Âm Kun:</span>
+                      <b>{kanji.kunyomi || '—'}</b>
+                    </div>
+                    <div className="dictionary-kanji-card__row">
+                      <span>Số nét:</span>
+                      <b>{kanji.strokeCount || '—'}</b>
+                    </div>
+                    {kanji.jlpt && (
+                      <div className="dictionary-kanji-card__row">
+                        <span>JLPT:</span>
+                        <b>{kanji.jlpt}</b>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
-          {related.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><Link2 size={18} /> Từ tương ứng</h2><p className="dictionary-word-section__hint">Các từ cùng nhóm hoặc kết quả gần với từ đang tra.</p><div className="dictionary-related-grid">{related.map((item) => <button type="button" key={item.word} onClick={() => onSearch(item.word)}><strong>{item.word}</strong>{item.reading && <small>{cleanReadingTokens(item.reading)[0] || item.reading}</small>}<span>{item.meaning || 'Xem nghĩa chi tiết'}</span><ChevronRight size={16} /></button>)}</div></Card>}
+        {word.examples && word.examples.length > 0 && (
+          <section className="dictionary-word-section">
+            <h2><MessageCircleMore size={18} /> Câu ví dụ</h2>
+            <div className="dictionary-examples">
+              {word.examples.map((example, index) => (
+                <article key={`${example.sentenceJp}-${index}`} className="dictionary-example-item">
+                  <div className="dictionary-example-body">
+                    <div className="dictionary-example-jp">
+                      {example.sentenceJp}
+                    </div>
+                    {example.furigana && (
+                      <small style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-jp)' }}>
+                        {example.furigana}
+                      </small>
+                    )}
+                    {example.sentenceVi && (
+                      <div className="dictionary-example-vi">
+                        <strong>VI</strong> {example.sentenceVi}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="dictionary-example-audio-btn"
+                    onClick={() => onSpeak(example.sentenceJp)}
+                    aria-label="Nghe câu ví dụ"
+                    title="Nghe phát âm câu ví dụ"
+                  >
+                    <Volume2 size={16} />
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
-          {word.examples && word.examples.length > 0 && <Card className="dictionary-word-section" padding="lg"><h2><MessageCircleMore size={18} /> Câu ví dụ</h2><div className="dictionary-examples">{word.examples.map((example, index) => <article key={`${example.sentenceJp}-${index}`}><div><span>Ví dụ {index + 1}</span><strong>{example.sentenceJp}</strong>{example.furigana && <small>{example.furigana}</small>}{example.sentenceVi && <p><b>VI</b> {example.sentenceVi}</p>}</div><button type="button" onClick={() => onSpeak(example.sentenceJp)} aria-label="Nghe câu ví dụ"><Volume2 size={16} /></button></article>)}</div></Card>}
-        </div>
-      </section>
+        {related.length > 0 && (
+          <section className="dictionary-word-section">
+            <h2><Link2 size={18} /> Từ tương ứng</h2>
+            <div className="dictionary-related-grid">
+              {related.map((item) => (
+                <button
+                  type="button"
+                  key={item.word}
+                  className="dictionary-related-card"
+                  onClick={() => onSearch(item.word)}
+                >
+                  <div>
+                    <strong>{item.word}</strong>
+                    {item.reading && <small>{cleanReadingTokens(item.reading)[0] || item.reading}</small>}
+                    <p>{item.meaning || 'Xem nghĩa chi tiết'}</p>
+                  </div>
+                  <ChevronRight size={15} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   )
 }

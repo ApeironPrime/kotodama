@@ -42,7 +42,8 @@ export const AnimeWordPopover: React.FC<AnimeWordPopoverProps> = ({
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
-    abortControllerRef.current = new AbortController()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
     setIsLoading(true)
     setError(null)
@@ -50,11 +51,13 @@ export const AnimeWordPopover: React.FC<AnimeWordPopoverProps> = ({
 
     try {
       const data = await animeDictionaryCache.lookupToken(token, {
-        signal: abortControllerRef.current.signal,
+        signal: controller.signal,
       })
-      setEntry(data)
+      if (!controller.signal.aborted) setEntry(data)
     } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'AbortError') {
+      const code = err && typeof err === 'object' && 'code' in err ? (err as { code: string }).code : null
+      const name = err && typeof err === 'object' && 'name' in err ? (err as { name: string }).name : null
+      if (controller.signal.aborted || name === 'AbortError' || code === 'ERR_CANCELED') {
         return
       }
       const message = err && typeof err === 'object' && 'message' in err
@@ -62,7 +65,7 @@ export const AnimeWordPopover: React.FC<AnimeWordPopoverProps> = ({
         : 'Không thể tra cứu từ vựng. Vui lòng thử lại.'
       setError(message)
     } finally {
-      setIsLoading(false)
+      if (abortControllerRef.current === controller && !controller.signal.aborted) setIsLoading(false)
     }
   }, [token])
 

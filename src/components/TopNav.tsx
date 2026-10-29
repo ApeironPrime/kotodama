@@ -13,18 +13,18 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react'
-import { Button, IconButton } from './ui'
+import { IconButton } from './ui'
 import type { Page } from '../types/app'
 import { srsApi } from '../features/srs/srsApi'
 import { useAuth } from '../features/auth/authContext'
 
-const NAV_TABS: Array<{ id: Page; label: string; icon: LucideIcon; badge?: string }> = [
-  { id: 'home', label: 'Trang chủ', icon: House },
-  { id: 'dictionary', label: 'Từ Điển', icon: BookOpen },
-  { id: 'review', label: 'Ôn Tập SRS', icon: Layers, badge: 'Anki' },
-  { id: 'jlpt', label: 'Thi JLPT', icon: Award },
-  { id: 'anime', label: 'Anime', icon: Clapperboard },
-  { id: 'video', label: 'Video AI', icon: Video },
+const NAV_TABS: Array<{ id: Page; label: string; mobileLabel?: string; jp: string; icon: LucideIcon; badge?: string }> = [
+  { id: 'home', label: 'Trang chủ', mobileLabel: 'Trang', jp: '始まり', icon: House },
+  { id: 'dictionary', label: 'Từ Điển', mobileLabel: 'Từ điển', jp: '辞書', icon: BookOpen },
+  { id: 'review', label: 'Ôn Tập SRS', mobileLabel: 'Ôn tập', jp: '復習', icon: Layers },
+  { id: 'jlpt', label: 'Thi JLPT', mobileLabel: 'JLPT', jp: '試験', icon: Award },
+  { id: 'anime', label: 'Anime', jp: 'アニメ', icon: Clapperboard },
+  { id: 'video', label: 'Video AI', mobileLabel: 'Video', jp: '映像', icon: Video },
 ]
 
 export default function TopNav({
@@ -56,13 +56,21 @@ export default function TopNav({
       <a className="skip-link" href="#main-content">
         Chuyển đến nội dung chính
       </a>
-      <nav className="nav-bar" aria-label="Điều hướng chính">
+      <nav className={`nav-bar${page === 'home' ? ' nav-bar--home' : ''}`} aria-label="Điều hướng chính">
         <div className="nav-inner">
-          <button type="button" className="nav-brand" onClick={() => navigate('home')}>
+          <button
+            type="button"
+            className="nav-brand"
+            aria-label="Kotodama — về trang chủ"
+            onClick={() => navigate('home')}
+          >
             <span className="nav-brand__mark">
               <img src="/kotodama-logo.png" alt="" />
             </span>
-            <span>Kotodama</span>
+            <span className="nav-brand__wordmark">
+              <span>Kotodama</span>
+              <small>言霊 · WORDS WITH SOUL</small>
+            </span>
           </button>
           <div className="nav-divider" />
           <div className="nav-tabs nav-tabs--desktop">
@@ -71,11 +79,17 @@ export default function TopNav({
                 key={tab.id}
                 type="button"
                 className={`nav-tab${page === tab.id ? ' active' : ''}`}
+                aria-label={tab.label}
                 aria-current={page === tab.id ? 'page' : undefined}
                 onClick={() => navigate(tab.id)}
               >
                 <tab.icon aria-hidden="true" size={18} strokeWidth={1.9} />
-                {tab.label}
+                <span className="nav-tab__words">
+                  <span className="nav-tab__jp" aria-hidden="true">
+                    {tab.jp}
+                  </span>
+                  <span>{tab.label}</span>
+                </span>
                 {tab.id === 'review' && dueCount > 0 ? (
                   <span
                     style={{
@@ -99,25 +113,29 @@ export default function TopNav({
             ))}
           </div>
           <div className="nav-actions">
-            <div
-              className="nav-stat nav-stat--streak"
-              title={`Chuỗi học tập liên tục: ${streak} ngày`}
-              style={{
-                color: streak > 0 ? '#f59e0b' : 'inherit',
-                fontWeight: streak > 0 ? 800 : 600,
-              }}
-            >
-              <Flame
-                aria-hidden="true"
-                size={17}
-                strokeWidth={2}
-                style={{ color: streak > 0 ? '#f59e0b' : undefined }}
-              />{' '}
-              {streak}
-            </div>
-            <div className="nav-stat nav-stat--credits">
-              <Zap aria-hidden="true" size={17} strokeWidth={2} /> {credits}
-            </div>
+            {isAuthenticated && (
+              <>
+                <div
+                  className="nav-stat nav-stat--streak"
+                  title={`Chuỗi học tập liên tục: ${streak} ngày`}
+                  style={{
+                    color: streak > 0 ? '#f59e0b' : 'inherit',
+                    fontWeight: streak > 0 ? 800 : 600,
+                  }}
+                >
+                  <Flame
+                    aria-hidden="true"
+                    size={17}
+                    strokeWidth={2}
+                    style={{ color: streak > 0 ? '#f59e0b' : undefined }}
+                  />{' '}
+                  {streak}
+                </div>
+                <div className="nav-stat nav-stat--credits">
+                  <Zap aria-hidden="true" size={17} strokeWidth={2} /> {credits}
+                </div>
+              </>
+            )}
             {isAuthenticated ? (
               <>
                 <IconButton label="Cài đặt" onClick={() => navigate('settings')}>
@@ -127,11 +145,21 @@ export default function TopNav({
                   {userName?.trim().slice(0, 1).toUpperCase() || 'K'}
                 </IconButton>
               </>
+            ) : page === 'home' ? (
+              <span className="nav-home-colophon" aria-hidden="true">
+                <span>言葉に、心を。</span>
+                <i>言</i>
+              </span>
             ) : (
-              <Button size="sm" onClick={() => navigate('login')}>
-                <LogIn aria-hidden="true" size={17} strokeWidth={2} />
-                Đăng nhập
-              </Button>
+              <button
+                type="button"
+                className="nav-login-link"
+                onClick={() => navigate('login')}
+                aria-label="Đăng nhập"
+              >
+                <LogIn aria-hidden="true" size={15} strokeWidth={1.5} />
+                <span>Đăng nhập</span>
+              </button>
             )}
           </div>
         </div>
@@ -142,11 +170,12 @@ export default function TopNav({
             key={tab.id}
             type="button"
             className={`nav-mobile__item${page === tab.id ? ' is-active' : ''}`}
+            aria-label={tab.label}
             aria-current={page === tab.id ? 'page' : undefined}
             onClick={() => navigate(tab.id)}
           >
             <tab.icon aria-hidden="true" size={18} strokeWidth={1.9} />
-            <span>{tab.label}</span>
+            <span>{tab.mobileLabel || tab.label}</span>
             {tab.id === 'review' && dueCount > 0 ? (
               <i style={{ background: '#ef4444', color: '#fff', padding: '1px 5px', borderRadius: '999px' }}>
                 {dueCount}

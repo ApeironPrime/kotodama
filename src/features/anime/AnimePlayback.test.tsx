@@ -92,7 +92,7 @@ describe('AnimePlayback Suite (Task T06)', () => {
     episode_id: 'anime:episode:death-note:death-note-s1:1',
     track_id: 'track-1',
     from: 0,
-    to: 120,
+    to: 600,
     cues: [
       { cue_id: 1, start: 10.0, end: 15.0, ja: 'おはよう世界', vi: 'Chào buổi sáng thế giới' },
       { cue_id: 2, start: 16.0, end: 20.0, ja: '事件が起きた', vi: 'Một vụ án đã xảy ra' },
@@ -103,15 +103,13 @@ describe('AnimePlayback Suite (Task T06)', () => {
   const sampleSubtitlesWindow2: AnimeSubtitleWindowData = {
     episode_id: 'anime:episode:death-note:death-note-s1:1',
     track_id: 'track-1',
-    from: 120,
-    to: 240,
-    cues: [
-      { cue_id: 4, start: 130.0, end: 135.0, ja: '次の手がかり', vi: 'Manh mối tiếp theo' },
-    ],
+    from: 600,
+    to: 1200,
+    cues: [{ cue_id: 4, start: 130.0, end: 135.0, ja: '次の手がかり', vi: 'Manh mối tiếp theo' }],
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   afterEach(() => {
@@ -182,9 +180,9 @@ describe('AnimePlayback Suite (Task T06)', () => {
       _elementId: string | HTMLElement,
       config: { events?: { onReady?: (event: { target: typeof player }) => void } }
     ) {
-        config.events?.onReady?.({ target: player })
-        return player
-      })
+      config.events?.onReady?.({ target: player })
+      return player
+    })
 
     window.YT = {
       Player: playerConstructor,
@@ -225,9 +223,7 @@ describe('AnimePlayback Suite (Task T06)', () => {
     )
 
     expect(await screen.findByText('Nguồn phát bên ngoài')).toBeTruthy()
-    expect(
-      screen.getByText(/không hỗ trợ nhúng trực tiếp vì lý do bảo mật và bản quyền/)
-    ).toBeTruthy()
+    expect(screen.getByText(/không hỗ trợ nhúng trực tiếp vì lý do bảo mật và bản quyền/)).toBeTruthy()
     expect(screen.queryByTestId('anime-youtube-player')).toBeNull()
     expect(screen.queryByTestId('anime-native-video')).toBeNull()
     // Ensure raw media URL is NOT leaked in the DOM
@@ -291,49 +287,54 @@ describe('AnimePlayback Suite (Task T06)', () => {
   })
 
   // -----------------------------------------------------------------
-  // Test 4: Windowed Subtitle Fetching [0, 120] and Prefetching
+  // Test 4: Windowed Subtitle Fetching [0, 600] and Prefetching
   // -----------------------------------------------------------------
-  it('4. fetches initial subtitle window [0, 120] with lang=all, and prefetches next window near boundary', async () => {
-    vi.mocked(animePlaybackApi.fetchEpisodeDetail).mockResolvedValueOnce(sampleYoutubeEpisode)
+  it('4. fetches initial subtitle window [0, 600] with lang=all, and prefetches next window near boundary', async () => {
+    vi.mocked(animePlaybackApi.fetchEpisodeDetail).mockResolvedValueOnce(sampleLocalEpisode)
     vi.mocked(animePlaybackApi.fetchEpisodeSubtitles).mockResolvedValueOnce(sampleSubtitlesWindow1)
 
     render(
       <MemoryRouter>
-        <AnimeLearningSession episodeId={sampleYoutubeEpisode.episode_id} onBackToEpisodes={vi.fn()} />
+        <AnimeLearningSession episodeId={sampleLocalEpisode.episode_id} onBackToEpisodes={vi.fn()} />
       </MemoryRouter>
     )
 
     // Initial subtitle fetch verification
     await waitFor(() => {
       expect(animePlaybackApi.fetchEpisodeSubtitles).toHaveBeenCalledWith(
-        sampleYoutubeEpisode.episode_id,
+        sampleLocalEpisode.episode_id,
         expect.objectContaining({
           from: 0,
-          to: 120,
+          to: 600,
           lang: 'all',
         })
       )
     })
 
     // Verify cues are rendered in transcript
-    expect(await screen.findByText('おはよう世界')).toBeTruthy()
-    expect(screen.getByText('Chào buổi sáng thế giới')).toBeTruthy()
+    expect((await screen.findAllByText('おはよう世界')).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Chào buổi sáng thế giới').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('近いぞ')).toBeTruthy()
 
-    // Simulate playback advancing to 100s (near boundary to = 120 - 25 = 95s)
+    // Simulate playback advancing to 550s (near boundary to = 600 - 60 = 540s)
     vi.mocked(animePlaybackApi.fetchEpisodeSubtitles).mockResolvedValueOnce(sampleSubtitlesWindow2)
 
-    // Fire time update on native or custom seekbar
-    const seekbar = screen.getByLabelText('Thanh tua video')
-    fireEvent.change(seekbar, { target: { value: '100' } })
+    // The native player's real duration must cover this point in the film.
+    const video = screen.getByTestId('anime-native-video') as HTMLVideoElement
+    Object.defineProperty(video, 'duration', { configurable: true, value: 1400 })
+    fireEvent.durationChange(video)
 
-    // Prefetch for [120, 240] should be triggered
+    // Seek near the end of the first subtitle window.
+    const seekbar = screen.getByLabelText('Thanh tua video')
+    fireEvent.change(seekbar, { target: { value: '550', max: '1400' } })
+
+    // Prefetch for [600, 1200] should be triggered
     await waitFor(() => {
       expect(animePlaybackApi.fetchEpisodeSubtitles).toHaveBeenCalledWith(
-        sampleYoutubeEpisode.episode_id,
+        sampleLocalEpisode.episode_id,
         expect.objectContaining({
-          from: 120,
-          to: 240,
+          from: 600,
+          to: 1200,
           lang: 'all',
         })
       )
@@ -356,7 +357,7 @@ describe('AnimePlayback Suite (Task T06)', () => {
       </MemoryRouter>
     )
 
-    await screen.findByText('おはよう世界')
+    await screen.findAllByText('おはよう世界')
 
     const jaBtn = screen.getByRole('button', { name: 'Nhật' })
     const viBtn = screen.getByRole('button', { name: 'Việt' })
@@ -368,17 +369,17 @@ describe('AnimePlayback Suite (Task T06)', () => {
 
     // Toggle Japanese OFF
     fireEvent.click(jaBtn)
-    expect(screen.queryByText('おはよう世界')).toBeNull()
-    expect(screen.getByText('Chào buổi sáng thế giới')).toBeTruthy()
+    expect(screen.queryAllByText('おはよう世界').length).toBe(0)
+    expect(screen.getAllByText('Chào buổi sáng thế giới').length).toBeGreaterThanOrEqual(1)
 
     // Toggle Japanese ON again
     fireEvent.click(jaBtn)
-    expect(screen.getByText('おはよう世界')).toBeTruthy()
+    expect(screen.getAllByText('おはよう世界').length).toBeGreaterThanOrEqual(1)
 
     // Toggle Vietnamese OFF
     fireEvent.click(viBtn)
-    expect(screen.queryByText('Chào buổi sáng thế giới')).toBeNull()
-    expect(screen.getByText('おはよう世界')).toBeTruthy()
+    expect(screen.queryAllByText('Chào buổi sáng thế giới').length).toBe(0)
+    expect(screen.getAllByText('おはよう世界').length).toBeGreaterThanOrEqual(1)
   })
 
   // -----------------------------------------------------------------
@@ -394,7 +395,7 @@ describe('AnimePlayback Suite (Task T06)', () => {
       </MemoryRouter>
     )
 
-    await screen.findByText('おはよう世界')
+    await screen.findAllByText('おはよう世界')
 
     const cue1Btn = screen.getByLabelText(/Tua tới 00:10: おはよう世界/)
     expect(cue1Btn).toBeTruthy()
@@ -423,7 +424,7 @@ describe('AnimePlayback Suite (Task T06)', () => {
       </MemoryRouter>
     )
 
-    await screen.findByText('おはよう世界')
+    await screen.findAllByText('おはよう世界')
 
     expect(screen.getByText('Lệch: 0.0s')).toBeTruthy()
 
@@ -459,9 +460,7 @@ describe('AnimePlayback Suite (Task T06)', () => {
 
     expect(await screen.findByText('Chưa có phụ đề')).toBeTruthy()
     expect(screen.getByText('Tập này chưa có phụ đề tương tác')).toBeTruthy()
-    expect(
-      screen.getByText(/Bạn vẫn có thể phát video bài học bình thường nếu nguồn phát hợp lệ/)
-    ).toBeTruthy()
+    expect(screen.getByText(/Bạn vẫn có thể phát video bài học bình thường nếu nguồn phát hợp lệ/)).toBeTruthy()
 
     // Verify fetchEpisodeSubtitles is never called when has_subtitles is false
     expect(animePlaybackApi.fetchEpisodeSubtitles).not.toHaveBeenCalled()

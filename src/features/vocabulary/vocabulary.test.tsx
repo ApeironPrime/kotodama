@@ -359,9 +359,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     renderWithClient(<VocabularyPage />)
 
     expect(await screen.findByText('Kho Giáo Trình Đang Thẩm Định Quyền Sử Dụng')).toBeTruthy()
-    expect(
-      screen.getByText(/Các bộ giáo trình từ vựng đang trong quy trình rà soát quyền sử dụng/i)
-    ).toBeTruthy()
+    expect(screen.getByText(/Các bộ giáo trình từ vựng đang trong quy trình rà soát quyền sử dụng/i)).toBeTruthy()
   })
 
   it('renders retry state when catalog fetch fails and allows retry', async () => {
@@ -567,9 +565,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     if (firstAddBtn) fireEvent.click(firstAddBtn)
 
     // Prominent login prompt appears
-    expect(
-      await screen.findByText(/Vui lòng đăng nhập để lưu từ vựng vào kho ôn tập SRS/i)
-    ).toBeTruthy()
+    expect(await screen.findByText(/Vui lòng đăng nhập để lưu từ vựng vào kho ôn tập SRS/i)).toBeTruthy()
 
     // API was NOT called, no card created
     expect(srsApi.addCard).not.toHaveBeenCalled()

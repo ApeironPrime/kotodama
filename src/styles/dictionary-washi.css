@@ -1,0 +1,2035 @@
+/* ==========================================================================
+   KOTODAMA DICTIONARY - WABI-SABI "THƯ VIỆN VĂN TỰ CỔ" (ANCIENT MANUSCRIPT ARCHIVE)
+   Authentic Japanese Wabi-Sabi palette:
+   Warm Washi paper (#faf8f5 / #f7f2e8), aged sumi ink (#1e1d1a),
+   ash grey (#575249), and authentic cinnabar vermilion (#b82e2e / Shu-iro).
+   Zero neon pink (#ff4d6d / #ff8ca7) or generic SaaS blue (#2563eb).
+   ========================================================================== */
+
+.dictionary-page {
+  --home-paper: #faf8f5;
+  --home-paper-deep: #f2ece0;
+  --home-ink: #1e1d1a;
+  --home-ink-soft: #575249;
+  --home-vermilion: #b82e2e;
+  --home-vermilion-hover: #9e2424;
+  --color-bg-canvas: #faf8f5;
+  --color-bg-surface: #fffdf9;
+  --color-bg-elevated: #ffffff;
+  --color-bg-subtle: #f5f0e6;
+  --color-bg-hover: #ede5d5;
+  --color-text: #1e1d1a;
+  --color-text-secondary: #575249;
+  --color-text-muted: #7d766b;
+  --color-border: rgb(80 68 52 / 14%);
+  --color-border-subtle: rgb(80 68 52 / 8%);
+  --color-border-hover: rgb(80 68 52 / 28%);
+  --color-border-strong: rgb(80 68 52 / 20%);
+  --color-accent: #b82e2e;
+  --color-accent-hover: #9e2424;
+  --color-accent-subtle: rgb(184 46 46 / 9%);
+  --color-accent-glow: rgb(184 46 46 / 20%);
+  --color-focus-ring: rgb(184 46 46 / 35%);
+
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100vh - 4rem);
+  padding: var(--space-8) var(--page-gutter) var(--space-20);
+  background:
+    radial-gradient(ellipse 75% 35% at 50% 0%, rgb(184 46 46 / 2.8%), transparent 60%),
+    radial-gradient(circle at 92% 12%, rgb(198 180 151 / 14%), transparent 35%),
+    radial-gradient(circle at 8% 68%, rgb(139 125 104 / 8%), transparent 38%),
+    var(--color-bg-canvas);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* Purge neon blur circles */
+.dictionary-page::before,
+.dictionary-page::after {
+  display: none !important;
+}
+
+.dictionary-shell {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   DIGNIFIED INK-HAIRLINE SEARCH BAR & EDITORIAL QUICK SUGGESTIONS
+   Zero plastic boxes. Dissolves cleanly into warm Washi paper (#faf8f5),
+   anchored solely by an ink hairline rule with an artisan Hanko seal [析].
+   -------------------------------------------------------------------------- */
+.dictionary-search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dictionary-querybar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.85rem 0.25rem 0.95rem;
+  border: none !important;
+  border-bottom: 1.5px solid rgb(80 68 52 / 16%) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  position: relative;
+  transition: border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.dictionary-querybar:focus-within {
+  border-bottom-color: var(--color-accent) !important;
+  box-shadow: 0 1.5px 0 0 var(--color-accent) !important;
+}
+
+.dictionary-querybar__field {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-muted);
+}
+
+.dictionary-querybar__search-icon {
+  color: var(--color-accent);
+  opacity: 0.8;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.dictionary-querybar:focus-within .dictionary-querybar__search-icon {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.dictionary-querybar__field .ui-input,
+.dictionary-querybar__field .ui-input:hover,
+.dictionary-querybar__field .ui-input:focus {
+  min-width: 0;
+  width: 100%;
+  height: 3.2rem;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+  font-weight: 500;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.dictionary-querybar__field .ui-input::placeholder {
+  color: #8c8273;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-style: normal;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.dictionary-querybar__clear {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dictionary-querybar__clear:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+/* Hairline Artisan Submit Button with Cinnabar Seal Mark */
+.dictionary-querybar__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.5rem;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dictionary-querybar__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 4px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: rotate(-2deg);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dictionary-querybar__submit-text {
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.06em;
+  transition: color 0.2s ease;
+}
+
+.dictionary-querybar__submit:hover .dictionary-querybar__seal {
+  transform: scale(1.1) rotate(0deg);
+  background: var(--color-accent);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(184, 46, 46, 0.28);
+}
+
+.dictionary-querybar__submit:hover .dictionary-querybar__submit-text {
+  color: var(--color-accent);
+}
+
+.dictionary-querybar__submit:active .dictionary-querybar__seal {
+  transform: scale(0.95);
+}
+
+/* Quick suggestions extracted BELOW the search bar */
+.dictionary-quick-suggestions {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.65rem;
+  padding: 0.35rem 0.25rem 0;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.dictionary-quick-suggestions__label {
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.dictionary-quick-suggestions__list {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+}
+
+.dictionary-quick-suggestions__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.dictionary-quick-suggestions__btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.9rem;
+  font-weight: 550;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.dictionary-quick-suggestions__btn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 0;
+  height: 1px;
+  background: var(--color-accent);
+  transition: width 0.18s ease;
+}
+
+.dictionary-quick-suggestions__btn:hover {
+  color: var(--color-accent);
+}
+
+.dictionary-quick-suggestions__btn:hover::after {
+  width: 100%;
+}
+
+.dictionary-quick-suggestions__dot {
+  color: rgb(80 68 52 / 24%);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   WABI-SABI EDITORIAL TABS
+   -------------------------------------------------------------------------- */
+.dictionary-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: 1.5rem;
+  overflow-x: auto;
+  border-bottom: 1.5px solid var(--color-border);
+}
+
+.dictionary-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 2.5px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.96rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  padding: 0.85rem 1.25rem 0.75rem;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+.dictionary-tabs button:hover {
+  color: var(--color-accent);
+}
+
+.dictionary-tabs button.is-active {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 750;
+}
+
+.dictionary-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.15rem;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1;
+  transition: all 0.18s ease;
+}
+
+.dictionary-tabs button.is-active .dictionary-tab-count {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   EXPANSIVE WORKSPACE (NO MORE CRAMPED 1/3 COLUMNS)
+   -------------------------------------------------------------------------- */
+.dictionary-workspace {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-6);
+}
+
+.dictionary-workspace__main {
+  width: 100%;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   ARTISAN JAPANESE SLIDING DRAWER (硯箱・引き出し)
+   -------------------------------------------------------------------------- */
+.dictionary-drawer-trigger {
+  position: fixed;
+  right: 0;
+  top: 45%;
+  transform: translateY(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 7px 14px 9px;
+  background: #201e1b;
+  color: #f7f2e8;
+  border: 1px solid rgb(184 46 46 / 45%);
+  border-right: none;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  cursor: pointer;
+  box-shadow: -4px 4px 18px rgba(0, 0, 0, 0.18);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dictionary-drawer-trigger:hover {
+  transform: translateY(-50%) translateX(-3px);
+  background: #2b2722;
+  box-shadow: -6px 6px 22px rgba(0, 0, 0, 0.24);
+  border-color: var(--color-accent);
+}
+
+.dictionary-drawer-trigger__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid #d44343;
+  border-radius: 3px;
+  background: rgba(184, 46, 46, 0.2);
+  color: #ff8585;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dictionary-drawer-trigger__label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.18em;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #eae3d2;
+}
+
+.dictionary-drawer-trigger__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #b82e2e;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* Slide-over Drawer Backdrop */
+.dictionary-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: rgba(28, 25, 23, 0.45);
+  backdrop-filter: blur(4px);
+  animation: drawer-fade-in 0.22s ease forwards;
+}
+
+/* Slide-over Drawer Container */
+.dictionary-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  width: min(92vw, 24rem);
+  background: var(--color-bg-surface);
+  border-left: 1.5px solid var(--color-border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: drawer-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes drawer-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dictionary-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dictionary-drawer__title-group {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dictionary-drawer__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 4px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  transform: rotate(-2deg);
+}
+
+.dictionary-drawer__title {
+  margin: 0;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 1rem;
+  font-weight: 750;
+  color: var(--color-text);
+  letter-spacing: 0.05em;
+}
+
+.dictionary-drawer__close {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dictionary-drawer__close:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.dictionary-drawer__body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Hairline Kumiko divider with diamond crest */
+.dictionary-drawer__divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1px;
+  margin: 0.25rem 0;
+  background: linear-gradient(90deg, transparent 0%, var(--color-border) 20%, var(--color-border) 80%, transparent 100%);
+  position: relative;
+}
+
+.dictionary-drawer__divider::after {
+  content: '◆';
+  position: absolute;
+  font-size: 0.55rem;
+  color: var(--color-accent);
+  background: var(--color-bg-surface);
+  padding: 0 6px;
+}
+
+/* SRS Section in Drawer */
+.drawer-srs-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.drawer-srs-block__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-srs-block__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.drawer-srs-block__badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border: 1px solid rgb(184 46 46 / 25%);
+}
+
+.drawer-srs-block__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.drawer-srs-block__stat strong {
+  font-family: 'Noto Serif JP', var(--font-display), serif;
+  font-size: 2.2rem;
+  line-height: 1;
+  color: var(--color-accent);
+  font-weight: 750;
+}
+
+.drawer-srs-block__stat span {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.drawer-srs-block__desc {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.drawer-srs-block__progress-bar {
+  overflow: hidden;
+  height: 0.42rem;
+  border-radius: 9999px;
+  background: var(--color-bg-subtle);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.drawer-srs-block__progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b82e2e, #e25858);
+  transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-srs-block__progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.drawer-srs-block__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: var(--color-accent) !important;
+  color: #ffffff !important;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 80%, black) !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 3px 8px -2px rgba(184, 46, 46, 0.35) !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.drawer-srs-block__btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1.5px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 6px 14px -2px rgba(184, 46, 46, 0.45) !important;
+}
+
+/* Editorial Mincho History (Orihon Ledger) */
+.orihon-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0.5rem;
+}
+
+.orihon-history__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.orihon-history__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.orihon-history__clear-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.orihon-history__clear-btn:hover {
+  color: var(--color-accent);
+}
+
+.orihon-history__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  border-bottom: 1px solid rgb(80 68 52 / 10%);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.orihon-history__item:hover {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  padding-left: 0.85rem;
+}
+
+.orihon-history__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orihon-history__idx {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.orihon-history__text {
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.orihon-history__arrow {
+  color: var(--color-text-muted);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.orihon-history__item:hover .orihon-history__arrow {
+  color: var(--color-accent);
+  transform: translateX(3px);
+}
+
+.orihon-history__empty {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+/* --------------------------------------------------------------------------
+   WORD OF THE DAY CALLIGRAPHIC STAGE (本日の名言 · 墨絵舞台)
+   Pure Wabi-Sabi paper canvas: Zero nested boxes, open whitespace ("Ma"),
+   flawless unwrapped Kanji typography, balanced Chiết Tự constellation,
+   and subtle cinnabar vermilion accents.
+   -------------------------------------------------------------------------- */
+.wotd-stage {
+  position: relative;
+  margin: 2.25rem 0 3.5rem;
+  padding: 1.75rem 0.5rem 2.5rem;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgb(80 68 52 / 12%);
+  border-bottom: 1px solid rgb(80 68 52 / 12%);
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  transition: border-color 0.2s ease;
+}
+
+.wotd-stage__guideline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent calc(50% - 1px),
+      rgb(80 68 52 / 1.8%) calc(50% - 1px),
+      rgb(80 68 52 / 1.8%) 50%
+    );
+  opacity: 0.5;
+}
+
+.wotd-stage__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.wotd-stage__eyebrow-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wotd-stage__hanko-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 3px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.wotd-stage__eyebrow-text {
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Minimalist borderless cycle action in ash-grey */
+.wotd-stage__cycle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.76rem;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  color: #7d766b;
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.wotd-stage__cycle-btn:hover {
+  color: var(--color-accent);
+}
+
+.wotd-stage__cycle-icon {
+  color: #8c8273;
+  transition: color 0.18s ease;
+}
+
+.wotd-stage__cycle-btn:hover .wotd-stage__cycle-icon {
+  color: var(--color-accent);
+}
+
+.wotd-spin {
+  animation: spin 0.4s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Master Balanced 2-Column Spread */
+.wotd-stage__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 3.5rem;
+  align-items: start;
+  position: relative;
+  z-index: 2;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.wotd-stage__body.is-fading {
+  opacity: 0.15;
+  transform: scale(0.99);
+}
+
+/* Primary Column (Left): Monumental Glyph, Reading & Literary Quote */
+.wotd-stage__primary-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.wotd-stage__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.wotd-stage__glyph-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.wotd-stage__glyph {
+  margin: 0;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: clamp(3.2rem, 5.8vw, 4.6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--home-ink, #201e1b);
+  letter-spacing: 0.12em;
+  font-feature-settings: "palt" 1;
+  -webkit-font-smoothing: antialiased;
+  white-space: nowrap !important;
+  text-shadow: 0 0 1px rgba(32, 30, 27, 0.35), 0 2px 14px rgba(80, 68, 52, 0.08);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wotd-stage__glyph:hover {
+  color: var(--color-accent);
+  transform: scale(1.02);
+}
+
+.wotd-stage__audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: none !important;
+  border-radius: 50%;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--color-accent);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.wotd-stage__audio-btn:hover {
+  background: transparent !important;
+  border: none !important;
+  color: #942020;
+  transform: scale(1.14);
+}
+
+.wotd-stage__audio-btn:focus-visible {
+  outline: 1.5px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* Artisan Ink Sound Ripple animation when speaking (Hibiki) */
+.wotd-stage__audio-btn.is-speaking svg {
+  color: #942020;
+}
+
+.ink-wave-1 {
+  animation: ink-ripple-1 1.2s ease-in-out infinite;
+  transform-origin: 5px 12px;
+}
+
+.ink-wave-2 {
+  animation: ink-ripple-2 1.2s ease-in-out infinite 0.18s;
+  transform-origin: 5px 12px;
+}
+
+.ink-wave-3 {
+  animation: ink-ripple-3 1.2s ease-in-out infinite 0.36s;
+  transform-origin: 5px 12px;
+}
+
+@keyframes ink-ripple-1 {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@keyframes ink-ripple-2 {
+  0%, 100% { opacity: 0.35; stroke-width: 1.3px; }
+  50% { opacity: 0.95; stroke-width: 1.9px; }
+}
+
+@keyframes ink-ripple-3 {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.85; stroke-width: 2px; }
+}
+
+.wotd-stage__meta-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.wotd-stage__ruby {
+  color: var(--color-accent);
+  font-weight: 750;
+  font-size: 1.02rem;
+}
+
+.wotd-stage__romaji {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.wotd-stage__hanviet {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.wotd-stage__essence {
+  margin: 0.2rem 0 0;
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.wotd-stage__quote-card {
+  margin: 0;
+  padding: 0.5rem 0 0.5rem 1.35rem;
+  border: none;
+  border-left: 2.5px solid var(--color-accent);
+  background: transparent;
+  border-radius: 0;
+}
+
+.wotd-stage__quote-jp {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 2;
+  color: var(--color-text);
+  margin-bottom: 0.75rem;
+}
+
+.wotd-stage__quote-jp ruby rt {
+  font-size: 0.6em;
+  color: var(--color-accent);
+}
+
+.wotd-stage__quote-footer cite {
+  display: block;
+  font-family: 'Noto Serif JP', serif;
+  font-style: normal;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.wotd-stage__quote-vi {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* Secondary Column (Right): Chiết Tự Anatomy & Hanko Seal */
+.wotd-stage__secondary-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding-left: 1.5rem;
+  border-left: 1px dashed rgb(80 68 52 / 12%);
+}
+
+.wotd-stage__etymology-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.wotd-stage__etymology-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.wotd-stage__etymology-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 3px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.wotd-stage__etymology-title {
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  color: var(--color-text);
+  text-transform: uppercase;
+}
+
+.wotd-stage__etymology-dot {
+  color: rgb(80 68 52 / 24%);
+  font-size: 0.75rem;
+}
+
+.wotd-stage__etymology-sub {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.wotd-stage__etymology-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.wotd-stage__etymology-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  transition: background 0.18s ease, transform 0.18s ease;
+  cursor: default;
+}
+
+.wotd-stage__etymology-item:hover {
+  background: rgb(80 68 52 / 4%);
+  transform: translateX(3px);
+}
+
+.wotd-stage__etymology-char-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 5px;
+  border: 1px solid rgb(80 68 52 / 16%);
+  background: var(--color-bg-surface);
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-feature-settings: "palt" 1;
+  color: var(--color-text);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.wotd-stage__etymology-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.wotd-stage__etymology-row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.wotd-stage__etymology-hanviet {
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: var(--color-accent);
+  letter-spacing: 0.03em;
+}
+
+.wotd-stage__etymology-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.wotd-stage__etymology-meaning {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.wotd-stage__radicals-summary {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgb(80 68 52 / 8%);
+}
+
+.wotd-stage__radicals-label {
+  font-weight: 650;
+  margin-right: 6px;
+  color: var(--color-text-secondary);
+}
+
+.wotd-stage__radicals-val {
+  font-family: 'Noto Serif JP', serif;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Borderless Editorial Action & Hanko Seal */
+.wotd-stage__footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+
+.wotd-stage__explore-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.wotd-stage__explore-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 3px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.wotd-stage__explore-text {
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-decoration-color: rgb(80 68 52 / 24%);
+  text-underline-offset: 4px;
+  transition: color 0.18s ease, text-decoration-color 0.18s ease;
+}
+
+.wotd-stage__explore-arrow {
+  color: var(--color-text-muted);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.wotd-stage__explore-link:hover .wotd-stage__explore-seal {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.wotd-stage__explore-link:hover .wotd-stage__explore-text {
+  color: var(--color-accent);
+  text-decoration-color: var(--color-accent);
+}
+
+.wotd-stage__explore-link:hover .wotd-stage__explore-arrow {
+  color: var(--color-accent);
+  transform: translate(2px, -2px);
+}
+
+/* The Living Breathing Red Hanko Seal */
+.wotd-stage__living-hanko {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 2px solid #b82e2e;
+  border-radius: 5px;
+  background: #fdf5f5;
+  color: #b82e2e;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: inset 0 0 0 1px rgba(184, 46, 46, 0.3), 0 2px 8px rgba(184, 46, 46, 0.15);
+  transition: transform 0.15s ease, filter 0.15s ease;
+  animation: hanko-breathe 4s ease-in-out infinite;
+}
+
+.wotd-stage__hanko-inner {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  transform: rotate(-3deg);
+}
+
+.wotd-stage__living-hanko:hover {
+  animation-play-state: paused;
+  transform: scale(1.08) rotate(-2deg);
+  box-shadow: inset 0 0 0 1px rgba(184, 46, 46, 0.4), 0 4px 16px rgba(184, 46, 46, 0.3);
+}
+
+.wotd-stage__living-hanko.is-pressed {
+  transform: scale(0.92) rotate(-4deg);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(184, 46, 46, 0.3);
+}
+
+.wotd-stage__hanko-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 7px;
+  border: 1.5px solid rgba(184, 46, 46, 0.4);
+  pointer-events: none;
+  animation: hanko-ripple 4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+@keyframes hanko-breathe {
+  0%, 100% {
+    transform: scale(1) rotate(-1deg);
+    box-shadow: inset 0 0 0 1px rgba(184, 46, 46, 0.3), 0 2px 8px rgba(184, 46, 46, 0.12);
+  }
+  50% {
+    transform: scale(1.05) rotate(-2deg);
+    box-shadow: inset 0 0 0 1px rgba(184, 46, 46, 0.45), 0 4px 18px rgba(184, 46, 46, 0.28);
+  }
+}
+
+@keyframes hanko-ripple {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 58rem) {
+  .wotd-stage__body {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+  .wotd-stage__secondary-col {
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px dashed rgb(80 68 52 / 12%);
+    padding-top: 1.5rem;
+  }
+}
+
+/* ==========================================================================
+   DIGITAL EDITORIAL TWO-COLUMN SPREAD (TRANG BÁCH KHOA BIÊN TẬP SỐ KOTODAMA)
+   Aesthetic of classical Kyoto manuscript encyclopedia (Sanseido / Iwanami).
+   Zero card-in-card syndrome, zero box carousels, zero neon pink.
+   ========================================================================== */
+
+.dictionary-editorial-spread {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 2.75rem;
+  align-items: start;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 62rem) {
+  .dictionary-editorial-spread {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   LEFT COLUMN: CLASSICAL BOOK INDEX CATALOG (MỤC LỤC MỘC BẢN)
+   -------------------------------------------------------------------------- */
+.dictionary-editorial-catalog {
+  display: flex;
+  flex-direction: column;
+  border-right: 1.5px solid rgb(80 68 52 / 12%);
+  padding-right: 1.5rem;
+  position: sticky;
+  top: 1.5rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(80 68 52 / 20%) transparent;
+}
+
+@media (max-width: 62rem) {
+  .dictionary-editorial-catalog {
+    border-right: none;
+    border-bottom: 1.5px solid rgb(80 68 52 / 12%);
+    padding-right: 0;
+    padding-bottom: 1.25rem;
+    position: static;
+    max-height: 18rem;
+  }
+}
+
+.dictionary-editorial-catalog__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid rgb(80 68 52 / 10%);
+}
+
+.dictionary-editorial-catalog__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 3px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dictionary-editorial-catalog__title {
+  margin: 0;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.dictionary-editorial-catalog__count {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-weight: 550;
+  margin-top: 1px;
+}
+
+.dictionary-editorial-catalog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dictionary-editorial-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dictionary-editorial-item:hover {
+  background: var(--color-bg-subtle, #f5f0e6);
+  border-left-color: rgb(184 46 46 / 40%);
+  transform: translateX(3px);
+}
+
+.dictionary-editorial-item.is-active {
+  background: #f0e9dc;
+  border-left-color: var(--color-accent);
+  box-shadow: 0 1px 4px rgba(80, 68, 52, 0.08);
+}
+
+.dictionary-editorial-item__line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.dictionary-editorial-item__word {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--home-ink, #1e1d1a);
+  letter-spacing: 0.04em;
+}
+
+.dictionary-editorial-item.is-active .dictionary-editorial-item__word {
+  color: var(--color-accent);
+}
+
+.dictionary-editorial-item__reading {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.dictionary-editorial-item__badge {
+  font-size: 0.65rem;
+  font-weight: 750;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border: 1px solid rgb(184 46 46 / 20%);
+  margin-left: auto;
+}
+
+.dictionary-editorial-item__meaning {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   RIGHT COLUMN: DIGITAL EDITORIAL ENCYCLOPEDIA ENTRY (BÁCH KHOA TOÀN THƯ)
+   -------------------------------------------------------------------------- */
+.dictionary-editorial-entry {
+  min-width: 0;
+}
+
+.dictionary-editorial-entry.is-full-width {
+  grid-column: 1 / -1;
+  max-width: 52rem;
+}
+
+/* Hero Section */
+.dictionary-word-detail__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.25rem 0 1.5rem;
+  border-bottom: 1.5px solid rgb(80 68 52 / 14%) !important;
+  margin-bottom: 1.5rem;
+}
+
+.dictionary-word-detail__hero h1 {
+  margin: 0;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif) !important;
+  font-size: clamp(2.8rem, 5.2vw, 4.2rem) !important;
+  font-weight: 750 !important;
+  color: var(--home-ink, #1e1d1a) !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.05 !important;
+}
+
+.dictionary-word-detail__meta-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.85rem;
+  margin-top: 0.65rem;
+}
+
+.dictionary-word-detail__primary-reading {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.dictionary-word-detail__romaji {
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.dictionary-hanviet-seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid rgb(184 46 46 / 35%);
+  border-radius: 4px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+}
+
+.dictionary-hanviet-seal__mark {
+  font-weight: 900;
+  opacity: 0.9;
+}
+
+.dictionary-pos-tag,
+.dictionary-jlpt-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgb(80 68 52 / 14%);
+  background: var(--color-bg-subtle, #f5f0e6);
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.dictionary-jlpt-tag {
+  border-color: rgb(184 46 46 / 25%);
+  color: var(--color-accent);
+}
+
+/* Actions in Hero */
+.dictionary-word-detail__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.dictionary-listen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgb(80 68 52 / 18%);
+  border-radius: 50%;
+  background: var(--color-bg-surface);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dictionary-listen-btn:hover {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+  transform: scale(1.08);
+}
+
+/* Artisan Hanko Stamp Action Button (Con dấu triện mộc) */
+.dictionary-hanko-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.55rem 1.15rem;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 6px;
+  background: var(--color-bg-surface);
+  color: var(--color-accent);
+  cursor: pointer;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 6px rgba(184, 46, 46, 0.1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dictionary-hanko-action-btn:hover {
+  background: var(--color-accent-subtle);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px rgba(184, 46, 46, 0.2);
+}
+
+.dictionary-hanko-action-btn:active {
+  transform: scale(0.96);
+}
+
+.dictionary-hanko-action-btn.is-saved {
+  background: #f7f3ea;
+  border-color: #2b7a4b;
+  color: #2b7a4b;
+  box-shadow: 0 2px 6px rgba(43, 122, 75, 0.12);
+}
+
+.dictionary-hanko-action-btn__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.2px solid currentColor;
+  border-radius: 3px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
+  background: rgba(184, 46, 46, 0.08);
+}
+
+.dictionary-hanko-action-btn.is-saved .dictionary-hanko-action-btn__seal {
+  background: rgba(43, 122, 75, 0.08);
+}
+
+/* Sections (No Cards, Pure Editorial Manuscript) */
+.dictionary-word-detail__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.dictionary-word-section {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgb(80 68 52 / 12%) !important;
+  border-radius: 0 !important;
+  padding: 0 0 1.75rem 0 !important;
+  box-shadow: none !important;
+}
+
+.dictionary-word-section:last-child {
+  border-bottom: none !important;
+}
+
+.dictionary-word-section > h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 1rem 0;
+  font-family: 'Noto Serif JP', var(--font-serif), serif;
+  font-size: 1.12rem;
+  font-weight: 750;
+  color: var(--color-text);
+  letter-spacing: 0.04em;
+}
+
+.dictionary-kanji-heading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 3px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Numbered Definitions (Iwanami / Sanseido style) */
+.dictionary-definitions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dictionary-definition-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+}
+
+.dictionary-definition-num {
+  font-family: 'Noto Serif JP', serif;
+  color: var(--color-accent);
+  font-size: 1.12rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.dictionary-definition-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.55;
+}
+
+.dictionary-reading-variants-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed rgb(80 68 52 / 10%);
+}
+
+.dictionary-reading-variants-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.dictionary-reading-variant-chip {
+  padding: 1px 7px;
+  border: 1px solid rgb(80 68 52 / 14%);
+  border-radius: 3px;
+  background: var(--color-bg-subtle);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dictionary-reading-variant-chip:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Example Sentences with Vertical Vermilion Hairline Rule (Shu-iro Tate-sen) */
+.dictionary-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dictionary-example-item {
+  position: relative;
+  padding: 0.5rem 0 0.5rem 1.25rem;
+  border-left: 2.5px solid var(--color-accent);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dictionary-example-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dictionary-example-jp {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.75;
+}
+
+.dictionary-example-vi {
+  font-size: 0.94rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.dictionary-example-vi strong {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-right: 4px;
+}
+
+.dictionary-example-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.dictionary-example-audio-btn:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+/* Woodblock Kanji Anatomy Grid */
+.dictionary-kanji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.dictionary-kanji-card {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid rgb(80 68 52 / 12%);
+  border-radius: 6px;
+  background: var(--color-bg-subtle, #f5f0e6);
+  align-items: center;
+}
+
+.dictionary-kanji-card > strong {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 2.4rem;
+  line-height: 1;
+  text-align: center;
+  color: var(--home-ink, #1e1d1a);
+}
+
+.dictionary-kanji-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8rem;
+}
+
+.dictionary-kanji-card__row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-secondary);
+}
+
+.dictionary-kanji-card__row span {
+  color: var(--color-text-muted);
+}
+
+.dictionary-kanji-card__row b {
+  font-family: 'Noto Serif JP', serif;
+  color: var(--color-text);
+}
+
+/* Conjugation Table */
+.dictionary-conjugation {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.65rem;
+}
+
+.dictionary-conjugation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgb(80 68 52 / 10%);
+  border-radius: 5px;
+  background: var(--color-bg-subtle);
+}
+
+.dictionary-conjugation-item span {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.dictionary-conjugation-item strong {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 0.98rem;
+  color: var(--color-text);
+}
+
+/* Related Words Grid */
+.dictionary-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.65rem;
+}
+
+.dictionary-related-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgb(80 68 52 / 12%);
+  border-radius: 6px;
+  background: var(--color-bg-surface);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.dictionary-related-card:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  transform: translateY(-1px);
+}
+
+.dictionary-related-card strong {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.dictionary-related-card small {
+  font-size: 0.78rem;
+  color: var(--color-accent);
+  display: block;
+}
+
+.dictionary-related-card p {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}

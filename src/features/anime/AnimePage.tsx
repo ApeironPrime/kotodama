@@ -10,11 +10,7 @@ import { AnimeLearningSession } from './AnimeLearningSession'
 import { AnimeSeriesCard } from './AnimeSeriesCard'
 import { AnimeSeriesDetail } from './AnimeSeriesDetail'
 import { animeApi } from './animeApi'
-import type {
-  AnimeCatalogData,
-  AnimeEpisodeSummary,
-  AnimeSeriesDetail as AnimeSeriesDetailType,
-} from './animeTypes'
+import type { AnimeCatalogData, AnimeEpisodeSummary, AnimeSeriesDetail as AnimeSeriesDetailType } from './animeTypes'
 
 export default function AnimePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -26,6 +22,8 @@ export default function AnimePage() {
   const urlPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
   const urlSeries = searchParams.get('series') || null
   const urlEpisode = searchParams.get('episode') || null
+  const isCatalogView = !urlSeries && !urlEpisode
+  const activeViewKey = urlEpisode ? `episode:${urlEpisode}` : urlSeries ? `series:${urlSeries}` : 'catalog'
 
   // Local state for immediate input feedback before debounce
   const [searchInput, setSearchInput] = useState(urlQ)
@@ -59,6 +57,7 @@ export default function AnimePage() {
   const catalogRequestIdRef = useRef(0)
   const detailRequestIdRef = useRef(0)
   const searchDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const previousViewKeyRef = useRef(activeViewKey)
 
   // Accessible announce region id
   const statusRegionId = useId()
@@ -67,6 +66,15 @@ export default function AnimePage() {
   useEffect(() => {
     setSearchInput(urlQ)
   }, [urlQ])
+
+  // A selected film or episode is its own screen. Do not leave the viewer at the
+  // scroll position of the catalog card they clicked.
+  useEffect(() => {
+    if (previousViewKeyRef.current !== activeViewKey) {
+      previousViewKeyRef.current = activeViewKey
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [activeViewKey])
 
   // Helper to update URL params cleanly
   const updateUrlParams = useCallback(
@@ -230,7 +238,10 @@ export default function AnimePage() {
           if (requestId !== detailRequestIdRef.current) return
           const isForbidden =
             (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 403) ||
-            (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
+            (err &&
+              typeof err === 'object' &&
+              'code' in err &&
+              (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
 
           if (isForbidden) {
             // 403 Forbidden: Remove series from URL, fail-closed, no retry bypass
@@ -263,7 +274,10 @@ export default function AnimePage() {
           if (requestId !== detailRequestIdRef.current) return
           const isForbidden =
             (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 403) ||
-            (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
+            (err &&
+              typeof err === 'object' &&
+              'code' in err &&
+              (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
 
           if (isForbidden) {
             currentDetailSlugRef.current = null
@@ -318,7 +332,10 @@ export default function AnimePage() {
         if (requestId !== detailRequestIdRef.current) return
         const isForbidden =
           (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 403) ||
-          (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
+          (err &&
+            typeof err === 'object' &&
+            'code' in err &&
+            (err as { code: string }).code === 'ANIME_CONTENT_RESTRICTED')
 
         if (isForbidden) {
           updateUrlParams({ series: null, episode: null })
@@ -412,15 +429,18 @@ export default function AnimePage() {
   const hasActiveFilters = Boolean(urlQ.trim() || urlLevel !== 'ALL' || urlGenre !== 'ALL')
   const isCatalogEmpty = catalog !== null && catalog.items.length === 0
   const isPublicEmptyRights = isCatalogEmpty && !hasActiveFilters
+  const featuredSeries = catalog?.items.find((series) => series.subbed_episodes_count > 0) ?? catalog?.items[0]
 
   return (
-    <PageShell width="wide" className="anime-page">
-      <PageHeader
-        eyebrow="Kotodama Anime"
-        title="Học tiếng Nhật qua Anime"
-        description="Kho phim có phụ đề Nhật – Việt tương tác, tra từ tại chỗ và lưu câu yêu thích để ôn tập."
-        icon={Clapperboard}
-      />
+    <PageShell width="wide" className={`anime-page${isCatalogView ? '' : ' anime-page--focused'}`}>
+      {isCatalogView && (
+        <PageHeader
+          eyebrow="Kotodama Anime"
+          title="Học tiếng Nhật qua Anime"
+          description="Kho phim có phụ đề Nhật – Việt tương tác, tra từ tại chỗ và lưu câu yêu thích để ôn tập."
+          icon={Clapperboard}
+        />
+      )}
 
       {/* Global alert / notice (e.g. 403 content restricted) */}
       {globalNotice && (
@@ -439,28 +459,25 @@ export default function AnimePage() {
       )}
 
       {/* Featured Hero Spotlight (Task T11) */}
-      {!urlSeries && !urlEpisode && catalog?.items[0] && (
-        <AnimeFeaturedHero
-          series={catalog.items[0]}
-          onSelect={handleSelectSeries}
+      {isCatalogView && featuredSeries && <AnimeFeaturedHero series={featuredSeries} onSelect={handleSelectSeries} />}
+
+      {/* Search & Filters Compact Control Rail */}
+      {isCatalogView && (
+        <AnimeCatalogFilters
+          searchQuery={searchInput}
+          onSearchChange={handleSearchChange}
+          onSearchClear={handleSearchClear}
+          selectedLevel={urlLevel}
+          onLevelChange={handleLevelChange}
+          selectedGenre={urlGenre}
+          onGenreChange={handleGenreChange}
+          availableGenres={availableGenres}
+          onResetFilters={handleResetFilters}
         />
       )}
 
-      {/* Search & Filters Compact Control Rail */}
-      <AnimeCatalogFilters
-        searchQuery={searchInput}
-        onSearchChange={handleSearchChange}
-        onSearchClear={handleSearchClear}
-        selectedLevel={urlLevel}
-        onLevelChange={handleLevelChange}
-        selectedGenre={urlGenre}
-        onGenreChange={handleGenreChange}
-        availableGenres={availableGenres}
-        onResetFilters={handleResetFilters}
-      />
-
       {/* Continue Watching Section (Task T07) */}
-      {!urlEpisode && !urlSeries && (
+      {isCatalogView && (
         <AnimeContinueWatching
           onSelectEpisode={(seriesSlug, episodeId) => {
             updateUrlParams({ series: seriesSlug, episode: episodeId })
@@ -470,10 +487,7 @@ export default function AnimePage() {
 
       {/* Active Episode Learning Session (T06) */}
       {urlEpisode ? (
-        <AnimeLearningSession
-          episodeId={urlEpisode}
-          onBackToEpisodes={() => updateUrlParams({ episode: null })}
-        />
+        <AnimeLearningSession episodeId={urlEpisode} onBackToEpisodes={() => updateUrlParams({ episode: null })} />
       ) : urlSeries ? (
         <AnimeSeriesDetail
           series={seriesDetail}
@@ -491,131 +505,130 @@ export default function AnimePage() {
       ) : null}
 
       {/* Screen reader status announcer */}
-      <div id={statusRegionId} className="sr-only" aria-live="polite">
-        {isLoadingCatalog
-          ? 'Đang tải danh sách anime…'
-          : isPublicEmptyRights
-            ? 'Thư viện chưa có nội dung được cấp phép để hiển thị công khai.'
-            : isCatalogEmpty
-              ? 'Không tìm thấy series phù hợp với bộ lọc.'
-              : `Hiển thị ${catalog?.items.length ?? 0} bộ anime, trang ${urlPage} trên ${
-                  catalog?.pagination.totalPages ?? 1
-                }.`}
-      </div>
+      {isCatalogView && (
+        <div id={statusRegionId} className="sr-only" aria-live="polite">
+          {isLoadingCatalog
+            ? 'Đang tải danh sách anime…'
+            : isPublicEmptyRights
+              ? 'Thư viện chưa có nội dung được cấp phép để hiển thị công khai.'
+              : isCatalogEmpty
+                ? 'Không tìm thấy series phù hợp với bộ lọc.'
+                : `Hiển thị ${catalog?.items.length ?? 0} bộ anime, trang ${urlPage} trên ${
+                    catalog?.pagination.totalPages ?? 1
+                  }.`}
+        </div>
+      )}
 
       {/* Main Catalog View */}
-      <section className="anime-catalog-section" aria-label="Danh mục anime">
-        {isLoadingCatalog ? (
-          // Skeleton Loading Grid (6 cards)
-          <div className="anime-grid" aria-label="Đang tải danh sách phim">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="anime-card-skeleton" aria-hidden="true">
-                <div className="anime-card-skeleton__poster" />
-                <div className="anime-card-skeleton__body">
-                  <div className="anime-card-skeleton__line anime-card-skeleton__line--title" />
-                  <div className="anime-card-skeleton__line anime-card-skeleton__line--subtitle" />
-                  <div className="anime-card-skeleton__tags">
-                    <div className="anime-card-skeleton__tag" />
-                    <div className="anime-card-skeleton__tag" />
+      {isCatalogView && (
+        <section className="anime-catalog-section" aria-label="Danh mục anime">
+          {isLoadingCatalog ? (
+            // Skeleton Loading Grid (6 cards)
+            <div className="anime-grid" aria-label="Đang tải danh sách phim">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="anime-card-skeleton" aria-hidden="true">
+                  <div className="anime-card-skeleton__poster" />
+                  <div className="anime-card-skeleton__body">
+                    <div className="anime-card-skeleton__line anime-card-skeleton__line--title" />
+                    <div className="anime-card-skeleton__line anime-card-skeleton__line--subtitle" />
+                    <div className="anime-card-skeleton__tags">
+                      <div className="anime-card-skeleton__tag" />
+                      <div className="anime-card-skeleton__tag" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : catalogError ? (
-          // Error State with Retry
-          <div className="anime-state-card anime-state-card--error" role="alert">
-            <AlertCircle size={40} className="anime-state-card__icon" aria-hidden="true" />
-            <h2 className="anime-state-card__title">Không thể tải danh mục</h2>
-            <p className="anime-state-card__desc">{catalogError}</p>
-            <button
-              type="button"
-              onClick={() => void fetchCatalogData()}
-              className="anime-btn anime-btn--primary"
-            >
-              <RotateCcw size={16} aria-hidden="true" />
-              <span>Thử lại</span>
-            </button>
-          </div>
-        ) : isPublicEmptyRights ? (
-          // Public Empty Rights Notice (Without leaking restricted counts or metadata)
-          <div className="anime-state-card anime-state-card--rights" role="status">
-            <ShieldAlert size={44} className="anime-state-card__icon anime-state-card__icon--rights" aria-hidden="true" />
-            <h2 className="anime-state-card__title">Nội dung đang được kiểm duyệt</h2>
-            <p className="anime-state-card__desc">
-              Thư viện chưa có nội dung được cấp phép để hiển thị công khai.
-            </p>
-          </div>
-        ) : isCatalogEmpty ? (
-          // Empty Search / Filter State
-          <div className="anime-state-card anime-state-card--empty" role="status">
-            <Clapperboard size={40} className="anime-state-card__icon" aria-hidden="true" />
-            <h2 className="anime-state-card__title">Không tìm thấy series phù hợp</h2>
-            <p className="anime-state-card__desc">
-              Không có bộ anime nào khớp với tiêu chí tìm kiếm hoặc bộ lọc hiện tại.
-            </p>
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="anime-btn anime-btn--secondary"
-            >
-              Xóa bộ lọc
-            </button>
-          </div>
-        ) : (
-          // Normal Catalog Grid
-          <>
-            <div className="anime-catalog-section__header">
-              <h2 className="anime-catalog-section__title">Tất cả phim</h2>
-              <span className="anime-catalog-section__count">
-                {catalog?.pagination.totalItems ?? catalog?.items.length ?? 0} series
-              </span>
-            </div>
-
-            <div className="anime-grid">
-              {catalog?.items.map((series) => (
-                <AnimeSeriesCard
-                  key={series.series_id}
-                  series={series}
-                  onSelect={handleSelectSeries}
-                  isSelected={urlSeries === series.series_slug}
-                />
               ))}
             </div>
-
-            {/* Pagination Controls */}
-            {catalog?.pagination && catalog.pagination.totalPages > 1 && (
-              <nav className="anime-pagination" aria-label="Phân trang danh mục anime">
-                <button
-                  type="button"
-                  onClick={handlePrevPage}
-                  disabled={urlPage <= 1}
-                  className="anime-pagination__btn"
-                  aria-label="Trang trước"
-                >
-                  <ChevronLeft size={18} aria-hidden="true" />
-                  <span>Trước</span>
-                </button>
-
-                <span className="anime-pagination__info">
-                  Trang <strong>{urlPage}</strong> / {catalog.pagination.totalPages} ({catalog.pagination.totalItems} series)
+          ) : catalogError ? (
+            // Error State with Retry
+            <div className="anime-state-card anime-state-card--error" role="alert">
+              <AlertCircle size={40} className="anime-state-card__icon" aria-hidden="true" />
+              <h2 className="anime-state-card__title">Không thể tải danh mục</h2>
+              <p className="anime-state-card__desc">{catalogError}</p>
+              <button type="button" onClick={() => void fetchCatalogData()} className="anime-btn anime-btn--primary">
+                <RotateCcw size={16} aria-hidden="true" />
+                <span>Thử lại</span>
+              </button>
+            </div>
+          ) : isPublicEmptyRights ? (
+            // Public Empty Rights Notice (Without leaking restricted counts or metadata)
+            <div className="anime-state-card anime-state-card--rights" role="status">
+              <ShieldAlert
+                size={44}
+                className="anime-state-card__icon anime-state-card__icon--rights"
+                aria-hidden="true"
+              />
+              <h2 className="anime-state-card__title">Nội dung đang được kiểm duyệt</h2>
+              <p className="anime-state-card__desc">Thư viện chưa có nội dung được cấp phép để hiển thị công khai.</p>
+            </div>
+          ) : isCatalogEmpty ? (
+            // Empty Search / Filter State
+            <div className="anime-state-card anime-state-card--empty" role="status">
+              <Clapperboard size={40} className="anime-state-card__icon" aria-hidden="true" />
+              <h2 className="anime-state-card__title">Không tìm thấy series phù hợp</h2>
+              <p className="anime-state-card__desc">
+                Không có bộ anime nào khớp với tiêu chí tìm kiếm hoặc bộ lọc hiện tại.
+              </p>
+              <button type="button" onClick={handleResetFilters} className="anime-btn anime-btn--secondary">
+                Xóa bộ lọc
+              </button>
+            </div>
+          ) : (
+            // Normal Catalog Grid
+            <>
+              <div className="anime-catalog-section__header">
+                <h2 className="anime-catalog-section__title">Tất cả phim</h2>
+                <span className="anime-catalog-section__count">
+                  {catalog?.pagination.totalItems ?? catalog?.items.length ?? 0} series
                 </span>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={handleNextPage}
-                  disabled={urlPage >= catalog.pagination.totalPages}
-                  className="anime-pagination__btn"
-                  aria-label="Trang sau"
-                >
-                  <span>Sau</span>
-                  <ChevronRight size={18} aria-hidden="true" />
-                </button>
-              </nav>
-            )}
-          </>
-        )}
-      </section>
+              <div className="anime-grid">
+                {catalog?.items.map((series) => (
+                  <AnimeSeriesCard
+                    key={series.series_id}
+                    series={series}
+                    onSelect={handleSelectSeries}
+                    isSelected={urlSeries === series.series_slug}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {catalog?.pagination && catalog.pagination.totalPages > 1 && (
+                <nav className="anime-pagination" aria-label="Phân trang danh mục anime">
+                  <button
+                    type="button"
+                    onClick={handlePrevPage}
+                    disabled={urlPage <= 1}
+                    className="anime-pagination__btn"
+                    aria-label="Trang trước"
+                  >
+                    <ChevronLeft size={18} aria-hidden="true" />
+                    <span>Trước</span>
+                  </button>
+
+                  <span className="anime-pagination__info">
+                    Trang <strong>{urlPage}</strong> / {catalog.pagination.totalPages} ({catalog.pagination.totalItems}{' '}
+                    series)
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleNextPage}
+                    disabled={urlPage >= catalog.pagination.totalPages}
+                    className="anime-pagination__btn"
+                    aria-label="Trang sau"
+                  >
+                    <span>Sau</span>
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </button>
+                </nav>
+              )}
+            </>
+          )}
+        </section>
+      )}
     </PageShell>
   )
 }

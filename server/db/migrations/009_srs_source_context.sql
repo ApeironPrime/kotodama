@@ -1,4 +1,4 @@
-﻿-- Migration 009: SRS Source Context for Curriculum & Idempotent Multi-Context Cards
+-- Migration 009: SRS Source Context for Curriculum & Idempotent Multi-Context Cards
 
 alter table srs_cards
   add column if not exists course_code text not null default '',

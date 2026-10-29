@@ -18,19 +18,40 @@ import {
   Volume2,
 } from 'lucide-react'
 import { nhaikanjiApi } from './nhaikanjiApi'
-import type { JlptSubmissionResult, JlptQuestion, JlptOption, JlptPart } from './nhaikanjiTypes'
+import { StarOrderQuestion } from './StarOrderQuestion'
+import type { JlptAttempt, JlptSubmissionResult, JlptQuestion, JlptOption, JlptPart } from './nhaikanjiTypes'
 import { Button, Badge } from '../../components/ui'
+import { useAuth } from '../auth/authContext'
+import { explanationToPlainText } from './explanationText'
+import {
+  backupJlptAttemptProgress,
+  finishJlptAttempt,
+  getJlptAttempt,
+  saveJlptAttemptProgress,
+  startJlptAttempt,
+} from './jlptAttempts'
 
 interface JlptExamTakingPageProps {
   examId: string
   onBack: () => void
-  mode?: 'exam' | 'review'
+  mode?: 'exam' | 'review' | 'result'
+  attemptId?: string | undefined
 }
 
 function formatExamTitle(exam: { level?: string; year?: number | string; session?: number | string }) {
   const rawSession = String(exam.session ?? '').trim()
-  const month = rawSession === '1' || rawSession === '01' ? '07' : rawSession === '2' || rawSession === '02' ? '12' : rawSession || '—'
+  const month =
+    rawSession === '1' || rawSession === '01'
+      ? '07'
+      : rawSession === '2' || rawSession === '02'
+        ? '12'
+        : rawSession || '—'
   return `JLPT ${exam.level || 'N3'} — Tháng ${month}, năm ${exam.year || '—'}`
+}
+
+function formatOptionText(option: JlptOption | string, optionNumber: number) {
+  const text = typeof option === 'string' ? option : option.text || String(option.id)
+  return text.replace(new RegExp(`^\\s*${optionNumber}(?:[.．、)）:：]\\s*|\\s+)`), '')
 }
 
 // Dedicated Standalone Audio Player Component for Mondai & Question
@@ -640,14 +661,20 @@ interface ExamSectionGroup {
   questionCount: number
 }
 
-export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTakingPageProps) {
-  const isReviewMode = mode === 'review'
+export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }: JlptExamTakingPageProps) {
+  const [activeMode, setActiveMode] = useState(mode)
+  const isReviewMode = activeMode === 'review'
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [timeLeft, setTimeLeft] = useState<number>(0)
-  const [isSubmitted, setIsSubmitted] = useState(isReviewMode)
+  const [isSubmitted, setIsSubmitted] = useState(mode !== 'exam')
   const [result, setResult] = useState<JlptSubmissionResult | null>(null)
   const [activeSectionIdx, setActiveSectionIdx] = useState(0)
   const [expandedScripts, setExpandedScripts] = useState<Record<string, boolean>>({})
+  const [activeAttempt, setActiveAttempt] = useState<JlptAttempt | null>(null)
+  const [attemptHydrated, setAttemptHydrated] = useState(!attemptId)
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'offline'>('saved')
+  const hydratedAttemptRef = useRef<string | null>(null)
+  const { user } = useAuth()
 
   // Audio Player State for Main Exam Audio
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -656,10 +683,18 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
   const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1.0)
 
-  const { data: exam, isLoading } = useQuery({
+  const examQuery = useQuery({
     queryKey: ['nhaikanji', 'jlptExam', examId],
     queryFn: () => nhaikanjiApi.fetchJlptExamDetail(examId),
   })
+
+  const attemptQuery = useQuery({
+    queryKey: ['jlpt-attempt', attemptId, user?.id || 'guest'],
+    queryFn: () => getJlptAttempt(attemptId || '', user?.id),
+    enabled: Boolean(attemptId),
+  })
+  const exam = attemptQuery.data?.examSnapshot || examQuery.data
+  const isLoading = examQuery.isLoading || Boolean(attemptId && attemptQuery.isLoading)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -667,12 +702,17 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
     if (isSubmitted || isSubmitting) return
     setIsSubmitting(true)
     try {
-      const res = await nhaikanjiApi.submitJlptExam({
-        examId,
-        answers,
-      })
+      const { result: res, synced } = activeAttempt
+        ? await finishJlptAttempt(activeAttempt, user?.id, answers)
+        : { result: await nhaikanjiApi.submitJlptExam({ examId, answers }), synced: false }
       setResult(res)
       setIsSubmitted(true)
+      setSaveStatus(
+        synced || (activeAttempt as (JlptAttempt & { persistence?: string }) | null)?.persistence !== 'server'
+          ? 'saved'
+          : 'offline'
+      )
+      if (activeAttempt) setActiveAttempt({ ...activeAttempt, status: 'completed', answers, result: res })
       if (audioRef.current && !audioRef.current.paused) {
         audioRef.current.pause()
         setIsPlaying(false)
@@ -685,17 +725,21 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
     } finally {
       setIsSubmitting(false)
     }
-  }, [answers, examId, isSubmitted, isSubmitting])
+  }, [activeAttempt, answers, examId, isSubmitted, isSubmitting, user?.id])
 
   const submitRef = useRef(handleSubmit)
   submitRef.current = handleSubmit
 
-  // Initialize timer
+  // Initialize from the saved timer only after the draft has loaded.
   useEffect(() => {
-    if (exam?.timeLimit && !isSubmitted && timeLeft === 0) {
-      setTimeLeft(exam.timeLimit * 60)
+    if (exam?.timeLimit && attemptHydrated && !isSubmitted && timeLeft === 0) {
+      if (attemptId && activeAttempt) {
+        void submitRef.current()
+      } else {
+        setTimeLeft(exam.timeLimit * 60)
+      }
     }
-  }, [exam, isSubmitted, timeLeft])
+  }, [activeAttempt, attemptHydrated, attemptId, exam, isSubmitted, timeLeft])
 
   // Countdown interval
   useEffect(() => {
@@ -713,20 +757,35 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
     return () => clearInterval(timer)
   }, [timeLeft, isSubmitted])
 
-  const handleSelectOption = (qKey: string, optIdx: number) => {
+  const handleSelectOption = (qKey: string, optIdx: number | null) => {
     if (isSubmitted) return
-    setAnswers((prev) => ({ ...prev, [qKey]: optIdx }))
+    const nextAnswers = { ...answers }
+    if (optIdx === null) delete nextAnswers[qKey]
+    else nextAnswers[qKey] = optIdx
+    setAnswers(nextAnswers)
+    if (activeAttempt) {
+      backupJlptAttemptProgress(activeAttempt, user?.id, {
+        answers: nextAnswers,
+        currentQuestion: activeSectionIdx,
+        remainingSeconds: timeLeft,
+      })
+    }
   }
 
   const handleRetake = () => {
-    setAnswers({})
-    setIsSubmitted(false)
-    setResult(null)
-    setExpandedScripts({})
-    if (exam?.timeLimit) {
-      setTimeLeft(exam.timeLimit * 60)
-    }
-    setActiveSectionIdx(0)
+    void (async () => {
+      const nextAttempt = await startJlptAttempt(examId, exam?.level || 'N3', user?.id, exam?.timeLimit || 0)
+      setActiveAttempt(nextAttempt)
+      setActiveMode('exam')
+      setAnswers({})
+      setIsSubmitted(false)
+      setResult(null)
+      setExpandedScripts({})
+      setTimeLeft((exam?.timeLimit || 0) * 60)
+      setActiveSectionIdx(0)
+      setAttemptHydrated(true)
+      setSaveStatus('saved')
+    })()
     if (audioRef.current) {
       audioRef.current.currentTime = 0
       audioRef.current.pause()
@@ -851,10 +910,71 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
 
   const currentSection = sections[activeSectionIdx] || sections[0]
 
-  if (isLoading || !exam) {
+  const latestProgressRef = useRef({ answers, currentQuestion: activeSectionIdx, remainingSeconds: timeLeft })
+  latestProgressRef.current = { answers, currentQuestion: activeSectionIdx, remainingSeconds: timeLeft }
+
+  useEffect(() => {
+    if (!attemptId) {
+      setAttemptHydrated(true)
+      return
+    }
+    if (!attemptQuery.isFetched) return
+    const saved = attemptQuery.data
+    if (!saved) {
+      setAttemptHydrated(true)
+      return
+    }
+    if (!exam) return
+    if (hydratedAttemptRef.current === attemptId) return
+    hydratedAttemptRef.current = attemptId
+    setActiveAttempt({ ...saved, examSnapshot: saved.examSnapshot || exam })
+    setAnswers(Object.fromEntries(Object.entries(saved.answers || {}).map(([key, value]) => [key, Number(value)])))
+    setActiveSectionIdx(Math.max(0, Math.min(saved.currentQuestion || 0, Math.max(0, sections.length - 1))))
+    if (saved.status === 'completed' && saved.result) {
+      setResult(saved.result)
+      setIsSubmitted(true)
+    } else {
+      // A history entry must never turn into a live, submittable exam while loading.
+      setIsSubmitted(mode === 'result')
+      setTimeLeft(saved.remainingSeconds)
+    }
+    setAttemptHydrated(true)
+  }, [attemptId, attemptQuery.data, attemptQuery.isFetched, exam, mode, sections.length])
+
+  const saveDraft = useCallback(async () => {
+    if (!attemptId || !activeAttempt || !attemptHydrated || isSubmitted || activeMode !== 'exam') return
+    setSaveStatus('saving')
+    const synced = await saveJlptAttemptProgress(activeAttempt, user?.id, latestProgressRef.current)
+    setSaveStatus(synced ? 'saved' : 'offline')
+  }, [activeAttempt, activeMode, attemptHydrated, attemptId, isSubmitted, user?.id])
+
+  useEffect(() => {
+    if (!attemptHydrated || !activeAttempt || isSubmitted || activeMode !== 'exam') return
+    const timer = window.setTimeout(() => {
+      void saveDraft()
+    }, 600)
+    return () => window.clearTimeout(timer)
+  }, [activeMode, activeSectionIdx, answers, attemptHydrated, activeAttempt, isSubmitted, saveDraft])
+
+  useEffect(() => {
+    if (timeLeft > 0 && timeLeft % 15 === 0) void saveDraft()
+  }, [timeLeft, saveDraft])
+
+  if (isLoading || !exam || (attemptId && attemptQuery.isLoading)) {
     return (
       <div className="nhaikanji-container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
         <div style={{ color: '#64748b', fontWeight: 600 }}>Đang tải nội dung đề thi...</div>
+      </div>
+    )
+  }
+
+  if (activeMode === 'result' && attemptHydrated && !result) {
+    return (
+      <div className="nhaikanji-container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+        <p>Không tải được kết quả của lần làm bài này. Vui lòng thử mở lại từ lịch sử.</p>
+        <Button type="button" onClick={onBack}>
+          Quay lại lịch sử
+        </Button>
       </div>
     )
   }
@@ -890,6 +1010,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
     <div className="nhaikanji-container">
       {/* Top Header & Sticky Status */}
       <div
+        className="jlpt-exam-header"
         style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -924,6 +1045,23 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
             <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.125rem' }}>
               {exam.sectionLabelJP} • {exam.sectionLabel}
             </div>
+            {!isSubmitted && attemptId && (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  fontSize: '0.6875rem',
+                  color: saveStatus === 'offline' ? '#b45309' : '#64748b',
+                  marginTop: '0.2rem',
+                }}
+              >
+                {saveStatus === 'saving'
+                  ? 'Đang lưu bài…'
+                  : saveStatus === 'offline'
+                    ? 'Đã lưu trên thiết bị · chờ đồng bộ'
+                    : 'Đã lưu tiến độ'}
+              </div>
+            )}
           </div>
         </div>
 
@@ -955,9 +1093,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
             </Button>
           )}
 
-          {isReviewMode && (
-            <Badge variant="secondary">Chế độ học đáp án</Badge>
-          )}
+          {isReviewMode && <Badge variant="secondary">Chế độ học đáp án</Badge>}
 
           {isSubmitted && !isReviewMode && (
             <Button variant="secondary" size="sm" onClick={handleRetake}>
@@ -1242,7 +1378,6 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                       const qKey = q.id || `p${pIdx}_q${qIdx}`
                       const selectedOpt = answers[qKey]
                       const qResult = result?.questionResults?.find((r) => r.id === qKey || r.number === q.number)
-                      const questionText = q.sentence || q.text || q.question || `Câu hỏi số ${q.number || qIdx + 1}`
                       const qAudio = q.audio || q.audioUrl || partAudio
 
                       const isLongOptions = (q.options || []).some((opt) => {
@@ -1251,7 +1386,17 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                       })
 
                       const isListeningPart =
-                        part.sectionType === 4 || activeSectionIdx === 2 || part.title?.includes('Nghe')
+                        part.sectionType === 4 ||
+                        exam.section?.toLowerCase() === 'listening' ||
+                        exam.sectionLabel?.includes('Nghe') ||
+                        exam.sectionLabelJP?.includes('聴解') ||
+                        activeSectionIdx === 2 ||
+                        part.title?.includes('Nghe')
+                      const originalQuestionText =
+                        q.sentence || q.text || q.question || `Câu hỏi số ${q.number || qIdx + 1}`
+                      const questionText = q.image
+                        ? originalQuestionText.replace(/<img\b[^>]*>/giu, '')
+                        : originalQuestionText
 
                       return (
                         <div
@@ -1278,7 +1423,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                           }}
                         >
                           {/* Reading Passage attached to Question */}
-                          {q.passage && (
+                          {q.passage && (!part.passage || !part.passage.includes(q.passage.replace(/<[^>]*>/g, '').trim().slice(0, 20))) && (
                             <div
                               style={{
                                 display: 'flex',
@@ -1398,144 +1543,158 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                             </div>
                           </div>
 
-                          {/* Question Image (Constrained & Clean Frame) */}
+                          {/* Keep listening figures large enough to read while preserving the source aspect ratio. */}
                           {q.image && (
-                            <div
-                              style={{
-                                maxWidth: '440px',
-                                maxHeight: '240px',
-                                margin: '0.5rem auto',
-                                background: '#ffffff',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '0.75rem',
-                                padding: '0.5rem',
-                                textAlign: 'center',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                              }}
+                            <figure
+                              className={`jlpt-question-image${isListeningPart ? ' jlpt-question-image--listening' : ''}`}
                             >
                               <img
                                 src={q.image}
                                 alt={`Minh họa câu ${q.number || qIdx + 1}`}
                                 loading="lazy"
-                                style={{
-                                  maxHeight: '220px',
-                                  maxWidth: '100%',
-                                  objectFit: 'contain',
-                                  display: 'block',
-                                  margin: '0 auto',
-                                  borderRadius: '0.5rem',
-                                }}
+                                className="jlpt-question-image__asset"
                               />
-                            </div>
+                            </figure>
                           )}
 
                           {/* Dynamic Options Grid / Vertical Stack */}
-                          <div
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: isLongOptions ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
-                              gap: '0.75rem',
-                            }}
-                          >
-                            {q.options?.map((opt: JlptOption | string, optIdx: number) => {
-                              const optNumber = optIdx + 1
-                              const optText = typeof opt === 'string' ? opt : opt.text || String(opt.id)
-                              const isSelected = selectedOpt === optNumber
-                              const isCorrectOption =
-                                isSubmitted && String(q.correctAnswer ?? q.answer ?? 1) === String(optNumber)
+                          {q.starPrompt &&
+                          q.options?.length === 4 &&
+                          q.starPositionVerified !== false &&
+                          Number.isInteger(q.starPosition) ? (
+                            <StarOrderQuestion
+                              key={`${qKey}-${activeAttempt?.id || attemptId || 'new'}`}
+                              before={q.starPrompt.before}
+                              after={q.starPrompt.after}
+                              options={q.options}
+                              selectedAnswer={selectedOpt}
+                              correctOrder={q.starCorrectOrder}
+                              starPosition={q.starPosition}
+                              storageKey={
+                                activeAttempt?.id || attemptId
+                                  ? `jlpt-star-order:${activeAttempt?.id || attemptId}:${qKey}`
+                                  : undefined
+                              }
+                              disabled={isSubmitted}
+                              onAnswer={(answer) => handleSelectOption(qKey, answer)}
+                            />
+                          ) : (
+                            <>
+                              {q.starPrompt && q.starPositionVerified === false && (
+                                <p className="jlpt-star-review-source">
+                                  <strong>Câu trong đề:</strong> {q.starPrompt.before}
+                                  <span aria-hidden="true"> ★ </span>
+                                  {q.starPrompt.after}
+                                </p>
+                              )}
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: isLongOptions ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
+                                  gap: '0.75rem',
+                                }}
+                              >
+                                {q.options?.map((opt: JlptOption | string, optIdx: number) => {
+                                  const optNumber = optIdx + 1
+                                  const optText = formatOptionText(opt, optNumber)
+                                  const isSelected = selectedOpt === optNumber
+                                  const isCorrectOption =
+                                    isSubmitted && String(q.correctAnswer ?? q.answer ?? 1) === String(optNumber)
 
-                              return (
-                                <div
-                                  key={optIdx}
-                                  role="button"
-                                  tabIndex={isSubmitted ? -1 : 0}
-                                  aria-pressed={isSelected}
-                                  className={`jlpt-option-card${isSelected ? ' is-selected' : ''}${isCorrectOption ? ' is-correct' : ''}`}
-                                  onClick={() => {
-                                    if (isSubmitted) return
-                                    const selection = window.getSelection()?.toString()
-                                    if (selection && selection.trim().length > 0) return
-                                    handleSelectOption(qKey, optNumber)
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (!isSubmitted && (e.key === 'Enter' || e.key === ' ')) {
-                                      e.preventDefault()
-                                      handleSelectOption(qKey, optNumber)
-                                    }
-                                  }}
-                                  style={{
-                                    padding: isLongOptions ? '0.875rem 1.25rem' : '0.75rem 1rem',
-                                    borderRadius: '0.75rem',
-                                    textAlign: 'left',
-                                    fontSize: isLongOptions ? '1rem' : '0.9375rem',
-                                    lineHeight: 1.7,
-                                    fontWeight: isSelected || isCorrectOption ? 700 : 500,
-                                    cursor: isSubmitted ? 'text' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '1rem',
-                                    border: '1px solid',
-                                    userSelect: 'text',
-                                    WebkitUserSelect: 'text',
-                                    borderColor: isCorrectOption
-                                      ? '#4ade80'
-                                      : isSelected
-                                        ? '#4f46e5'
-                                        : 'var(--color-border, #cbd5e1)',
-                                    background: isCorrectOption
-                                      ? '#dcfce7'
-                                      : isSelected
-                                        ? '#4f46e5'
-                                        : 'var(--color-bg-surface, #ffffff)',
-                                    color: isCorrectOption
-                                      ? '#14532d'
-                                      : isSelected
-                                        ? '#ffffff'
-                                        : 'var(--color-text, #334155)',
-                                    boxShadow: isSelected ? '0 2px 4px rgba(79, 70, 229, 0.2)' : 'none',
-                                    transition: 'all 0.15s ease',
-                                  }}
-                                >
-                                  <span
-                                    className="jlpt-option-number"
-                                    style={{
-                                      width: '1.75rem',
-                                      height: '1.75rem',
-                                      borderRadius: '50%',
-                                      fontSize: '0.8125rem',
-                                      fontWeight: 700,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      flexShrink: 0,
-                                      userSelect: 'none',
-                                      WebkitUserSelect: 'none',
-                                      background: isSelected ? '#ffffff' : 'var(--color-bg-subtle, #f1f5f9)',
-                                      color: isSelected ? '#4f46e5' : '#64748b',
-                                      border: isSelected ? 'none' : '1px solid var(--color-border, #cbd5e1)',
-                                    }}
-                                  >
-                                    {optNumber}
-                                  </span>
-                                  <span
-                                    className="jlpt-option-text"
-                                    style={{
-                                      fontFamily: 'var(--font-serif, "Fraunces", serif)',
-                                      flex: 1,
-                                      userSelect: 'text',
-                                      WebkitUserSelect: 'text',
-                                      cursor: isSubmitted ? 'text' : 'pointer',
-                                    }}
-                                  >
-                                    {optText}
-                                  </span>
-                                </div>
-                              )
-                            })}
-                          </div>
+                                  return (
+                                    <div
+                                      key={optIdx}
+                                      role="button"
+                                      tabIndex={isSubmitted ? -1 : 0}
+                                      aria-pressed={isSelected}
+                                      className={`jlpt-option-card${isSelected ? ' is-selected' : ''}${isCorrectOption ? ' is-correct' : ''}`}
+                                      onClick={() => {
+                                        if (isSubmitted) return
+                                        const selection = window.getSelection()?.toString()
+                                        if (selection && selection.trim().length > 0) return
+                                        handleSelectOption(qKey, optNumber)
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (!isSubmitted && (e.key === 'Enter' || e.key === ' ')) {
+                                          e.preventDefault()
+                                          handleSelectOption(qKey, optNumber)
+                                        }
+                                      }}
+                                      style={{
+                                        padding: isLongOptions ? '0.875rem 1.25rem' : '0.75rem 1rem',
+                                        borderRadius: '0.75rem',
+                                        textAlign: 'left',
+                                        fontSize: isLongOptions ? '1rem' : '0.9375rem',
+                                        lineHeight: 1.7,
+                                        fontWeight: isSelected || isCorrectOption ? 700 : 500,
+                                        cursor: isSubmitted ? 'text' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '1rem',
+                                        border: '1px solid',
+                                        userSelect: 'text',
+                                        WebkitUserSelect: 'text',
+                                        borderColor: isCorrectOption
+                                          ? '#4ade80'
+                                          : isSelected
+                                            ? '#4f46e5'
+                                            : 'var(--color-border, #cbd5e1)',
+                                        background: isCorrectOption
+                                          ? '#dcfce7'
+                                          : isSelected
+                                            ? '#4f46e5'
+                                            : 'var(--color-bg-surface, #ffffff)',
+                                        color: isCorrectOption
+                                          ? '#14532d'
+                                          : isSelected
+                                            ? '#ffffff'
+                                            : 'var(--color-text, #334155)',
+                                        boxShadow: isSelected ? '0 2px 4px rgba(79, 70, 229, 0.2)' : 'none',
+                                        transition: 'all 0.15s ease',
+                                      }}
+                                    >
+                                      <span
+                                        className="jlpt-option-number"
+                                        style={{
+                                          width: '1.75rem',
+                                          height: '1.75rem',
+                                          borderRadius: '50%',
+                                          fontSize: '0.8125rem',
+                                          fontWeight: 700,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0,
+                                          userSelect: 'none',
+                                          WebkitUserSelect: 'none',
+                                          background: isSelected ? '#ffffff' : 'var(--color-bg-subtle, #f1f5f9)',
+                                          color: isSelected ? '#4f46e5' : '#64748b',
+                                          border: isSelected ? 'none' : '1px solid var(--color-border, #cbd5e1)',
+                                        }}
+                                      >
+                                        {optNumber}
+                                      </span>
+                                      <span
+                                        className="jlpt-option-text"
+                                        style={{
+                                          fontFamily: 'var(--font-serif, "Fraunces", serif)',
+                                          flex: 1,
+                                          userSelect: 'text',
+                                          WebkitUserSelect: 'text',
+                                          cursor: isSubmitted ? 'text' : 'pointer',
+                                        }}
+                                      >
+                                        {optText}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </>
+                          )}
 
                           {/* Detailed Explanation if available & submitted */}
-                          {isSubmitted && q.explanation && (
+                          {isSubmitted && (
                             <div
                               style={{
                                 marginTop: '0.75rem',
@@ -1559,7 +1718,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                                 }}
                               >
                                 <Lightbulb size={16} />
-                                <span>Giải thích chi tiết & Dịch nghĩa</span>
+                                <span>{q.explanation ? 'Đáp án và ghi chú' : 'Lời giải câu hỏi'}</span>
                               </div>
                               <div
                                 style={{
@@ -1569,13 +1728,16 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                                   whiteSpace: 'pre-wrap',
                                 }}
                               >
-                                {q.explanation}
+                                {q.explanation
+                                  ? explanationToPlainText(q.explanation)
+                                  : 'Nguồn đề chưa có phần giải thích chi tiết cho câu này. Phương án đúng được đánh dấu màu xanh để bạn đối chiếu.'}
                               </div>
                             </div>
                           )}
 
                           {/* Listening Script & Situation Breakdown if submitted */}
                           {isSubmitted &&
+                            isListeningPart &&
                             (q.script || qResult?.script) &&
                             (() => {
                               const scriptContent = q.script || qResult?.script || ''
@@ -1669,7 +1831,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                                             border: '1px solid #bfdbfe',
                                           }}
                                         >
-                                          {scriptContent}
+                                          {explanationToPlainText(scriptContent)}
                                         </div>
                                       </div>
 
@@ -1699,7 +1861,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam' }: JlptExamTa
                                               border: '1px solid #bbf7d0',
                                             }}
                                           >
-                                            {scriptViContent}
+                                            {explanationToPlainText(scriptViContent)}
                                           </div>
                                         </div>
                                       )}

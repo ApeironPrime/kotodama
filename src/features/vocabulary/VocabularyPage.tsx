@@ -23,66 +23,16 @@ import { curriculumApi } from '../curriculum/curriculumApi'
 import type { CurriculumCourseCard } from '../../types/curriculum'
 import { DictionaryWordDetail } from '../dictionary/DictionaryWordDetail'
 import { apiPaths, requestApi, type DictionaryWordItem } from '../../lib/apiClient'
-
-interface LevelGroupDef {
-  id: string
-  title: string
-  levels: string[]
-  badgeText: string
-  desc: string
-}
-
-const LEVEL_GROUPS: LevelGroupDef[] = [
-  {
-    id: 'A1/A2',
-    title: 'Sơ cấp Nhập môn (A1 / A2)',
-    levels: ['A1', 'A2'],
-    badgeText: 'A1 / A2',
-    desc: 'Làm quen bảng chữ cái, phát âm cơ bản và các mẫu câu giao tiếp đời sống hàng ngày.',
-  },
-  {
-    id: 'N5',
-    title: 'Sơ cấp JLPT N5',
-    levels: ['N5'],
-    badgeText: 'N5',
-    desc: 'Nền tảng từ vựng cơ bản, sinh hoạt hàng ngày và chuẩn bị bước vào các kỳ thi năng lực.',
-  },
-  {
-    id: 'N4',
-    title: 'Sơ Trung cấp JLPT N4',
-    levels: ['N4'],
-    badgeText: 'N4',
-    desc: 'Mở rộng vốn từ đàm thoại, hội thoại thực tế và diễn đạt ngữ cảnh tự nhiên.',
-  },
-  {
-    id: 'N3',
-    title: 'Trung cấp JLPT N3',
-    levels: ['N3'],
-    badgeText: 'N3',
-    desc: 'Chuyển tiếp từ giao tiếp cơ bản sang đọc hiểu văn bản đời sống và công việc.',
-  },
-  {
-    id: 'N2',
-    title: 'Trung Thượng cấp JLPT N2',
-    levels: ['N2'],
-    badgeText: 'N2',
-    desc: 'Từ vựng chuyên sâu, sắc thái tinh tế thường dùng trong công việc, báo chí và hội họp.',
-  },
-  {
-    id: 'N1',
-    title: 'Cao cấp JLPT N1',
-    levels: ['N1'],
-    badgeText: 'N1',
-    desc: 'Vốn từ học thuật, thành ngữ, văn phong xã hội và biểu đạt ngôn ngữ đỉnh cao.',
-  },
-  {
-    id: 'SE',
-    title: 'Chuyên Ngành CNTT (SE IT)',
-    levels: ['SE'],
-    badgeText: 'SE IT',
-    desc: 'Từ vựng chuyên ngành kỹ thuật phần mềm, quản lý dự án và giao tiếp spec kỹ thuật.',
-  },
-]
+import {
+  CURATED_TRACKS,
+  curateCatalogCourses,
+  type CuratedTrackId,
+  type CuratedCourseMetadata,
+} from './vocabularyCuratedData'
+import { WatojiBookCover } from './WatojiBookCover'
+import { HorizontalBookshelf } from './HorizontalBookshelf'
+import { KaikaShokoModal } from './KaikaShokoModal'
+import { WashiGoldDustCanvas } from './WashiGoldDustCanvas'
 
 const FILTER_TABS = [
   { id: 'ALL', label: 'Tất cả' },
@@ -111,6 +61,14 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Full-screen archival drawer modal state (Kho lưu trữ văn thư cổ · 開架書庫)
+  const [activeDrawerTrack, setActiveDrawerTrack] = useState<{
+    id: string
+    title: string
+    kanji: string
+    items: Array<{ course: CurriculumCourseCard; meta: CuratedCourseMetadata }>
+  } | null>(null)
+
   // In-Unit study mode: list (default) or flashcard
   const [studyMode, setStudyMode] = useState<'flashcard' | 'list'>('list')
   const [unitSearchQuery, setUnitSearchQuery] = useState('')
@@ -137,7 +95,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   } = useQuery({
     queryKey: ['curriculum', 'catalog', selectedLevelFilter, searchQuery],
     queryFn: () => {
-      const apiLevel = selectedLevelFilter === 'A1/A2' || selectedLevelFilter === 'ALL' ? undefined : selectedLevelFilter
+      const apiLevel =
+        selectedLevelFilter === 'A1/A2' || selectedLevelFilter === 'ALL' ? undefined : selectedLevelFilter
       return curriculumApi.fetchCatalog({
         level: apiLevel,
         q: searchQuery || undefined,
@@ -270,7 +229,9 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // Unit total term count: strictly uses unit's term_count from courseDetail or pagination total
   const unitTotalTerms = currentUnitInfo?.term_count || termsData?.pagination?.total || 0
 
-  const currentUnitId = currentUnitInfo?.unit_id || (selectedCourseCode && selectedUnitKey ? `${selectedCourseCode}:${selectedUnitKey}` : '')
+  const currentUnitId =
+    currentUnitInfo?.unit_id ||
+    (selectedCourseCode && selectedUnitKey ? `${selectedCourseCode}:${selectedUnitKey}` : '')
   const unitContextPrefix = selectedCourseCode && currentUnitId ? `${selectedCourseCode}:${currentUnitId}:` : ''
 
   // Helper: check if a curriculum term is saved in SRS.
@@ -311,8 +272,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     return unitSavedContexts.size
   }, [user, unitContextPrefix, savedTermsData, selectedCourseCode, currentUnitId, savedSrs])
 
-  const progressPercent =
-    unitTotalTerms > 0 ? Math.min(100, Math.round((savedCountInUnit / unitTotalTerms) * 100)) : 0
+  const progressPercent = unitTotalTerms > 0 ? Math.min(100, Math.round((savedCountInUnit / unitTotalTerms) * 100)) : 0
 
   const activeDictCurriculumWord = useMemo(() => {
     if (!selectedDictWord) return null
@@ -506,86 +466,115 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       return true
     })
 
-    // Group items into defined LEVEL_GROUPS
-    const activeGroups = LEVEL_GROUPS.map((group) => {
-      const coursesInGroup = filteredItems.filter((course) => group.levels.includes(course.level))
+    const itemsWithMeta = curateCatalogCourses(filteredItems)
+
+    const TRACK_ORDER: CuratedTrackId[] = ['core', 'sprinters', 'immersion', 'specialized']
+
+    const activeTracks = TRACK_ORDER.map((trackId) => {
+      const trackDef = CURATED_TRACKS[trackId]
+      const coursesInTrack = itemsWithMeta
+        .filter((item) => item.meta.track === trackId)
+        .sort((a, b) => {
+          if (a.meta.isFeatured && !b.meta.isFeatured) return -1
+          if (!a.meta.isFeatured && b.meta.isFeatured) return 1
+          return b.course.term_count - a.course.term_count
+        })
       return {
-        ...group,
-        courses: coursesInGroup,
+        ...trackDef,
+        items: coursesInTrack,
       }
-    }).filter((group) => {
-      if (selectedLevelFilter !== 'ALL') {
-        return group.id === selectedLevelFilter
-      }
-      return group.courses.length > 0
-    })
+    }).filter((track) => track.items.length > 0)
 
     const totalMatchingCourses = filteredItems.length
+    const totalSavedCount = user && Array.isArray(savedTermsData) ? savedTermsData.length : Object.keys(savedSrs).length
 
     return (
       <div className="curriculum-container">
-        {/* Paper Grid Canvas Frame */}
+        {/* Washi Canvas Frame */}
         <div className="curriculum-paper-grid">
+          {/* Creative Engineering: Interactive Kyoto Gold Dust Shimmer Canvas */}
+          <WashiGoldDustCanvas />
+
           {/* Hero Header */}
           <header className="curriculum-hero">
             <div className="curriculum-hero__eyebrow">
               <Sparkles size={14} aria-hidden="true" />
-              THƯ VIỆN GIÁO TRÌNH TIẾNG NHẬT
+              THƯ VIỆN TUYỂN CHỌN KOTODAMA • 文庫
             </div>
             <h1 className="curriculum-hero__title">Học bản chất – không học vẹt</h1>
             <p className="curriculum-hero__desc">
-              Khám phá các bộ giáo trình từ vựng theo chuẩn JLPT và khung CEFR/SE. Lựa chọn cấp độ, duyệt bài học và
-              tích lũy từ vựng bền vững cùng phương pháp lặp lại ngắt quãng SRS.
+              Khám phá các bộ giáo trình từ vựng theo chuẩn JLPT và khung CEFR/SE. Không chạy theo số lượng cơ học — mỗi
+              bộ giáo trình đại diện cho một phương pháp sư phạm riêng biệt: từ xây dựng nền móng cốt lõi, phản xạ ngữ
+              cảnh, đến bứt phá điểm thi theo tuần và thuật ngữ chuyên ngành.
             </p>
           </header>
 
-          {/* Search & Level Filter Toolbar */}
+          {/* Search, Level Filters & Hanko SRS Toolbar */}
           <div className="curriculum-toolbar">
-            <div
-              className="curriculum-level-filters"
-              role="tablist"
-              aria-label="Lọc theo cấp độ giáo trình"
-            >
-              {FILTER_TABS.map((tab) => {
-                const isActive = selectedLevelFilter === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    tabIndex={0}
-                    className={`curriculum-filter-pill${isActive ? ' curriculum-filter-pill--active' : ''}`}
-                    onClick={() => setSelectedLevelFilter(tab.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        setSelectedLevelFilter(tab.id)
-                      }
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                )
-              })}
+            <div className="curriculum-toolbar__left">
+              <div className="curriculum-level-filters" role="tablist" aria-label="Lọc theo cấp độ giáo trình">
+                {FILTER_TABS.map((tab) => {
+                  const isActive = selectedLevelFilter === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      tabIndex={0}
+                      className={`curriculum-filter-pill${isActive ? ' curriculum-filter-pill--active' : ''}`}
+                      onClick={() => setSelectedLevelFilter(tab.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedLevelFilter(tab.id)
+                        }
+                      }}
+                    >
+                      {isActive && <span className="curriculum-filter-dot" aria-hidden="true" />}
+                      {tab.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            <div className="curriculum-search-box">
-              <Search size={15} className="curriculum-search-box__icon" aria-hidden="true" />
-              <input
-                type="search"
-                className="curriculum-search-box__input"
-                placeholder="Tìm kiếm giáo trình..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                aria-label="Tìm kiếm giáo trình từ vựng"
-              />
+            <div className="curriculum-toolbar__actions">
+              <div className="curriculum-search-box">
+                <Search size={15} className="curriculum-search-box__icon" aria-hidden="true" />
+                <input
+                  type="search"
+                  className="curriculum-search-box__input"
+                  placeholder="Tìm kiếm giáo trình..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Tìm kiếm giáo trình từ vựng"
+                />
+              </div>
+
+              {onGoToSrs && (
+                <button
+                  type="button"
+                  className="curriculum-hanko-srs-pill"
+                  onClick={onGoToSrs}
+                  title="Mở sổ tay và kho ôn tập SRS"
+                  aria-label={`Sổ tay SRS: ${totalSavedCount} từ đã lưu. Nhấn để ôn tập.`}
+                >
+                  <span className="curriculum-hanko-srs-pill__stamp" aria-hidden="true">
+                    記
+                  </span>
+                  <span className="curriculum-hanko-srs-pill__text">
+                    Sổ tay SRS: <strong>{totalSavedCount}</strong> từ
+                  </span>
+                  <span className="curriculum-hanko-srs-pill__action">Ôn tập ›</span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* Loading Skeleton State */}
           {isCatalogLoading && (
-            <div className="curriculum-course-grid" role="status" aria-label="Đang tải danh mục giáo trình...">
+            <div className="curriculum-book-jacket-grid" role="status" aria-label="Đang tải danh mục giáo trình...">
               <div className="curriculum-skeleton-card" />
               <div className="curriculum-skeleton-card" />
               <div className="curriculum-skeleton-card" />
@@ -631,80 +620,159 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             </div>
           )}
 
-          {/* Level Groups & Sketch Cards */}
+          {/* 4 Curated Editorial Tracks */}
           {!isCatalogLoading &&
             !isCatalogError &&
-            activeGroups.map((group) => (
-              <section
-                key={group.id}
-                className="curriculum-level-section"
-                data-level={group.levels[0]}
-                aria-labelledby={`heading-group-${group.id}`}
-              >
-                <div className="curriculum-level-section__header">
-                  <div className="curriculum-level-section__indicator" aria-hidden="true" />
-                  <h2 id={`heading-group-${group.id}`} className="curriculum-level-section__title">
-                    {group.title}
-                  </h2>
-                  <span className="curriculum-level-section__count">({group.courses.length} giáo trình)</span>
-                </div>
+            activeTracks.map((track) => {
+              const featuredItem = track.items.find((item) => item.meta.isFeatured) || track.items[0]
+              const companionItems = track.items.filter((item) => item !== featuredItem)
 
-                <div className="curriculum-course-grid" role="list">
-                  {group.courses.map((course) => (
-                    <div
-                      key={course.course_code}
-                      className="curriculum-sketch-card"
-                      data-level={course.level}
+              return (
+                <section
+                  key={track.id}
+                  className="curriculum-track-section"
+                  aria-labelledby={`heading-track-${track.id}`}
+                >
+                  <div className="curriculum-track-header">
+                    <div className="curriculum-track-header__meta">
+                      <span className="curriculum-track-stamp" aria-hidden="true">
+                        {track.kanji}
+                      </span>
+                      <h2 id={`heading-track-${track.id}`} className="curriculum-track-title">
+                        {track.title}
+                      </h2>
+                      <span className="curriculum-track-count">({track.items.length} giáo trình)</span>
+                    </div>
+                    <p className="curriculum-track-desc">{track.description}</p>
+                    <div className="curriculum-roadmap-banner" role="note">
+                      <Sparkles size={14} className="curriculum-roadmap-banner__icon" aria-hidden="true" />
+                      <span>
+                        <strong>Định hướng học:</strong> {track.roadmapTip}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 1. Master Featured Book Spread (Cuốn tiêu điểm khổ lớn nằm ngang) */}
+                  {featuredItem && (
+                    <article
+                      className="curriculum-featured-spread"
                       tabIndex={0}
                       role="button"
-                      aria-label={`Khóa học ${course.title}, cấp độ ${course.level}`}
+                      aria-label={`Khóa học ${featuredItem.course.title}, ${featuredItem.meta.levelDisplay}`}
                       onClick={() => {
-                        setSelectedCourseCode(course.course_code)
+                        setSelectedCourseCode(featuredItem.course.course_code)
                         setSelectedUnitKey(null)
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          setSelectedCourseCode(course.course_code)
+                          setSelectedCourseCode(featuredItem.course.course_code)
                           setSelectedUnitKey(null)
                         }
                       }}
                     >
-                      <div className="curriculum-sketch-card__top">
-                        <div>
-                          <span className="curriculum-sketch-card__provider">
-                            {course.provider_source || 'Giáo trình chuẩn'}
-                          </span>
-                          <h3 className="curriculum-sketch-card__title">{course.title}</h3>
-                        </div>
-                        <span className="curriculum-level-badge">{course.level}</span>
+                      <div className="curriculum-featured-spread__cover-pane">
+                        <WatojiBookCover
+                          size="featured"
+                          kanjiTitle={featuredItem.meta.kanjiTitle}
+                          subtitle={featuredItem.meta.publisher}
+                          volumeTag={featuredItem.meta.volumeTag}
+                          level={featuredItem.course.level}
+                          palette={featuredItem.meta.palette}
+                          pattern={featuredItem.meta.pattern}
+                          sealChar={featuredItem.meta.sealChar}
+                        />
                       </div>
 
-                      <p className="curriculum-sketch-card__desc">
-                        {course.description ||
-                          `Giáo trình từ vựng cấp độ ${course.level} được phân chia theo bài học ngữ cảnh sinh động.`}
-                      </p>
-
-                      <div className="curriculum-sketch-card__bottom">
-                        <div className="curriculum-sketch-card__stats">
-                          <span className="curriculum-stat-pill">
-                            <Layers size={13} aria-hidden="true" />
-                            {course.unit_count} bài học
-                          </span>
-                          <span className="curriculum-stat-pill">
-                            <BookOpen size={13} aria-hidden="true" />
-                            {course.term_count} từ vựng
-                          </span>
+                      <div className="curriculum-featured-spread__content-pane">
+                        <div className="curriculum-featured-spread__eyebrow-row">
+                          <span className="curriculum-featured-badge">★ Tác phẩm tiêu điểm</span>
+                          <span className="curriculum-featured-spread__publisher">{featuredItem.meta.publisher}</span>
+                          <span className="curriculum-featured-spread__level">{featuredItem.meta.levelDisplay}</span>
                         </div>
-                        <span className="curriculum-sketch-card__action">
-                          Xem bài học <ChevronRight size={16} aria-hidden="true" />
-                        </span>
+
+                        <h3 className="curriculum-featured-spread__title">{featuredItem.course.title}</h3>
+                        <p className="curriculum-featured-spread__subtitle">{featuredItem.meta.pedagogicalSubtitle}</p>
+
+                        <blockquote className="curriculum-featured-spread__quote">
+                          「 {featuredItem.meta.methodQuote} 」
+                        </blockquote>
+
+                        {featuredItem.meta.variants && (
+                          <div className="curriculum-featured-spread__variants">
+                            <span className="curriculum-featured-spread__variants-label">Phiên bản tích hợp:</span>
+                            <div className="curriculum-featured-spread__variants-list">
+                              {featuredItem.meta.variants.map((v, i) => (
+                                <span key={i} className="curriculum-variant-pill">
+                                  {v}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="curriculum-featured-spread__footer">
+                          <div className="curriculum-featured-spread__stats">
+                            <span className="curriculum-featured-spread__stat-item">
+                              <Layers size={14} aria-hidden="true" />
+                              <strong>{featuredItem.course.unit_count}</strong> bài học
+                            </span>
+                            <span className="curriculum-featured-spread__stat-dot">·</span>
+                            <span className="curriculum-featured-spread__stat-item">
+                              <strong>{featuredItem.course.term_count.toLocaleString()}</strong> từ trọng tâm
+                            </span>
+                            <span className="curriculum-featured-spread__stat-dot">·</span>
+                            <span className="curriculum-featured-spread__stat-pacing">
+                              {featuredItem.meta.pacingBadge}
+                            </span>
+                          </div>
+
+                          <div className="curriculum-featured-spread__action">
+                            <span>Mở sách học tập</span>
+                            <span className="curriculum-featured-spread__hanko-seal" aria-hidden="true">
+                              開本
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
+                    </article>
+                  )}
+
+                  {/* 2. Tactile Horizontal Bookshelf Carousel (Kệ sách đồng hành cuộn ngang mượt mà) */}
+                  {companionItems.length > 0 && (
+                    <HorizontalBookshelf
+                      trackTitle={track.title}
+                      items={companionItems}
+                      onSelectCourse={(courseCode) => {
+                        setSelectedCourseCode(courseCode)
+                        setSelectedUnitKey(null)
+                      }}
+                      onOpenDrawer={() => {
+                        setActiveDrawerTrack({
+                          id: track.id,
+                          title: track.title,
+                          kanji: track.kanji,
+                          items: companionItems,
+                        })
+                      }}
+                    />
+                  )}
+                </section>
+              )
+            })}
+
+          {/* Full-Screen Archival Drawer Modal (Kho văn thư cổ toàn phần · 開架書庫) */}
+          <KaikaShokoModal
+            isOpen={Boolean(activeDrawerTrack)}
+            trackTitle={activeDrawerTrack?.title ?? ''}
+            trackKanji={activeDrawerTrack?.kanji ?? ''}
+            items={activeDrawerTrack?.items ?? []}
+            onClose={() => setActiveDrawerTrack(null)}
+            onSelectCourse={(courseCode) => {
+              setSelectedCourseCode(courseCode)
+              setSelectedUnitKey(null)
+            }}
+          />
         </div>
       </div>
     )
@@ -753,7 +821,14 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   <span className="curriculum-level-badge" data-level={course.level}>
                     {course.level}
                   </span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                  <span
+                    style={{
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: 'var(--color-text-muted)',
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     {course.provider_source}
                   </span>
                 </div>
@@ -761,7 +836,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   {course.title}
                 </h1>
                 <p style={{ margin: '0 0 1rem 0', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
-                  {course.description || 'Chọn một bài học dưới đây để bắt đầu học Flashcard hoặc xem danh sách từ vựng chi tiết.'}
+                  {course.description ||
+                    'Chọn một bài học dưới đây để bắt đầu học Flashcard hoặc xem danh sách từ vựng chi tiết.'}
                 </p>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <span className="curriculum-stat-pill">
@@ -863,9 +939,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             {course?.title} - {currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}
           </h2>
           {currentUnitInfo?.topic && (
-            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              Chủ đề: {currentUnitInfo.topic}
-            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Chủ đề: {currentUnitInfo.topic}</div>
           )}
         </div>
 
@@ -1006,9 +1080,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             </div>
           ) : words.length === 0 ? (
             <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-              <p style={{ margin: '0 0 1rem 0' }}>
-                Không tìm thấy từ vựng nào khớp với từ khóa "{unitSearchQuery}".
-              </p>
+              <p style={{ margin: '0 0 1rem 0' }}>Không tìm thấy từ vựng nào khớp với từ khóa "{unitSearchQuery}".</p>
               <Button
                 variant="secondary"
                 size="sm"
@@ -1108,8 +1180,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               {totalPages > 1 && (
                 <div className="curriculum-pagination">
                   <span>
-                    Hiển thị {(unitPage - 1) * PAGE_SIZE + 1} –{' '}
-                    {Math.min(unitPage * PAGE_SIZE, totalTerms)} trên tổng số {totalTerms} từ
+                    Hiển thị {(unitPage - 1) * PAGE_SIZE + 1} – {Math.min(unitPage * PAGE_SIZE, totalTerms)} trên tổng
+                    số {totalTerms} từ
                   </span>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <Button
@@ -1274,9 +1346,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     void handleSaveWordToSrs(currentCard)
                   }}
                   style={{
-                    background: isCurrentCardSaved
-                      ? 'rgba(16, 185, 129, 0.2)'
-                      : 'rgba(255, 255, 255, 0.1)',
+                    background: isCurrentCardSaved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)',
                     border: isCurrentCardSaved ? '1px solid #10b981' : 'none',
                     borderRadius: '50%',
                     width: '36px',
@@ -1359,7 +1429,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             {/* Bottom Counter Bar */}
             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {unitTotalTerms || words.length} (Trang {unitPage} / {totalPages})
+                Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {unitTotalTerms || words.length} (Trang {unitPage}{' '}
+                / {totalPages})
               </span>
               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                 Phím tắt: [Z] Đã thuộc • [X] Chưa thuộc • [Space] Lật • [R] Nghe • [C] Lưu SRS
@@ -1412,9 +1483,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               <DictionaryWordDetail
                 word={resolvedDictItem}
                 results={[resolvedDictItem]}
-                isSaved={isCurriculumTermSaved(
-                  activeDictCurriculumWord || { word: resolvedDictItem.word }
-                )}
+                isSaved={isCurriculumTermSaved(activeDictCurriculumWord || { word: resolvedDictItem.word })}
                 onSave={() => {
                   const matchingTerm = activeDictCurriculumWord || words.find((w) => w.word === resolvedDictItem.word)
                   if (matchingTerm) {

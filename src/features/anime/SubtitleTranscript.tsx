@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { Clapperboard, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { Clapperboard, Play, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { AnimeSrsActions } from './AnimeSrsActions'
 import type { AnimeSubtitleCue, AnimeSubtitleToken } from './animePlaybackTypes'
 
@@ -24,6 +24,7 @@ export interface SubtitleTranscriptProps {
   onRetry?: () => void
   onSelectToken?: (cue: AnimeSubtitleCue, token: AnimeSubtitleToken, triggerEl: HTMLElement) => void
   episodeId?: string | undefined
+  totalCues?: number
 }
 
 function formatSeconds(seconds: number): string {
@@ -54,6 +55,7 @@ export const SubtitleTranscript: React.FC<SubtitleTranscriptProps> = ({
   onRetry,
   onSelectToken,
   episodeId,
+  totalCues,
 }) => {
   const activeItemRef = useRef<HTMLLIElement | null>(null)
   const userScrolledRef = useRef<boolean>(false)
@@ -82,6 +84,7 @@ export const SubtitleTranscript: React.FC<SubtitleTranscriptProps> = ({
 
   return (
     <div className="anime-transcript" aria-label="Bảng phụ đề tương tác">
+      <div className="anime-transcript-heading"><strong>Phụ đề</strong><span>{totalCues || cues.length} câu</span></div>
       {/* Transcript Toolbar */}
       <div className="anime-transcript-toolbar">
         <div className="anime-transcript-layers" role="group" aria-label="Bộ chọn lớp phụ đề">
@@ -204,7 +207,7 @@ export const SubtitleTranscript: React.FC<SubtitleTranscriptProps> = ({
                       className="anime-transcript-cue-time-btn"
                       aria-label={`Tua tới ${formatSeconds(cue.start)}: ${cue.ja}`}
                     >
-                      {formatSeconds(cue.start)}
+                      <Play size={14} aria-hidden="true" /><span>{formatSeconds(cue.start)}</span>
                     </button>
 
                     <div className="anime-transcript-cue-content">
@@ -267,7 +270,7 @@ export const SubtitleTranscript: React.FC<SubtitleTranscriptProps> = ({
                       )}
                     </div>
 
-                    {episodeId && (
+                    {episodeId && isActive && (
                       <div className="anime-transcript-cue-actions">
                         <AnimeSrsActions
                           episodeId={episodeId}

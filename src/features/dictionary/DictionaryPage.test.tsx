@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import DictionaryPage from './DictionaryPage'
 import { nhaikanjiApi } from '../nhaikanji/nhaikanjiApi'
@@ -43,7 +43,14 @@ function renderWithClient(ui: React.ReactElement) {
 }
 
 describe('DictionaryPage Feature Suite', () => {
+  beforeEach(() => {
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      window.history.replaceState({}, '', '/')
+    }
+  })
+
   const sampleSearchResult = {
+
     results: [
       {
         id: 1,
@@ -218,10 +225,48 @@ describe('DictionaryPage Feature Suite', () => {
     fireEvent.click(kanjiTab)
 
     await waitFor(() => {
-      expect(screen.getByText('Tất cả (2500+)')).toBeTruthy()
+      expect(screen.getByText('Tất cả')).toBeTruthy()
       expect(screen.getByText('Kanji N5')).toBeTruthy()
       expect(screen.getByText('GIAN')).toBeTruthy()
       expect(screen.getByText('Khoảng, thời gian')).toBeTruthy()
     })
   })
+
+  it('renders extracted quick suggestion tags and calligraphic Word of the Day stage', async () => {
+    const inputRef = { current: null }
+    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+
+    // Quick suggestions should be extracted below the search bar
+    expect(screen.getByText('Tra cứu nhanh:')).toBeTruthy()
+    expect(screen.getByRole('button', { name: '学校' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '先生' })).toBeTruthy()
+
+    // Word of the day calligraphic stage should be present in zero state
+    expect(screen.getByLabelText('Tác phẩm thư pháp - Từ của ngày')).toBeTruthy()
+    expect(screen.getByText('本日の名言')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Đổi câu danh ngôn thư pháp khác' })).toBeTruthy()
+    expect(screen.getByTitle('Ấn triện Kotodama (Nhấp để dập con dấu)')).toBeTruthy()
+  })
+
+  it('opens and closes the artisan sliding study drawer', async () => {
+    const inputRef = { current: null }
+    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+
+    const drawerTrigger = screen.getByRole('button', { name: 'Mở sổ tay học & lịch sử tra cứu' })
+    expect(drawerTrigger).toBeTruthy()
+
+    // Drawer should initially not be in document
+    expect(screen.queryByLabelText('Sổ tay học và lịch sử tra cứu')).toBeNull()
+
+    // Click trigger to open drawer
+    fireEvent.click(drawerTrigger)
+    expect(screen.getByLabelText('Sổ tay học và lịch sử tra cứu')).toBeTruthy()
+    expect(screen.getByText('SỔ TAY HỌC & LỊCH SỬ')).toBeTruthy()
+    expect(screen.getByText('SỔ TAY SRS')).toBeTruthy()
+
+    // Press Escape to dismiss drawer
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByLabelText('Sổ tay học và lịch sử tra cứu')).toBeNull()
+  })
 })
+

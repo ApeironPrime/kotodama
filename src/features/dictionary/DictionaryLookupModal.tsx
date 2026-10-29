@@ -69,11 +69,11 @@ export function DictionaryLookupModal({ keyword, onClose }: { keyword: string; o
                   <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                     {word.reading}
                   </div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1.2, color: '#e11d48' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1.2, color: 'var(--color-accent, #b82e2e)' }}>
                     {word.word}
                   </div>
                   {word.hanViet && (
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#2563eb', marginTop: '0.25rem' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--home-ink, #292723)', marginTop: '0.25rem' }}>
                       {word.hanViet}
                     </div>
                   )}
@@ -82,9 +82,9 @@ export function DictionaryLookupModal({ keyword, onClose }: { keyword: string; o
                   type="button"
                   onClick={() => speakJapanese(word.word)}
                   style={{
-                    background: 'rgba(225, 29, 72, 0.1)',
+                    background: 'var(--color-accent-subtle, rgba(184, 46, 46, 0.1))',
                     border: 'none',
-                    color: '#e11d48',
+                    color: 'var(--color-accent, #b82e2e)',
                     width: '40px',
                     height: '40px',
                     borderRadius: '50%',

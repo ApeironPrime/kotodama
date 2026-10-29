@@ -118,6 +118,9 @@ export interface AnimePlayerProps {
   onPlaybackStateChange: (isPlaying: boolean) => void
   onError: (error: string) => void
   seekTarget?: number | null
+  playRequest?: number
+  pauseRequest?: number
+  hideVideo?: boolean
   onBackToEpisodes?: () => void
   children?: React.ReactNode // E.g. SubtitleOverlay
 }
@@ -139,6 +142,9 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
   onPlaybackStateChange,
   onError,
   seekTarget,
+  playRequest = 0,
+  pauseRequest = 0,
+  hideVideo = false,
   onBackToEpisodes,
   children,
 }) => {
@@ -157,6 +163,8 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
   const ytPlayerRef = useRef<YTPlayerInstance | null>(null)
   const rAFRef = useRef<number | null>(null)
   const isPlayingRef = useRef(false)
+  const lastPlayRequestRef = useRef(playRequest)
+  const lastPauseRequestRef = useRef(pauseRequest)
   const callbacksRef = useRef({ onTimeUpdate, onDurationChange, onPlaybackStateChange, onError })
   const youtubeMountId = `yt-player-${useId().replaceAll(':', '')}`
 
@@ -331,6 +339,25 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
       else ytPlayerRef.current.playVideo()
     }
   }, [isPlaying, isYoutubeReady, mediaSource?.source_type])
+
+  // Sentence exercises issue explicit play/pause requests. These use the real
+  // media element or YouTube player state rather than changing the icon alone.
+  useEffect(() => {
+    if (playRequest === lastPlayRequestRef.current) return
+    if (!isPermitted || playerError) return
+    if (mediaSource?.source_type === 'youtube' && !isYoutubeReady) return
+    lastPlayRequestRef.current = playRequest
+    if (mediaSource?.source_type === 'authorized_local') void videoRef.current?.play().catch(() => {})
+    if (mediaSource?.source_type === 'youtube') ytPlayerRef.current?.playVideo()
+  }, [playRequest, isPermitted, isYoutubeReady, mediaSource?.source_type, playerError])
+
+  useEffect(() => {
+    if (pauseRequest === lastPauseRequestRef.current) return
+    if (mediaSource?.source_type === 'youtube' && !isYoutubeReady) return
+    lastPauseRequestRef.current = pauseRequest
+    if (mediaSource?.source_type === 'authorized_local') videoRef.current?.pause()
+    if (mediaSource?.source_type === 'youtube') ytPlayerRef.current?.pauseVideo()
+  }, [pauseRequest, isYoutubeReady, mediaSource?.source_type])
 
   // Seek Handler
   const handleSeek = useCallback((seconds: number) => {
@@ -604,6 +631,13 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
                   : 'Tập phim này chưa có quyền phát trực tiếp theo chính sách bản quyền của Kotodama.')}
           </p>
 
+          {playerError && /YouTube \((101|150)\)/.test(playerError) && mediaSource?.source_type === 'youtube' && mediaSource.page_url && (
+            <a className="anime-btn anime-btn--primary" href={mediaSource.page_url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={16} aria-hidden="true" />
+              <span>Mở video trên YouTube</span>
+            </a>
+          )}
+
           {onBackToEpisodes && (
             <button
               type="button"
@@ -626,7 +660,7 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
 
   return (
     <div
-      className={`anime-player-container ${isFullscreen ? 'anime-player-container--fullscreen' : ''}`}
+      className={`anime-player-container ${isYouTube ? 'anime-player-container--youtube' : ''} ${isFullscreen ? 'anime-player-container--fullscreen' : ''}`}
       ref={containerRef}
       tabIndex={0}
       role="region"
@@ -664,6 +698,7 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
         )}
 
         {/* Subtitle Overlay Slot */}
+        {hideVideo && <div className="anime-player-hidden-screen" aria-label="Video đang được ẩn, âm thanh vẫn phát">Video đã ẩn · âm thanh vẫn hoạt động</div>}
         {children}
       </div>
 

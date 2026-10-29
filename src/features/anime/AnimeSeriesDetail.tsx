@@ -1,15 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  ArrowLeft,
-  BookOpen,
-  CheckCircle2,
-  Clapperboard,
-  Film,
-  Layers,
-  Play,
-  Tv,
-  X,
-} from 'lucide-react'
+import { ArrowLeft, BookOpen, CheckCircle2, Clapperboard, Film, Layers, Play, Tv, X } from 'lucide-react'
 import type { AnimeEpisodeSummary, AnimeSeriesDetail as AnimeSeriesDetailType } from './animeTypes'
 
 interface AnimeSeriesDetailProps {
@@ -41,9 +31,7 @@ export function AnimeSeriesDetail({
 }: AnimeSeriesDetailProps) {
   const [imgError, setImgError] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [activeSeasonSlug, setActiveSeasonSlug] = useState<string>(
-    () => series?.seasons?.[0]?.season_slug || ''
-  )
+  const [activeSeasonSlug, setActiveSeasonSlug] = useState<string>(() => series?.seasons?.[0]?.season_slug || '')
 
   // Sync active season if series changes
   useEffect(() => {
@@ -67,10 +55,10 @@ export function AnimeSeriesDetail({
 
   const handleEpisodeClick = (episode: AnimeEpisodeSummary) => {
     onSelectEpisode(episode.episode_id, episode.episode_number)
+    const label = `Tập ${episode.episode_number}`
+    const title = episode.title?.trim()
     setNotice(
-      `Đang mở ${
-        episode.title ? `Tập ${episode.episode_number}: ${episode.title}` : `Tập ${episode.episode_number}`
-      }...`
+      `Đang mở ${title && title.toLocaleLowerCase('vi') !== label.toLocaleLowerCase('vi') ? `${label}: ${title}` : label}...`
     )
   }
 
@@ -128,16 +116,10 @@ export function AnimeSeriesDetail({
   }
 
   const displayedEpisodes =
-    seasonsMap.size > 1 && activeSeasonSlug
-      ? seasonsMap.get(activeSeasonSlug) || episodes
-      : episodes
+    seasonsMap.size > 1 && activeSeasonSlug ? seasonsMap.get(activeSeasonSlug) || episodes : episodes
 
   return (
-    <section
-      className="anime-detail-panel anime-series-hub"
-      aria-labelledby="anime-detail-title"
-      tabIndex={-1}
-    >
+    <section className="anime-detail-panel anime-series-hub" aria-labelledby="anime-detail-title" tabIndex={-1}>
       {/* Series Hub Hero Banner */}
       <div className="anime-series-hub__backdrop" aria-hidden="true">
         {hasPoster && series.poster_url ? (
@@ -168,12 +150,7 @@ export function AnimeSeriesDetail({
           <span>Quay lại danh mục</span>
         </button>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="anime-detail-close-btn"
-          aria-label="Đóng chi tiết series"
-        >
+        <button type="button" onClick={onClose} className="anime-detail-close-btn" aria-label="Đóng chi tiết series">
           <X size={20} aria-hidden="true" />
         </button>
       </div>
@@ -198,11 +175,7 @@ export function AnimeSeriesDetail({
                 Trình độ {series.jlpt_level}
               </span>
             )}
-            {series.category && (
-              <span className="anime-badge-category">
-                {series.category}
-              </span>
-            )}
+            {series.category && <span className="anime-badge-category">{series.category}</span>}
             <span className="anime-badge-meta">
               <Film size={14} aria-hidden="true" />
               {series.total_episodes} tập
@@ -224,9 +197,7 @@ export function AnimeSeriesDetail({
           {series.description && (
             <div className="anime-detail-desc-box">
               <h3 className="anime-detail-section-title">Tóm tắt nội dung</h3>
-              <p className="anime-detail-desc-text">
-                {series.description}
-              </p>
+              <p className="anime-detail-desc-text">{series.description}</p>
             </div>
           )}
         </div>
@@ -243,17 +214,11 @@ export function AnimeSeriesDetail({
       {/* Episode Picker Section */}
       <div className="anime-detail-episodes-section">
         <div className="anime-series-hub__episodes-header">
-          <h3 className="anime-detail-section-title">
-            Danh sách tập phim ({episodes.length} tập)
-          </h3>
+          <h3 className="anime-detail-section-title">Danh sách tập phim ({episodes.length} tập)</h3>
 
           {/* Season Selector Tabs */}
           {series.seasons && series.seasons.length > 1 && (
-            <div
-              className="anime-season-tabs"
-              role="tablist"
-              aria-label="Chọn mùa phim"
-            >
+            <div className="anime-season-tabs" role="tablist" aria-label="Chọn mùa phim">
               {series.seasons.map((season) => {
                 const seasonEpisodes = seasonsMap.get(season.season_slug) || []
                 const isActive = activeSeasonSlug === season.season_slug
@@ -287,11 +252,7 @@ export function AnimeSeriesDetail({
           <div className="anime-detail-error-box anime-detail-error-box--episodes" role="alert">
             <p>{episodesError}</p>
             {(onRetryEpisodes || onRetry) && (
-              <button
-                type="button"
-                onClick={onRetryEpisodes || onRetry}
-                className="anime-btn anime-btn--primary"
-              >
+              <button type="button" onClick={onRetryEpisodes || onRetry} className="anime-btn anime-btn--primary">
                 Thử lại
               </button>
             )}
@@ -305,6 +266,8 @@ export function AnimeSeriesDetail({
               const isSelected = selectedEpisodeId === ep.episode_id
               const isPlayable = Boolean(ep.playback_allowed)
               const hasSubs = Boolean(ep.has_subtitles)
+              const distinctTitle =
+                ep.title?.trim().toLocaleLowerCase('vi') === `tập ${ep.episode_number}` ? null : ep.title?.trim()
 
               return (
                 <button
@@ -313,7 +276,7 @@ export function AnimeSeriesDetail({
                   onClick={() => handleEpisodeClick(ep)}
                   className={`anime-episode-row${isSelected ? ' is-selected' : ''}`}
                   aria-label={`Chọn tập ${ep.episode_number}${
-                    ep.title ? ` - ${ep.title}` : ''
+                    distinctTitle ? ` - ${distinctTitle}` : ''
                   }: ${ep.has_subtitles ? 'Có phụ đề' : 'Chưa có phụ đề'}`}
                   aria-pressed={isSelected}
                 >
@@ -326,19 +289,11 @@ export function AnimeSeriesDetail({
 
                   <div className="anime-episode-row__main">
                     <div className="anime-episode-row__header">
-                      <span className="anime-episode-row__num">
-                        Tập {ep.episode_number}
-                      </span>
-                      {ep.title && (
-                        <span className="anime-episode-row__title">
-                          {ep.title}
-                        </span>
-                      )}
+                      <span className="anime-episode-row__num">Tập {ep.episode_number}</span>
+                      {distinctTitle && <span className="anime-episode-row__title">{distinctTitle}</span>}
                       <span
                         className={`anime-episode-badge ${
-                          ep.has_subtitles
-                            ? 'anime-episode-badge--subbed'
-                            : 'anime-episode-badge--raw'
+                          ep.has_subtitles ? 'anime-episode-badge--subbed' : 'anime-episode-badge--raw'
                         }`}
                       >
                         {ep.has_subtitles ? 'Có phụ đề' : 'Chưa có phụ đề'}
@@ -363,9 +318,7 @@ export function AnimeSeriesDetail({
                         Học phụ đề
                       </span>
                     ) : (
-                      <span className="anime-episode-row__status-badge">
-                        Chưa có nguồn phát
-                      </span>
+                      <span className="anime-episode-row__status-badge">Chưa có nguồn phát</span>
                     )}
                   </div>
                 </button>

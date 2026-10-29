@@ -6,6 +6,10 @@ import { NotFoundPage, PageSkeleton } from './components/AppStates'
 import HomePage from './HomePage'
 import AccessDeniedPage from './features/auth/AccessDeniedPage'
 import { useAuth } from './features/auth/authContext'
+import ArtisticPreloader from './components/ArtisticPreloader'
+import HomeInkCursor from './components/HomeInkCursor'
+import WashiPageTransition from './components/WashiPageTransition'
+import { sumiAudio } from './features/dictionary/sumiAudio'
 import { getPageAccess, hasPermission } from './features/auth/permissions'
 import { getPageFromPath, getRoute, PAGE_PATHS, type Page } from './types/app'
 
@@ -66,9 +70,22 @@ function AppContent() {
       bunpo: `${PAGE_PATHS.dictionary}?tab=grammar`,
       kanji: `${PAGE_PATHS.dictionary}?tab=kanji`,
     }
-    startTransition(() => {
-      navigate(dictionarySectionUrls[nextPage] || PAGE_PATHS[nextPage])
-    })
+    const targetUrl = dictionarySectionUrls[nextPage] || PAGE_PATHS[nextPage]
+
+    sumiAudio.playWindSwoosh()
+
+    const doc = document as unknown as { startViewTransition?: (callback: () => void) => void }
+    if (typeof doc !== 'undefined' && typeof doc.startViewTransition === 'function') {
+      doc.startViewTransition(() => {
+        startTransition(() => {
+          navigate(targetUrl)
+        })
+      })
+    } else {
+      startTransition(() => {
+        navigate(targetUrl)
+      })
+    }
   }
   const isAuthenticated = status === 'authenticated'
   const canRenderBeforeSessionRestore = page === 'home' || page === 'dictionary' || page === 'jlpt' || page === 'anime'
@@ -104,12 +121,7 @@ function AppContent() {
   if (!page)
     return (
       <div className="app-shell">
-        <TopNav
-          page="home"
-          navigate={goTo}
-          isAuthenticated={isAuthenticated}
-          userName={user?.name}
-        />
+        <TopNav page="home" navigate={goTo} isAuthenticated={isAuthenticated} userName={user?.name} />
         <main id="main-content" tabIndex={-1}>
           <NotFoundPage onNavigate={goTo} />
         </main>
@@ -137,12 +149,10 @@ function AppContent() {
 
   return (
     <div className="app-shell">
-      <TopNav
-        page={page}
-        navigate={goTo}
-        isAuthenticated={isAuthenticated}
-        userName={user?.name}
-      />
+      <HomeInkCursor />
+      <ArtisticPreloader />
+      <WashiPageTransition />
+      <TopNav page={page} navigate={goTo} isAuthenticated={isAuthenticated} userName={user?.name} />
       <main id="main-content" tabIndex={-1}>
         <p className="route-announcer" aria-live="polite">
           {getRoute(page).title}
@@ -151,7 +161,7 @@ function AppContent() {
           <AccessDeniedPage onNavigate={goTo} />
         ) : (
           <Suspense fallback={<PageSkeleton label="Đang tải trang…" compact />}>
-            {page === 'home' && <HomePage setPage={goTo} isAuthenticated={isAuthenticated} />}
+            {page === 'home' && <HomePage setPage={goTo} isAuthenticated={isAuthenticated} userName={user?.name} />}
             {page === 'onboarding' && <OnboardingPage onNavigate={goTo} />}
             {page === 'dictionary' && <DictionaryPage inputRef={searchInputRef} onReview={() => goTo('review')} />}
             {page === 'jlpt' && <JlptPage />}

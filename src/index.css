@@ -1,12 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import './styles/tokens.css';
 @import './styles/ui.css';
 @import './styles/nhaikanji.css';
 @import './styles/curriculum-catalog.css';
 @import './styles/anime.css';
+@import './styles/dictionary-washi.css';
 
 * {
   box-sizing: border-box;
@@ -237,9 +238,11 @@ rp {
 .nav-ai-badge {
   padding: 1px 6px;
   border-radius: var(--radius-xs);
-  color: var(--rose-300);
-  background: rgb(255 77 109 / 20%);
+  color: var(--color-accent, #b82e2e);
+  background: rgb(184 46 46 / 8%);
+  border: 1px solid rgb(184 46 46 / 20%);
   font-size: var(--font-size-2xs);
+  font-weight: 700;
 }
 .nav-tab > svg,
 .nav-mobile__item > svg,
@@ -2374,234 +2377,385 @@ html[data-accent='white'] .ui-button--primary {
   line-height: 1.7;
 }
 
-.dictionary-page {
+/* Dictionary styles are now master-crafted in src/styles/dictionary-washi.css */
+
+
+/* ==========================================================================
+   JAPANESE STUDY CABINET (和風文房具箱・硯箱・書見台)
+   Artisan handcrafted right sidepanel with Kanagu corner hardware,
+   Watoji lacquer spine inlay, Kumiko hairline dividers, Tanzaku wooden slats,
+   and Orihon ledger history.
+   Strictly driven by CSS theme variables (100% theme customizable).
+   ========================================================================== */
+.japanese-cabinet {
   position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  min-height: calc(100vh - 4rem);
-  padding: var(--space-16) var(--page-gutter) var(--space-24);
-  background: radial-gradient(circle at 50% 0%, var(--color-accent-subtle), transparent 32%), var(--color-bg-canvas);
+  background: var(--color-bg-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.dictionary-page::before,
-.dictionary-page::after {
-  position: absolute;
-  z-index: -1;
-  width: 22rem;
-  height: 22rem;
-  border-radius: 999px;
-  filter: blur(7rem);
-  opacity: 0.12;
-  pointer-events: none;
-  content: '';
-}
-.dictionary-page::before {
-  top: 4rem;
-  left: 12%;
-  background: var(--color-accent);
-}
-.dictionary-page::after {
-  right: 8%;
-  bottom: 6rem;
-  background: var(--color-info);
+.japanese-cabinet:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.09);
 }
 
-.dictionary-shell {
-  width: min(100%, 90rem);
-  margin: 0 auto;
+
+
+/* Brass ornamental corner brackets (金具 Kanagu) */
+.japanese-cabinet__kanagu {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+  z-index: 3;
 }
-.dictionary-querybar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: var(--space-3);
-  align-items: center;
-  padding: var(--space-2);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-elevated);
-  box-shadow: var(--shadow-sm);
+.japanese-cabinet__kanagu--tl {
+  top: 4px;
+  left: 4px;
+  border-top: 2px solid var(--color-border-hover);
+  border-left: 2px solid var(--color-border-hover);
+  border-top-left-radius: 4px;
 }
-.dictionary-querybar__field {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-  padding-inline: var(--space-3);
-  color: var(--color-text-muted);
+.japanese-cabinet__kanagu--tr {
+  top: 4px;
+  right: 4px;
+  border-top: 2px solid var(--color-border-hover);
+  border-right: 2px solid var(--color-border-hover);
+  border-top-right-radius: 4px;
 }
-.dictionary-querybar__field .ui-input {
-  min-width: 0;
-  height: 2.75rem;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  font-family: var(--font-jp);
-  font-size: 1.05rem;
+.japanese-cabinet__kanagu--bl {
+  bottom: 4px;
+  left: 4px;
+  border-bottom: 2px solid var(--color-border-hover);
+  border-left: 2px solid var(--color-border-hover);
+  border-bottom-left-radius: 4px;
 }
-.dictionary-querybar__field .ui-input:focus {
-  outline: 0;
-  box-shadow: none;
+.japanese-cabinet__kanagu--br {
+  bottom: 4px;
+  right: 4px;
+  border-bottom: 2px solid var(--color-border-hover);
+  border-right: 2px solid var(--color-border-hover);
+  border-bottom-right-radius: 4px;
 }
-.dictionary-querybar__clear {
-  display: grid;
-  flex: 0 0 auto;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border: 0;
+.japanese-cabinet__kanagu::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
-  color: var(--color-text-muted);
-  background: transparent;
-  cursor: pointer;
+  background: var(--color-border-hover);
 }
-.dictionary-querybar__clear:hover {
-  color: var(--color-accent);
-  background: var(--color-accent-subtle);
-}
-.dictionary-querybar__submit {
-  min-height: 2.75rem;
-  white-space: nowrap;
-}
-.dictionary-querybar__suggestions {
+.japanese-cabinet__kanagu--tl::after { top: 2px; left: 2px; }
+.japanese-cabinet__kanagu--tr::after { top: 2px; right: 2px; }
+.japanese-cabinet__kanagu--bl::after { bottom: 2px; left: 2px; }
+.japanese-cabinet__kanagu--br::after { bottom: 2px; right: 2px; }
+
+/* Sections */
+.japanese-cabinet__section {
+  padding: 1.15rem 1.15rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  justify-content: flex-end;
+  flex-direction: column;
 }
-.dictionary-querybar__suggestions button,
-.dictionary-sidepanel__chips button {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-subtle);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font-family: var(--font-jp);
-  font-size: 0.82rem;
+
+/* Hairline Kumiko divider with diamond crest */
+.japanese-cabinet__divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1px;
+  margin: 0 var(--space-4);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-border) 20%,
+    var(--color-border) 80%,
+    transparent 100%
+  );
+  position: relative;
+}
+.japanese-cabinet__divider::after {
+  content: '◆';
+  position: absolute;
+  font-size: 0.55rem;
   line-height: 1;
-  padding: 0.5rem 0.7rem;
-  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
-}
-.dictionary-querybar__suggestions button:hover,
-.dictionary-sidepanel__chips button:hover {
-  border-color: var(--color-accent);
-  background: var(--color-accent-subtle);
   color: var(--color-accent);
-}
-.dictionary-tabs {
-  display: flex;
-  gap: var(--space-2);
-  margin-top: var(--space-5);
-  overflow-x: auto;
-  border-bottom: 1px solid var(--color-border);
-}
-.dictionary-tabs button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 0 0 auto;
-  border: 0;
-  border-bottom: 0.1875rem solid transparent;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 750;
-  padding: 0.8rem 1rem 0.7rem;
-  transition: color 150ms ease, border-color 150ms ease;
-}
-.dictionary-tabs button:hover,
-.dictionary-tabs button.is-active {
-  border-bottom-color: var(--color-accent);
-  color: var(--color-accent);
-}
-.dictionary-workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 18rem;
-  gap: var(--space-6);
-  align-items: start;
-  margin-top: var(--space-6);
-}
-.dictionary-workspace__main {
-  min-width: 0;
-}
-.dictionary-sidepanel {
-  display: grid;
-  gap: var(--space-4);
-  position: sticky;
-  top: var(--space-5);
-}
-.dictionary-sidepanel__card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
   background: var(--color-bg-surface);
+  padding: 0 6px;
+  letter-spacing: 0;
+  opacity: 0.85;
 }
-.dictionary-sidepanel__eyebrow,
-.dictionary-sidepanel h2 {
+
+/* Header Row & Titles */
+.japanese-cabinet__header-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+.japanese-cabinet__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.dictionary-sidepanel__card > strong {
-  display: block;
+.japanese-cabinet__title svg {
   color: var(--color-accent);
-  font-size: 1.55rem;
 }
-.dictionary-sidepanel__card > p {
-  margin: var(--space-2) 0 var(--space-4);
+
+/* Artisan Woodblock Hanko Seal */
+.japanese-cabinet__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 3px;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  font-family: 'Noto Serif JP', var(--font-jp), serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: rotate(-3deg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent), 0 1px 3px rgba(0, 0, 0, 0.05);
+  user-select: none;
+}
+
+/* Stat Block */
+.japanese-cabinet__stat-block {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: var(--space-1) 0 var(--space-2);
+}
+.japanese-cabinet__stat-number {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.japanese-cabinet__stat-number strong {
+  font-family: 'Noto Serif JP', var(--font-display), serif;
+  font-size: 2.3rem;
+  line-height: 1;
+  color: var(--color-accent);
+  font-weight: 750;
+}
+.japanese-cabinet__stat-unit {
+  font-size: 0.88rem;
+  font-weight: 600;
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  line-height: 1.5;
 }
-.dictionary-sidepanel__progress {
-  overflow: hidden;
-  height: 0.45rem;
+.japanese-cabinet__srs-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+.japanese-cabinet__desc {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+/* Progress Gauge (Thước đo tiến độ) */
+.japanese-cabinet__progress-wrapper {
   margin-bottom: var(--space-4);
+}
+.japanese-cabinet__progress {
+  overflow: hidden;
+  height: 0.42rem;
   border-radius: var(--radius-pill);
   background: var(--color-bg-subtle);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
 }
-.dictionary-sidepanel__progress > span {
+.japanese-cabinet__progress > span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--color-accent);
-  transition: width 180ms ease;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 85%, black), var(--color-accent));
+  transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.dictionary-sidepanel__chips {
+.japanese-cabinet__progress-labels {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-top: 6px;
 }
-.dictionary-sidepanel__history {
+
+/* Lacquered Wood Review Button */
+.japanese-cabinet__review-btn {
+  background: var(--color-accent) !important;
+  color: #ffffff !important;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 80%, black) !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 3px 8px -2px color-mix(in srgb, var(--color-accent) 40%, transparent) !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.02em;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.japanese-cabinet__review-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1.5px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 16px -2px color-mix(in srgb, var(--color-accent) 50%, transparent) !important;
+}
+.japanese-cabinet__review-btn:active {
+  transform: translateY(1px) !important;
+  filter: brightness(0.96);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Tanzaku Wooden Slat Grid (Cụm từ gợi ý) */
+.japanese-cabinet__fuda-grid {
   display: grid;
-  gap: var(--space-1);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
 }
-.dictionary-sidepanel__history button {
+.japanese-cabinet__fuda {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  width: 100%;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-secondary);
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-left: 2.5px solid transparent;
+  border-radius: 6px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
   cursor: pointer;
-  font-family: var(--font-jp);
-  padding: 0.55rem 0.65rem;
-  text-align: left;
+  font-family: 'Noto Serif JP', var(--font-jp), serif;
+  font-size: 0.94rem;
+  font-weight: 600;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
-.dictionary-sidepanel__history button:hover {
+.japanese-cabinet__fuda:hover {
   border-color: var(--color-accent);
+  border-left-color: var(--color-accent);
   background: var(--color-accent-subtle);
   color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-accent) 25%, transparent);
 }
-.dictionary-sidepanel__empty {
+.japanese-cabinet__fuda:active {
+  transform: translateY(0);
+}
+.japanese-cabinet__fuda-num {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  background: var(--color-bg-subtle);
+  padding: 1px 5px;
+  border-radius: 3px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.japanese-cabinet__fuda:hover .japanese-cabinet__fuda-num {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+/* Orihon Ledger History (Đã tra gần đây) */
+.japanese-cabinet__history {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.japanese-cabinet__history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  border: 1px solid transparent;
+  border-bottom: 1px dashed var(--color-border-subtle);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  transition: all 0.16s ease;
+}
+.japanese-cabinet__history-item:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-bottom-style: solid;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  padding-left: 0.7rem;
+}
+.japanese-cabinet__history-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Noto Serif JP', var(--font-jp), serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.japanese-cabinet__history-bullet {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.japanese-cabinet__history-arrow {
+  color: var(--color-text-muted);
+  transition: transform 0.16s ease, color 0.16s ease;
+}
+.japanese-cabinet__history-item:hover .japanese-cabinet__history-arrow {
+  color: var(--color-accent);
+  transform: translateX(3px);
+}
+.japanese-cabinet__clear-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.japanese-cabinet__clear-btn:hover {
+  color: var(--color-accent);
+}
+.japanese-cabinet__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-2);
+  gap: 6px;
+  text-align: center;
   color: var(--color-text-muted) !important;
+  font-size: 0.82rem;
+}
+
+/* Backward compatibility / aliases */
+.dictionary-sidepanel__card {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-surface);
+  box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.04);
 }
 
 /* Detailed dictionary result: a single, scannable learning reference. */
@@ -2707,40 +2861,7 @@ html[data-accent='white'] .ui-button--primary {
 .dictionary-kanji-grid article > div { display: grid; gap: .25rem; min-width: 0; padding: var(--space-2); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); }
 .dictionary-kanji-grid b { overflow-wrap: anywhere; color: var(--color-text); font: 650 var(--font-size-sm) var(--font-jp); }
 @media (max-width: 48rem) { .dictionary-vocab-results__meta { align-items: flex-start; flex-direction: column; gap: var(--space-1); } .dictionary-word-detail__hero { padding-inline: 0; } .dictionary-word-detail__actions { justify-content: flex-start; } .dictionary-overview { grid-template-columns: 1fr; } .dictionary-related-grid { grid-template-columns: 1fr; } .dictionary-kanji-grid article { grid-template-columns: 5rem 1fr; } .dictionary-kanji-grid article > strong { grid-row: span 4; font-size: 3rem; } }
-@media (max-width: 68rem) {
-  .dictionary-querybar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .dictionary-querybar__suggestions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    padding: 0 var(--space-2) var(--space-2);
-  }
-  .dictionary-workspace {
-    grid-template-columns: 1fr;
-  }
-  .dictionary-sidepanel {
-    position: static;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 44rem) {
-  .dictionary-page {
-    padding-top: var(--space-6);
-  }
-  .dictionary-querybar {
-    grid-template-columns: 1fr;
-  }
-  .dictionary-querybar__submit {
-    width: 100%;
-  }
-  .dictionary-querybar__suggestions {
-    grid-column: auto;
-  }
-  .dictionary-sidepanel {
-    grid-template-columns: 1fr;
-  }
-}
+
 .dictionary-page__hero,
 .dictionary-page__results {
   width: min(100%, var(--content-width-reading));
@@ -2988,17 +3109,81 @@ html[data-accent='white'] .ui-button--primary {
 }
 
 .nav-profile-button,
-.nav-actions .nav-profile-button,
-.nav-actions > .ui-button {
+.nav-actions .nav-profile-button {
   color: var(--nav-white);
   background: var(--nav-vermilion);
 }
 
 .nav-profile-button:hover:not(:disabled),
-.nav-actions .nav-profile-button:hover:not(:disabled),
-.nav-actions > .ui-button:hover:not(:disabled) {
+.nav-actions .nav-profile-button:hover:not(:disabled) {
   color: var(--nav-white);
   background: #e0343f;
+}
+
+.nav-actions > .ui-button {
+  color: var(--color-text, #1e1d1a);
+  background: transparent;
+  border: 1px solid rgb(80 68 52 / 24%);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.18s ease;
+}
+
+.nav-actions > .ui-button:hover:not(:disabled) {
+  color: var(--color-accent, #b82e2e);
+  border-color: var(--color-accent, #b82e2e);
+  background: rgb(184 46 46 / 6%);
+}
+
+.nav-login-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-jp-serif, var(--font-sans)), serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border-radius: 4px;
+  position: relative;
+  transition: color 0.18s ease;
+}
+
+.nav-login-link svg {
+  color: var(--color-text-muted);
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.nav-login-link::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.2rem;
+  height: 1px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-login-link:hover {
+  color: var(--color-accent);
+}
+
+.nav-login-link:hover svg {
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.nav-login-link:hover::after {
+  transform: scaleX(1);
 }
 
 /* ─── Card ────────────────────────────────────────────────────────────── */
@@ -3847,7 +4032,7 @@ input::placeholder {
     left: 0;
     z-index: var(--z-sticky);
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
     border-top: 1px solid var(--color-border);
     background: color-mix(in srgb, var(--color-bg-elevated) 96%, transparent);
@@ -3861,7 +4046,7 @@ input::placeholder {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 2.75rem;
+    min-height: 3.15rem;
     gap: 2px;
     padding: 3px 2px;
     border: 0;
@@ -5676,5 +5861,1531 @@ body:has(.video-study-page) {
   }
   .showcase-section + .showcase-section {
     margin-top: 4rem;
+  }
+}
+
+/* ─── Japanese Manuscript (Makimono) Scrollbar ───────────────────────── */
+.kanji-scroll-window::-webkit-scrollbar {
+  width: 6px;
+}
+.kanji-scroll-window::-webkit-scrollbar-track {
+  background: rgba(245, 240, 230, 0.4);
+  border-radius: 999px;
+  margin: 6px 0;
+}
+.kanji-scroll-window::-webkit-scrollbar-thumb {
+  background: rgba(180, 165, 145, 0.6);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  transition: background-color 0.2s ease;
+}
+.kanji-scroll-window::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* ==========================================================================
+   SUMI-E INTERACTIVE ART EXPERIENCE (水墨無極 - Thủy Mặc Vô Cực)
+   Tranquil digital art installation for Kanji exploration.
+   Washi paper parchment, fluid inertial physics, generative Web Audio,
+   and minimalist Whisper HUD.
+   ========================================================================== */
+.sumi-e-container {
+  position: relative;
+  width: 100%;
+  min-height: 480px;
+  background-color: #FAF8F5;
+  border: 1px solid rgba(215, 205, 190, 0.7);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Whisper HUD (Giao diện điều khiển vi mô) ─────────────────────────── */
+.sumi-e-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.25rem;
+  background: rgba(250, 248, 245, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(220, 210, 195, 0.6);
+  opacity: 0.45;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+.sumi-e-hud:hover,
+.sumi-e-hud:focus-within {
+  opacity: 1;
+}
+
+/* Level Navigation Items */
+.sumi-e-levels {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.sumi-e-level-item {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #57534E;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.18s ease;
+}
+.sumi-e-level-item:hover {
+  color: #1c1917;
+  background: rgba(0, 0, 0, 0.03);
+}
+.sumi-e-level-item.is-active {
+  color: #C23A2B;
+  font-weight: 750;
+}
+.sumi-e-level-indicator {
+  position: absolute;
+  bottom: 1px;
+  left: 18%;
+  right: 18%;
+  height: 2px;
+  background: #C23A2B;
+  border-radius: 1px;
+}
+
+/* Ambient HUD Controls */
+.sumi-e-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: #78716C;
+}
+.sumi-e-counter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: #8A8175;
+}
+.sumi-e-audio-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(215, 205, 190, 0.8);
+  background: rgba(255, 255, 255, 0.7);
+  color: #57534E;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.sumi-e-audio-btn:hover {
+  color: #C23A2B;
+  border-color: #C23A2B;
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* ─── Hanko SRS Review Filter Button ("Chờ nạp mực") ──────────────────── */
+.sumi-e-hanko-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(250, 248, 245, 0.7);
+  border: 1px solid rgba(215, 205, 190, 0.75);
+  border-radius: 9999px;
+  padding: 0.26rem 0.72rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #57534E;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.sumi-e-hanko-filter:hover {
+  color: #C23A2B;
+  border-color: rgba(194, 58, 43, 0.45);
+  background: #ffffff;
+  transform: translateY(-0.5px);
+}
+
+.sumi-e-hanko-filter.is-active {
+  background: #C23A2B;
+  border-color: #A82E20;
+  color: #FAF8F5;
+  box-shadow: 0 2px 8px rgba(194, 58, 43, 0.28);
+}
+
+.sumi-e-hanko-filter-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  font-family: "Noto Serif JP", serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sumi-e-hanko-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(194, 58, 43, 0.12);
+  color: #C23A2B;
+}
+
+.sumi-e-hanko-filter.is-active .sumi-e-hanko-filter-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* ─── Interactive Fluid Canvas ─────────────────────────────────────────── */
+.sumi-e-canvas {
+  display: block;
+  width: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+@media (max-width: 640px) {
+  .sumi-e-hud {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+    opacity: 0.8;
+  }
+  .sumi-e-levels {
+    justify-content: center;
+    overflow-x: auto;
+  }
+  .sumi-e-controls {
+    justify-content: space-between;
+  }
+}
+
+/* Accessibility hidden helper */
+.visually-hidden,
+.sumi-e-accessible-list {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  pointer-events: none !important;
+}
+
+
+/* ==========================================================================
+   ZEN CALLIGRAPHY THEATER & ART INSTALLATION STYLES (書の舞台・墨滴)
+   Full-width art mode, Sumi droplet opening, Shodo Stage Modal.
+   Strictly unified palette: Ivory Washi, Pitch Sumi, and Cinnabar Shu-iro.
+   ========================================================================== */
+
+/* Full-width mode when on Kanji Art Installation tab */
+.dictionary-workspace.is-kanji-art-mode {
+  grid-template-columns: 1fr !important;
+}
+
+/* ─── Sumi Drop Opening (墨滴が和紙に滲む) ──────────────────────────────── */
+.sumi-opening-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 440px;
+  background-color: #FAF8F5;
+  border-radius: 12px;
+  border: 1px solid rgba(215, 205, 190, 0.7);
+  box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  padding: 2rem 1rem;
+}
+.sumi-opening-canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+.sumi-opening-meta {
+  margin-top: 1rem;
+  text-align: center;
+  user-select: none;
+}
+.sumi-opening-jp {
+  font-family: 'Noto Serif JP', var(--font-jp), serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1C1917;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.35rem;
+}
+.sumi-opening-vi {
+  font-size: 0.85rem;
+  color: #78716C;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Shodo Theater Modal (書の舞台・掛軸) ──────────────────────────────── */
+.shodo-theater-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 16, 15, 0.76);
+  backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  animation: shodo-fade-in 0.25s ease-out;
+}
+
+@keyframes shodo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.shodo-theater-scroll {
+  position: relative;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  background-color: #FAF8F5;
+  border: 1px solid rgba(210, 195, 175, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stage Header */
+.shodo-theater-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid rgba(215, 205, 190, 0.6);
+  background: rgba(250, 248, 245, 0.95);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.shodo-theater-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.shodo-theater-hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid #C23A2B;
+  border-radius: 4px;
+  background: rgba(194, 58, 43, 0.08);
+  color: #C23A2B;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.shodo-theater-eyebrow {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #78716C;
+}
+.shodo-theater-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1C1917;
+}
+
+.shodo-theater-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* Hairline Hanko Seal button */
+.shodo-hanko-seal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: none;
+  border: none;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+  color: #78716C;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+.shodo-hanko-seal-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(194, 58, 43, 0.45);
+  border-radius: 3px;
+  background: rgba(194, 58, 43, 0.04);
+  transition: all 0.2s ease;
+}
+.shodo-hanko-seal-glyph {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #C23A2B;
+}
+.shodo-hanko-seal-label {
+  font-size: 0.74rem;
+  color: #78716C;
+  transition: color 0.18s ease;
+}
+.shodo-hanko-seal-btn:hover .shodo-hanko-seal-box {
+  border-color: #C23A2B;
+  background: rgba(194, 58, 43, 0.1);
+  box-shadow: 0 0 8px rgba(194, 58, 43, 0.2);
+}
+.shodo-hanko-seal-btn:hover .shodo-hanko-seal-label {
+  color: #1C1917;
+}
+
+/* Stamped state */
+.shodo-hanko-seal-btn.is-stamped .shodo-hanko-seal-box {
+  border-color: #C23A2B;
+  background: rgba(194, 58, 43, 0.14);
+}
+.shodo-hanko-seal-btn.is-stamped .shodo-hanko-seal-label {
+  color: #C23A2B;
+}
+
+/* Hairline navigation & close buttons (No plastic borders) */
+.shodo-theater-hairline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: #78716C;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+  transition: all 0.18s ease;
+}
+.shodo-theater-hairline-btn:hover {
+  color: #1C1917;
+  background: rgba(0, 0, 0, 0.04);
+}
+.shodo-theater-hairline-btn--close:hover {
+  color: #C23A2B;
+  background: rgba(194, 58, 43, 0.06);
+}
+
+
+/* Tabs */
+.shodo-theater-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(215, 205, 190, 0.6);
+  padding: 0 1.4rem;
+  background: #FAF8F5;
+  gap: 1.5rem;
+}
+.shodo-theater-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.75rem 0;
+  border: none;
+  background: none;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #78716C;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.18s ease;
+}
+.shodo-theater-tab:hover {
+  color: #1C1917;
+}
+.shodo-theater-tab.is-active {
+  color: #C23A2B;
+  font-weight: 750;
+}
+.shodo-theater-tab.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #C23A2B;
+  border-radius: 1px;
+}
+
+/* Body */
+.shodo-theater-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Hero Calligraphy Stage ────────────────────────────────────────────── */
+.shodo-hero-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.2rem 1.5rem 1.8rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(247, 244, 238, 0.8) 100%);
+  border: 1px solid rgba(215, 205, 190, 0.7);
+  border-radius: 10px;
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+.shodo-hero-art {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+@keyframes shodo-stroke-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 0.85;
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.shodo-hero-char {
+  font-family: 'Noto Serif JP', 'Yu Mincho', serif;
+  font-size: 6.2rem;
+  font-weight: 600;
+  color: #111111;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+  animation: shodo-stroke-appear 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.shodo-hero-hanzi {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #C23A2B;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+.shodo-hero-meaning {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #57534E;
+}
+
+.shodo-hero-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(220, 210, 195, 0.5);
+}
+.shodo-hero-replay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #78716C;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.shodo-hero-replay-btn:hover {
+  color: #C23A2B;
+}
+.shodo-hero-meta {
+  font-size: 0.74rem;
+  font-family: var(--font-mono);
+  color: #8A8175;
+  font-weight: 600;
+}
+
+/* ─── Kanji Stroke Player (Thư pháp Bút lông Khải thư AnimCJK / HanziWriter) ────── */
+.kanji-stroke-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+.kanji-stroke-stage {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  max-width: 100%;
+  background: radial-gradient(circle at 50% 50%, #FAF8F5 0%, #F5EFE6 100%);
+  border: 1px solid rgba(194, 58, 43, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 0 12px rgba(180, 70, 50, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  touch-action: none;
+}
+.kanji-stroke-grid-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.kanji-stroke-writer-mount {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.kanji-stroke-writer-mount svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+.kanji-stroke-num-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.kanji-stroke-badge-dot {
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  background: #8A8175;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s ease;
+}
+.kanji-stroke-badge-dot.is-drawn {
+  background: #C23A2B;
+}
+.kanji-quiz-seal-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(255, 253, 249, 0.92);
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  animation: shodo-fade-in 0.25s ease;
+}
+.kanji-quiz-seal-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.85rem;
+  border: 2px solid #C23A2B;
+  border-radius: 8px;
+  color: #C23A2B;
+  font-weight: 800;
+  font-size: 0.95rem;
+  font-family: 'Noto Serif JP', serif;
+  box-shadow: 0 2px 8px rgba(194, 58, 43, 0.15);
+}
+.kanji-quiz-seal-sub {
+  font-size: 0.74rem;
+  color: #78716C;
+  font-weight: 500;
+}
+.kanji-stroke-fallback-glyph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 5.5rem;
+  color: #1A1817;
+  z-index: 2;
+}
+
+/* Mode tabs: Bút pháp ↔ Tập viết */
+.kanji-stroke-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 240, 232, 0.8);
+  padding: 2px 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(215, 205, 190, 0.6);
+  margin-bottom: 0.5rem;
+}
+.kanji-stroke-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.22rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  color: #78716C;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.kanji-stroke-mode-tab:hover {
+  color: #C23A2B;
+}
+.kanji-stroke-mode-tab.is-active {
+  background: #fff;
+  color: #C23A2B;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.kanji-quiz-hint-tag {
+  font-size: 0.7rem;
+  color: #C23A2B;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.kanji-stroke-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  width: 100%;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(220, 210, 195, 0.45);
+}
+.kanji-stroke-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid rgba(215, 205, 190, 0.6);
+  border-radius: 9999px;
+  padding: 0.25rem 0.65rem;
+  color: #57534E;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.kanji-stroke-ctrl-btn:hover {
+  border-color: #C23A2B;
+  color: #C23A2B;
+  background: rgba(194, 58, 43, 0.04);
+}
+.kanji-stroke-ctrl-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(245, 240, 232, 0.7);
+  padding: 2px 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(215, 205, 190, 0.5);
+}
+.kanji-stroke-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: #57534E;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.kanji-stroke-mini-btn:hover:not(:disabled) {
+  color: #C23A2B;
+  background: rgba(194, 58, 43, 0.08);
+}
+.kanji-stroke-mini-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.kanji-stroke-mini-btn--play {
+  color: #C23A2B;
+}
+.kanji-stroke-step-badge {
+  font-size: 0.72rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  color: #78716C;
+}
+.kanji-stroke-toggles {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.kanji-stroke-tag-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid rgba(215, 205, 190, 0.6);
+  color: #78716C;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.kanji-stroke-tag-btn:hover,
+.kanji-stroke-tag-btn.is-active {
+  border-color: #C23A2B;
+  color: #C23A2B;
+  background: rgba(194, 58, 43, 0.06);
+}
+
+/* Marginalia Grid (Readings & Radical) */
+.shodo-marginalia-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.shodo-card {
+  padding: 1rem 1.2rem;
+  background: #ffffff;
+  border: 1px solid rgba(215, 205, 190, 0.65);
+  border-radius: 8px;
+}
+.shodo-card-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 750;
+  color: #8A8175;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+.shodo-card-val {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1C1917;
+}
+.shodo-card-val--jp {
+  font-family: 'Noto Serif JP', serif;
+}
+.shodo-card-divider {
+  height: 1px;
+  background: rgba(225, 215, 200, 0.6);
+  margin: 0.65rem 0;
+}
+.shodo-radical-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.shodo-radical-glyph {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1C1917;
+  line-height: 1;
+}
+.shodo-radical-name {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1C1917;
+}
+.shodo-radical-meaning {
+  font-size: 0.78rem;
+  color: #78716C;
+}
+
+/* Mnemonic Block (Chiết tự) */
+.shodo-mnemonic-block {
+  padding: 1.1rem 1.35rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(215, 205, 190, 0.7);
+  border-left: 3.5px solid #C23A2B;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+.shodo-mnemonic-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  color: #C23A2B;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+.shodo-mnemonic-quote {
+  margin: 0;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: #2D2825;
+  font-weight: 500;
+}
+
+/* Vocabulary & Audio Section */
+.shodo-vocab-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.shodo-vocab-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.shodo-vocab-heading h4 {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  color: #1C1917;
+  text-transform: uppercase;
+}
+.shodo-vocab-sub {
+  font-size: 0.72rem;
+  color: #8A8175;
+}
+.shodo-vocab-list {
+  display: flex;
+  flex-direction: column;
+}
+.shodo-vocab-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid rgba(215, 205, 190, 0.38);
+  transition: background 0.16s ease;
+  border-radius: 4px;
+  cursor: default;
+}
+.shodo-vocab-row:last-child {
+  border-bottom: none;
+}
+.shodo-vocab-row:hover {
+  background: rgba(194, 58, 43, 0.04);
+}
+.shodo-vocab-main {
+  min-width: 0;
+  flex: 1;
+}
+.shodo-vocab-word-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+.shodo-vocab-index {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: #8A8175;
+  background: #FAF8F5;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.shodo-vocab-word {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1C1917;
+}
+.shodo-vocab-reading {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.82rem;
+  color: #78716C;
+}
+.shodo-vocab-yinhan {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #C23A2B;
+  letter-spacing: 0.05em;
+}
+.shodo-vocab-meaning {
+  font-size: 0.82rem;
+  color: #44403C;
+  line-height: 1.4;
+}
+.shodo-vocab-example {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed rgba(220, 210, 195, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.shodo-vocab-ex-jp {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.82rem;
+  color: #1C1917;
+}
+.shodo-vocab-ex-vi {
+  font-size: 0.76rem;
+  color: #78716C;
+}
+
+.shodo-vocab-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.shodo-audio-play-btn,
+.shodo-vocab-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  border: 1px solid rgba(215, 205, 190, 0.8);
+  background: #FAF8F5;
+  color: #57534E;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.shodo-audio-play-btn:hover,
+.shodo-vocab-save-btn:hover {
+  color: #C23A2B;
+  border-color: #C23A2B;
+  background: #fff;
+}
+.shodo-audio-play-btn.is-playing {
+  color: #C23A2B;
+  border-color: #C23A2B;
+  animation: pulse 1s infinite;
+}
+.shodo-vocab-save-btn.is-saved {
+  background: rgba(194, 58, 43, 0.08);
+  color: #C23A2B;
+  border-color: #C23A2B;
+}
+
+/* Practice View */
+.shodo-practice-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0;
+}
+.shodo-practice-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1C1917;
+  margin: 0 0 0.4rem;
+}
+.shodo-practice-char {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.6rem;
+  color: #C23A2B;
+}
+.shodo-practice-desc {
+  font-size: 0.78rem;
+  color: #78716C;
+  margin: 0 0 1.25rem;
+}
+.shodo-vocab-loading,
+.shodo-vocab-empty {
+  text-align: center;
+  padding: 2rem 0;
+  font-size: 0.82rem;
+  color: #8A8175;
+}
+
+/* ─── Calligraphy Practice Canvas Shell ──────────────────────────────────── */
+.shodo-canvas-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.shodo-canvas-frame {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  background: #FEFCF8;
+  border-radius: 4px;
+  overflow: hidden;
+  /* Washi paper shadow */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(180, 70, 50, 0.18);
+}
+/* Ghost guide character */
+.shodo-canvas-guide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif JP', 'Yu Mincho', serif;
+  font-size: 10.5rem;
+  line-height: 1;
+  color: rgba(180, 70, 50, 0.07);
+  pointer-events: none;
+  user-select: none;
+}
+/* Drawing canvas sits on top */
+.shodo-canvas-draw {
+  position: relative;
+  z-index: 2;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+.shodo-canvas-draw.is-drawing {
+  cursor: none; /* hide system cursor while brushing */
+}
+/* Toolbar */
+.shodo-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+/* Hint text */
+.shodo-canvas-hint {
+  font-size: 0.68rem;
+  color: #A8A29E;
+  text-align: center;
+  font-style: italic;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+/* ─── Wide Modal for 3-Realm Layout ─────────────────────────────────────── */
+.shodo-theater-scroll--wide {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  animation: kanji-modal-slide-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes kanji-modal-slide-in {
+  from { opacity: 0; transform: scale(0.98) translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ─── 3-Realm Grid ───────────────────────────────────────────────────────── */
+.kanji-three-realms {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr 1fr;
+  gap: 1.1rem;
+  align-items: start;
+  min-height: 460px;
+}
+/* Primitive kanji: no upstream components — collapse to 2 columns */
+.kanji-three-realms--two-col {
+  grid-template-columns: 1.1fr 1fr;
+}
+/* Primitive kanji but has downstream compounds — keep 3 col but mark center */
+.kanji-three-realms--compound-only .kanji-realm--constellation {
+  border-left: 1px solid rgba(215, 205, 190, 0.4);
+  border-right: 1px solid rgba(215, 205, 190, 0.4);
+}
+
+.kanji-realm {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 420px;
+}
+
+/* Realm label (section title) */
+.kanji-realm-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(215, 205, 190, 0.55);
+}
+.kanji-realm-label-jp {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.72rem;
+  color: #C23A2B;
+  letter-spacing: 0.08em;
+}
+.kanji-realm-label > span:last-child {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #78716C;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ─── Realm 1: Visual (Calligraphy / Illustration) ──────────────────────── */
+.kanji-realm--visual {
+  background: linear-gradient(160deg, rgba(255,253,249,0.9) 0%, rgba(247,244,238,0.7) 100%);
+  border: 1px solid rgba(215, 205, 190, 0.6);
+  border-radius: 10px;
+  padding: 1.1rem;
+  gap: 0.75rem;
+}
+
+/* Toggle buttons */
+.kanji-realm-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+.kanji-realm-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(215, 205, 190, 0.8);
+  background: rgba(255, 255, 255, 0.7);
+  color: #78716C;
+  font-size: 0.73rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.kanji-realm-toggle-btn:hover {
+  border-color: #C23A2B;
+  color: #C23A2B;
+}
+.kanji-realm-toggle-btn.is-active {
+  background: rgba(194, 58, 43, 0.09);
+  border-color: #C23A2B;
+  color: #C23A2B;
+}
+.kanji-realm-toggle-btn > span {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* Calligraphy hero */
+.kanji-realm-calligraphy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+.kanji-realm-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(220, 210, 195, 0.4);
+  margin-top: auto;
+}
+
+/* Illustration view (Artbook presentation) */
+.kanji-realm-illustration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  flex: 1;
+  padding: 0.5rem 0.25rem;
+}
+.kanji-illus-canvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 190px;
+}
+.kanji-illus-img {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  border-radius: 4px;
+}
+
+/* Zen ink wash fallback when illustration is in progress (No card boxes) */
+.kanji-illus-zen-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  width: 100%;
+  background: none;
+  border: none;
+}
+.kanji-illus-zen-glyph {
+  font-family: 'Noto Serif JP', 'Yu Mincho', serif;
+  font-size: 5.5rem;
+  line-height: 1;
+  color: rgba(28, 25, 23, 0.12);
+  user-select: none;
+  filter: blur(0.3px);
+}
+.kanji-illus-zen-note {
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+  color: #A8A29E;
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+
+/* Story caption beneath artwork — Pure Editorial Caption (No box, no border) */
+.kanji-illus-caption {
+  display: block;
+  text-align: center;
+  font-family: 'Noto Serif JP', serif;
+  font-style: italic;
+  font-size: 0.84rem;
+  color: #6E6862;
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+  background: none;
+  border: none;
+}
+.kanji-illus-caption-quote {
+  color: #C23A2B;
+  font-weight: 700;
+  padding: 0 3px;
+}
+.kanji-illus-caption-text {
+  letter-spacing: 0.02em;
+}
+
+/* Reading chips row */
+.kanji-realm-readings {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(220, 210, 195, 0.4);
+  margin-top: auto;
+}
+.kanji-reading-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.35rem 0.6rem;
+  background: #fff;
+  border: 1px solid rgba(215, 205, 190, 0.7);
+  border-radius: 7px;
+  min-width: 52px;
+}
+.kanji-reading-chip-label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #A8A29E;
+}
+.kanji-reading-chip-val {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1C1917;
+  text-align: center;
+}
+.kanji-reading-chip--radical {
+  background: rgba(194, 58, 43, 0.05);
+  border-color: rgba(194, 58, 43, 0.25);
+}
+.kanji-reading-chip-val--large {
+  font-size: 1.3rem;
+  line-height: 1;
+  color: #C23A2B;
+}
+
+/* ─── Realm 2: Constellation Graph ──────────────────────────────────────── */
+.kanji-realm--constellation {
+  border-left: 1px solid rgba(215, 205, 190, 0.4);
+  border-right: 1px solid rgba(215, 205, 190, 0.4);
+  padding: 1.1rem 1rem;
+}
+
+.kanji-constellation-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  height: 340px;
+  min-height: 320px;
+  max-height: 360px;
+  position: relative;
+  overflow: hidden;
+}
+.kanji-constellation-legend {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.kanji-const-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #78716C;
+  letter-spacing: 0.04em;
+}
+.kanji-const-legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.kanji-const-legend--component .kanji-const-legend-dot { background: #C23A2B; }
+.kanji-const-legend--descendant .kanji-const-legend-dot { background: #C23A2B; }
+.kanji-const-legend--compound .kanji-const-legend-dot { background: #8A8175; }
+.kanji-const-legend-dot--root,
+.kanji-const-legend--root .kanji-const-legend-dot { background: #1C1917; }
+.kanji-const-legend--root { color: #1C1917; font-weight: 700; }
+
+.kanji-constellation-canvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: default;
+}
+.kanji-constellation-canvas.is-hovering {
+  cursor: pointer;
+}
+.kanji-constellation-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  font-size: 0.74rem;
+  color: #A8A29E;
+  font-style: italic;
+}
+
+/* Story mnemonic below graph */
+.kanji-constellation-story {
+  margin: 0.8rem 0 0;
+  padding: 0.55rem 0.85rem;
+  border-left: 2px solid rgba(194, 58, 43, 0.4);
+  background: rgba(250, 248, 245, 0.7);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: #57534E;
+  line-height: 1.55;
+}
+
+/* ─── Realm 3: Vocabulary ────────────────────────────────────────────────── */
+.kanji-realm--vocab {
+  padding: 1.1rem 0;
+}
+.kanji-realm-vocab-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 380px;
+  padding-right: 2px;
+}
+
+/* ─── Responsive collapse ────────────────────────────────────────────────── */
+@media (max-width: 820px) {
+  .kanji-three-realms {
+    grid-template-columns: 1fr;
+    min-height: unset;
+  }
+  .kanji-realm--constellation {
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid rgba(215, 205, 190, 0.4);
+    border-bottom: 1px solid rgba(215, 205, 190, 0.4);
+    padding: 1rem 0;
+  }
+  .kanji-constellation-wrap {
+    height: 200px;
+  }
+  .kanji-realm--vocab {
+    padding: 0;
   }
 }
