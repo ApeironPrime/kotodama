@@ -1890,3 +1890,39 @@
   }
 }
 
+
+/* Published textbooks retain their own jackets and proportions. */
+.published-book {
+  position: relative;
+  flex-shrink: 0;
+  filter: drop-shadow(-2px 4px 5px rgb(28 25 23 / 16%));
+  transition: transform 0.3s ease;
+}
+.published-book--featured {
+  width: 175px;
+  height: 240px;
+}
+.published-book--companion {
+  width: 105px;
+  height: 148px;
+}
+.published-book img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 1px 3px 3px 1px;
+}
+.curriculum-featured-spread:hover .published-book,
+.curriculum-companion-card:hover .published-book {
+  transform: perspective(900px) rotateY(-5deg) translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .published-book {
+    transition: none;
+  }
+  .curriculum-featured-spread:hover .published-book,
+  .curriculum-companion-card:hover .published-book {
+    transform: none;
+  }
+}

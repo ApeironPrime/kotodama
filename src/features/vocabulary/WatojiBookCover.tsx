@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 export type WatojiPalette = 'aizumi' | 'shuiro' | 'matcha' | 'kokutan' | 'benigara' | 'kuri' | 'kon'
 export type WatojiPattern = 'seigaiha' | 'asanoha' | 'shippo' | 'kumiko' | 'kasumi'
 
@@ -11,6 +13,8 @@ export interface WatojiBookCoverProps {
   size?: 'featured' | 'companion' | 'spine'
   sealChar?: string
   className?: string
+  coverSrc?: string | undefined
+  bookTitle?: string | undefined
 }
 
 /**
@@ -283,8 +287,25 @@ export function WatojiBookCover({
   size = 'companion',
   sealChar = '言',
   className = '',
+  coverSrc,
+  bookTitle,
 }: WatojiBookCoverProps) {
   const isFeatured = size === 'featured'
+  const [failedCover, setFailedCover] = useState<string>()
+
+  if (coverSrc && failedCover !== coverSrc) {
+    return (
+      <div className={`published-book published-book--${size} ${className}`}>
+        <img
+          src={coverSrc}
+          alt={`Bìa sách ${bookTitle || kanjiTitle}`}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailedCover(coverSrc)}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className={`watoji-cover watoji-cover--${palette} watoji-cover--${size} ${className}`} aria-hidden="true">

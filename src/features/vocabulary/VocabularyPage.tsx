@@ -673,6 +673,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     >
                       <div className="curriculum-featured-spread__cover-pane">
                         <WatojiBookCover
+                          coverSrc={featuredItem.meta.coverSrc}
+                          bookTitle={featuredItem.course.title}
                           size="featured"
                           kanjiTitle={featuredItem.meta.kanjiTitle}
                           subtitle={featuredItem.meta.publisher}

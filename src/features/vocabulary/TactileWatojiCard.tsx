@@ -72,6 +72,8 @@ export function TactileWatojiCard({ course, meta, onSelect }: TactileWatojiCardP
       {/* Handcrafted Watoji Book Cover */}
       <div className="curriculum-companion-card__cover-wrap">
         <WatojiBookCover
+          coverSrc={meta.coverSrc}
+          bookTitle={course.title}
           size="companion"
           kanjiTitle={meta.kanjiTitle}
           volumeTag={meta.volumeTag}

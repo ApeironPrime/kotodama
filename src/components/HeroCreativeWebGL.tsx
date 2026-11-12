@@ -18,6 +18,7 @@ uniform vec2 uMouse;
 uniform vec2 uPointer;
 uniform float uRipple;
 uniform mat3 uUvTransform;
+uniform vec2 uTexelSize;
 varying vec2 vUv;
 
 // Subtle procedural washi paper fiber noise
@@ -56,6 +57,11 @@ void main() {
 
   // 3. Crisp Video Frame Sampling
   vec4 color = texture2D(uTexture, pUv);
+  vec3 neighbors = texture2D(uTexture, pUv + vec2(uTexelSize.x, 0.0)).rgb
+    + texture2D(uTexture, pUv - vec2(uTexelSize.x, 0.0)).rgb
+    + texture2D(uTexture, pUv + vec2(0.0, uTexelSize.y)).rgb
+    + texture2D(uTexture, pUv - vec2(0.0, uTexelSize.y)).rgb;
+  color.rgb = clamp(color.rgb + (color.rgb - neighbors * 0.25) * 0.35, 0.0, 1.0);
 
   // 4. Subtle Shimmering Light Caustics on Water Surface
   if (waterMask > 0.0) {
@@ -64,9 +70,13 @@ void main() {
   }
 
   // 5. Authentic Washi Fiber Grain
-  float grain = (hash(uv * 700.0 + fract(uTime * 0.02)) - 0.5) * 0.025;
+  float grain = (hash(uv * 700.0 + fract(uTime * 0.02)) - 0.5) * 0.004;
   color.rgb += grain;
 
+  // Leave a paper margin instead of cropping the calligraphy at the image edge.
+  vec2 edge = smoothstep(vec2(0.0), vec2(0.018), pUv)
+    * (1.0 - smoothstep(vec2(0.982), vec2(1.0), pUv));
+  color.a *= edge.x * edge.y;
   gl_FragColor = color;
 }
 `
@@ -139,26 +149,26 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
         stencil: false,
         depth: false,
       })
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     } catch {
       return
     }
 
     let imageAspect = 16 / 9
 
-    // Exact CSS Object-Fit: Cover UV Mapping with 8% margin for seamless 2.5D parallax
+    // Fit the entire painting, including the topmost calligraphy, inside the frame.
     const updateCover = (texture: THREE.Texture, width: number, height: number) => {
       const containerAspect = width / height
-      const zoom = 1.08
+      const zoom = 0.94
 
       if (containerAspect > imageAspect) {
-        const repY = imageAspect / containerAspect / zoom
-        texture.repeat.set(1 / zoom, repY)
-        texture.offset.set((1 - 1 / zoom) * 0.5, (1 - repY) * 0.5)
-      } else {
         const repX = containerAspect / imageAspect / zoom
         texture.repeat.set(repX, 1 / zoom)
         texture.offset.set((1 - repX) * 0.5, (1 - 1 / zoom) * 0.5)
+      } else {
+        const repY = imageAspect / containerAspect / zoom
+        texture.repeat.set(1 / zoom, repY)
+        texture.offset.set((1 - 1 / zoom) * 0.5, (1 - repY) * 0.5)
       }
       // ShaderMaterial does not apply Texture.repeat/offset automatically.
       texture.updateMatrix()
@@ -194,6 +204,7 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
         uPointer: { value: new THREE.Vector2(0.5, 0.2) },
         uRipple: { value: 0 },
         uUvTransform: { value: new THREE.Matrix3() },
+        uTexelSize: { value: new THREE.Vector2(1 / 1920, 1 / 1080) },
       },
       transparent: true,
     })
@@ -237,6 +248,7 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
       videoEl.addEventListener('loadedmetadata', () => {
         if (videoEl && videoEl.videoWidth && videoEl.videoHeight) {
           imageAspect = videoEl.videoWidth / videoEl.videoHeight
+          material.uniforms['uTexelSize']?.value.set(1 / videoEl.videoWidth, 1 / videoEl.videoHeight)
         }
         updateSize()
         void videoEl?.play().catch(() => {})
@@ -251,6 +263,10 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
         loadedImg.magFilter = THREE.LinearFilter
         if (loadedImg.image instanceof HTMLImageElement) {
           imageAspect = loadedImg.image.naturalWidth / loadedImg.image.naturalHeight
+          material.uniforms['uTexelSize']?.value.set(
+            1 / loadedImg.image.naturalWidth,
+            1 / loadedImg.image.naturalHeight
+          )
         }
         if (material.uniforms['uTexture']) {
           material.uniforms['uTexture'].value = activeTexture

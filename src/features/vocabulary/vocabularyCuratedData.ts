@@ -84,6 +84,7 @@ export interface CuratedCourseMetadata {
   levelDisplay: string
   isFeatured: boolean
   variants?: string[] | undefined
+  coverSrc?: string | undefined
 }
 
 /**
@@ -290,13 +291,14 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     pacingBadge = '6 tuần nước rút • 2 trang mỗi ngày'
     isFeatured = true
   } else if (isTango) {
-    displayTitle = `Tango ${level || 'N3'} (2,000 Từ vựng Thiết yếu Kèm Ví dụ)`
+    const wordCount = { N1: '3.000', N2: '2.500', N3: '2.000', N4: '1.500', N5: '1.000' }[level] || '2.000'
+    displayTitle = `Tango ${level || 'N3'} (${wordCount} Từ vựng Thiết yếu Kèm Ví dụ)`
     kanjiTitle = '日本語単語'
     volumeTag = level || '中級'
     palette = 'matcha'
     pattern = 'shippo'
     sealChar = '語'
-    publisher = 'Asahi Shuppan · 朝日出版社'
+    publisher = 'Ask Publishing · アスク出版'
     pedagogicalSubtitle = 'Ghi nhớ bản chất qua 100% câu ví dụ ngữ cảnh thực tế'
     methodQuote =
       'Tuyệt đối không học từ vựng trần trụi. 100% mục từ gắn liền với câu văn hoàn chỉnh biểu đạt chính xác sắc thái người bản xứ.'
@@ -824,7 +826,19 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     pacingBadge = `${course.term_count.toLocaleString()} từ • Trọng tâm rút gọn`
   }
 
+  const coverFamily =
+    isMimiKara && ['N1', 'N2', 'N3'].includes(level)
+      ? 'mimikara'
+      : isTango && ['N1', 'N2', 'N3', 'N4', 'N5'].includes(level)
+        ? 'tango'
+        : isMinna && ['N4', 'N5'].includes(level)
+          ? 'minna'
+          : isSoumatome && ['N1', 'N2', 'N3'].includes(level)
+            ? 'soumatome'
+            : undefined
+
   return {
+    coverSrc: coverFamily ? `/assets/book-covers/${coverFamily}-${level.toLowerCase()}.jpg` : undefined,
     track,
     displayTitle,
     kanjiTitle,
