@@ -3,17 +3,10 @@ import * as THREE from 'three'
 
 const vertexShader = `
 varying vec2 vUv;
-uniform vec2 uMouse;
 
 void main() {
   vUv = uv;
-  vec3 pos = position;
-  
-  // SOTD-grade 2.5D diorama tilt (camera rotation projection)
-  pos.x += uMouse.x * 0.08 * (1.0 - uv.y);
-  pos.y += uMouse.y * 0.05 * (1.0 - uv.y);
-  
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `
 
@@ -24,6 +17,7 @@ uniform float uTime;
 uniform vec2 uMouse;
 uniform vec2 uPointer;
 uniform float uRipple;
+uniform mat3 uUvTransform;
 varying vec2 vUv;
 
 // Subtle procedural washi paper fiber noise
@@ -32,26 +26,29 @@ float hash(vec2 p) {
 }
 
 void main() {
-  vec2 uv = vUv;
+  vec2 uv = (uUvTransform * vec3(vUv, 1.0)).xy;
   
   // 1. Depth Map Parallax Layering (2.5D Spatial Diorama)
   float depth = texture2D(uDepthMap, uv).r;
   
-  // Vivid multi-plane parallax: foreground features glide while mountains stay stately
-  vec2 parallax = uMouse * (depth * 0.075);
+  // A continuous, restrained displacement keeps the painting in one piece.
+  vec2 parallax = uMouse * (depth * 0.018);
   vec2 pUv = clamp(uv + parallax, 0.001, 0.999);
   
-  // 2. Liquid Water Refraction & Waves (Bottom lake region - up to 46% height)
-  if (pUv.y < 0.46) {
-    float waterMask = smoothstep(0.46, 0.22, pUv.y);
+  // Refraction belongs to the lake, below the buildings and the mountain ridges.
+  float waterMask = (1.0 - smoothstep(0.06, 0.17, uv.y))
+    * smoothstep(0.35, 0.48, uv.x)
+    * (1.0 - smoothstep(0.75, 0.87, uv.x));
+  if (waterMask > 0.0) {
     
     // Ambient undulating water current
-    float wave1 = sin(pUv.y * 36.0 + uTime * 2.2) * 0.0075;
-    float wave2 = cos(pUv.x * 28.0 + uTime * 1.8 + sin(uTime * 0.9)) * 0.0062;
+    float wave1 = sin(pUv.y * 36.0 + uTime * 2.2) * 0.0015;
+    float wave2 = cos(pUv.x * 28.0 + uTime * 1.8 + sin(uTime * 0.9)) * 0.0012;
     
     // Interactive mouse ripple wavefront (visibly undulating caustics)
-    float dist = length((pUv - uPointer) * vec2(1.6, 1.0));
-    float waveRipple = sin(dist * 44.0 - uTime * 7.5) * exp(-dist * 4.2) * uRipple * 0.042;
+    vec2 pointer = (uUvTransform * vec3(uPointer, 1.0)).xy;
+    float dist = length((uv - pointer) * vec2(1.6, 1.0));
+    float waveRipple = sin(dist * 44.0 - uTime * 7.5) * exp(-dist * 4.2) * uRipple * 0.006;
     
     pUv.x += (wave1 + waveRipple) * waterMask;
     pUv.y += (wave2 + waveRipple * 0.65) * waterMask;
@@ -61,10 +58,9 @@ void main() {
   vec4 color = texture2D(uTexture, pUv);
 
   // 4. Subtle Shimmering Light Caustics on Water Surface
-  if (pUv.y < 0.44) {
-    float waterMask = smoothstep(0.44, 0.20, pUv.y);
+  if (waterMask > 0.0) {
     float sparkle = pow(max(0.0, sin(pUv.y * 50.0 + uTime * 2.8) * sin(pUv.x * 40.0 + uTime * 2.0)), 4.0);
-    color.rgb += vec3(0.96, 0.92, 0.85) * sparkle * 0.22 * waterMask;
+    color.rgb += vec3(0.96, 0.92, 0.85) * sparkle * 0.06 * waterMask;
   }
 
   // 5. Authentic Washi Fiber Grain
@@ -76,7 +72,7 @@ void main() {
 `
 
 /**
- * Synthesizes a true 2.5D Depth Field from the artwork
+ * Build a smooth depth field without rectangular regions or luminance edges.
  */
 function createProceduralDepthMap(image: HTMLImageElement): THREE.CanvasTexture {
   const canvas = document.createElement('canvas')
@@ -94,16 +90,9 @@ function createProceduralDepthMap(image: HTMLImageElement): THREE.CanvasTexture 
   for (let i = 0; i < d.length; i += 4) {
     const y = Math.floor(i / 4 / w) / h // 0 top, 1 bottom
     const x = ((i / 4) % w) / w
-    const r = d[i] ?? 0
-    const g = d[i + 1] ?? 0
-    const b = d[i + 2] ?? 0
-    const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255
-
-    let depth = y * 0.7 + (1.0 - lum) * 0.3
-
-    if (x < 0.35 && y > 0.45) depth = Math.min(1.0, depth + 0.25)
-    if (x > 0.75 && y > 0.4) depth = Math.min(1.0, depth + 0.2)
-
+    const foreground = y * y * (3 - 2 * y)
+    const sideDepth = Math.pow(Math.abs(x - 0.5) * 2, 2)
+    const depth = foreground * (0.7 + sideDepth * 0.3)
     const finalVal = Math.round(depth * 255)
     d[i] = finalVal
     d[i + 1] = finalVal
@@ -119,13 +108,7 @@ function createProceduralDepthMap(image: HTMLImageElement): THREE.CanvasTexture 
   return texture
 }
 
-export default function HeroCreativeWebGL({
-  imageSrc,
-  videoSrc,
-}: {
-  imageSrc: string
-  videoSrc?: string
-}) {
+export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: string; videoSrc?: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -169,14 +152,17 @@ export default function HeroCreativeWebGL({
       const zoom = 1.08
 
       if (containerAspect > imageAspect) {
-        const repY = (imageAspect / containerAspect) / zoom
+        const repY = imageAspect / containerAspect / zoom
         texture.repeat.set(1 / zoom, repY)
         texture.offset.set((1 - 1 / zoom) * 0.5, (1 - repY) * 0.5)
       } else {
-        const repX = (containerAspect / imageAspect) / zoom
+        const repX = containerAspect / imageAspect / zoom
         texture.repeat.set(repX, 1 / zoom)
         texture.offset.set((1 - repX) * 0.5, (1 - 1 / zoom) * 0.5)
       }
+      // ShaderMaterial does not apply Texture.repeat/offset automatically.
+      texture.updateMatrix()
+      material.uniforms['uUvTransform']?.value.copy(texture.matrix)
     }
 
     let activeTexture: THREE.Texture | null = null
@@ -207,6 +193,7 @@ export default function HeroCreativeWebGL({
         uMouse: { value: new THREE.Vector2(0, 0) },
         uPointer: { value: new THREE.Vector2(0.5, 0.2) },
         uRipple: { value: 0 },
+        uUvTransform: { value: new THREE.Matrix3() },
       },
       transparent: true,
     })
