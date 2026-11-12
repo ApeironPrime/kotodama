@@ -33,7 +33,9 @@ void main() {
   float depth = texture2D(uDepthMap, uv).r;
   
   // A continuous, restrained displacement keeps the painting in one piece.
-  vec2 parallax = uMouse * (depth * 0.018);
+  vec2 frameEdge = smoothstep(vec2(0.0), vec2(0.12), vUv)
+    * (1.0 - smoothstep(vec2(0.88), vec2(1.0), vUv));
+  vec2 parallax = uMouse * (depth * 0.018) * frameEdge.x * frameEdge.y;
   vec2 pUv = clamp(uv + parallax, 0.001, 0.999);
   
   // Refraction belongs to the lake, below the buildings and the mountain ridges.
@@ -73,10 +75,8 @@ void main() {
   float grain = (hash(uv * 700.0 + fract(uTime * 0.02)) - 0.5) * 0.004;
   color.rgb += grain;
 
-  // Leave a paper margin instead of cropping the calligraphy at the image edge.
-  vec2 edge = smoothstep(vec2(0.0), vec2(0.018), pUv)
-    * (1.0 - smoothstep(vec2(0.982), vec2(1.0), pUv));
-  color.a *= edge.x * edge.y;
+  // Only dissolve the bottom into the paper; the sky and right edge fill the frame.
+  color.a *= smoothstep(0.0, 0.07, vUv.y);
   gl_FragColor = color;
 }
 `
@@ -156,20 +156,14 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
 
     let imageAspect = 16 / 9
 
-    // Fit the entire painting, including the topmost calligraphy, inside the frame.
+    // Fill the frame, anchored at the top right to keep the calligraphy in view.
     const updateCover = (texture: THREE.Texture, width: number, height: number) => {
       const containerAspect = width / height
-      const zoom = 0.94
-
-      if (containerAspect > imageAspect) {
-        const repX = containerAspect / imageAspect / zoom
-        texture.repeat.set(repX, 1 / zoom)
-        texture.offset.set((1 - repX) * 0.5, (1 - 1 / zoom) * 0.5)
-      } else {
-        const repY = imageAspect / containerAspect / zoom
-        texture.repeat.set(1 / zoom, repY)
-        texture.offset.set((1 - 1 / zoom) * 0.5, (1 - repY) * 0.5)
-      }
+      const zoom = 1.02
+      const repX = Math.min(1, containerAspect / imageAspect) / zoom
+      const repY = Math.min(1, imageAspect / containerAspect) / zoom
+      texture.repeat.set(repX, repY)
+      texture.offset.set(1 - repX - 0.005, 1 - repY - 0.005)
       // ShaderMaterial does not apply Texture.repeat/offset automatically.
       texture.updateMatrix()
       material.uniforms['uUvTransform']?.value.copy(texture.matrix)
