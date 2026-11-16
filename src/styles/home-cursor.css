@@ -47,23 +47,16 @@
 
 .button-water-ripple {
   position: absolute;
-  transform: translate(-50%, -50%);
+  overflow: hidden;
+  contain: strict;
   pointer-events: none;
 }
 
-.button-water-ripple i {
-  position: absolute;
-  inset: 0;
-  border: 1px solid #648082;
-  border-radius: 50%;
-  box-shadow:
-    0 0 2px rgb(248 250 247 / 38%),
-    inset 0 0 2px rgb(248 250 247 / 30%);
+.button-water-ripple canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-}
-
-.button-water-ripple.is-pressed i {
-  border-width: 1.5px;
 }
 
 @media (prefers-reduced-motion: reduce) {
