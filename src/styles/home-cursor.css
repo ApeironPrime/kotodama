@@ -3,7 +3,7 @@
   html.has-brush-cursor,
   html.has-brush-cursor * {
     cursor:
-      url('/assets/brush-cursor.svg') 5 31,
+      url('/assets/brush-cursor.svg') 5 44,
       auto !important;
   }
 
