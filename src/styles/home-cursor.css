@@ -3,10 +3,10 @@
   html.has-brush-cursor,
   html.has-brush-cursor * {
     cursor:
-      url('/assets/brush-cursor-real.png') 4 51,
+      url('/assets/brush-cursor-chibi.png') 4 28,
       auto !important;
     cursor:
-      image-set(url('/assets/brush-cursor-real.png') 1x, url('/assets/brush-cursor-real@2x.png') 2x) 4 51,
+      image-set(url('/assets/brush-cursor-chibi.png') 1x, url('/assets/brush-cursor-chibi@2x.png') 2x) 4 28,
       auto !important;
   }
 
