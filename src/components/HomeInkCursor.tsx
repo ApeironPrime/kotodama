@@ -55,7 +55,7 @@ export default function HomeInkCursor() {
       clearRipples()
     }
 
-    const emitRipple = (action: HTMLElement, pressed: boolean, point?: { x: number; y: number }) => {
+    const emitRipple = (action: HTMLElement, pressed: boolean) => {
       if (!pointer.matches || reducedMotion.matches) return
       const rect = action.getBoundingClientRect()
       if (!rect.width || !rect.height) return
@@ -79,41 +79,47 @@ export default function HomeInkCursor() {
 
       const ripple = document.createElement('span')
       ripple.className = `button-water-ripple${pressed ? ' is-pressed' : ''}`
-      ripple.style.left = `${rect.left}px`
-      ripple.style.top = `${rect.top}px`
-      ripple.style.width = `${rect.width}px`
-      ripple.style.height = `${rect.height}px`
-      ripple.style.borderRadius = window.getComputedStyle(action).borderRadius
+      const padding = pressed ? 38 : 24
+      const width = rect.width + padding * 2
+      const height = rect.height + padding * 2
+      const radius = Math.min(
+        parseFloat(window.getComputedStyle(action).borderTopLeftRadius) || 0,
+        rect.width / 2,
+        rect.height / 2
+      )
+      ripple.style.left = `${rect.left - padding}px`
+      ripple.style.top = `${rect.top - padding}px`
+      ripple.style.width = `${width}px`
+      ripple.style.height = `${height}px`
       const canvas = document.createElement('canvas')
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      canvas.width = Math.ceil(rect.width * dpr)
-      canvas.height = Math.ceil(rect.height * dpr)
+      canvas.width = Math.ceil(width * dpr)
+      canvas.height = Math.ceil(height * dpr)
       const context = canvas.getContext('2d')
       if (!context) return
       context.scale(dpr, dpr)
       ripple.appendChild(canvas)
       layer.appendChild(ripple)
 
-      const originX = point ? Math.max(0, Math.min(rect.width, point.x - rect.left)) : rect.width / 2
-      const originY = point ? Math.max(0, Math.min(rect.height, point.y - rect.top)) : rect.height / 2
+      const originX = rect.width / 2
+      const originY = rect.height / 2
       const duration = pressed ? 880 : 620
-      const reach = pressed ? 100 : 46
+      const reach = pressed ? 34 : 20
       const started = performance.now()
       ripple.dataset['originX'] = String(originX)
       ripple.dataset['originY'] = String(originY)
+      ripple.dataset['source'] = 'button'
 
-      // A moving light/dark meniscus reads as a surface disturbance, not an expanding outline.
-      const traceWave = (radius: number, time: number) => {
+      // Offset the button's perimeter uniformly. Never scale an ellipse or use pointer coordinates.
+      const traceWave = (outset: number) => {
         context.beginPath()
-        for (let step = 0; step <= 100; step += 1) {
-          const angle = (step / 100) * Math.PI * 2
-          const drift = Math.sin(angle * 3 + time * 2) * Math.min(0.8, radius * 0.025)
-          const x = originX + Math.cos(angle) * (radius + drift)
-          const y = originY + Math.sin(angle) * (radius + drift)
-          if (step === 0) context.moveTo(x, y)
-          else context.lineTo(x, y)
-        }
-        context.closePath()
+        context.roundRect(
+          padding - outset,
+          padding - outset,
+          rect.width + outset * 2,
+          rect.height + outset * 2,
+          radius + outset
+        )
       }
 
       const draw = (now: number) => {
@@ -129,31 +135,31 @@ export default function HomeInkCursor() {
           running.delete(ripple)
           return
         }
-        ripple.style.left = `${bounds.left}px`
-        ripple.style.top = `${bounds.top}px`
-        context.clearRect(0, 0, rect.width, rect.height)
+        ripple.style.left = `${bounds.left - padding}px`
+        ripple.style.top = `${bounds.top - padding}px`
+        context.clearRect(0, 0, width, height)
         const travel = reach * Math.pow(progress, 0.8)
         for (let index = 0; index < (pressed ? 3 : 2); index += 1) {
-          const radius = travel - index * (pressed ? 13 : 10)
-          if (radius <= 0) continue
+          const outset = travel - index * (pressed ? 7 : 5)
+          if (outset <= 0) continue
           const fade =
-            (Math.sin((Math.min(1, radius / 8) * Math.PI) / 2) * Math.pow(1 - progress, 1.8)) / (1 + index * 0.6)
+            (Math.sin((Math.min(1, outset / 3) * Math.PI) / 2) * Math.pow(1 - progress, 1.8)) / (1 + index * 0.6)
           const strength = fade * (pressed ? 0.6 : 0.3)
           const reflection = context.createLinearGradient(
-            originX - radius,
-            originY - radius,
-            originX + radius,
-            originY + radius
+            padding - outset,
+            padding - outset,
+            padding + rect.width + outset,
+            padding + rect.height + outset
           )
           reflection.addColorStop(0, `rgba(255, 252, 237, ${strength})`)
           reflection.addColorStop(0.45, `rgba(255, 252, 237, ${strength * 0.3})`)
           reflection.addColorStop(0.7, `rgba(70, 86, 86, ${strength * 0.35})`)
           reflection.addColorStop(1, `rgba(255, 252, 237, ${strength * 0.5})`)
-          traceWave(radius, progress)
+          traceWave(outset)
           context.strokeStyle = reflection
           context.lineWidth = pressed ? 1.2 : 0.8
           context.stroke()
-          traceWave(Math.max(0.1, radius - 1.5), progress)
+          traceWave(Math.max(0.1, outset - 1.5))
           context.strokeStyle = `rgba(52, 70, 69, ${strength * 0.12})`
           context.lineWidth = 0.7
           context.stroke()
@@ -168,7 +174,7 @@ export default function HomeInkCursor() {
       const action = getAction(event.target)
       if (action === hovered) return
       hovered = action
-      if (action) emitRipple(action, false, { x: event.clientX, y: event.clientY })
+      if (action) emitRipple(action, false)
     }
     const handleOut = (event: PointerEvent) => {
       if (getAction(event.relatedTarget) !== hovered) hovered = null
@@ -176,7 +182,7 @@ export default function HomeInkCursor() {
     const handleClick = (event: MouseEvent) => {
       if (typeof PointerEvent !== 'undefined' && event instanceof PointerEvent && event.pointerType === 'touch') return
       const action = getAction(event.target)
-      if (action) emitRipple(action, true, event.detail === 0 ? undefined : { x: event.clientX, y: event.clientY })
+      if (action) emitRipple(action, true)
     }
     const handleFocus = (event: FocusEvent) => {
       const action = getAction(event.target)
