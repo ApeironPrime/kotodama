@@ -78,6 +78,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
         if (currentIndex < cards.length - 1) {
           setCurrentIndex((prev) => prev + 1)
         } else {
+          setCurrentIndex(cards.length)
           setIsFlipped(false)
         }
       } catch {

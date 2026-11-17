@@ -92,6 +92,29 @@ describe('SRS Flashcard & Review Feature Suite', () => {
     heatmap: [{ date: '2026-09-01', count: 8, level: 2 }],
   }
 
+  it('finishes the session after saving the last card instead of offering it again', async () => {
+    const review = vi.fn().mockResolvedValue(undefined)
+    render(<FlashcardStudyModal cards={sampleCards.slice(0, 1)} onClose={vi.fn()} onReview={review} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Lật thẻ (Space)' }))
+    fireEvent.click(screen.getByRole('button', { name: /Tốt \(3\)/ }))
+    expect(await screen.findByRole('heading', { name: 'Hoàn thành phiên ôn tập!' })).toBeTruthy()
+    expect(review).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: /Tốt \(3\)/ })).toBeNull()
+  })
+
+  it('retains the last card after a failed save and allows a successful retry', async () => {
+    const review = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(undefined)
+    render(<FlashcardStudyModal cards={sampleCards.slice(0, 1)} onClose={vi.fn()} onReview={review} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Lật thẻ (Space)' }))
+    fireEvent.click(screen.getByRole('button', { name: /Tốt \(3\)/ }))
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Hoàn thành phiên ôn tập!' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Tốt \(3\)/ }))
+    expect(await screen.findByRole('heading', { name: 'Hoàn thành phiên ôn tập!' })).toBeTruthy()
+    expect(review).toHaveBeenCalledTimes(2)
+    expect(screen.getByText('Bạn đã hoàn thành toàn bộ 1 thẻ ôn tập.')).toBeTruthy()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(srsApi.fetchDeck).mockResolvedValue({
