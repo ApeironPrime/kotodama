@@ -1,3 +1,4 @@
+import { usePersistentState } from '../../lib/usePersistentState'
 import { useMemo, useState } from 'react'
 import { buildBunsetsuChunks } from './bunsetsuHelper'
 import type { TranscriptChunk, TranscriptSegment } from './videoTypes'
@@ -21,8 +22,8 @@ export default function FuriganaSubtitleBar({
   onWordClick,
   theme = 'light',
 }: FuriganaSubtitleBarProps) {
-  const [showFurigana, setShowFurigana] = useState(true)
-  const [showRomaji, setShowRomaji] = useState(true)
+  const [showFurigana, setShowFurigana] = usePersistentState('kotodama.settings.furigana', true)
+  const [showRomaji, setShowRomaji] = usePersistentState('kotodama.settings.romaji', false)
   const [showTranslation, setShowTranslation] = useState(true)
 
   const chunks: TranscriptChunk[] = useMemo(() => {
@@ -128,7 +129,8 @@ export default function FuriganaSubtitleBar({
             }
 
             return (
-              <div
+              <button
+                type="button"
                 key={chunk.id}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -213,7 +215,7 @@ export default function FuriganaSubtitleBar({
                     {chunk.romaji}
                   </span>
                 )}
-              </div>
+              </button>
             )
           })}
         </div>
@@ -247,6 +249,7 @@ export default function FuriganaSubtitleBar({
       >
         <button
           type="button"
+          aria-pressed={showFurigana}
           onClick={() => setShowFurigana((v) => !v)}
           style={{
             display: 'inline-flex',
@@ -268,6 +271,7 @@ export default function FuriganaSubtitleBar({
 
         <button
           type="button"
+          aria-pressed={showRomaji}
           onClick={() => setShowRomaji((v) => !v)}
           style={{
             display: 'inline-flex',
@@ -289,6 +293,7 @@ export default function FuriganaSubtitleBar({
 
         <button
           type="button"
+          aria-pressed={showTranslation}
           onClick={() => setShowTranslation((v) => !v)}
           style={{
             display: 'inline-flex',

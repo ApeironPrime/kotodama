@@ -8,8 +8,8 @@ export function CourseLearningPage({ onBack }: { onBack: () => void }) {
         <ArrowLeft aria-hidden="true" size={16} /> Tất cả lộ trình
       </Button>
       <EmptyState
-        title="Bài học đang chờ dữ liệu"
-        description="Nội dung, bài tập và tiến độ chỉ hiển thị khi được kết nối với API khóa học."
+        title="Bài học đang được chuẩn bị"
+        description="Bạn có thể học ngay với Từ điển, Tủ sách và ôn tập SRS."
       />
     </PageShell>
   )

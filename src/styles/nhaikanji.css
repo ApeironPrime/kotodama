@@ -56,7 +56,7 @@
 }
 
 .nhaikanji-tab-btn.is-active {
-  background: #6366f1;
+  background: var(--color-accent);
   color: #ffffff;
   box-shadow: 0 1px 2px rgba(99, 102, 241, 0.3);
 }
@@ -82,7 +82,7 @@
 }
 
 .nhaikanji-search-box input:focus {
-  border-color: #6366f1;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
@@ -192,7 +192,7 @@
 }
 
 .kanji-card:hover .kanji-card__char {
-  color: #4f46e5;
+  color: var(--color-accent-hover);
 }
 
 .kanji-card__hanzi {
@@ -214,7 +214,7 @@
 
 .kanji-card__onyomi {
   font-size: 0.6875rem;
-  color: #6366f1;
+  color: var(--color-accent);
   font-family: var(--font-mono, monospace);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -281,8 +281,8 @@
 }
 
 .nhaikanji-modal__tab.is-active {
-  border-bottom-color: #6366f1;
-  color: #6366f1;
+  border-bottom-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .nhaikanji-modal__body {
@@ -1210,7 +1210,7 @@
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, var(--color-accent-hover), var(--color-accent));
   color: #ffffff;
   border: none;
   display: flex;
@@ -1239,7 +1239,7 @@
 
 .jlpt-audio-slider {
   flex: 1;
-  accent-color: #4f46e5;
+  accent-color: var(--color-accent-hover);
   height: 0.375rem;
   cursor: pointer;
 }
@@ -1257,9 +1257,9 @@
 }
 
 .jlpt-audio-speed-btn.is-active {
-  background: #4f46e5;
+  background: var(--color-accent-hover);
   color: #ffffff;
-  border-color: #4f46e5;
+  border-color: var(--color-accent-hover);
 }
 
 .jlpt-question-img-box {
@@ -1302,7 +1302,7 @@
 .jlpt-reading-passage {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
-  border-left: 4px solid #4f46e5;
+  border-left: 4px solid var(--color-accent-hover);
   border-radius: 1rem;
   padding: 1.5rem;
   font-size: 1rem;
@@ -1530,7 +1530,7 @@
 
 .jlpt-star-choice:hover:not(:disabled),
 .jlpt-star-choice:focus-visible {
-  border-color: #4f46e5;
+  border-color: var(--color-accent-hover);
   outline: 2px solid #c7d2fe;
 }
 
@@ -1620,14 +1620,14 @@
 }
 
 .jlpt-seek-btn:hover {
-  background: #4f46e5;
+  background: var(--color-accent-hover);
   color: #ffffff;
-  border-color: #4f46e5;
+  border-color: var(--color-accent-hover);
   transform: translateY(-1px);
 }
 
 .jlpt-seek-btn.is-playing {
-  background: #4f46e5;
+  background: var(--color-accent-hover);
   color: #ffffff;
   border-color: #4338ca;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
@@ -1647,12 +1647,12 @@
 }
 
 .jlpt-dialogue-item:hover {
-  border-left-color: #4f46e5;
+  border-left-color: var(--color-accent-hover);
   background: #f8fafc;
 }
 
 .jlpt-dialogue-item.is-active {
-  border-left-color: #4f46e5;
+  border-left-color: var(--color-accent-hover);
   background: #eef2ff;
 }
 
@@ -1718,7 +1718,7 @@
 }
 
 .jlpt-option-card:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--color-accent-hover);
   outline-offset: 2px;
 }
 

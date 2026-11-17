@@ -1,110 +1,11 @@
-import { useCallback, useEffect, type CSSProperties, type ReactNode } from 'react'
+import { accents, backgrounds, type Accent, type Background, type AccountPreferences } from '../lib/theme'
+import { useCallback, type CSSProperties, type ReactNode } from 'react'
 import PageHeader from '../components/PageHeader'
 import { Button, Card, PageShell, Select, Switch } from '../components/ui'
 import { usePersistentState } from '../lib/usePersistentState'
 import { LogOut, Settings2 } from 'lucide-react'
 import { apiPaths, requestApi } from '../lib/apiClient'
 import { useAuth } from '../features/auth/authContext'
-
-type Accent = 'rose' | 'blue' | 'violet' | 'orange' | 'emerald' | 'white'
-type Background = 'midnight' | 'ocean' | 'sakura' | 'forest' | 'ivory' | 'sky'
-type AccountPreferences = {
-  dailyWords: number
-  reviewLimit: number | 'unlimited'
-  autoPronounce: boolean
-  furigana: boolean
-  romaji: boolean
-  pitchAccent: boolean
-  reminders: boolean
-  streakReminders: boolean
-  publicProfile: boolean
-  analytics: boolean
-  accent: Accent
-  background: Background
-}
-
-const accents: Record<Accent, { label: string; base: string; hover: string; subtle: string }> = {
-  rose: { label: 'Hồng đỏ', base: '#ff4d6d', hover: '#ff6b85', subtle: 'rgb(255 77 109 / 15%)' },
-  blue: { label: 'Xanh dương', base: '#4d8bff', hover: '#70a3ff', subtle: 'rgb(77 139 255 / 15%)' },
-  violet: { label: 'Tím', base: '#a855f7', hover: '#ba7cff', subtle: 'rgb(168 85 247 / 15%)' },
-  orange: { label: 'Cam', base: '#f97316', hover: '#fb923c', subtle: 'rgb(249 115 22 / 15%)' },
-  emerald: { label: 'Ngọc lục', base: '#10b981', hover: '#34d399', subtle: 'rgb(16 185 129 / 15%)' },
-  white: { label: 'Trắng', base: '#f4f3ed', hover: '#fffdf5', subtle: 'rgb(244 243 237 / 15%)' },
-}
-const backgrounds: Record<
-  Background,
-  {
-    label: string
-    swatch: string
-    canvas: string
-    subtle: string
-    surface: string
-    elevated: string
-    hover: string
-    tone: 'dark' | 'light'
-  }
-> = {
-  midnight: {
-    label: 'Đen Sumi',
-    swatch: '#09090f',
-    canvas: '#09090f',
-    subtle: '#0d0d15',
-    surface: '#111119',
-    elevated: '#171722',
-    hover: '#1e1e2c',
-    tone: 'dark',
-  },
-  ocean: {
-    label: 'Xanh Asagi',
-    swatch: '#d9edf1',
-    canvas: '#eaf5f7',
-    subtle: '#dceef2',
-    surface: '#f5fbfc',
-    elevated: '#ffffff',
-    hover: '#cce4e9',
-    tone: 'light',
-  },
-  sakura: {
-    label: 'Hồng Sakura',
-    swatch: '#f8d9df',
-    canvas: '#fff0f3',
-    subtle: '#fde4e9',
-    surface: '#fff8f9',
-    elevated: '#ffffff',
-    hover: '#f8d7df',
-    tone: 'light',
-  },
-  forest: {
-    label: 'Xanh Matcha',
-    swatch: '#dce8d2',
-    canvas: '#edf4e6',
-    subtle: '#e1edda',
-    surface: '#f7fbf4',
-    elevated: '#ffffff',
-    hover: '#d3e3c8',
-    tone: 'light',
-  },
-  ivory: {
-    label: 'Giấy Washi',
-    swatch: '#f4ead6',
-    canvas: '#fbf5e8',
-    subtle: '#f3ead8',
-    surface: '#fffaf1',
-    elevated: '#fffdf8',
-    hover: '#eee1c9',
-    tone: 'light',
-  },
-  sky: {
-    label: 'Mận Ume',
-    swatch: '#eadceb',
-    canvas: '#f6edf6',
-    subtle: '#eee2ef',
-    surface: '#fcf7fc',
-    elevated: '#ffffff',
-    hover: '#e5d4e6',
-    tone: 'light',
-  },
-}
 
 export function SettingsPage({ onLogout }: { onLogout: () => void }) {
   const { status } = useAuth()
@@ -119,51 +20,8 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
   const [publicProfile, setPublicProfile] = usePersistentState('kotodama.settings.public-profile', false)
   const [analytics, setAnalytics] = usePersistentState('kotodama.settings.analytics', true)
   const [accent, setAccent] = usePersistentState<Accent>('kotodama.settings.accent', 'rose')
-  const [background, setBackground] = usePersistentState<Background>('kotodama.settings.background', 'midnight')
-  const activeBackground = backgrounds[background] ? background : 'midnight'
-
-  useEffect(() => {
-    if (status !== 'authenticated') return
-    let active = true
-    void requestApi<AccountPreferences>({
-      method: 'GET',
-      url: apiPaths.account.preferences,
-      dedupeKey: 'account:preferences',
-    })
-      .then((value) => {
-        if (!active) return
-        setDailyWords(String(value.dailyWords))
-        setReviewLimit(String(value.reviewLimit))
-        setAutoPronounce(value.autoPronounce)
-        setFurigana(value.furigana)
-        setRomaji(value.romaji)
-        setPitchAccent(value.pitchAccent)
-        setReminders(value.reminders)
-        setStreakReminders(value.streakReminders)
-        setPublicProfile(value.publicProfile)
-        setAnalytics(value.analytics)
-        setAccent(value.accent)
-        setBackground(value.background)
-      })
-      .catch(() => undefined)
-    return () => {
-      active = false
-    }
-  }, [
-    setAccent,
-    setAnalytics,
-    setAutoPronounce,
-    setBackground,
-    setDailyWords,
-    setFurigana,
-    setPitchAccent,
-    setPublicProfile,
-    setReminders,
-    setReviewLimit,
-    setRomaji,
-    setStreakReminders,
-    status,
-  ])
+  const [background, setBackground] = usePersistentState<Background>('kotodama.settings.background', 'ivory')
+  const activeBackground = backgrounds[background] ? background : 'ivory'
 
   const persistPreference = useCallback(
     (patch: Partial<AccountPreferences>) => {
@@ -174,58 +32,6 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
     },
     [status]
   )
-
-  useEffect(() => {
-    const palette = accents[accent]
-    const backgroundPalette = backgrounds[activeBackground]
-    document.documentElement.style.setProperty('--color-accent', palette.base)
-    document.documentElement.style.setProperty('--color-accent-hover', palette.hover)
-    document.documentElement.style.setProperty('--color-accent-subtle', palette.subtle)
-    document.documentElement.style.setProperty('--color-bg-canvas', backgroundPalette.canvas)
-    document.documentElement.style.setProperty('--color-bg-subtle', backgroundPalette.subtle)
-    document.documentElement.style.setProperty('--color-bg-surface', backgroundPalette.surface)
-    document.documentElement.style.setProperty('--color-bg-elevated', backgroundPalette.elevated)
-    document.documentElement.style.setProperty('--color-bg-hover', backgroundPalette.hover)
-    const textPalette =
-      backgroundPalette.tone === 'light'
-        ? {
-            text: '#1c1b20',
-            secondary: 'rgb(28 27 32 / 68%)',
-            muted: 'rgb(28 27 32 / 52%)',
-            disabled: 'rgb(28 27 32 / 36%)',
-            border: 'rgb(28 27 32 / 13%)',
-            borderSubtle: 'rgb(28 27 32 / 8%)',
-            borderStrong: 'rgb(28 27 32 / 22%)',
-            borderHover: 'rgb(28 27 32 / 18%)',
-            selected: 'rgb(28 27 32 / 7%)',
-            overlay: 'rgb(255 253 248 / 92%)',
-          }
-        : {
-            text: '#eaeae0',
-            secondary: 'rgb(234 234 224 / 55%)',
-            muted: 'rgb(234 234 224 / 38%)',
-            disabled: 'rgb(234 234 224 / 28%)',
-            border: 'rgb(255 255 255 / 7%)',
-            borderSubtle: 'rgb(255 255 255 / 5%)',
-            borderStrong: 'rgb(255 255 255 / 18%)',
-            borderHover: 'rgb(255 255 255 / 14%)',
-            selected: 'rgb(255 255 255 / 8%)',
-            overlay: 'rgb(13 13 23 / 92%)',
-          }
-    document.documentElement.style.setProperty('--color-text', textPalette.text)
-    document.documentElement.style.setProperty('--color-text-secondary', textPalette.secondary)
-    document.documentElement.style.setProperty('--color-text-muted', textPalette.muted)
-    document.documentElement.style.setProperty('--color-text-disabled', textPalette.disabled)
-    document.documentElement.style.setProperty('--color-border', textPalette.border)
-    document.documentElement.style.setProperty('--color-border-subtle', textPalette.borderSubtle)
-    document.documentElement.style.setProperty('--color-border-strong', textPalette.borderStrong)
-    document.documentElement.style.setProperty('--color-border-hover', textPalette.borderHover)
-    document.documentElement.style.setProperty('--color-bg-selected', textPalette.selected)
-    document.documentElement.style.setProperty('--color-bg-overlay', textPalette.overlay)
-    document.documentElement.dataset['accent'] = accent
-    document.documentElement.dataset['background'] = activeBackground
-    document.documentElement.dataset['backgroundTone'] = backgroundPalette.tone
-  }, [accent, activeBackground])
 
   return (
     <PageShell width="wide" className="settings-page">

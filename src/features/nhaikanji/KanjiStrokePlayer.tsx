@@ -1,14 +1,7 @@
+import { useReducedMotion } from '../../lib/useReducedMotion'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import HanziWriter, { type CharacterJson } from 'hanzi-writer'
-import {
-  RotateCcw,
-  Play,
-  Pause,
-  ChevronLeft,
-  ChevronRight,
-  Hash,
-  Gauge,
-} from 'lucide-react'
+import { RotateCcw, Play, Pause, ChevronLeft, ChevronRight, Hash, Gauge } from 'lucide-react'
 import { sumiAudio } from '../dictionary/sumiAudio'
 
 interface KanjiStrokePlayerProps {
@@ -32,11 +25,8 @@ const SPEED_OPTIONS: SpeedOption[] = [
 const STAGE_SIZE = 280
 const STAGE_PADDING = 18
 
-export function KanjiStrokePlayer({
-  kanji,
-  fallbackStrokeCount,
-  className = '',
-}: KanjiStrokePlayerProps) {
+export function KanjiStrokePlayer({ kanji, fallbackStrokeCount, className = '' }: KanjiStrokePlayerProps) {
+  const reducedMotion = useReducedMotion()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const writerRef = useRef<HanziWriter | null>(null)
   const isPlayingRef = useRef<boolean>(true)
@@ -85,23 +75,33 @@ export function KanjiStrokePlayer({
   }, [])
 
   // Start complete playback from first stroke
-  const startPlayback = useCallback((writer: HanziWriter, data: CharacterJson) => {
-    if (animTimeoutRef.current) {
-      clearTimeout(animTimeoutRef.current)
-      animTimeoutRef.current = null
-    }
-    isPlayingRef.current = true
-    setIsPlaying(true)
-    setCurrentStrokeIndex(0)
+  const startPlayback = useCallback(
+    (writer: HanziWriter, data: CharacterJson) => {
+      if (reducedMotion) {
+        void writer.showCharacter({ duration: 0 })
+        isPlayingRef.current = false
+        setIsPlaying(false)
+        setCurrentStrokeIndex(data.strokes.length)
+        return
+      }
+      if (animTimeoutRef.current) {
+        clearTimeout(animTimeoutRef.current)
+        animTimeoutRef.current = null
+      }
+      isPlayingRef.current = true
+      setIsPlaying(true)
+      setCurrentStrokeIndex(0)
 
-    writer.hideCharacter({
-      onComplete: () => {
-        if (isPlayingRef.current) {
-          playStroke(0, data, writer)
-        }
-      },
-    })
-  }, [playStroke])
+      writer.hideCharacter({
+        onComplete: () => {
+          if (isPlayingRef.current) {
+            playStroke(0, data, writer)
+          }
+        },
+      })
+    },
+    [playStroke, reducedMotion]
+  )
 
   // ─── Initialize HanziWriter Instance ──────────────────────────────────────
   useEffect(() => {
@@ -126,7 +126,7 @@ export function KanjiStrokePlayer({
         width: STAGE_SIZE,
         height: STAGE_SIZE,
         padding: STAGE_PADDING,
-        showCharacter: false,
+        showCharacter: reducedMotion,
         showOutline: true,
         strokeColor: '#1A1817', // Sắc mực Sumi đen tuyền
         outlineColor: 'rgba(215, 205, 190, 0.45)', // Nét mờ dẫn đường trên giấy Washi
@@ -153,7 +153,9 @@ export function KanjiStrokePlayer({
 
             // 2. Direct fallback to AnimCJK Japanese Kanji on jsDelivr
             try {
-              const resJp = await fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@0/${encodeURIComponent(char)}.json`)
+              const resJp = await fetch(
+                `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@0/${encodeURIComponent(char)}.json`
+              )
               if (resJp.ok) {
                 const data = await resJp.json()
                 if (!isCancelled) onLoad(data)
@@ -163,7 +165,9 @@ export function KanjiStrokePlayer({
 
             // 3. Fallback to standard Chinese characters (9000+ characters)
             try {
-              const resCn = await fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`)
+              const resCn = await fetch(
+                `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`
+              )
               if (resCn.ok) {
                 const data = await resCn.json()
                 if (!isCancelled) onLoad(data)
@@ -207,7 +211,7 @@ export function KanjiStrokePlayer({
         writerRef.current = null
       }
     }
-  }, [kanji, startPlayback])
+  }, [kanji, startPlayback, speedIndex, reducedMotion])
 
   // ─── Control Handlers ─────────────────────────────────────────────────────
   const handleReplay = () => {
@@ -292,13 +296,6 @@ export function KanjiStrokePlayer({
       const next = (prev + 1) % SPEED_OPTIONS.length
       const opt = SPEED_OPTIONS[next] as SpeedOption
       speedRef.current = opt
-      if (writerRef.current) {
-        const writerOpts = (writerRef.current as unknown as { _options?: { strokeAnimationSpeed?: number; delayBetweenStrokes?: number } })._options
-        if (writerOpts) {
-          writerOpts.strokeAnimationSpeed = opt.val
-          writerOpts.delayBetweenStrokes = opt.delay
-        }
-      }
       return next
     })
   }
@@ -312,7 +309,7 @@ export function KanjiStrokePlayer({
       const px = p[0] ?? 0
       const py = p[1] ?? 0
       const sx = transform.x + px * transform.scale
-      const sy = (STAGE_SIZE - transform.y) - py * transform.scale
+      const sy = STAGE_SIZE - transform.y - py * transform.scale
       return { num: i + 1, x: sx, y: sy }
     })
   })()
@@ -322,11 +319,7 @@ export function KanjiStrokePlayer({
       {/* ─── STROKE STAGE (Giấy Washi + Cửu cung 九宮格) ───────────────────── */}
       <div className="kanji-stroke-stage" style={{ width: STAGE_SIZE, height: STAGE_SIZE }}>
         {/* Background Cửu cung / Mễ tự cách Grid */}
-        <svg
-          viewBox={`0 0 ${STAGE_SIZE} ${STAGE_SIZE}`}
-          className="kanji-stroke-grid-bg"
-          aria-hidden="true"
-        >
+        <svg viewBox={`0 0 ${STAGE_SIZE} ${STAGE_SIZE}`} className="kanji-stroke-grid-bg" aria-hidden="true">
           {/* Border */}
           <rect
             x="1.5"
@@ -423,6 +416,7 @@ export function KanjiStrokePlayer({
           type="button"
           className="kanji-stroke-ctrl-btn kanji-stroke-ctrl-btn--primary"
           onClick={handleReplay}
+          disabled={reducedMotion}
           title="Diễn lại thứ tự nét viết từ đầu"
           aria-label="Diễn lại bút pháp"
         >
@@ -437,7 +431,7 @@ export function KanjiStrokePlayer({
             type="button"
             className="kanji-stroke-mini-btn"
             onClick={handleStepPrev}
-            disabled={currentStrokeIndex <= 0}
+            disabled={reducedMotion || currentStrokeIndex <= 0}
             title="Lùi 1 nét"
             aria-label="Lùi 1 nét"
           >
@@ -449,6 +443,7 @@ export function KanjiStrokePlayer({
             type="button"
             className="kanji-stroke-mini-btn kanji-stroke-mini-btn--play"
             onClick={handleTogglePlay}
+            disabled={reducedMotion}
             title={isPlaying ? 'Tạm dừng viết' : 'Tiếp tục viết'}
             aria-label={isPlaying ? 'Tạm dừng' : 'Tiếp tục'}
           >
@@ -460,7 +455,7 @@ export function KanjiStrokePlayer({
             type="button"
             className="kanji-stroke-mini-btn"
             onClick={handleStepNext}
-            disabled={currentStrokeIndex >= totalStrokes}
+            disabled={reducedMotion || currentStrokeIndex >= totalStrokes}
             title="Tiến 1 nét"
             aria-label="Tiến 1 nét"
           >

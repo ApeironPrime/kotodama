@@ -1,3 +1,5 @@
+import { MemoryRouter } from 'react-router-dom'
+import { UrlStateProvider } from '../../components/UrlStateProvider'
 // @vitest-environment jsdom
 
 import React from 'react'
@@ -209,7 +211,13 @@ function renderWithClient(ui: React.ReactElement) {
       },
     },
   })
-  return render(<QueryClientProvider client={testClient}>{ui}</QueryClientProvider>)
+  return render(
+    <MemoryRouter>
+      <UrlStateProvider>
+        <QueryClientProvider client={testClient}>{ui}</QueryClientProvider>
+      </UrlStateProvider>
+    </MemoryRouter>
+  )
 }
 
 describe('VocabularyPage Suite (Task T05 & T06)', () => {
@@ -480,17 +488,17 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     // 1. Search by reading 'ほん' -> only '本' appears
     fireEvent.change(unitSearchInput, { target: { value: 'ほん' } })
     expect(await screen.findByText('本')).toBeTruthy()
-    expect(screen.queryByText('私')).toBeNull()
+    await waitFor(() => expect(screen.queryByText('私')).toBeNull())
 
     // 2. Search by Han-Viet 'TƯ' -> only '私' appears
     fireEvent.change(unitSearchInput, { target: { value: 'TƯ' } })
     expect(await screen.findByText('私')).toBeTruthy()
-    expect(screen.queryByText('本')).toBeNull()
+    await waitFor(() => expect(screen.queryByText('本')).toBeNull())
 
     // 3. Search by meaning 'sách' -> only '本' appears
     fireEvent.change(unitSearchInput, { target: { value: 'sách' } })
     expect(await screen.findByText('本')).toBeTruthy()
-    expect(screen.queryByText('私')).toBeNull()
+    await waitFor(() => expect(screen.queryByText('私')).toBeNull())
 
     // 4. Search unmatched keyword -> empty state
     fireEvent.change(unitSearchInput, { target: { value: 'xyz123' } })

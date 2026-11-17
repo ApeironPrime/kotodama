@@ -1,3 +1,5 @@
+import { MemoryRouter } from 'react-router-dom'
+import { UrlStateProvider } from '../../components/UrlStateProvider'
 // @vitest-environment jsdom
 
 import React from 'react'
@@ -39,7 +41,13 @@ function renderWithClient(ui: React.ReactElement) {
   const testClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(<QueryClientProvider client={testClient}>{ui}</QueryClientProvider>)
+  return render(
+    <MemoryRouter>
+      <UrlStateProvider>
+        <QueryClientProvider client={testClient}>{ui}</QueryClientProvider>
+      </UrlStateProvider>
+    </MemoryRouter>
+  )
 }
 
 describe('DictionaryPage Feature Suite', () => {
@@ -50,7 +58,6 @@ describe('DictionaryPage Feature Suite', () => {
   })
 
   const sampleSearchResult = {
-
     results: [
       {
         id: 1,
@@ -198,7 +205,9 @@ describe('DictionaryPage Feature Suite', () => {
 
     const inputRef = { current: null }
     renderWithClient(<DictionaryPage inputRef={inputRef} />)
-    fireEvent.change(screen.getByRole('textbox', { name: 'Từ cần tra' }), { target: { value: '授業の前に予習をします。' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Từ cần tra' }), {
+      target: { value: '授業の前に予習をします。' },
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Nghĩa của câu')).toBeTruthy()
@@ -265,8 +274,7 @@ describe('DictionaryPage Feature Suite', () => {
     expect(screen.getByText('SỔ TAY SRS')).toBeTruthy()
 
     // Press Escape to dismiss drawer
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(screen.queryByLabelText('Sổ tay học và lịch sử tra cứu')).toBeNull()
   })
 })
-

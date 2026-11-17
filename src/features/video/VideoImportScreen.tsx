@@ -4,7 +4,7 @@ import { Button, Card } from '../../components/ui'
 import { getApiErrorMessage } from '../../lib/apiClient'
 import { importYouTubeVideo, listMediaAssets, uploadLocalVideo } from './videoApi'
 import type { MediaAsset, UploadProgress } from './videoTypes'
-import { ArrowUpFromLine, CheckCircle2, Clock, Film, FolderOpen, Link2, Loader2, Play, Zap } from 'lucide-react'
+import { ArrowUpFromLine, CheckCircle2, Film, FolderOpen, Link2, Loader2, Play, Zap } from 'lucide-react'
 
 export default function VideoImportScreen({ onImport }: { onImport: (video: MediaAsset) => void }) {
   const [tab, setTab] = useState<'url' | 'file'>('url')
@@ -15,7 +15,12 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
   const [progress, setProgress] = useState<UploadProgress | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const { data: assetsData, isLoading: isLoadingAssets } = useQuery({
+  const {
+    data: assetsData,
+    isLoading: isLoadingAssets,
+    isError: isAssetsError,
+    refetch: refetchAssets,
+  } = useQuery({
     queryKey: ['video-assets'],
     queryFn: listMediaAssets,
     refetchInterval: (query) => {
@@ -60,10 +65,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
 
   const existingItems = assetsData?.items ?? []
   // Deduplicate by title to present unique lessons cleanly
-  const uniqueItems = existingItems.filter(
-    (item, index, self) =>
-      index === self.findIndex((t) => t.title === item.title && t.processingStatus === item.processingStatus)
-  )
+  const uniqueItems = existingItems.filter((item, index, self) => index === self.findIndex((t) => t.id === item.id))
 
   return (
     <section
@@ -191,10 +193,15 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
             <Film size={18} color="var(--rose-400)" />
             BÀI HỌC VIDEO ĐÃ XỬ LÝ & SẴN SÀNG SHADOWING ({uniqueItems.length})
           </h2>
-          {isLoadingAssets && <Loader2 size={16} className="animate-spin" color="var(--color-text-muted)" />}
+          {isLoadingAssets && <Loader2 size={16} className="ui-spin" color="var(--color-text-muted)" />}
         </div>
 
-        {uniqueItems.length === 0 ? (
+        {isAssetsError ? (
+          <div role="alert" className="ui-status-panel">
+            <p>Chưa tải được danh sách video.</p>
+            <Button onClick={() => void refetchAssets()}>Thử lại</Button>
+          </div>
+        ) : uniqueItems.length === 0 ? (
           <Card
             style={{
               padding: '1.5rem',
@@ -215,6 +222,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
             }}
           >
             {uniqueItems.map((item) => {
+              const isFailed = item.processingStatus === 'failed'
               const isReady = item.processingStatus === 'ready'
               const isProcessing = item.processingStatus === 'processing' || item.processingStatus === 'draft'
 
@@ -283,6 +291,11 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
                           <CheckCircle2 size={13} /> Sẵn sàng học
                         </span>
                       )}
+                      {isFailed && (
+                        <span role="status" className="ui-error-text">
+                          Xử lý thất bại · Mở để thử lại
+                        </span>
+                      )}
                       {isProcessing && (
                         <span
                           style={{
@@ -294,7 +307,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
                             gap: '4px',
                           }}
                         >
-                          <Clock size={13} className="animate-spin" /> Đang xử lý
+                          <Loader2 size={13} className="ui-spin" /> Đang xử lý
                         </span>
                       )}
                     </div>
@@ -341,7 +354,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
                         </>
                       ) : isProcessing ? (
                         <>
-                          <Loader2 size={13} className="animate-spin" /> Xem tiến trình
+                          <Loader2 size={13} className="ui-spin" /> Xem tiến trình
                         </>
                       ) : (
                         'Mở'

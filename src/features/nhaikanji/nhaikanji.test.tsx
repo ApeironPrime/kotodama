@@ -1,3 +1,5 @@
+import { MemoryRouter } from 'react-router-dom'
+import { UrlStateProvider } from '../../components/UrlStateProvider'
 // @vitest-environment jsdom
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -34,7 +36,13 @@ function renderWithClient(ui: React.ReactElement) {
   const testClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(<QueryClientProvider client={testClient}>{ui}</QueryClientProvider>)
+  return render(
+    <MemoryRouter>
+      <UrlStateProvider>
+        <QueryClientProvider client={testClient}>{ui}</QueryClientProvider>
+      </UrlStateProvider>
+    </MemoryRouter>
+  )
 }
 
 describe('NhaiKanji Frontend Feature Suite', () => {
@@ -166,6 +174,8 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     const lesson1Card = await screen.findByText(/1課 〜とき/i)
     fireEvent.click(lesson1Card)
 
+    // The detail list is intentionally separate from focused flashcard practice.
+    fireEvent.click(screen.getByRole('button', { name: /^Danh Sách \(/i }))
     // Verify pattern and meaning
     const patternEls = await screen.findAllByText('〜うちに①')
     expect(patternEls.length).toBeGreaterThan(0)

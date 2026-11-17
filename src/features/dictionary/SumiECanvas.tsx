@@ -1,3 +1,4 @@
+import { useReducedMotion } from '../../lib/useReducedMotion'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Volume2, VolumeX, Sparkles, ZoomIn, ZoomOut, RotateCcw, X, ExternalLink } from 'lucide-react'
 import type { KanjiSummary } from '../nhaikanji/nhaikanjiTypes'
@@ -8,16 +9,8 @@ import {
   type DeconstructionInfo,
   type SemanticElement,
 } from './kanjiDecomposition'
-import {
-  hankoManager,
-  drawHankoSeal,
-  type KanjiHankoRecord,
-  type CinnabarDustParticle,
-} from './kanjiHankoSrs'
-import {
-  getMeaningfulLinksForKanji,
-  type KanjiLinkResult,
-} from './kanjiRelationships'
+import { hankoManager, drawHankoSeal, type KanjiHankoRecord, type CinnabarDustParticle } from './kanjiHankoSrs'
+import { getMeaningfulLinksForKanji, type KanjiLinkResult } from './kanjiRelationships'
 
 interface SumiECanvasProps {
   items: KanjiSummary[]
@@ -85,12 +78,9 @@ const FONT_NUANCE = '600 28px "Noto Serif JP", "Hiragino Mincho ProN", "Yu Minch
 const FONT_HANZI = '700 11px system-ui, -apple-system, sans-serif'
 const FONT_MEANING = '500 10.5px system-ui, -apple-system, sans-serif'
 
-export const SumiECanvas: React.FC<SumiECanvasProps> = ({
-  items,
-  activeLevel,
-  onSelectLevel,
-  onSelectKanji,
-}) => {
+export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, onSelectLevel, onSelectKanji }) => {
+  const reducedMotion = useReducedMotion()
+  const [staticPage, setStaticPage] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const particlesRef = useRef<GlyphParticle[]>([])
@@ -391,7 +381,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
     updateSize()
     window.addEventListener('resize', updateSize)
     return () => window.removeEventListener('resize', updateSize)
-  }, [items, layoutParticles])
+  }, [items, layoutParticles, reducedMotion])
 
   // Native wheel scroll / zoom listener
   useEffect(() => {
@@ -442,8 +432,9 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
     }
   }, [])
 
-  // Animation Loop: 60FPS Render Engine with all 4 Zen Art Mechanisms
+  // Animation is optional; static controls remain fully usable.
   useEffect(() => {
+    if (reducedMotion) return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -507,8 +498,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         for (let s = 0; s <= segments; s++) {
           const theta = (s / segments) * Math.PI * 2
           const perturb =
-            Math.sin(theta * 3 + rip.asymmetrySeed) * 0.05 +
-            Math.cos(theta * 5 + rip.asymmetrySeed * 1.5) * 0.025
+            Math.sin(theta * 3 + rip.asymmetrySeed) * 0.05 + Math.cos(theta * 5 + rip.asymmetrySeed * 1.5) * 0.025
           const r = rip.radius * (1 + perturb)
           const px = rip.x + Math.cos(theta) * r
           const py = rip.y + Math.sin(theta) * r
@@ -577,8 +567,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
       const maxVisibleRow = Math.ceil((panY + height / currentZoom + 140) / rowHeight)
 
       // Active Hovered Particle for Radical Constellation Network (supports graceful smoke decay)
-      let activeHoveredParticle =
-        hoveredIndexRef.current !== null ? particles[hoveredIndexRef.current] : null
+      let activeHoveredParticle = hoveredIndexRef.current !== null ? particles[hoveredIndexRef.current] : null
       if (!activeHoveredParticle) {
         const decaying = particles.find((p) => p.hoverRatio > 0.05)
         if (decaying) {
@@ -616,12 +605,12 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         }
         const enterProgress = Math.min(1, birthElapsed / 380)
         const enterEase = 1 - Math.pow(1 - enterProgress, 3)
-        const entranceScale = 0.40 + 0.60 * enterEase
+        const entranceScale = 0.4 + 0.6 * enterEase
         const entranceAlpha = enterEase
 
         // Living Environmental Water Drift
         const driftX = Math.sin(time * 0.0013 + p.phase) * (4.8 * p.depth)
-        const driftY = Math.cos(time * 0.0010 + p.phase * 1.3) * (3.8 * p.depth)
+        const driftY = Math.cos(time * 0.001 + p.phase * 1.3) * (3.8 * p.depth)
 
         // 3D Parallax offset based on depth tier
         const parallaxX = cam.x * p.parallaxFactor
@@ -675,7 +664,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         p.hoverRatio += (targetHover - p.hoverRatio) * hoverSpeed
 
         const targetProx = mouse.active && mouseDist < 160 ? Math.pow(1 - mouseDist / 160, 1.4) : 0
-        const proxSpeed = targetProx > p.proximityRatio ? 0.20 : 0.05
+        const proxSpeed = targetProx > p.proximityRatio ? 0.2 : 0.05
         p.proximityRatio += (targetProx - p.proximityRatio) * proxSpeed
 
         p.targetScale = (1 + 0.32 * p.hoverRatio) * currentZoom
@@ -702,7 +691,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
           } else if (numLinks === 2) {
             angleOffset = (partnerLinkIndex === 0 ? -1 : 1) * 0.46
           } else if (numLinks === 3) {
-            angleOffset = (partnerLinkIndex - 1) * 0.50
+            angleOffset = (partnerLinkIndex - 1) * 0.5
           } else if (numLinks >= 4) {
             // Wide graceful fan spread (~96° arc) so kanji glyphs and subtitles never crowd
             angleOffset = (partnerLinkIndex - 1.5) * 0.56
@@ -743,7 +732,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         const targetX = p.targetX + pullX + (isHover ? 0 : driftX)
         const targetY = p.targetY + pullY + (isHover ? 0 : driftY)
         const springK = isHover ? 0.22 : isPartner ? 0.18 : 0.05
-        const damping = isHover ? 0.55 : isPartner ? 0.70 : 0.88
+        const damping = isHover ? 0.55 : isPartner ? 0.7 : 0.88
         const ax = (targetX - p.x) * springK
         const ay = (targetY - p.y) * springK
 
@@ -756,13 +745,8 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         p.rotation += (p.targetRotation - p.rotation) * 0.16
 
         // ─── CONSTELLATION DIMMING (Dim unrelated kanji during radical constellation) ─
-        const isRelated =
-          activeHoveredParticle &&
-          (p === activeHoveredParticle || relatedIndices.includes(idx))
-        const constellationDim =
-          activeHoveredParticle && !isRelated
-            ? 1 - activeHoveredParticle.hoverRatio * 0.82
-            : 1.0
+        const isRelated = activeHoveredParticle && (p === activeHoveredParticle || relatedIndices.includes(idx))
+        const constellationDim = activeHoveredParticle && !isRelated ? 1 - activeHoveredParticle.hoverRatio * 0.82 : 1.0
 
         // If Zen Deconstruction Stage is active, dim background kanji
         const zenStageDim = 1 - deconstructProgress * 0.92
@@ -779,7 +763,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
           ctx.save()
           const innerAura = ctx.createRadialGradient(0, 0, 4, 0, 0, 38 * h)
           innerAura.addColorStop(0, `rgba(28, 25, 23, ${0.22 * h})`)
-          innerAura.addColorStop(0.6, `rgba(38, 32, 28, ${0.10 * h})`)
+          innerAura.addColorStop(0.6, `rgba(38, 32, 28, ${0.1 * h})`)
           innerAura.addColorStop(1, 'rgba(250, 248, 245, 0)')
           ctx.fillStyle = innerAura
           ctx.beginPath()
@@ -929,7 +913,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
           if (!isFilterActive || isDueForReview || isHover) {
             const sealX = p.baseFontSize * 0.44 + 6
             const sealY = p.baseFontSize * 0.26
-            const sealScale = (0.90 + 0.15 * p.hoverRatio) * (isFilterActive && isDueForReview ? 1.25 : 1.0)
+            const sealScale = (0.9 + 0.15 * p.hoverRatio) * (isFilterActive && isDueForReview ? 1.25 : 1.0)
             drawHankoSeal(ctx, hRecord, sealX, sealY, time, sealScale)
           }
         }
@@ -962,9 +946,21 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
       ) {
         const hr = activeHoveredParticle.hoverRatio
         const hScreenX =
-          (activeHoveredParticle.x + cam.x * activeHoveredParticle.parallaxFactor + activeHoveredParticle.dispX - panX - width / 2) * currentZoom + width / 2
+          (activeHoveredParticle.x +
+            cam.x * activeHoveredParticle.parallaxFactor +
+            activeHoveredParticle.dispX -
+            panX -
+            width / 2) *
+            currentZoom +
+          width / 2
         const hScreenY =
-          (activeHoveredParticle.y - panY + cam.y * activeHoveredParticle.parallaxFactor + activeHoveredParticle.dispY - height / 2) * currentZoom + height / 2
+          (activeHoveredParticle.y -
+            panY +
+            cam.y * activeHoveredParticle.parallaxFactor +
+            activeHoveredParticle.dispY -
+            height / 2) *
+            currentZoom +
+          height / 2
 
         const numLinks = activeMeaningfulLinks.length
 
@@ -1006,7 +1002,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
           const perpY = normDx
 
           // Alternate bowing direction gently
-          const bowSign = numLinks === 2 ? (linkIdx === 0 ? -1 : 1) : (linkIdx % 2 === 0 ? -1 : 1)
+          const bowSign = numLinks === 2 ? (linkIdx === 0 ? -1 : 1) : linkIdx % 2 === 0 ? -1 : 1
           const bowMag = Math.min(26, Math.max(10, 12 + (linkIdx % 2) * 10))
           const ctrlX = (hScreenX + tScreenX) / 2 + perpX * bowSign * bowMag
           const ctrlY = (hScreenY + tScreenY) / 2 + perpY * bowSign * bowMag
@@ -1017,14 +1013,14 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
           // Link 1 (inner left, deep): t = 0.72 (lower tier, close to target 1)
           // Link 2 (inner right, shallow): t = 0.40 (upper tier, closer to source)
           // Link 3 (outer right, deep): t = 0.58 (mid-lower tier)
-          let tPill = 0.50
+          let tPill = 0.5
           if (numLinks === 2) {
             tPill = linkIdx === 0 ? 0.44 : 0.58
           } else if (numLinks === 3) {
             tPill = linkIdx === 0 ? 0.46 : linkIdx === 1 ? 0.68 : 0.44
           } else if (numLinks >= 4) {
-            const tMap = [0.50, 0.72, 0.40, 0.58]
-            tPill = tMap[linkIdx] ?? 0.50
+            const tMap = [0.5, 0.72, 0.4, 0.58]
+            tPill = tMap[linkIdx] ?? 0.5
           }
 
           const oneMinusT = 1 - tPill
@@ -1067,7 +1063,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
             ctx.lineWidth = 1.8
             ctx.setLineDash([8, 3])
           } else if (geom.item.link.relationType === 'antonym') {
-            ctx.strokeStyle = `rgba(79, 70, 229, ${0.60 * hr})`
+            ctx.strokeStyle = `rgba(79, 70, 229, ${0.6 * hr})`
             ctx.lineWidth = 2.0
             ctx.setLineDash([3, 3])
           } else {
@@ -1103,11 +1099,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         const sourceHalfW = 60
 
         for (const b of boxes) {
-          if (
-            Math.abs(b.x - hScreenX) < (b.w / 2 + sourceHalfW) &&
-            b.y > sourceMinY &&
-            b.y < sourceMaxY + b.h / 2
-          ) {
+          if (Math.abs(b.x - hScreenX) < b.w / 2 + sourceHalfW && b.y > sourceMinY && b.y < sourceMaxY + b.h / 2) {
             b.y = sourceMaxY + b.h / 2 + 6
           }
         }
@@ -1119,7 +1111,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
             const targetMaxY = g.tScreenY + 50
             const targetHalfW = 46
             if (
-              Math.abs(b.x - g.tScreenX) < (b.w / 2 + targetHalfW) &&
+              Math.abs(b.x - g.tScreenX) < b.w / 2 + targetHalfW &&
               b.y > targetMinY - b.h / 2 &&
               b.y < targetMaxY + b.h / 2
             ) {
@@ -1138,12 +1130,12 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
               const b1 = boxes[i]
               const b2 = boxes[j]
               if (!b1 || !b2) continue
-              const overlapX = (b1.w / 2 + b2.w / 2 + GAP_X) - Math.abs(b1.x - b2.x)
-              const overlapY = (b1.h / 2 + b2.h / 2 + GAP_Y) - Math.abs(b1.y - b2.y)
+              const overlapX = b1.w / 2 + b2.w / 2 + GAP_X - Math.abs(b1.x - b2.x)
+              const overlapY = b1.h / 2 + b2.h / 2 + GAP_Y - Math.abs(b1.y - b2.y)
               if (overlapX > 0 && overlapY > 0) {
                 hasOverlap = true
                 if (overlapY <= overlapX) {
-                  const shift = (overlapY / 2) + 1
+                  const shift = overlapY / 2 + 1
                   if (b1.y < b2.y) {
                     b1.y -= shift
                     b2.y += shift
@@ -1152,7 +1144,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
                     b2.y += shift
                   }
                 } else {
-                  const shift = (overlapX / 2) + 1
+                  const shift = overlapX / 2 + 1
                   if (b1.x < b2.x) {
                     b1.x -= shift
                     b2.x += shift
@@ -1367,11 +1359,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
                   ? 'Khô kiệt (Kasure)'
                   : 'Hóa tro'
           ctx.fillStyle =
-            stageHanko.inkState === 'fresh'
-              ? '#C23A2B'
-              : stageHanko.inkState === 'dry_due'
-                ? '#E0533C'
-                : '#A8A29E'
+            stageHanko.inkState === 'fresh' ? '#C23A2B' : stageHanko.inkState === 'dry_due' ? '#E0533C' : '#A8A29E'
           ctx.fillText(`${tierLabel} • ${stageHanko.intervalDays}d (${stateLabel})`, centerX + 140, height - 116)
           ctx.restore()
         }
@@ -1383,7 +1371,11 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         // Close instruction tip
         ctx.font = '600 11px system-ui, sans-serif'
         ctx.fillStyle = 'rgba(168, 162, 158, 0.75)'
-        ctx.fillText('Nhấp vào vùng trống để ghép các bộ thủ trở lại • Hoặc bấm Xem chi tiết bên dưới', centerX, height - 60)
+        ctx.fillText(
+          'Nhấp vào vùng trống để ghép các bộ thủ trở lại • Hoặc bấm Xem chi tiết bên dưới',
+          centerX,
+          height - 60
+        )
         ctx.restore()
       }
 
@@ -1397,7 +1389,11 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
       }
 
       // Audio feedback on new hover
-      if (newHoveredIndex !== null && newHoveredIndex !== hoveredIndexRef.current && !pointerDragRef.current.isDragging) {
+      if (
+        newHoveredIndex !== null &&
+        newHoveredIndex !== hoveredIndexRef.current &&
+        !pointerDragRef.current.isDragging
+      ) {
         sumiAudio.playBrushFriction()
       }
       hoveredIndexRef.current = newHoveredIndex
@@ -1411,7 +1407,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
         cancelAnimationFrame(animFrameRef.current)
       }
     }
-  }, [deconstructionStage, executeStampAction])
+  }, [deconstructionStage, executeStampAction, reducedMotion])
 
   // Pointer Movement, Drag-to-Pan & Liquid Wake Interaction
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1619,6 +1615,32 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
     }
   }
 
+  if (reducedMotion)
+    return (
+      <section className="ui-status-panel" aria-label="Danh sách Hán tự">
+        <h2>Khám phá Hán tự</h2>
+        <p>{items.length} chữ · Chế độ giảm chuyển động</p>
+        <div className="static-kanji-grid">
+          {items.slice(staticPage * 60, (staticPage + 1) * 60).map((item) => (
+            <button type="button" key={item.kanji} onClick={() => onSelectKanji(item)}>
+              <strong>{item.kanji}</strong>
+              <span>{item.meaning_vi}</span>
+            </button>
+          ))}
+        </div>
+        <button type="button" disabled={staticPage === 0} onClick={() => setStaticPage((page) => page - 1)}>
+          Trang trước
+        </button>
+        <button
+          type="button"
+          disabled={(staticPage + 1) * 60 >= items.length}
+          onClick={() => setStaticPage((page) => page + 1)}
+        >
+          Trang tiếp
+        </button>
+      </section>
+    )
+
   return (
     <div className="sumi-e-container" ref={containerRef}>
       {/* ─── WHISPER HUD (Giao diện điều khiển vi mô) ────────────────────── */}
@@ -1658,7 +1680,9 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
                 onClick={() => setHankoFilterActive((prev) => !prev)}
                 title={hankoFilterActive ? 'Hiện tất cả Hán tự' : 'Lọc các Hán tự chờ nạp mực (SRS)'}
               >
-                <span className="sumi-e-hanko-filter-seal" aria-hidden="true">印</span>
+                <span className="sumi-e-hanko-filter-seal" aria-hidden="true">
+                  印
+                </span>
                 <span>Chờ nạp mực</span>
                 {dueCount > 0 && <span className="sumi-e-hanko-filter-badge">{dueCount}</span>}
               </button>
@@ -1803,7 +1827,9 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({
               boxShadow: '0 4px 18px rgba(194, 58, 43, 0.45)',
             }}
           >
-            <span style={{ border: '1px solid currentColor', padding: '0 3px', borderRadius: '2px', fontSize: '10px' }}>印</span>
+            <span style={{ border: '1px solid currentColor', padding: '0 3px', borderRadius: '2px', fontSize: '10px' }}>
+              印
+            </span>
             <span>Dập ấn nạp mực</span>
           </button>
 

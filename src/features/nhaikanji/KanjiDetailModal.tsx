@@ -1,3 +1,4 @@
+import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -48,7 +49,13 @@ function extractStoryComponents(story: string, focalKanji: string): Array<{ char
     const rawLabel = (m[1] ?? '').trim()
     const rawChar = (m[2] ?? '').trim()
     const char = toCanonicalRadicalGlyph(rawChar)
-    if (char && char !== focalKanji && char !== focalCanon && !seen.has(char) && /[\u4e00-\u9fff\u3400-\u4dbf\u2e80-\u2fd5]/.test(char)) {
+    if (
+      char &&
+      char !== focalKanji &&
+      char !== focalCanon &&
+      !seen.has(char) &&
+      /[\u4e00-\u9fff\u3400-\u4dbf\u2e80-\u2fd5]/.test(char)
+    ) {
       seen.add(char)
       const label = getComponentLabel(char, rawLabel)
       results.push({ char, label })
@@ -64,8 +71,17 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
   const [illustrationError, setIllustrationError] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogAccessibility(dialogRef, onClose)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const queryClient = useQueryClient()
+
+  useEffect(
+    () => () => {
+      audioRef.current?.pause()
+    },
+    []
+  )
 
   // Reset illustration error when kanji changes
   useEffect(() => {
@@ -78,7 +94,12 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
     sumiAudio.playBrushFriction()
   }, [kanjiSummary.kanji])
 
-  const { data: detailData, isLoading } = useQuery({
+  const {
+    data: detailData,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['nhaikanji', 'kanjiDetail', kanjiSummary.kanji],
     queryFn: () => nhaikanjiApi.fetchKanjiDetail(kanjiSummary.kanji),
   })
@@ -87,6 +108,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   const { data: savedTermsData } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'saved-terms'],
     queryFn: () => srsApi.fetchSavedTerms(),
+    enabled: Boolean(user),
     staleTime: 30_000,
   })
 
@@ -163,8 +185,8 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   }
 
   // ─── Constellation graph data ────────────────────────────────────────────────
-  const storyComponents = useMemo(() =>
-    kanjiSummary.story ? extractStoryComponents(kanjiSummary.story, kanjiSummary.kanji) : [],
+  const storyComponents = useMemo(
+    () => (kanjiSummary.story ? extractStoryComponents(kanjiSummary.story, kanjiSummary.kanji) : []),
     [kanjiSummary.story, kanjiSummary.kanji]
   )
 
@@ -173,7 +195,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
     if (!kanjiSummary.radical_utf) return []
     const canonRadical = toCanonicalRadicalGlyph(kanjiSummary.radical_utf)
     const canonKanji = toCanonicalRadicalGlyph(kanjiSummary.kanji)
-    const already = storyComponents.some(c => toCanonicalRadicalGlyph(c.char) === canonRadical)
+    const already = storyComponents.some((c) => toCanonicalRadicalGlyph(c.char) === canonRadical)
     if (already || canonRadical === canonKanji) return []
     const viName = getRadicalVietnameseName(canonRadical)
     const viMeaning = translateRadicalMeaning(kanjiSummary.radical_meaning, canonRadical)
@@ -183,10 +205,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   const allComponents = useMemo(() => [...storyComponents, ...radicalComponent], [storyComponents, radicalComponent])
 
   // Derived kanji (Phả hệ nở rộng)
-  const descendantNodes = useMemo(
-    () => getKanjiDescendants(kanjiSummary.kanji),
-    [kanjiSummary.kanji]
-  )
+  const descendantNodes = useMemo(() => getKanjiDescendants(kanjiSummary.kanji), [kanjiSummary.kanji])
 
   // Illustration URL
   const illustrationUrl = apiPaths.nhaikanji.kanjiIllustration(kanjiSummary.kanji)
@@ -211,8 +230,18 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
     >
       <div
         className="shodo-theater-scroll shodo-theater-scroll--wide"
+        ref={dialogRef}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
+        {isError && (
+          <p role="alert" className="ui-error-text">
+            Chưa tải được chi tiết chữ.{' '}
+            <button type="button" onClick={() => void refetch()}>
+              Thử lại
+            </button>
+          </p>
+        )}
         {/* ─── STAGE HEADER ────────────────────────────────────────────────── */}
         <div className="shodo-theater-header">
           <div className="shodo-theater-brand">
@@ -305,22 +334,21 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
             /* Interactive Practice Canvas */
             <div className="shodo-practice-view">
               <h3 className="shodo-practice-title">
-                Tập viết chữ: <span className="shodo-practice-char">{kanjiSummary.kanji}</span> ({kanjiSummary.stroke_count} nét)
+                Tập viết chữ: <span className="shodo-practice-char">{kanjiSummary.kanji}</span> (
+                {kanjiSummary.stroke_count} nét)
               </h3>
-              <p className="shodo-practice-desc">
-                Dùng chuột hoặc ngón tay để vẽ các nét theo chữ mẫu mờ bên dưới
-              </p>
+              <p className="shodo-practice-desc">Dùng chuột hoặc ngón tay để vẽ các nét theo chữ mẫu mờ bên dưới</p>
               <KanjiCanvas kanjiChar={kanjiSummary.kanji} />
             </div>
           ) : (
             /* ═══════════════════════════════════════════════════════════════
                3-REALM LAYOUT: Thư pháp | Chòm sao | Từ vựng
                ═══════════════════════════════════════════════════════════════ */
-            <div className={`kanji-three-realms${!hasAnyGraphData ? ' kanji-three-realms--two-col' : ''}${isPrimitive && hasAnyGraphData ? ' kanji-three-realms--compound-only' : ''}`}>
-
+            <div
+              className={`kanji-three-realms${!hasAnyGraphData ? ' kanji-three-realms--two-col' : ''}${isPrimitive && hasAnyGraphData ? ' kanji-three-realms--compound-only' : ''}`}
+            >
               {/* ── REALM 1: Thư pháp & Minh họa (Left) ────────────────── */}
               <div className="kanji-realm kanji-realm--visual">
-
                 {/* Toggle: Thư pháp ↔ Minh họa */}
                 <div className="kanji-realm-toggle">
                   <button
@@ -342,14 +370,19 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
                 {/* Calligraphy view */}
                 {viewMode === 'calligraphy' && (
                   <div className="kanji-realm-calligraphy">
-                    <KanjiStrokePlayer
-                      kanji={kanjiSummary.kanji}
-                      fallbackStrokeCount={kanjiSummary.stroke_count}
-                    />
+                    <KanjiStrokePlayer kanji={kanjiSummary.kanji} fallbackStrokeCount={kanjiSummary.stroke_count} />
                     <div className="shodo-hero-art" style={{ marginTop: '0.5rem' }}>
                       <div className="shodo-hero-hanzi">{kanjiSummary.hanzi}</div>
                       <div className="shodo-hero-meaning">{kanjiSummary.meaning_vi}</div>
-                      <div style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono, monospace)', color: '#8A8175', fontWeight: 600, marginTop: '0.2rem' }}>
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          fontFamily: 'var(--font-mono, monospace)',
+                          color: '#8A8175',
+                          fontWeight: 600,
+                          marginTop: '0.2rem',
+                        }}
+                      >
                         {kanjiSummary.stroke_count} nét • JLPT {kanjiSummary.jlpt_level}
                       </div>
                     </div>
@@ -409,29 +442,33 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
 
               {/* ── REALM 2: Phả hệ Chòm sao / Phả hệ nở rộng (Center) ──────────────────── */}
               {hasAnyGraphData && (
-              <div className={`kanji-realm kanji-realm--constellation${isDescendantMode ? ' kanji-realm--constellation-descendant' : ''}`}>
-                <div className="kanji-realm-label">
-                  <span className="kanji-realm-label-jp">{isDescendantMode ? '系譜図' : '星座図'}</span>
-                  <span>{isDescendantMode ? 'Phả hệ nở rộng • Chữ phái sinh' : 'Phả hệ Chiết tự • Bộ thủ cấu thành'}</span>
-                </div>
-                <KanjiConstellationGraph
-                  key={kanjiSummary.kanji}
-                  kanji={kanjiSummary.kanji}
-                  components={allComponents}
-                  descendants={descendantNodes}
-                  onSelectKanji={handleSelectConstellationKanji}
-                />
-
-                {/* Story mnemonic below graph */}
-                {kanjiSummary.story && (
-                  <div className="kanji-constellation-story-box">
-                    <span className="sr-only">Chiết tự & Câu chuyện gợi nhớ</span>
-                    <blockquote className="kanji-constellation-story" title="Chiết tự & Câu chuyện gợi nhớ">
-                      「 {kanjiSummary.story} 」
-                    </blockquote>
+                <div
+                  className={`kanji-realm kanji-realm--constellation${isDescendantMode ? ' kanji-realm--constellation-descendant' : ''}`}
+                >
+                  <div className="kanji-realm-label">
+                    <span className="kanji-realm-label-jp">{isDescendantMode ? '系譜図' : '星座図'}</span>
+                    <span>
+                      {isDescendantMode ? 'Phả hệ nở rộng • Chữ phái sinh' : 'Phả hệ Chiết tự • Bộ thủ cấu thành'}
+                    </span>
                   </div>
-                )}
-              </div>
+                  <KanjiConstellationGraph
+                    key={kanjiSummary.kanji}
+                    kanji={kanjiSummary.kanji}
+                    components={allComponents}
+                    descendants={descendantNodes}
+                    onSelectKanji={handleSelectConstellationKanji}
+                  />
+
+                  {/* Story mnemonic below graph */}
+                  {kanjiSummary.story && (
+                    <div className="kanji-constellation-story-box">
+                      <span className="sr-only">Chiết tự & Câu chuyện gợi nhớ</span>
+                      <blockquote className="kanji-constellation-story" title="Chiết tự & Câu chuyện gợi nhớ">
+                        「 {kanjiSummary.story} 」
+                      </blockquote>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* ── REALM 3: Từ vựng ứng dụng (Right) ──────────────────── */}
@@ -460,13 +497,9 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
                               {item.reading && item.reading !== item.word && (
                                 <span className="shodo-vocab-reading">〔 {item.reading} 〕</span>
                               )}
-                              {item.yinHan && (
-                                <span className="shodo-vocab-yinhan">{item.yinHan}</span>
-                              )}
+                              {item.yinHan && <span className="shodo-vocab-yinhan">{item.yinHan}</span>}
                             </div>
-                            {item.meaning && (
-                              <div className="shodo-vocab-meaning">{item.meaning}</div>
-                            )}
+                            {item.meaning && <div className="shodo-vocab-meaning">{item.meaning}</div>}
                             {item.example && (
                               <div className="shodo-vocab-example">
                                 <span className="shodo-vocab-ex-jp">{item.example}</span>
@@ -501,7 +534,6 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
                   </div>
                 )}
               </div>
-
             </div>
           )}
         </div>

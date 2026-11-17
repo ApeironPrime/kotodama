@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { Search, X, BookOpen } from 'lucide-react'
 import type { CurriculumCourseCard } from '../../types/curriculum'
 import type { CuratedCourseMetadata } from './vocabularyCuratedData'
@@ -22,21 +23,14 @@ export function KaikaShokoModal({
   onClose,
   onSelectCourse,
 }: KaikaShokoModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogAccessibility(dialogRef, onClose, isOpen)
   const [keyword, setKeyword] = useState('')
 
   useEffect(() => {
     if (!isOpen) return
 
     playWoodShelfSound()
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = ''
-    }
   }, [isOpen, onClose])
 
   const filteredItems = useMemo(() => {
@@ -61,7 +55,7 @@ export function KaikaShokoModal({
       aria-labelledby="kaika-shoko-title"
       onClick={onClose}
     >
-      <div className="kaika-shoko-drawer" onClick={(e) => e.stopPropagation()}>
+      <div className="kaika-shoko-drawer" ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         {/* Archival Drawer Header */}
         <header className="kaika-shoko-header">
           <div className="kaika-shoko-header__title-group">

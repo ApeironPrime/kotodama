@@ -23,7 +23,7 @@ import { useAuth } from '../auth/authContext'
 const QUICK_SUGGESTIONS = ['食べる', '育つ', '必ず', '愛', '成長', '学校', '勉強', '難しい']
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
 
-export default function ReviewPage({ onDictionary }: { onDictionary?: () => void }) {
+export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: string) => void }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<SrsCardType | 'search'>('vocab')
@@ -41,6 +41,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
   const {
     data: deckData,
     isLoading,
+    isError,
     refetch,
   } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'deck', activeTab, activeStatus, activeLevel, searchQuery],
@@ -100,6 +101,12 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
 
   return (
     <section className="review-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.25rem' }}>
+      {isError && (
+        <div role="alert" className="ui-status-panel">
+          <p>Chưa tải được kho thẻ. Kiểm tra kết nối và thử lại.</p>
+          <Button onClick={() => void refetch()}>Thử lại</Button>
+        </div>
+      )}
       {/* 1. TOP SEARCH & AI ANALYSIS BAR */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: 1 }}>
@@ -118,7 +125,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
         <Button
           type="button"
           style={{
-            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+            background: 'var(--color-accent)',
             color: '#ffffff',
             fontWeight: 700,
             padding: '0 1.25rem',
@@ -129,10 +136,10 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
             gap: '6px',
           }}
           onClick={() => {
-            if (onDictionary) onDictionary()
+            if (onDictionary) onDictionary(searchQuery)
           }}
         >
-          <Zap size={16} /> Phân tích AI
+          <Zap size={16} /> Mở Từ điển
         </Button>
 
         {/* Quick chip suggestions */}
@@ -177,7 +184,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
             background: 'none',
             border: 'none',
             borderBottom: activeTab === 'search' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'search' ? '#ec4899' : 'var(--color-text-muted)',
+            color: activeTab === 'search' ? 'var(--color-accent)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -188,7 +195,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
             whiteSpace: 'nowrap',
           }}
         >
-          <Search size={16} /> Tra từ / Phân tích sâu
+          <Search size={16} /> Tất cả thẻ
         </button>
 
         <button
@@ -198,7 +205,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
             background: 'none',
             border: 'none',
             borderBottom: activeTab === 'vocab' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'vocab' ? '#ec4899' : 'var(--color-text-muted)',
+            color: activeTab === 'vocab' ? 'var(--color-accent)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -219,7 +226,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
             background: 'none',
             border: 'none',
             borderBottom: activeTab === 'grammar' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'grammar' ? '#ec4899' : 'var(--color-text-muted)',
+            color: activeTab === 'grammar' ? 'var(--color-accent)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -240,7 +247,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
             background: 'none',
             border: 'none',
             borderBottom: activeTab === 'kanji' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'kanji' ? '#ec4899' : 'var(--color-text-muted)',
+            color: activeTab === 'kanji' ? 'var(--color-accent)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -503,7 +510,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
                   case 1:
                     return '#065f46'
                   default:
-                    return 'rgba(255, 255, 255, 0.06)'
+                    return 'var(--color-border)'
                 }
               }
 
@@ -554,9 +561,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
               }}
             >
               <span>Ít</span>
-              <div
-                style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(255, 255, 255, 0.06)' }}
-              />
+              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-border)' }} />
               <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#065f46' }} />
               <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#047857' }} />
               <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#059669' }} />
@@ -596,7 +601,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
               onClick={() => setActiveStatus(st.id)}
               style={{
                 background: activeStatus === st.id ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                color: activeStatus === st.id ? '#ec4899' : 'var(--color-text-secondary)',
+                color: activeStatus === st.id ? 'var(--color-accent)' : 'var(--color-text-secondary)',
                 border: activeStatus === st.id ? '1px solid #ec4899' : '1px solid var(--color-border)',
                 borderRadius: '8px',
                 padding: '4px 12px',
@@ -705,7 +710,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
       {/* 5. FLASHCARD GRID LIST */}
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto', color: '#ec4899' }} />
+          <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-accent)' }} />
           <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Đang nạp thẻ ôn tập SRS...</p>
         </div>
       ) : cards.length === 0 ? (
@@ -713,7 +718,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
           title="Không có thẻ ôn tập nào phù hợp"
           description="Hãy thử chọn cấp độ khác hoặc tra từ điển để thêm từ vựng / ngữ pháp vào sổ ôn tập."
           action={
-            <Button variant="primary" onClick={onDictionary}>
+            <Button variant="primary" onClick={() => onDictionary?.(searchQuery)}>
               Mở từ điển tra từ
             </Button>
           }
@@ -754,7 +759,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.borderColor = '#ec4899'
+                  e.currentTarget.style.borderColor = 'var(--color-accent)'
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)'
@@ -852,7 +857,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: () => void
                     style={{
                       height: '4px',
                       width: '100%',
-                      background: 'rgba(255, 255, 255, 0.08)',
+                      background: 'var(--color-bg-subtle)',
                       borderRadius: '2px',
                       overflow: 'hidden',
                     }}

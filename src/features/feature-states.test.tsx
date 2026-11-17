@@ -47,14 +47,14 @@ describe('API waiting states', () => {
   it('shows the course catalog and management as API-backed empty states', () => {
     const { rerender } = render(<CoursesPage canManageCourses={false} onManage={vi.fn()} />)
 
-    expect(screen.getByText('Chưa có khóa học')).toBeTruthy()
+    expect(screen.getByText('Khóa học sắp ra mắt')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Quản lý khóa học' })).toBeNull()
 
     rerender(<CoursesPage canManageCourses onManage={vi.fn()} />)
     expect(screen.getByRole('button', { name: 'Quản lý khóa học' })).toBeTruthy()
 
     render(<CourseLearningPage onBack={vi.fn()} />)
-    expect(screen.getByText('Bài học đang chờ dữ liệu')).toBeTruthy()
+    expect(screen.getByText('Bài học đang được chuẩn bị')).toBeTruthy()
 
     render(<CourseAdminPage onBack={vi.fn()} />)
     expect(screen.getByText('Quản lý khóa học đang chờ dữ liệu')).toBeTruthy()

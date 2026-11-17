@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
 import { Button, Card, Field, Input, PageShell } from '../../components/ui'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, CircleAlert } from 'lucide-react'
 import { apiPaths, getApiErrorMessage, requestApi } from '../../lib/apiClient'
 import type { Page } from '../../types/app'
 
@@ -93,6 +93,7 @@ function ResetPasswordPage({ token, onNavigate }: { token: string | null; onNavi
       {!token ? (
         <Success
           title="Liên kết chưa hợp lệ"
+          error
           description="Hãy mở lại liên kết đặt lại mật khẩu trong email của bạn."
           action="Gửi lại hướng dẫn"
           onAction={() => onNavigate('forgotPassword')}
@@ -220,7 +221,9 @@ function Success({
   description,
   action,
   onAction,
+  error = false,
 }: {
+  error?: boolean
   title: string
   description: string
   action: string
@@ -228,7 +231,7 @@ function Success({
 }) {
   return (
     <div className="auth-lifecycle-success" role="status">
-      <CheckCircle2 aria-hidden="true" size={30} />
+      {error ? <CircleAlert aria-hidden="true" size={30} /> : <CheckCircle2 aria-hidden="true" size={30} />}
       <h2>{title}</h2>
       <p>{description}</p>
       <Button fullWidth onClick={onAction}>

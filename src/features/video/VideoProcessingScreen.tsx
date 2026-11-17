@@ -18,40 +18,48 @@ export default function VideoProcessingScreen({
   const [transcript, setTranscript] = useState<TranscriptVersion | null>(null)
   const [retrying, setRetrying] = useState(false)
   const [retryError, setRetryError] = useState<string | null>(null)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [pollVersion, setPollVersion] = useState(0)
 
   useEffect(() => {
     let mounted = true
+    let timer: number | undefined
     const refresh = async () => {
+      let terminal = false
       try {
         const [nextAsset, nextJobs] = await Promise.all([getMediaAsset(video.id), getMediaJobs(video.id)])
         if (!mounted) return
         setAsset(nextAsset)
         setJobs(nextJobs.items)
+        setRefreshError(null)
+        terminal = nextAsset.processingStatus === 'failed' || nextAsset.processingStatus === 'cancelled'
         if (
           nextAsset.processingStatus === 'ready' ||
           nextJobs.items.some((job) => job.jobType === 'transcribe' && job.status === 'succeeded')
         ) {
           const nextTranscript = await getTranscript(video.id)
           if (mounted) setTranscript(nextTranscript)
+          terminal = true
         }
       } catch {
-        /* The asset remains visible while a transient status refresh fails. */
+        if (mounted) setRefreshError('Mất kết nối khi cập nhật tiến độ. Đang thử kết nối lại…')
+      } finally {
+        if (mounted && !terminal) timer = window.setTimeout(() => void refresh(), 2_000)
       }
     }
     void refresh()
-    const timer = window.setInterval(() => void refresh(), 2_000)
     return () => {
       mounted = false
-      window.clearInterval(timer)
+      window.clearTimeout(timer)
     }
-  }, [video.id])
+  }, [video.id, pollVersion])
 
   const verification = jobs.find((job) => job.jobType === 'upload_verify')
   const transcription = jobs.find((job) => job.jobType === 'transcribe')
   const verified = verification?.status === 'succeeded' || asset.processingStatus === 'ready'
   const transcriptReady =
     Boolean(transcript) && (asset.processingStatus === 'ready' || transcription?.status === 'succeeded')
-  const failedJob = jobs.find((job) => job.status === 'failed')
+  const failedJob = asset.processingStatus === 'failed' ? jobs.find((job) => job.status === 'failed') : undefined
   const activeJob = jobs.find((job) => job.status === 'running') ?? jobs.find((job) => job.status === 'queued')
   const processingFailed = asset.processingStatus === 'failed' || Boolean(failedJob)
   const transcriptUnavailable = verified && !transcription && !processingFailed && !transcriptReady
@@ -89,6 +97,7 @@ export default function VideoProcessingScreen({
       const result = await retryMediaProcessing(asset.id)
       setAsset(result.asset)
       setJobs((current) => [result.job, ...current.filter((job) => job.id !== result.job.id)])
+      setPollVersion((value) => value + 1)
     } catch (error) {
       setRetryError(error instanceof Error ? error.message : 'Không thể thử lại tác vụ này.')
     } finally {
@@ -102,6 +111,7 @@ export default function VideoProcessingScreen({
         <span>VIDEO AI · CHUẨN BỊ PHIÊN HỌC</span>
         <h1>{asset.title}</h1>
         <p>{description}</p>
+        {refreshError && <p role="status">{refreshError}</p>}
         {transcriptReady ? (
           <CircleCheck aria-hidden="true" size={32} />
         ) : processingFailed ? (

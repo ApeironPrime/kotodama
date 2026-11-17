@@ -131,7 +131,7 @@ describe('SRS Flashcard & Review Feature Suite', () => {
     await waitFor(() => expect(screen.getByText('学校')).toBeTruthy())
 
     // Test AI Analysis Button
-    const aiBtn = screen.getByText('Phân tích AI')
+    const aiBtn = screen.getByText('Mở Từ điển')
     fireEvent.click(aiBtn)
     expect(onDictionaryMock).toHaveBeenCalled()
 

@@ -1,5 +1,17 @@
+import { SubtitleOverlay } from './SubtitleOverlay'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, Eye, EyeOff, Headphones, Keyboard, Mic, RotateCcw, ShieldAlert, SpellCheck, Volume2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Headphones,
+  Keyboard,
+  Mic,
+  RotateCcw,
+  ShieldAlert,
+  SpellCheck,
+  Volume2,
+} from 'lucide-react'
 import { isRequestCancelled } from '../../lib/apiClient'
 import { useAuth } from '../auth/authContext'
 import type { AnimeEpisodeDetail, AnimeSubtitleCue, AnimeSubtitleToken } from './animePlaybackTypes'
@@ -50,6 +62,7 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
   const [videoHidden, setVideoHidden] = useState(false)
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
   const [completedCueIds, setCompletedCueIds] = useState<Set<number>>(() => new Set())
+  const [playerError, setPlayerError] = useState<string | null>(null)
   const [practiceCues, setPracticeCues] = useState<AnimeSubtitleCue[]>([])
   const [isPracticeLoading, setIsPracticeLoading] = useState(false)
   const practiceLoadedEpisodeRef = useRef<string | null>(null)
@@ -96,7 +109,12 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
   // the complete track in bounded API windows so their sentence navigation is
   // not limited to the first two minutes.
   useEffect(() => {
-    if (mode === 'shadowing' || !episodeDetail?.has_subtitles || practiceLoadedEpisodeRef.current === episodeDetail.episode_id) return
+    if (
+      mode === 'shadowing' ||
+      !episodeDetail?.has_subtitles ||
+      practiceLoadedEpisodeRef.current === episodeDetail.episode_id
+    )
+      return
     let cancelled = false
     setIsPracticeLoading(true)
     const load = async () => {
@@ -104,7 +122,11 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
       const expected = episodeDetail.subtitle_track?.cue_count || 0
       try {
         for (let from = 0; from < 7200; from += 600) {
-          const result = await animePlaybackApi.fetchEpisodeSubtitles(episodeDetail.episode_id, { from, to: from + 600, lang: 'all' })
+          const result = await animePlaybackApi.fetchEpisodeSubtitles(episodeDetail.episode_id, {
+            from,
+            to: from + 600,
+            lang: 'all',
+          })
           if (cancelled) return
           all = deduplicateAndSortCues(all, result.cues || []).cues
           setPracticeCues(all)
@@ -118,12 +140,19 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
       }
     }
     void load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [episodeDetail, mode])
 
   const availablePracticeCues = practiceCues.length ? practiceCues : subtitleEngine.cues
-  const selectedPracticeCue = availablePracticeCues.find((cue) => cue.cue_id === selectedCueId) || availablePracticeCues[0] || null
-  const shadowingCue = (loopSentence ? subtitleEngine.cues.find((cue) => cue.cue_id === selectedCueId) : subtitleEngine.activeCues[0]) || subtitleEngine.cues.find((cue) => cue.cue_id === selectedCueId) || subtitleEngine.cues[0] || null
+  const selectedPracticeCue =
+    availablePracticeCues.find((cue) => cue.cue_id === selectedCueId) || availablePracticeCues[0] || null
+  const shadowingCue =
+    (loopSentence ? subtitleEngine.cues.find((cue) => cue.cue_id === selectedCueId) : subtitleEngine.activeCues[0]) ||
+    subtitleEngine.cues.find((cue) => cue.cue_id === selectedCueId) ||
+    subtitleEngine.cues[0] ||
+    null
 
   useEffect(() => {
     const active = subtitleEngine.activeCues[0]
@@ -193,6 +222,7 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
     setExercisePickerOpen(false)
     setVideoHidden(false)
     setCompletedCueIds(new Set())
+    setPlayerError(null)
     setPracticeCues([])
     practiceLoadedEpisodeRef.current = null
     setResumePromptPosition(null)
@@ -497,7 +527,10 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
           <span className="anime-session-breadcrumb-separator" aria-hidden="true">
             /
           </span>
-          <span className="anime-session-breadcrumb-series"><span>{episodeDetail.series_title_vi}</span><h1 className="anime-session-breadcrumb-episode">{episodeTitle}</h1></span>
+          <div className="anime-session-breadcrumb-series">
+            <span>{episodeDetail.series_title_vi}</span>
+            <h1 className="anime-session-breadcrumb-episode">{episodeTitle}</h1>
+          </div>
           {episodeDetail.season_label && (
             <>
               <span className="anime-session-breadcrumb-separator" aria-hidden="true">
@@ -508,11 +541,20 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
           )}
         </div>
 
-        <span className="anime-session-subtitle-status">{episodeDetail.has_subtitles ? 'Có phụ đề' : 'Chưa có phụ đề'}</span>
+        <span className="anime-session-subtitle-status">
+          {episodeDetail.has_subtitles ? 'Có phụ đề' : 'Chưa có phụ đề'}
+        </span>
         <nav className="anime-learning-mode-nav" aria-label="Chế độ học với video">
           {LEARNING_MODES.map(({ id, label, icon: Icon }) => (
-            <button key={id} type="button" className={mode === id ? 'is-active' : ''} aria-current={mode === id ? 'page' : undefined} onClick={() => changeMode(id)}>
-              <Icon size={17} aria-hidden="true" />{label}
+            <button
+              key={id}
+              type="button"
+              className={mode === id ? 'is-active' : ''}
+              aria-pressed={mode === id}
+              onClick={() => changeMode(id)}
+            >
+              <Icon size={17} aria-hidden="true" />
+              {label}
             </button>
           ))}
         </nav>
@@ -534,86 +576,113 @@ export const AnimeLearningSession: React.FC<AnimeLearningSessionProps> = ({ epis
           <AnimePlayer
             mediaSource={episodeDetail.media_source}
             title={`${episodeDetail.series_title_vi} - ${episodeTitle}`}
+            onError={setPlayerError}
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onSeeked={handlePlayerSeeked}
             onPlaybackStateChange={handlePlaybackStateChange}
-            onError={() => {}}
             seekTarget={seekTarget}
             playRequest={playRequest}
             pauseRequest={pauseRequest}
             hideVideo={videoHidden && mode !== 'shadowing'}
             onBackToEpisodes={onBackToEpisodes}
-          />
-          {mode !== 'shadowing' && <div className="anime-session-player-tools">
-            <button type="button" onClick={() => setVideoHidden((value) => !value)} aria-pressed={videoHidden}>
-              {videoHidden ? <Eye size={17} /> : <EyeOff size={17} />}{videoHidden ? 'Hiện video' : 'Ẩn video'}
-            </button>
-            <button type="button" onClick={() => setShortcutsVisible((value) => !value)} aria-expanded={shortcutsVisible}>
-              <Keyboard size={17} /> Phím tắt
-            </button>
-            {shortcutsVisible && <span role="status">← → chuyển câu · Space phát/dừng video · M tắt tiếng · F toàn màn hình</span>}
-          </div>}
-          {mode !== 'shadowing' && <AnimePracticeCueList
-            cues={availablePracticeCues}
-            selectedCueId={selectedPracticeCue?.cue_id ?? null}
-            mode={mode}
-            totalCues={episodeDetail.subtitle_track?.cue_count || availablePracticeCues.length}
-            completedCueIds={completedCueIds}
-            onChooseCue={handleChoosePracticeCue}
-          />}
-          {mode === 'shadowing' && <AnimeActiveSentence
-            cue={shadowingCue}
-            onReplay={replayCue}
-            onSelectToken={handleSelectToken}
-            showJapanese={subtitleEngine.showJapanese}
-            showVietnamese={subtitleEngine.showVietnamese}
-            loop={loopSentence}
-            onToggleLoop={() => setLoopSentence((value) => !value)}
-            onToggleJapanese={() => subtitleEngine.setShowJapanese(!subtitleEngine.showJapanese)}
-            onToggleVietnamese={() => subtitleEngine.setShowVietnamese(!subtitleEngine.showVietnamese)}
-          />}
+          >
+            {mode === 'shadowing' && (
+              <SubtitleOverlay
+                activeCues={subtitleEngine.activeCues}
+                showJapanese={subtitleEngine.showJapanese}
+                showVietnamese={subtitleEngine.showVietnamese}
+                onSelectToken={handleSelectToken}
+              />
+            )}
+          </AnimePlayer>
+          {playerError && <p role="alert">{playerError}</p>}
+          {mode !== 'shadowing' && (
+            <div className="anime-session-player-tools">
+              <button type="button" onClick={() => setVideoHidden((value) => !value)} aria-pressed={videoHidden}>
+                {videoHidden ? <Eye size={17} /> : <EyeOff size={17} />}
+                {videoHidden ? 'Hiện video' : 'Ẩn video'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShortcutsVisible((value) => !value)}
+                aria-expanded={shortcutsVisible}
+              >
+                <Keyboard size={17} /> Phím tắt
+              </button>
+              {shortcutsVisible && (
+                <span role="status">← → chuyển câu · Space phát/dừng video · M tắt tiếng · F toàn màn hình</span>
+              )}
+            </div>
+          )}
+          {mode !== 'shadowing' && (
+            <AnimePracticeCueList
+              cues={availablePracticeCues}
+              selectedCueId={selectedPracticeCue?.cue_id ?? null}
+              mode={mode}
+              totalCues={episodeDetail.subtitle_track?.cue_count || availablePracticeCues.length}
+              completedCueIds={completedCueIds}
+              onChooseCue={handleChoosePracticeCue}
+            />
+          )}
+          {mode === 'shadowing' && (
+            <AnimeActiveSentence
+              cue={shadowingCue}
+              onReplay={replayCue}
+              onSelectToken={handleSelectToken}
+              showJapanese={subtitleEngine.showJapanese}
+              showVietnamese={subtitleEngine.showVietnamese}
+              loop={loopSentence}
+              onToggleLoop={() => setLoopSentence((value) => !value)}
+              onToggleJapanese={() => subtitleEngine.setShowJapanese(!subtitleEngine.showJapanese)}
+              onToggleVietnamese={() => subtitleEngine.setShowVietnamese(!subtitleEngine.showVietnamese)}
+            />
+          )}
         </div>
 
         {/* Right Column: Subtitle Transcript & Sync Controls */}
         <div className="anime-session-transcript-column">
-          {mode === 'shadowing' ? <SubtitleTranscript
-            cues={subtitleEngine.cues}
-            activeCueIds={activeCueIds}
-            hasSubtitles={Boolean(episodeDetail.has_subtitles)}
-            isLoading={subtitleEngine.isLoading}
-            isPrefetching={subtitleEngine.isPrefetching}
-            error={subtitleEngine.error}
-            offset={subtitleEngine.offset}
-            showJapanese={subtitleEngine.showJapanese}
-            showVietnamese={subtitleEngine.showVietnamese}
-            showFurigana={subtitleEngine.showFurigana}
-            hasFuriganaData={subtitleEngine.hasFuriganaData}
-            onSeekTo={handleSeekFromTranscript}
-            onOffsetChange={subtitleEngine.setOffset}
-            onResetOffset={subtitleEngine.resetOffset}
-            onToggleJapanese={subtitleEngine.setShowJapanese}
-            onToggleVietnamese={subtitleEngine.setShowVietnamese}
-            onToggleFurigana={subtitleEngine.setShowFurigana}
-            onRetry={subtitleEngine.retry}
-            onSelectToken={handleSelectToken}
-            episodeId={episodeDetail.episode_id}
-            totalCues={episodeDetail.subtitle_track?.cue_count || subtitleEngine.cues.length}
-          /> : <AnimeLearningPractice
-            mode={mode}
-            cues={availablePracticeCues}
-            cue={selectedPracticeCue}
-            totalCues={episodeDetail.subtitle_track?.cue_count || availablePracticeCues.length}
-            isLoading={isPracticeLoading}
-            onChooseCue={handleChoosePracticeCue}
-            onReplay={replayCue}
-            onPause={() => setPauseRequest((value) => value + 1)}
-            pickerOpen={exercisePickerOpen}
-            onClosePicker={() => setExercisePickerOpen(false)}
-            videoHidden={videoHidden}
-            onToggleVideo={() => setVideoHidden((value) => !value)}
-            onCompleteCue={(cueId) => setCompletedCueIds((previous) => new Set(previous).add(cueId))}
-          />}
+          {mode === 'shadowing' ? (
+            <SubtitleTranscript
+              cues={subtitleEngine.cues}
+              activeCueIds={activeCueIds}
+              hasSubtitles={Boolean(episodeDetail.has_subtitles)}
+              isLoading={subtitleEngine.isLoading}
+              isPrefetching={subtitleEngine.isPrefetching}
+              error={subtitleEngine.error}
+              offset={subtitleEngine.offset}
+              showJapanese={subtitleEngine.showJapanese}
+              showVietnamese={subtitleEngine.showVietnamese}
+              showFurigana={subtitleEngine.showFurigana}
+              hasFuriganaData={subtitleEngine.hasFuriganaData}
+              onSeekTo={handleSeekFromTranscript}
+              onOffsetChange={subtitleEngine.setOffset}
+              onResetOffset={subtitleEngine.resetOffset}
+              onToggleJapanese={subtitleEngine.setShowJapanese}
+              onToggleVietnamese={subtitleEngine.setShowVietnamese}
+              onToggleFurigana={subtitleEngine.setShowFurigana}
+              onRetry={subtitleEngine.retry}
+              onSelectToken={handleSelectToken}
+              episodeId={episodeDetail.episode_id}
+              totalCues={episodeDetail.subtitle_track?.cue_count || subtitleEngine.cues.length}
+            />
+          ) : (
+            <AnimeLearningPractice
+              mode={mode}
+              cues={availablePracticeCues}
+              cue={selectedPracticeCue}
+              totalCues={episodeDetail.subtitle_track?.cue_count || availablePracticeCues.length}
+              isLoading={isPracticeLoading}
+              onChooseCue={handleChoosePracticeCue}
+              onReplay={replayCue}
+              onPause={() => setPauseRequest((value) => value + 1)}
+              pickerOpen={exercisePickerOpen}
+              onClosePicker={() => setExercisePickerOpen(false)}
+              videoHidden={videoHidden}
+              onToggleVideo={() => setVideoHidden((value) => !value)}
+              onCompleteCue={(cueId) => setCompletedCueIds((previous) => new Set(previous).add(cueId))}
+            />
+          )}
         </div>
       </div>
 

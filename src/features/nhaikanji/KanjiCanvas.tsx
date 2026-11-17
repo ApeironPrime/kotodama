@@ -7,15 +7,15 @@ interface KanjiCanvasProps {
 }
 
 // ─── Brush physics constants ──────────────────────────────────────────────────
-const MIN_WIDTH = 1.2    // Harai: fast stroke → thin
-const MAX_WIDTH = 11     // Tome: slow/start → thick
-const SMOOTHING = 0.55   // velocity low-pass alpha (higher = more inertia)
-const OPACITY_BASE = 0.90
+const MIN_WIDTH = 1.2 // Harai: fast stroke → thin
+const MAX_WIDTH = 11 // Tome: slow/start → thick
+const SMOOTHING = 0.55 // velocity low-pass alpha (higher = more inertia)
+const OPACITY_BASE = 0.9
 
 // ─── Cửu cung / 九宮格 grid colours ─────────────────────────────────────────
-const GRID_LINE = 'rgba(180, 70, 50, 0.15)'   // chu-sa red, very faint
-const GRID_DIAG = 'rgba(180, 70, 50, 0.07)'   // diagonal guides, even fainter
-const BORDER_CLR = 'rgba(180, 70, 50, 0.30)'  // outer square
+const GRID_LINE = 'rgba(180, 70, 50, 0.15)' // chu-sa red, very faint
+const GRID_DIAG = 'rgba(180, 70, 50, 0.07)' // diagonal guides, even fainter
+const BORDER_CLR = 'rgba(180, 70, 50, 0.30)' // outer square
 
 // ─── Draw Cửu cung 九宮格 grid ───────────────────────────────────────────────
 function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
@@ -32,8 +32,10 @@ function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.lineWidth = 0.8
   ctx.setLineDash([4, 5])
   ctx.beginPath()
-  ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h)  // vertical center
-  ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2)  // horizontal center
+  ctx.moveTo(w / 2, 0)
+  ctx.lineTo(w / 2, h) // vertical center
+  ctx.moveTo(0, h / 2)
+  ctx.lineTo(w, h / 2) // horizontal center
   ctx.stroke()
 
   // Diagonal guides — 米 style (X across each quadrant)
@@ -42,8 +44,10 @@ function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.setLineDash([2, 6])
   ctx.beginPath()
   // Full diagonals
-  ctx.moveTo(0, 0); ctx.lineTo(w, h)
-  ctx.moveTo(w, 0); ctx.lineTo(0, h)
+  ctx.moveTo(0, 0)
+  ctx.lineTo(w, h)
+  ctx.moveTo(w, 0)
+  ctx.lineTo(0, h)
   ctx.stroke()
 
   ctx.setLineDash([])
@@ -53,9 +57,12 @@ function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
 // ─── Interpolate variable-width stroke segment ────────────────────────────────
 function drawBrushSegment(
   ctx: CanvasRenderingContext2D,
-  x0: number, y0: number,
-  x1: number, y1: number,
-  w0: number, w1: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  w0: number,
+  w1: number
 ) {
   // Perpendicular normals for the two endpoints
   const dx = x1 - x0
@@ -94,8 +101,12 @@ export function KanjiCanvas({ kanjiChar }: KanjiCanvasProps) {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    drawGrid(ctx, canvas.width, canvas.height)
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.round(280 * dpr)
+    canvas.height = Math.round(280 * dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, 280, 280)
+    drawGrid(ctx, 280, 280)
   }, [])
 
   const clearCanvas = useCallback(() => {
@@ -103,7 +114,9 @@ export function KanjiCanvas({ kanjiChar }: KanjiCanvasProps) {
     setStrokeHistory([])
   }, [renderBase])
 
-  useEffect(() => { clearCanvas() }, [kanjiChar, clearCanvas])
+  useEffect(() => {
+    clearCanvas()
+  }, [kanjiChar, clearCanvas])
 
   const handleUndo = () => {
     const canvas = canvasRef.current
@@ -130,9 +143,9 @@ export function KanjiCanvas({ kanjiChar }: KanjiCanvasProps) {
     if ('touches' in e) {
       const t = e.touches[0]
       if (!t) return null
-      return { x: t.clientX - rect.left, y: t.clientY - rect.top }
+      return { x: ((t.clientX - rect.left) * 280) / rect.width, y: ((t.clientY - rect.top) * 280) / rect.height }
     }
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    return { x: ((e.clientX - rect.left) * 280) / rect.width, y: ((e.clientY - rect.top) * 280) / rect.height }
   }
 
   // ─── Drawing handlers ─────────────────────────────────────────────────────
@@ -145,7 +158,7 @@ export function KanjiCanvas({ kanjiChar }: KanjiCanvasProps) {
     if (!ctx) return
 
     lastPosRef.current = pos
-    lastWidthRef.current = MAX_WIDTH * 0.75  // start with medium weight
+    lastWidthRef.current = MAX_WIDTH * 0.75 // start with medium weight
     velocityRef.current = 0
     lastTimeRef.current = performance.now()
     setIsDrawing(true)
@@ -173,24 +186,19 @@ export function KanjiCanvas({ kanjiChar }: KanjiCanvasProps) {
     const dx = pos.x - lastPosRef.current.x
     const dy = pos.y - lastPosRef.current.y
     const dist = Math.sqrt(dx * dx + dy * dy)
-    const speed = dist / dt  // px/ms
+    const speed = dist / dt // px/ms
 
     // Low-pass filter velocity → stable width transitions
     velocityRef.current = SMOOTHING * velocityRef.current + (1 - SMOOTHING) * speed
 
     // Map speed → width: fast = thin (Harai), slow = thick (Tome)
     const targetWidth = MAX_WIDTH - (MAX_WIDTH - MIN_WIDTH) * Math.min(velocityRef.current * 35, 1)
-    const newWidth = lastWidthRef.current * 0.6 + targetWidth * 0.4  // smooth transition
+    const newWidth = lastWidthRef.current * 0.6 + targetWidth * 0.4 // smooth transition
 
     ctx.save()
     ctx.fillStyle = `rgba(18, 15, 10, ${OPACITY_BASE})`
 
-    drawBrushSegment(
-      ctx,
-      lastPosRef.current.x, lastPosRef.current.y,
-      pos.x, pos.y,
-      lastWidthRef.current, newWidth,
-    )
+    drawBrushSegment(ctx, lastPosRef.current.x, lastPosRef.current.y, pos.x, pos.y, lastWidthRef.current, newWidth)
 
     // Round cap at current tip
     ctx.beginPath()
@@ -229,6 +237,8 @@ export function KanjiCanvas({ kanjiChar }: KanjiCanvasProps) {
         {/* Drawing canvas */}
         <canvas
           ref={canvasRef}
+          role="img"
+          aria-label={`Vùng tập viết chữ ${kanjiChar}; dùng chuột hoặc cảm ứng để vẽ`}
           width={280}
           height={280}
           onMouseDown={startDrawing}
@@ -263,9 +273,7 @@ export function KanjiCanvas({ kanjiChar }: KanjiCanvasProps) {
         </Button>
       </div>
 
-      <p className="shodo-canvas-hint">
-        Vẽ chậm → nét mực đậm (Tome 止め) · Vẽ nhanh → nét mảnh xước (Harai 払い)
-      </p>
+      <p className="shodo-canvas-hint">Vẽ chậm → nét mực đậm (Tome 止め) · Vẽ nhanh → nét mảnh xước (Harai 払い)</p>
     </div>
   )
 }

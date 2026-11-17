@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
+import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, Eye, RotateCcw, Sparkles, Volume2, X } from 'lucide-react'
 import { Badge, Button } from '../../components/ui'
 import type { SrsCard, SrsExample, SrsRating } from './srsTypes'
@@ -22,14 +24,14 @@ function renderExampleJp(ex: SrsExample, showFurigana: boolean) {
     return <span>{clean || ex.jp}</span>
   }
   if (ex.jp_ruby) {
-    return <span dangerouslySetInnerHTML={{ __html: ex.jp_ruby }} />
+    return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(ex.jp_ruby) }} />
   }
   if (ex.jp_furigana) {
     const ruby = ex.jp_furigana
       .replace(/([^（(\s]+)[（(][）)]\s*\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>')
       .replace(/([^[\s]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>')
       .replace(/[（(][）)]/g, '')
-    return <span dangerouslySetInnerHTML={{ __html: ruby }} />
+    return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(ruby) }} />
   }
   return <span>{ex.jp}</span>
 }
@@ -42,9 +44,12 @@ interface FlashcardStudyModalProps {
 }
 
 export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview }: FlashcardStudyModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogAccessibility(dialogRef, onClose)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isFlipped, setIsFlipped] = useState(false)
   const [showFurigana, setShowFurigana] = useState(true)
+  const [reviewError, setReviewError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [completedCount, setCompletedCount] = useState(0)
 
@@ -66,6 +71,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
     async (rating: SrsRating) => {
       if (!currentCard || isSubmitting) return
       setIsSubmitting(true)
+      setReviewError(null)
       try {
         await onReview(currentCard.id, rating)
         setCompletedCount((prev) => prev + 1)
@@ -74,6 +80,8 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
         } else {
           setIsFlipped(false)
         }
+      } catch {
+        setReviewError('Chưa lưu được kết quả ôn tập. Thẻ vẫn được giữ ở đây; hãy thử lại.')
       } finally {
         setIsSubmitting(false)
       }
@@ -114,7 +122,15 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
 
   if (!currentCard) {
     return (
-      <div className="modal-overlay" style={{ zIndex: 9999 }}>
+      <div
+        className="modal-overlay"
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ôn tập thẻ"
+        style={{ zIndex: 9999 }}
+      >
         <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
           <Check size={48} color="#10b981" style={{ margin: '0 auto 1rem auto' }} />
           <h2>Hoàn thành phiên ôn tập!</h2>
@@ -135,6 +151,11 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
   return (
     <div
       className="modal-overlay"
+      ref={dialogRef}
+      tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Ôn tập thẻ"
       style={{
         position: 'fixed',
         inset: 0,
@@ -160,6 +181,11 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
           flexDirection: 'column',
         }}
       >
+        {reviewError && (
+          <p role="alert" className="ui-error-text">
+            {reviewError}
+          </p>
+        )}
         {/* Header toolbar */}
         <div
           style={{
@@ -216,6 +242,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
             <button
               type="button"
               onClick={onClose}
+              aria-label="Đóng phiên ôn tập"
               style={{
                 background: 'transparent',
                 border: 'none',

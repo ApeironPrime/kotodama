@@ -1,4 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
+import { useUrlState } from '../../lib/useUrlState'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, EmptyState, Input } from '../../components/ui'
 import {
@@ -45,7 +47,11 @@ type DictionaryTab = 'vocab' | 'vocabulary' | 'kanji' | 'grammar' | 'sentences' 
 
 function isSentenceQuery(value: string) {
   const japaneseCharacters = value.match(/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/gu)?.length ?? 0
-  return japaneseCharacters >= 6 && (/[。！？!?]/.test(value) || /[はgをにでとのもへ]([\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}])/u.test(value))
+  return (
+    japaneseCharacters >= 6 &&
+    (/[。！？!?]/.test(value) ||
+      /[はがをにでとのもへ]([\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}])/u.test(value))
+  )
 }
 
 function speakJapanese(text: string) {
@@ -67,22 +73,19 @@ export default function DictionaryPage({
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<DictionaryTab>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const params = new URLSearchParams(window.location.search)
-        const tabParam = params.get('tab')
-        if (tabParam && ['vocab', 'vocabulary', 'kanji', 'grammar', 'sentences', 'all'].includes(tabParam)) {
-          return tabParam as DictionaryTab
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return 'vocab'
-  })
-  const [input, setInput] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
+  const drawerRef = useRef<HTMLElement>(null)
+  useDialogAccessibility(drawerRef, () => setIsDrawerOpen(false), isDrawerOpen)
+  const [activeTab, setActiveTab] = useUrlState<DictionaryTab>('tab', 'vocab', [
+    'vocab',
+    'vocabulary',
+    'kanji',
+    'grammar',
+    'sentences',
+    'all',
+  ])
+  const [searchTerm, setSearchTerm] = useUrlState<string>('q', '')
+  const [input, setInput] = useState(searchTerm)
+  useEffect(() => setInput(searchTerm), [searchTerm])
   const [translateSentence, setTranslateSentence] = useState(false)
   const [selectedResultIndex, setSelectedResultIndex] = useState(0)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
@@ -94,27 +97,18 @@ export default function DictionaryPage({
       return []
     }
   })
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
 
   // Kanji Search filters
   const [kanjiLevel, setKanjiLevel] = useState<string>('ALL')
   const [selectedKanjiModal, setSelectedKanjiModal] = useState<KanjiSummary | null>(null)
 
-  // Listen to Escape key to dismiss drawer
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isDrawerOpen) {
-        setIsDrawerOpen(false)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isDrawerOpen])
-
   // Fetch saved terms from server
   const { data: savedTermsData } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'saved-terms'],
     queryFn: () => srsApi.fetchSavedTerms(),
+    enabled: Boolean(user),
     staleTime: 30_000,
   })
 
@@ -145,7 +139,6 @@ export default function DictionaryPage({
                 term: item.word || item.term,
                 meaning: item.meaning || '',
                 reading: item.reading || '',
-                jlptLevel: 'N5',
               })
             )
           )
@@ -164,18 +157,22 @@ export default function DictionaryPage({
   }, [user?.id, queryClient])
 
   const handleSaveToSrs = async (word: string, meaning: string, reading: string) => {
+    setSaveError(null)
+    if (!user) {
+      setSaveError('Đăng nhập để lưu từ vào thẻ ôn tập.')
+      return
+    }
     try {
       await srsApi.addCard({
         type: 'vocab',
         term: word,
         meaning,
         reading,
-        jlptLevel: 'N5',
       })
       setSavedSrs((prev) => ({ ...prev, [word]: true }))
       await queryClient.invalidateQueries({ queryKey: ['srs'] })
-    } catch (err) {
-      console.error('Không thể lưu thẻ vào SRS:', err)
+    } catch {
+      setSaveError('Chưa lưu được thẻ. Hãy thử lại khi kết nối ổn định.')
     }
   }
 
@@ -215,7 +212,7 @@ export default function DictionaryPage({
       setSearchTerm(trimmed)
     }, 200)
     return () => window.clearTimeout(timer)
-  }, [input])
+  }, [input, setSearchTerm])
 
   // Reset active result index when search term changes
   useEffect(() => {
@@ -228,14 +225,21 @@ export default function DictionaryPage({
     queryKey: ['dictionary-search', searchTerm, sentenceSearch, translateSentence],
     queryFn: () =>
       requestApi<DictionarySearchResult | DictionarySentenceAnalysis>({
-        url: sentenceSearch ? apiPaths.dictionary.analyze(searchTerm, translateSentence) : apiPaths.dictionary.search(searchTerm, 20),
+        url: sentenceSearch
+          ? apiPaths.dictionary.analyze(searchTerm, translateSentence)
+          : apiPaths.dictionary.search(searchTerm, 20),
       }),
     enabled: Boolean(searchTerm) && (activeTab === 'vocab' || activeTab === 'sentences' || activeTab === 'all'),
     staleTime: 1000 * 60 * 10,
   })
 
   // 2. Query danh sách Hán tự NhaiKanji khi ở tab "Hán tự" hoặc khi tìm kiếm ở tab "Tất cả"
-  const { data: kanjiListData, isLoading: isKanjiListLoading } = useQuery({
+  const {
+    data: kanjiListData,
+    isLoading: isKanjiListLoading,
+    isError: isKanjiError,
+    refetch: retryKanji,
+  } = useQuery({
     queryKey: ['nhaikanji', 'kanjiList', searchTerm ? 'ALL' : kanjiLevel, searchTerm],
     queryFn: () =>
       nhaikanjiApi.fetchKanjiList({
@@ -251,7 +255,12 @@ export default function DictionaryPage({
   })
 
   // 3. Query Ngữ pháp Bunpo khi ở tab "Ngữ pháp" hoặc khi tìm kiếm ở tab "Tất cả"
-  const { data: bunpoListData, isLoading: isBunpoLoading } = useQuery({
+  const {
+    data: bunpoListData,
+    isLoading: isBunpoLoading,
+    isError: isBunpoError,
+    refetch: retryBunpo,
+  } = useQuery({
     queryKey: ['nhaikanji', 'bunpoList', searchTerm],
     queryFn: () =>
       nhaikanjiApi.fetchBunpoList({
@@ -292,19 +301,6 @@ export default function DictionaryPage({
 
   const selectTab = (tab: DictionaryTab) => {
     setActiveTab(tab)
-    if (typeof window !== 'undefined' && window.history?.replaceState) {
-      try {
-        const url = new URL(window.location.href)
-        if (tab === 'vocab') {
-          url.searchParams.delete('tab')
-        } else {
-          url.searchParams.set('tab', tab)
-        }
-        window.history.replaceState({}, '', url.toString())
-      } catch {
-        // ignore
-      }
-    }
   }
 
   const results = data && 'results' in data ? data.results : []
@@ -328,10 +324,33 @@ export default function DictionaryPage({
   ]
 
   const savedCount = Array.isArray(savedTermsData) ? savedTermsData.length : 0
-  const srsProgress = Math.min(100, savedCount * 5)
+  const { data: srsStats } = useQuery({
+    queryKey: ['srs', user?.id, 'stats', 'dictionary'],
+    queryFn: () => srsApi.fetchStats('all'),
+    enabled: Boolean(user),
+  })
+  const srsProgress = srsStats?.averageMastery
 
   return (
     <section className="dictionary-page">
+      {saveError && (
+        <p role="alert" className="ui-error-text">
+          {saveError}
+        </p>
+      )}
+      {((activeTab === 'kanji' && isKanjiError) || (activeTab === 'grammar' && isBunpoError)) && (
+        <div role="alert" className="ui-status-panel">
+          <p>Chưa tải được nội dung. Hãy kiểm tra kết nối rồi thử lại.</p>
+          <Button
+            onClick={() => {
+              if (activeTab === 'kanji') void retryKanji()
+              else void retryBunpo()
+            }}
+          >
+            Thử lại
+          </Button>
+        </div>
+      )}
       <div className="dictionary-shell">
         <div className="dictionary-search-container">
           <form className="dictionary-querybar" onSubmit={submit}>
@@ -450,9 +469,10 @@ export default function DictionaryPage({
               })}
         </div>
 
-        <div className={`dictionary-workspace ${activeTab === 'kanji' || activeTab === 'vocabulary' ? 'is-kanji-art-mode' : ''}`}>
+        <div
+          className={`dictionary-workspace ${activeTab === 'kanji' || activeTab === 'vocabulary' ? 'is-kanji-art-mode' : ''}`}
+        >
           <div className="dictionary-workspace__main">
-
             {/* 1. VIEW: TAB HÁN TỰ */}
             {activeTab === 'kanji' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -479,7 +499,11 @@ export default function DictionaryPage({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {isBunpoLoading ? (
                   <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-                    <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-accent)' }} />
+                    <Loader2
+                      size={36}
+                      className="animate-spin"
+                      style={{ margin: '0 auto', color: 'var(--color-accent)' }}
+                    />
                     <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Đang tra cứu ngữ pháp...</p>
                   </div>
                 ) : bunpoListData && bunpoListData.items.length > 0 ? (
@@ -495,7 +519,12 @@ export default function DictionaryPage({
                         }}
                       >
                         <div
-                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            gap: '1rem',
+                          }}
                         >
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -572,8 +601,14 @@ export default function DictionaryPage({
               <Suspense
                 fallback={
                   <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-                    <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-accent)' }} />
-                    <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Đang mở tủ sách Kotodama...</p>
+                    <Loader2
+                      size={32}
+                      className="animate-spin"
+                      style={{ margin: '0 auto', color: 'var(--color-accent)' }}
+                    />
+                    <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
+                      Đang mở tủ sách Kotodama...
+                    </p>
                   </div>
                 }
               >
@@ -587,17 +622,20 @@ export default function DictionaryPage({
                 {/* Loading state */}
                 {isLoading && (
                   <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-                    <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-accent)' }} />
-                    <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Đang tra cứu từ điển VNJP...</p>
+                    <Loader2
+                      size={36}
+                      className="animate-spin"
+                      style={{ margin: '0 auto', color: 'var(--color-accent)' }}
+                    />
+                    <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
+                      Đang tra cứu từ điển VNJP...
+                    </p>
                   </div>
                 )}
 
                 {/* Zero State: Wabi-Sabi Word of the Day Stage */}
                 {!searchTerm && !isLoading && (
-                  <DictionaryWordOfTheDay
-                    onSearch={handleQuickSearch}
-                    onSpeak={speakJapanese}
-                  />
+                  <DictionaryWordOfTheDay onSearch={handleQuickSearch} onSpeak={speakJapanese} />
                 )}
 
                 {/* Empty result state */}
@@ -613,7 +651,11 @@ export default function DictionaryPage({
                     title="Chưa thể kết nối kho từ điển"
                     description="Kiểm tra kết nối rồi thử tra lại. Từ bạn vừa nhập vẫn được giữ nguyên trong ô tìm kiếm."
                     action={
-                      <Button onClick={() => void queryClient.invalidateQueries({ queryKey: ['dictionary-search', searchTerm] })}>
+                      <Button
+                        onClick={() =>
+                          void queryClient.invalidateQueries({ queryKey: ['dictionary-search', searchTerm] })
+                        }
+                      >
                         Thử lại
                       </Button>
                     }
@@ -622,164 +664,212 @@ export default function DictionaryPage({
 
                 {/* Sentence Analysis View (if query was a whole Japanese sentence) */}
                 {sentenceAnalysis && !isLoading && !isError && (
-                  <DictionarySentenceDetail analysis={sentenceAnalysis} onSpeak={speakJapanese} onSearch={handleQuickSearch} />
+                  <DictionarySentenceDetail
+                    analysis={sentenceAnalysis}
+                    onSpeak={speakJapanese}
+                    onSearch={handleQuickSearch}
+                  />
                 )}
 
                 {/* Main Results: Classical Editorial Two-Column Spread */}
-                {(activeTab === 'vocab' || activeTab === 'all') && !sentenceAnalysis && !isLoading && results.length > 0 && primaryWord && (
-                  <div className="dictionary-editorial-spread">
-                    {results.length > 1 && (
-                      <aside className="dictionary-editorial-catalog" aria-label="Danh mục kết quả tra cứu">
-                        <header className="dictionary-editorial-catalog__header">
-                          <div className="dictionary-editorial-catalog__hanko" aria-hidden="true">目</div>
-                          <div>
-                            <h3 className="dictionary-editorial-catalog__title">MỤC LỤC TỪ ĐIỂN</h3>
-                            <span className="dictionary-editorial-catalog__count">{results.length} mục từ phù hợp</span>
-                          </div>
-                        </header>
-                        <nav className="dictionary-editorial-catalog__list" role="tablist" aria-orientation="vertical">
-                          {results.map((item, index) => {
-                            const isSelected = selectedResultIndex === index
-                            return (
-                              <button
-                                key={`${item.id}-${item.word}-${index}`}
-                                type="button"
-                                role="tab"
-                                aria-selected={isSelected}
-                                className={`dictionary-editorial-item ${isSelected ? 'is-active' : ''}`}
-                                onClick={() => setSelectedResultIndex(index)}
-                              >
-                                <div className="dictionary-editorial-item__line">
-                                  <span className="dictionary-editorial-item__word">{item.word}</span>
-                                  {item.reading && <span className="dictionary-editorial-item__reading">{item.reading}</span>}
-                                  {item.jlpt && <span className="dictionary-editorial-item__badge">{item.jlpt}</span>}
-                                </div>
-                                <p className="dictionary-editorial-item__meaning">
-                                  {item.meanings[0] || 'Xem nghĩa chi tiết'}
-                                </p>
-                              </button>
-                            )
-                          })}
-                        </nav>
-                      </aside>
-                    )}
-
-                    <main className={`dictionary-editorial-entry ${results.length <= 1 ? 'is-full-width' : ''}`}>
-                      <DictionaryWordDetail
-                        word={primaryWord}
-                        results={results}
-                        isSaved={Boolean(savedSrs[primaryWord.word])}
-                        onSave={() => handleSaveToSrs(primaryWord.word, primaryWord.meanings[0] || '', primaryWord.reading || '')}
-                        onSpeak={speakJapanese}
-                        onSearch={handleQuickSearch}
-                      />
-
-                      {/* If in 'all' mode and matched Kanji exist, render companion Kanji strip */}
-                      {activeTab === 'all' && kanjiListData && kanjiListData.items.length > 0 && (
-                        <div className="dictionary-word-section" style={{ marginTop: '2.5rem' }}>
-                          <h2><span className="dictionary-kanji-heading">漢</span> Chữ Hán liên quan ({kanjiListData.items.length})</h2>
-                          <div className="dictionary-kanji-grid">
-                            {kanjiListData.items.slice(0, 6).map((k) => (
-                              <article
-                                key={k.kanji}
-                                className="dictionary-kanji-card"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => setSelectedKanjiModal(k)}
-                                title={`Xem chi tiết chữ ${k.kanji}`}
-                              >
-                                <strong>{k.kanji}</strong>
-                                <div className="dictionary-kanji-card__details">
-                                  <div className="dictionary-kanji-card__row">
-                                    <span>Hán Việt:</span>
-                                    <b>{k.hanzi || '—'}</b>
+                {(activeTab === 'vocab' || activeTab === 'all') &&
+                  !sentenceAnalysis &&
+                  !isLoading &&
+                  results.length > 0 &&
+                  primaryWord && (
+                    <div className="dictionary-editorial-spread">
+                      {results.length > 1 && (
+                        <aside className="dictionary-editorial-catalog" aria-label="Danh mục kết quả tra cứu">
+                          <header className="dictionary-editorial-catalog__header">
+                            <div className="dictionary-editorial-catalog__hanko" aria-hidden="true">
+                              目
+                            </div>
+                            <div>
+                              <h3 className="dictionary-editorial-catalog__title">MỤC LỤC TỪ ĐIỂN</h3>
+                              <span className="dictionary-editorial-catalog__count">
+                                {results.length} mục từ phù hợp
+                              </span>
+                            </div>
+                          </header>
+                          <nav
+                            className="dictionary-editorial-catalog__list"
+                            role="tablist"
+                            aria-orientation="vertical"
+                          >
+                            {results.map((item, index) => {
+                              const isSelected = selectedResultIndex === index
+                              return (
+                                <button
+                                  key={`${item.id}-${item.word}-${index}`}
+                                  type="button"
+                                  role="tab"
+                                  aria-selected={isSelected}
+                                  className={`dictionary-editorial-item ${isSelected ? 'is-active' : ''}`}
+                                  onClick={() => setSelectedResultIndex(index)}
+                                >
+                                  <div className="dictionary-editorial-item__line">
+                                    <span className="dictionary-editorial-item__word">{item.word}</span>
+                                    {item.reading && (
+                                      <span className="dictionary-editorial-item__reading">{item.reading}</span>
+                                    )}
+                                    {item.jlpt && <span className="dictionary-editorial-item__badge">{item.jlpt}</span>}
                                   </div>
-                                  <div className="dictionary-kanji-card__row">
-                                    <span>Nghĩa:</span>
-                                    <b>{k.meaning_vi || '—'}</b>
-                                  </div>
-                                  <div className="dictionary-kanji-card__row">
-                                    <span>JLPT:</span>
-                                    <b>{k.jlpt_level || '—'}</b>
-                                  </div>
-                                </div>
-                              </article>
-                            ))}
-                          </div>
-                        </div>
+                                  <p className="dictionary-editorial-item__meaning">
+                                    {item.meanings[0] || 'Xem nghĩa chi tiết'}
+                                  </p>
+                                </button>
+                              )
+                            })}
+                          </nav>
+                        </aside>
                       )}
 
-                      {/* If in 'all' mode and matched Bunpo exist, render companion Grammar strip */}
-                      {activeTab === 'all' && bunpoListData && bunpoListData.items.length > 0 && (
-                        <div className="dictionary-word-section" style={{ marginTop: '2.5rem' }}>
-                          <h2><GraduationCap size={18} /> Ngữ pháp liên quan ({bunpoListData.items.length})</h2>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {bunpoListData.items.slice(0, 4).map((b) => (
-                              <div
-                                key={b.id}
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  borderLeft: '2.5px solid var(--color-accent)',
-                                  background: 'var(--color-bg-subtle)',
-                                  borderRadius: '0 6px 6px 0',
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                  <span style={{ fontSize: '1.1rem', fontWeight: 800, fontFamily: 'var(--font-jp)', color: 'var(--color-accent)' }}>
-                                    {b.pattern}
-                                  </span>
-                                  {b.level && <Badge variant="primary">{b.level}</Badge>}
-                                </div>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--color-text)', marginTop: '4px', fontWeight: 600 }}>
-                                  {b.shortMeaning}
-                                </div>
-                              </div>
-                            ))}
+                      <section className={`dictionary-editorial-entry ${results.length <= 1 ? 'is-full-width' : ''}`}>
+                        <DictionaryWordDetail
+                          word={primaryWord}
+                          results={results}
+                          isSaved={Boolean(savedSrs[primaryWord.word])}
+                          onSave={() =>
+                            handleSaveToSrs(primaryWord.word, primaryWord.meanings[0] || '', primaryWord.reading || '')
+                          }
+                          onSpeak={speakJapanese}
+                          onSearch={handleQuickSearch}
+                        />
+
+                        {/* If in 'all' mode and matched Kanji exist, render companion Kanji strip */}
+                        {activeTab === 'all' && kanjiListData && kanjiListData.items.length > 0 && (
+                          <div className="dictionary-word-section" style={{ marginTop: '2.5rem' }}>
+                            <h2>
+                              <span className="dictionary-kanji-heading">漢</span> Chữ Hán liên quan (
+                              {kanjiListData.items.length})
+                            </h2>
+                            <div className="dictionary-kanji-grid">
+                              {kanjiListData.items.slice(0, 6).map((k) => (
+                                <article
+                                  key={k.kanji}
+                                  className="dictionary-kanji-card"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => setSelectedKanjiModal(k)}
+                                  title={`Xem chi tiết chữ ${k.kanji}`}
+                                >
+                                  <strong>{k.kanji}</strong>
+                                  <div className="dictionary-kanji-card__details">
+                                    <div className="dictionary-kanji-card__row">
+                                      <span>Hán Việt:</span>
+                                      <b>{k.hanzi || '—'}</b>
+                                    </div>
+                                    <div className="dictionary-kanji-card__row">
+                                      <span>Nghĩa:</span>
+                                      <b>{k.meaning_vi || '—'}</b>
+                                    </div>
+                                    <div className="dictionary-kanji-card__row">
+                                      <span>JLPT:</span>
+                                      <b>{k.jlpt_level || '—'}</b>
+                                    </div>
+                                  </div>
+                                </article>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </main>
-                  </div>
-                )}
+                        )}
+
+                        {/* If in 'all' mode and matched Bunpo exist, render companion Grammar strip */}
+                        {activeTab === 'all' && bunpoListData && bunpoListData.items.length > 0 && (
+                          <div className="dictionary-word-section" style={{ marginTop: '2.5rem' }}>
+                            <h2>
+                              <GraduationCap size={18} /> Ngữ pháp liên quan ({bunpoListData.items.length})
+                            </h2>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              {bunpoListData.items.slice(0, 4).map((b) => (
+                                <div
+                                  key={b.id}
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    borderLeft: '2.5px solid var(--color-accent)',
+                                    background: 'var(--color-bg-subtle)',
+                                    borderRadius: '0 6px 6px 0',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '1.1rem',
+                                        fontWeight: 800,
+                                        fontFamily: 'var(--font-jp)',
+                                        color: 'var(--color-accent)',
+                                      }}
+                                    >
+                                      {b.pattern}
+                                    </span>
+                                    {b.level && <Badge variant="primary">{b.level}</Badge>}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: '0.9rem',
+                                      color: 'var(--color-text)',
+                                      marginTop: '4px',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {b.shortMeaning}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </section>
+                    </div>
+                  )}
 
                 {/* Sentences Scope View */}
                 {activeTab === 'sentences' && !sentenceAnalysis && !isLoading && results.length > 0 && (
                   <div className="dictionary-editorial-entry is-full-width">
                     <div className="dictionary-word-section">
-                      <h2><MessageCircleMore size={18} /> Câu ví dụ cho “{searchTerm}”</h2>
+                      <h2>
+                        <MessageCircleMore size={18} /> Câu ví dụ cho “{searchTerm}”
+                      </h2>
                       <div className="dictionary-examples">
-                        {results.flatMap((w) => w.examples || []).map((example, idx) => (
-                          <article key={`${example.sentenceJp}-${idx}`} className="dictionary-example-item">
-                            <div className="dictionary-example-body">
-                              <div className="dictionary-example-jp">{example.sentenceJp}</div>
-                              {example.furigana && (
-                                <small style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-jp)' }}>
-                                  {example.furigana}
-                                </small>
-                              )}
-                              {example.sentenceVi && (
-                                <div className="dictionary-example-vi">
-                                  <strong>VI</strong> {example.sentenceVi}
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              className="dictionary-example-audio-btn"
-                              onClick={() => speakJapanese(example.sentenceJp)}
-                              aria-label="Nghe câu ví dụ"
-                              title="Nghe phát âm câu ví dụ"
-                            >
-                              <Volume2 size={16} />
-                            </button>
-                          </article>
-                        ))}
+                        {results
+                          .flatMap((w) => w.examples || [])
+                          .map((example, idx) => (
+                            <article key={`${example.sentenceJp}-${idx}`} className="dictionary-example-item">
+                              <div className="dictionary-example-body">
+                                <div className="dictionary-example-jp">{example.sentenceJp}</div>
+                                {example.furigana && (
+                                  <small
+                                    style={{
+                                      color: 'var(--color-text-muted)',
+                                      fontSize: '0.85rem',
+                                      fontFamily: 'var(--font-jp)',
+                                    }}
+                                  >
+                                    {example.furigana}
+                                  </small>
+                                )}
+                                {example.sentenceVi && (
+                                  <div className="dictionary-example-vi">
+                                    <strong>VI</strong> {example.sentenceVi}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                className="dictionary-example-audio-btn"
+                                onClick={() => speakJapanese(example.sentenceJp)}
+                                aria-label="Nghe câu ví dụ"
+                                title="Nghe phát âm câu ví dụ"
+                              >
+                                <Volume2 size={16} />
+                              </button>
+                            </article>
+                          ))}
                       </div>
                     </div>
                   </div>
                 )}
               </>
             )}
-
           </div>
         </div>
       </div>
@@ -804,13 +894,11 @@ export default function DictionaryPage({
       {/* Slide-over Artisan Drawer & Washi Backdrop */}
       {isDrawerOpen && (
         <>
-          <div
-            className="dictionary-drawer-backdrop"
-            onClick={() => setIsDrawerOpen(false)}
-            aria-hidden="true"
-          />
+          <div className="dictionary-drawer-backdrop" onClick={() => setIsDrawerOpen(false)} aria-hidden="true" />
           <aside
             className="dictionary-drawer"
+            ref={drawerRef}
+            tabIndex={-1}
             aria-label="Sổ tay học và lịch sử tra cứu"
             role="dialog"
             aria-modal="true"
@@ -856,11 +944,11 @@ export default function DictionaryPage({
                   aria-valuemin={0}
                   aria-valuemax={100}
                 >
-                  <span style={{ width: `${srsProgress}%` }} />
+                  <span style={{ width: `${srsProgress ?? 0}%` }} />
                 </div>
                 <div className="drawer-srs-block__progress-labels">
                   <span>Tiến độ ghi nhớ</span>
-                  <span>{srsProgress}%</span>
+                  <span>{srsProgress === undefined ? 'Chưa có dữ liệu' : `${srsProgress}%`}</span>
                 </div>
                 {onReview && (
                   <button type="button" onClick={onReview} className="drawer-srs-block__btn">
@@ -879,11 +967,7 @@ export default function DictionaryPage({
                     <RotateCcw aria-hidden="true" size={14} /> ĐÃ TRA GẦN ĐÂY
                   </h3>
                   {recentSearches.length > 0 && (
-                    <button
-                      type="button"
-                      className="orihon-history__clear-btn"
-                      onClick={clearRecentSearches}
-                    >
+                    <button type="button" className="orihon-history__clear-btn" onClick={clearRecentSearches}>
                       Xóa
                     </button>
                   )}

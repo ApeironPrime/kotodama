@@ -1,0 +1,157 @@
+/* Shared functional surfaces follow the active theme. */
+:root {
+  --color-danger-text: #a51d32;
+  --color-surface: var(--color-bg-elevated);
+}
+.ui-button--secondary,
+.ui-icon-button {
+  background: var(--color-bg-subtle);
+}
+.ui-button--secondary:hover:not(:disabled),
+.ui-icon-button:hover:not(:disabled),
+.ui-button--ghost:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+.ui-input,
+.ui-textarea,
+.ui-select {
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+.ui-select {
+  color-scheme: inherit;
+}
+.ui-field__error,
+.ui-button--danger,
+.ui-error-text {
+  color: var(--color-danger-text);
+}
+.ui-switch {
+  background: var(--color-border-strong);
+}
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--color-text);
+  background: var(--color-bg-subtle);
+}
+.ui-badge--primary {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg-elevated));
+}
+.ui-badge--outline {
+  background: transparent;
+}
+.ui-badge--danger {
+  color: var(--color-danger-text);
+}
+.ui-status-panel {
+  width: min(100%, 48rem);
+  margin: 2rem auto;
+  padding: 1.5rem;
+  color: var(--color-text);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 1rem;
+}
+.ui-status-panel button {
+  margin: 0.5rem 0.5rem 0 0;
+}
+.ui-spin {
+  animation: ui-spin 1s linear infinite;
+}
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.anime-srs-feedback {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+.bunpo-mobile-toc {
+  display: none;
+}
+.profile-activity-list {
+  display: grid;
+  gap: 0.75rem;
+  padding-left: 1.25rem;
+}
+:is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+@media (max-width: 900px) {
+  .bunpo-mobile-toc {
+    display: block;
+    margin: 1rem 0;
+  }
+}
+@media (max-width: 600px) {
+  .ui-modal,
+  .modal-content {
+    width: 100%;
+    max-height: 90dvh;
+    overflow: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .artistic-preloader,
+  .washi-mist-overlay {
+    display: none !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+.static-kanji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+.static-kanji-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  color: var(--color-text);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.5rem;
+}
+.static-kanji-grid strong {
+  font-size: 1.8rem;
+}
+.video-study-segment-copy {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+input::placeholder,
+textarea::placeholder,
+.ui-input::placeholder,
+.ui-textarea::placeholder,
+.curriculum-unit-search__input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, Captions, CircleAlert, Ear, FileText, LoaderCircle, Mic, Sparkles } from 'lucide-react'
-import { Badge, Button, Card, PageShell } from '../../components/ui'
+import { Button, Card, PageShell } from '../../components/ui'
+import { usePersistentState } from '../../lib/usePersistentState'
+import { useAuth } from '../auth/authContext'
 import { API_BASE_URL, getApiErrorMessage } from '../../lib/apiClient'
 import { createPlaybackSession } from './videoApi'
 import type { MediaAsset, TranscriptSegment, TranscriptVersion } from './videoTypes'
@@ -116,6 +118,7 @@ export default function VideoStudyPlayer({
   const [mediaDurationMs, setMediaDurationMs] = useState(video?.durationMs ?? 0)
   const [lookupKeyword, setLookupKeyword] = useState<string | null>(null)
   const [activeMode, setActiveMode] = useState<'study' | 'shadowing' | 'listening' | 'summary'>('study')
+  const [listeningHint, setListeningHint] = useState(false)
   const [autoScroll, setAutoScroll] = useState(false)
   const pauseTimeoutRef = useRef<number | null>(null)
   const stopAtMsRef = useRef<number | null>(null)
@@ -198,100 +201,41 @@ export default function VideoStudyPlayer({
   const currentShadowingSegment: TranscriptSegment | null = activeSegment ?? timelineSegments[0] ?? null
 
   // 5-Tab Sidebar State (Phụ đề, Từ vựng, Ngữ pháp, Ghi chú, Đã lưu)
-  const [sidebarTab, setSidebarTab] = useState<'transcript' | 'vocab' | 'grammar' | 'notes' | 'saved'>('transcript')
-  const [vocabFilter, setVocabFilter] = useState<string>('ALL')
-  const [personalNote, setPersonalNote] = useState<string>(() => {
-    try {
-      return localStorage.getItem(`kotodama_note_${video.id}`) || ''
-    } catch {
-      return ''
-    }
-  })
-  const [noteSavedStatus, setNoteSavedStatus] = useState<boolean>(false)
-  const [savedItems, setSavedItems] = useState<Map<string, { ja: string; vi?: string | null | undefined }>>(
-    () => new Map()
+  const [sidebarTab, setSidebarTab] = useState<'transcript' | 'notes' | 'saved'>('transcript')
+  const { user } = useAuth()
+  const storageScope = `${user?.id ?? 'guest'}:${video.id}`
+  const [personalNote, setPersonalNote] = usePersistentState(`kotodama.video.note:${storageScope}`, '')
+  const [savedEntries, setSavedEntries] = usePersistentState<
+    Array<[string, { ja: string; vi?: string | null | undefined }]>
+  >(`kotodama.video.bookmarks:${storageScope}`, [])
+  const savedItems = new Map(savedEntries)
+  const [noteSavedStatus, setNoteSavedStatus] = useState(false)
+  const noteTimerRef = useRef<number | null>(null)
+  useEffect(
+    () => () => {
+      if (noteTimerRef.current) clearTimeout(noteTimerRef.current)
+    },
+    []
   )
 
   const savePersonalNote = () => {
     try {
-      localStorage.setItem(`kotodama_note_${video.id}`, personalNote)
+      setPersonalNote(personalNote)
       setNoteSavedStatus(true)
-      setTimeout(() => setNoteSavedStatus(false), 2000)
+      noteTimerRef.current = window.setTimeout(() => setNoteSavedStatus(false), 2000)
     } catch {
       // ignore
     }
   }
 
-  const generateAiSummary = () => {
-    const summaryHeader = `\n\n### 💡 Tóm tắt AI bài học (${video.title}):\n`
-    const generated = `- Điểm chính: Video bài học hội thoại tiếng Nhật thực tế.\n- Ngữ pháp trọng tâm: 〜へ行く (N5), 〜けど〜 (N4), 〜すれば〜 (N3).\n- Từ vựng tiêu biểu: 学校 (trường học), 先生 (thầy cô), 授業 (tiết học), 難しい (khó).\n`
-    setPersonalNote((prev) => prev.trim() + summaryHeader + generated)
-  }
-
   const toggleSaveItem = (id: string, ja: string, vi?: string | null | undefined) => {
-    setSavedItems((prev) => {
+    setSavedEntries((prev) => {
       const next = new Map(prev)
       if (next.has(id)) next.delete(id)
       else next.set(id, { ja, vi: vi || undefined })
-      return next
+      return [...next]
     })
   }
-
-  // Pre-extracted vocabulary from video content
-  const videoVocabList = useMemo(
-    () => [
-      { word: '学校', reading: 'がっこう', meaning: 'trường học', level: 'N5', pos: 'DANH TỪ', mastery: 80 },
-      { word: '先生', reading: 'せんせい', meaning: 'giáo viên', level: 'N5', pos: 'DANH TỪ', mastery: 90 },
-      { word: '授業', reading: 'じゅぎょう', meaning: 'buổi học, tiết học', level: 'N4', pos: 'DANH TỪ', mastery: 55 },
-      { word: '難しい', reading: 'むずかしい', meaning: 'khó, phức tạp', level: 'N5', pos: 'TÍNH TỪ', mastery: 70 },
-      { word: '勉強', reading: 'べんきょう', meaning: 'học tập', level: 'N5', pos: 'DANH TỪ', mastery: 80 },
-      { word: '食べる', reading: 'たべる', meaning: 'ăn', level: 'N5', pos: 'ĐỘNG TỪ', mastery: 95 },
-      { word: '練習', reading: 'れんしゅう', meaning: 'luyện tập', level: 'N4', pos: 'DANH TỪ', mastery: 68 },
-      { word: '必ず', reading: 'かならず', meaning: 'chắc chắn', level: 'N3', pos: 'DANH TỪ', mastery: 30 },
-      { word: '諦める', reading: 'あきらめる', meaning: 'từ bỏ', level: 'N3', pos: 'ĐỘNG TỪ', mastery: 20 },
-      { word: '面白い', reading: 'おもしろい', meaning: 'thú vị', level: 'N5', pos: 'TÍNH TỪ', mastery: 85 },
-    ],
-    []
-  )
-
-  const filteredVideoVocab = useMemo(() => {
-    if (vocabFilter === 'ALL') return videoVocabList
-    if (['N5', 'N4', 'N3', 'N2', 'N1'].includes(vocabFilter)) {
-      return videoVocabList.filter((w) => w.level === vocabFilter)
-    }
-    if (vocabFilter === 'ĐỘNG TỪ') return videoVocabList.filter((w) => w.pos === 'ĐỘNG TỪ')
-    if (vocabFilter === 'DANH TỪ') return videoVocabList.filter((w) => w.pos === 'DANH TỪ')
-    if (vocabFilter === 'TÍNH TỪ') return videoVocabList.filter((w) => w.pos === 'TÍNH TỪ')
-    return videoVocabList
-  }, [vocabFilter, videoVocabList])
-
-  // Pre-extracted grammar from video content
-  const videoGrammarList = useMemo(
-    () => [
-      {
-        pattern: '〜へ行く',
-        level: 'N5',
-        meaning: 'Đi đến [địa điểm]',
-        usage: 'Trợ từ chỉ hướng へ + động từ di chuyển',
-        example: '学校へ行きました。',
-      },
-      {
-        pattern: '〜けど〜',
-        level: 'N4',
-        meaning: 'Mặc dù, nhưng mà (nhẹ hơn でも)',
-        usage: 'Nối hai mệnh đề tương phản, sắc thái lịch sự',
-        example: '日本語は難しいけど、面白いと思います。',
-      },
-      {
-        pattern: '〜すれば〜',
-        level: 'N3',
-        meaning: 'Điều kiện: nếu [A] thì [B]',
-        usage: 'Thân động từ + thể điều kiện ば',
-        example: '練習すれば、必ず上手くなれるよ。',
-      },
-    ],
-    []
-  )
 
   // Batch / Page-Flip Auto-scroll: When active sentence hits the bottom of the container, scroll it to the TOP!
   useEffect(() => {
@@ -437,7 +381,11 @@ export default function VideoStudyPlayer({
           <Button
             variant={activeMode === 'listening' ? 'primary' : 'ghost'}
             size="sm"
-            onClick={() => setActiveMode(activeMode === 'listening' ? 'study' : 'listening')}
+            onClick={() => {
+              setActiveMode(activeMode === 'listening' ? 'study' : 'listening')
+              setListeningHint(false)
+              setSidebarTab('notes')
+            }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -515,8 +463,17 @@ export default function VideoStudyPlayer({
                 )}
               </div>
 
+              {activeMode === 'listening' && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setListeningHint((value) => !value)}
+                  aria-pressed={listeningHint}
+                >
+                  {listeningHint ? 'Ẩn gợi ý phụ đề' : 'Hiện gợi ý phụ đề'}
+                </Button>
+              )}
               {/* Furigana Subtitle Display Bar (Bunsetsu Phrase Spotlight) */}
-              {(activeMode === 'study' || activeMode === 'listening') && (
+              {(activeMode === 'study' || (activeMode === 'listening' && listeningHint)) && (
                 <FuriganaSubtitleBar
                   segment={activeSegment}
                   currentTimeMs={currentTimeMs}
@@ -535,7 +492,7 @@ export default function VideoStudyPlayer({
                   }}
                 >
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.75rem 0' }}>
-                    <Sparkles size={18} color="#f43f5e" /> Tổng quan bài học & Từ vựng
+                    <Sparkles size={18} color="#f43f5e" /> Thông tin bài học
                   </h3>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: 1.6 }}>
                     Bài học gồm <strong>{timelineSegments.length} câu thoại</strong> với thời lượng khoảng{' '}
@@ -564,10 +521,8 @@ export default function VideoStudyPlayer({
                 {(
                   [
                     { id: 'transcript', label: 'Phụ đề' },
-                    { id: 'vocab', label: 'Từ vựng' },
-                    { id: 'grammar', label: 'Ngữ pháp' },
                     { id: 'notes', label: 'Ghi chú' },
-                    { id: 'saved', label: 'Đã lưu' },
+                    { id: 'saved', label: 'Dấu trang' },
                   ] as const
                 ).map((t) => (
                   <button
@@ -594,7 +549,7 @@ export default function VideoStudyPlayer({
               </div>
 
               {/* ── TAB 1: PHỤ ĐỀ (SUBTITLES) ── */}
-              {sidebarTab === 'transcript' && (
+              {sidebarTab === 'transcript' && (activeMode !== 'listening' || listeningHint) && (
                 <>
                   <header
                     style={{
@@ -663,7 +618,8 @@ export default function VideoStudyPlayer({
                           key={segment.id}
                           data-segment-id={segment.id}
                           className={`segment-row ${active ? 'is-active' : ''}`}
-                          onClick={() => jumpTo(segment)}
+                          role="group"
+                          aria-label={`Câu ${index + 1}`}
                           style={{ position: 'relative' }}
                         >
                           <div
@@ -696,7 +652,12 @@ export default function VideoStudyPlayer({
                             </time>
                           </div>
 
-                          <div className="video-study-segment-copy" style={{ flex: 1 }}>
+                          <button
+                            type="button"
+                            onClick={() => jumpTo(segment)}
+                            className="video-study-segment-copy"
+                            style={{ flex: 1, background: 'transparent', border: 0, textAlign: 'left' }}
+                          >
                             <strong
                               style={{
                                 fontSize: '1rem',
@@ -714,7 +675,7 @@ export default function VideoStudyPlayer({
                                 {segment.textVi}
                               </span>
                             )}
-                          </div>
+                          </button>
 
                           <button
                             type="button"
@@ -729,7 +690,8 @@ export default function VideoStudyPlayer({
                               cursor: 'pointer',
                               padding: '4px',
                             }}
-                            title={isSaved ? 'Đã lưu câu' : 'Lưu câu vào sổ ôn tập'}
+                            aria-label={isSaved ? 'Bỏ đánh dấu câu' : 'Đánh dấu câu'}
+                            title={isSaved ? 'Đã lưu câu' : 'Đánh dấu câu trên thiết bị này'}
                           >
                             {isSaved ? '★' : '☆'}
                           </button>
@@ -738,225 +700,6 @@ export default function VideoStudyPlayer({
                     })}
                   </div>
                 </>
-              )}
-
-              {/* ── TAB 2: TỪ VỰNG (VOCABULARY & MASTERY BARS - ẢNH 2) ── */}
-              {sidebarTab === 'vocab' && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                    overflowY: 'auto',
-                    padding: '0.85rem',
-                  }}
-                >
-                  {/* Filter Pills */}
-                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
-                    {['ALL', 'N5', 'N4', 'N3', 'ĐỘNG TỪ', 'DANH TỪ', 'TÍNH TỪ'].map((f) => (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => setVocabFilter(f)}
-                        style={{
-                          background: vocabFilter === f ? '#ec4899' : 'rgba(255, 255, 255, 0.05)',
-                          color: vocabFilter === f ? '#ffffff' : 'var(--color-text-secondary)',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '6px',
-                          padding: '3px 8px',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Vocabulary Cards List */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {filteredVideoVocab.map((w) => {
-                      const mastery = w.mastery || 80
-                      const barColor = mastery >= 80 ? '#10b981' : mastery >= 50 ? '#f59e0b' : '#3b82f6'
-                      const isSaved = savedItems.has(`vocab_${w.word}`)
-
-                      return (
-                        <div
-                          key={w.word}
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '8px',
-                            padding: '0.75rem',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                                <span
-                                  style={{
-                                    fontFamily: 'var(--font-jp)',
-                                    fontSize: '1.15rem',
-                                    fontWeight: 800,
-                                    color: 'var(--color-text)',
-                                  }}
-                                >
-                                  {w.word}
-                                </span>
-                                <span
-                                  style={{
-                                    fontFamily: 'var(--font-jp)',
-                                    fontSize: '0.85rem',
-                                    color: 'var(--color-text-muted)',
-                                  }}
-                                >
-                                  {w.reading}
-                                </span>
-                              </div>
-                              <div
-                                style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}
-                              >
-                                {w.meaning}
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <Badge variant="primary" className="text-xs">
-                                {w.level}
-                              </Badge>
-                              <button
-                                type="button"
-                                onClick={() => toggleSaveItem(`vocab_${w.word}`, w.word, w.meaning)}
-                                style={{
-                                  fontSize: '0.72rem',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  border: '1px solid var(--color-border)',
-                                  background: isSaved ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-                                  color: isSaved ? '#10b981' : 'var(--color-text-muted)',
-                                  cursor: 'pointer',
-                                  fontWeight: 600,
-                                }}
-                              >
-                                {isSaved ? 'Đã lưu' : '+Lưu'}
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Thành thạo progress bar */}
-                          <div style={{ marginTop: '0.6rem' }}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                fontSize: '0.7rem',
-                                marginBottom: '3px',
-                              }}
-                            >
-                              <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>THÀNH THẠO</span>
-                              <span style={{ color: barColor, fontWeight: 700 }}>{mastery}%</span>
-                            </div>
-                            <div
-                              style={{
-                                height: '4px',
-                                width: '100%',
-                                background: 'rgba(255, 255, 255, 0.08)',
-                                borderRadius: '2px',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              <div
-                                style={{
-                                  height: '100%',
-                                  width: `${mastery}%`,
-                                  background: barColor,
-                                  borderRadius: '2px',
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ── TAB 3: NGỮ PHÁP (GRAMMAR - ẢNH 3) ── */}
-              {sidebarTab === 'grammar' && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem',
-                    height: '100%',
-                    overflowY: 'auto',
-                    padding: '0.85rem',
-                  }}
-                >
-                  {videoGrammarList.map((g) => (
-                    <div
-                      key={g.pattern}
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: '8px',
-                        padding: '0.85rem',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-jp)',
-                            fontSize: '1.15rem',
-                            fontWeight: 800,
-                            color: '#ec4899',
-                          }}
-                        >
-                          {g.pattern}
-                        </span>
-                        <Badge variant="primary" className="text-xs font-bold">
-                          {g.level}
-                        </Badge>
-                      </div>
-
-                      <div
-                        style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', marginTop: '4px' }}
-                      >
-                        {g.meaning}
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: '0.8rem',
-                          color: 'var(--color-text-muted)',
-                          marginTop: '2px',
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {g.usage}
-                      </div>
-
-                      {g.example && (
-                        <div
-                          style={{
-                            marginTop: '0.5rem',
-                            padding: '0.5rem 0.65rem',
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            borderRadius: '6px',
-                            border: '1px solid rgba(255, 255, 255, 0.06)',
-                            fontSize: '0.85rem',
-                            fontFamily: 'var(--font-jp)',
-                            color: 'var(--color-text)',
-                          }}
-                        >
-                          {g.example}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
               )}
 
               {/* ── TAB 4: GHI CHÚ (PERSONAL NOTES & AI SUMMARY - ẢNH 4) ── */}
@@ -975,9 +718,10 @@ export default function VideoStudyPlayer({
                     GHI CHÚ CÁ NHÂN
                   </div>
                   <textarea
+                    aria-label="Ghi chú cá nhân"
                     value={personalNote}
                     onChange={(e) => setPersonalNote(e.target.value)}
-                    placeholder="Viết ghi chú về bài học này... Hỗ trợ **in đậm**, *nghiêng* và - danh sách."
+                    placeholder="Viết ghi chú về bài học này... Ghi chú được lưu tự động trên thiết bị này."
                     style={{
                       flex: 1,
                       minHeight: '220px',
@@ -1005,20 +749,6 @@ export default function VideoStudyPlayer({
                       }}
                     >
                       {noteSavedStatus ? '✓ Đã lưu' : 'Lưu ghi chú'}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={generateAiSummary}
-                      style={{
-                        height: '40px',
-                        borderRadius: '8px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      <Sparkles size={15} /> Tóm tắt AI
                     </Button>
                   </div>
                 </div>

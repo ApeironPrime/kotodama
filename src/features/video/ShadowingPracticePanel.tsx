@@ -1,3 +1,4 @@
+import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
@@ -55,6 +56,35 @@ export default function ShadowingPracticePanel({
   const [attemptCount, setAttemptCount] = useState(1)
   const [micError, setMicError] = useState<string | null>(null)
 
+  const recordingStartedRef = useRef(0)
+  const recordingDurationRef = useRef(0)
+  const startingRef = useRef(false)
+  const streamRef = useRef<MediaStream | null>(null)
+  const recordingEpochRef = useRef(0)
+  const objectUrlsRef = useRef(new Set<string>())
+  useEffect(() => {
+    recordingEpochRef.current += 1
+    const userPlayer = userAudioPlayerRef.current
+    return () => {
+      recordingEpochRef.current += 1
+      const recorder = mediaRecorderRef.current
+      if (recorder) {
+        recorder.onstop = null
+        if (recorder.state !== 'inactive') recorder.stop()
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
+      userPlayer?.pause()
+    }
+  }, [activeSegment.id])
+  useEffect(() => {
+    const urls = objectUrlsRef.current
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url)
+      urls.clear()
+    }
+  }, [])
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const recordingTimerRef = useRef<number | null>(null)
@@ -99,6 +129,7 @@ export default function ShadowingPracticePanel({
     setAttemptCount(existing ? 2 : 1)
     setMicError(null)
     setIsRecording(false)
+    setIsEvaluating(false)
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
     setRecordingSeconds(0)
 
@@ -149,7 +180,8 @@ export default function ShadowingPracticePanel({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button, a, [contenteditable]'))
+        return
 
       const {
         onPlayNativeSnippet: playNative,
@@ -174,7 +206,7 @@ export default function ShadowingPracticePanel({
         } else if (!evalState) {
           void startRec()
         }
-      } else if ((e.code === 'ArrowRight' && e.shiftKey) || e.code === 'Tab') {
+      } else if (e.code === 'ArrowRight' && e.shiftKey) {
         e.preventDefault()
         if (!last) void goNext()
       } else if (e.code === 'ArrowLeft' && e.shiftKey) {
@@ -190,8 +222,17 @@ export default function ShadowingPracticePanel({
   async function startRecording() {
     setMicError(null)
     setEvaluationResult(null)
+    const epoch = recordingEpochRef.current
+    if (streamRef.current || startingRef.current) return
+    startingRef.current = true
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (epoch !== recordingEpochRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+      streamRef.current = stream
+      recordingStartedRef.current = performance.now()
       const recorder = new MediaRecorder(stream)
       mediaRecorderRef.current = recorder
       audioChunksRef.current = []
@@ -203,8 +244,12 @@ export default function ShadowingPracticePanel({
       }
 
       recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+        if (epoch !== recordingEpochRef.current) return
         const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
         const audioUrl = URL.createObjectURL(audioBlob)
+        objectUrlsRef.current.add(audioUrl)
         setRecordedAudioUrl(audioUrl)
         setAudioBySegmentId((prev) => ({ ...prev, [activeSegment.id]: audioUrl }))
         setIsPlayingUserAudio(false)
@@ -221,11 +266,14 @@ export default function ShadowingPracticePanel({
     } catch {
       setMicError('Không thể truy cập microphone. Vui lòng cấp quyền micro cho trình duyệt.')
       setIsRecording(false)
+    } finally {
+      startingRef.current = false
     }
   }
 
   function stopRecording() {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      recordingDurationRef.current = Math.max(1, Math.round(performance.now() - recordingStartedRef.current))
       mediaRecorderRef.current.stop()
       setIsRecording(false)
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
@@ -234,13 +282,15 @@ export default function ShadowingPracticePanel({
 
   async function handleEvaluateAttempt(blob: Blob) {
     if (!session) return
+    const epoch = recordingEpochRef.current
     setIsEvaluating(true)
     try {
       const reader = new FileReader()
       reader.readAsDataURL(blob)
       reader.onloadend = async () => {
+        if (epoch !== recordingEpochRef.current) return
         const base64Audio = reader.result as string
-        const durationMs = recordingSeconds * 1000 || activeSegment.endMs - activeSegment.startMs
+        const durationMs = recordingDurationRef.current
         try {
           const result = await submitShadowingAttempt(session.id, {
             transcriptSegmentId: activeSegment.id,
@@ -250,6 +300,7 @@ export default function ShadowingPracticePanel({
             attemptNo: attemptCount,
             audioBase64: base64Audio,
           })
+          if (epoch !== recordingEpochRef.current) return
           setEvaluationResult(result)
           setHistoryBySegmentId((prev) => ({ ...prev, [activeSegment.id]: result }))
         } catch {
@@ -648,10 +699,7 @@ export default function ShadowingPracticePanel({
           {showFurigana && activeSegment.textFurigana && activeSegment.textFurigana.includes('<ruby>') ? (
             <span
               dangerouslySetInnerHTML={{
-                __html: activeSegment.textFurigana.replaceAll(
-                  '<rt>',
-                  '<rt style="font-size: 0.85rem; font-weight: 600; color: #059669; letter-spacing: 0.02em;">'
-                ),
+                __html: sanitizeHtml(activeSegment.textFurigana.replaceAll('<rt>', '<rt>')),
               }}
             />
           ) : (

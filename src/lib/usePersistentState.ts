@@ -1,26 +1,47 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type SetStateAction } from 'react'
 
-/**
- * Stores non-sensitive UI preferences in the current browser only.
- * Server-backed account data will replace this when authentication is added.
- */
+const volatileValues = new Map<string, unknown>()
+
+/** Browser preferences synchronize across components and tabs, with an in-memory fallback. */
 export function usePersistentState<T>(key: string, initialValue: T) {
-  const [value, setValue] = useState<T>(() => {
+  const fallback = useRef(initialValue)
+  const read = useCallback(() => {
+    if (volatileValues.has(key)) return volatileValues.get(key) as T
     try {
       const storedValue = window.localStorage.getItem(key)
-      return storedValue === null ? initialValue : (JSON.parse(storedValue) as T)
+      return storedValue === null ? fallback.current : (JSON.parse(storedValue) as T)
     } catch {
-      return initialValue
+      return fallback.current
     }
-  })
+  }, [key])
+  const [value, setValue] = useState<T>(read)
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value))
-    } catch {
-      // Storage can be unavailable in private browsing or when quota is full.
+    setValue(read())
+    const sync = () => setValue(read())
+    window.addEventListener('storage', sync)
+    window.addEventListener('kotodama:preference', sync)
+    return () => {
+      window.removeEventListener('storage', sync)
+      window.removeEventListener('kotodama:preference', sync)
     }
-  }, [key, value])
+  }, [read])
 
-  return [value, setValue] as const
+  const update = useCallback(
+    (next: SetStateAction<T>) => {
+      const current = read()
+      const resolved = typeof next === 'function' ? (next as (previous: T) => T)(current) : next
+      try {
+        window.localStorage.setItem(key, JSON.stringify(resolved))
+        volatileValues.delete(key)
+      } catch {
+        volatileValues.set(key, resolved)
+      }
+      setValue(resolved)
+      window.dispatchEvent(new Event('kotodama:preference'))
+    },
+    [key, read]
+  )
+
+  return [value, update] as const
 }

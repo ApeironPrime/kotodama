@@ -79,7 +79,8 @@ function loadYouTubeIframeApi(): Promise<NonNullable<Window['YT']>> {
       complete()
     }
 
-    const tag = document.getElementById('youtube-iframe-api') as HTMLScriptElement | null ?? document.createElement('script')
+    const tag =
+      (document.getElementById('youtube-iframe-api') as HTMLScriptElement | null) ?? document.createElement('script')
     if (!tag.isConnected) {
       tag.id = 'youtube-iframe-api'
       tag.src = 'https://www.youtube.com/iframe_api'
@@ -203,12 +204,16 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
   // Start playback loop for YouTube using requestAnimationFrame (throttled)
   const startTimeUpdateLoop = useCallback(() => {
     stopTimeUpdateLoop()
-    const tick = () => {
+    let lastUpdate = -Infinity
+    const tick = (now: number) => {
       if (ytPlayerRef.current && isPlayingRef.current) {
         try {
-          const t = ytPlayerRef.current.getCurrentTime() || 0
-          setCurrentTime(t)
-          callbacksRef.current.onTimeUpdate(t)
+          if (now - lastUpdate >= 150) {
+            lastUpdate = now
+            const t = ytPlayerRef.current.getCurrentTime() || 0
+            setCurrentTime(t)
+            callbacksRef.current.onTimeUpdate(t)
+          }
         } catch {
           // ignore transient errors
         }
@@ -217,6 +222,15 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
     }
     rAFRef.current = requestAnimationFrame(tick)
   }, [stopTimeUpdateLoop])
+
+  useEffect(() => {
+    setPlayerError(null)
+  }, [mediaSource?.source_type, mediaSource?.media_id, mediaSource?.page_url])
+  useEffect(() => {
+    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [])
 
   // Handle external seekTarget triggers (e.g. from transcript cue clicks)
   useEffect(() => {
@@ -360,22 +374,25 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
   }, [pauseRequest, isYoutubeReady, mediaSource?.source_type])
 
   // Seek Handler
-  const handleSeek = useCallback((seconds: number) => {
-    const clamped = Math.max(0, Math.min(seconds, duration || 3600))
-    setCurrentTime(clamped)
-    onTimeUpdate(clamped)
-    onSeeked?.(clamped)
+  const handleSeek = useCallback(
+    (seconds: number) => {
+      const clamped = Math.max(0, Math.min(seconds, duration || 3600))
+      setCurrentTime(clamped)
+      onTimeUpdate(clamped)
+      onSeeked?.(clamped)
 
-    if (mediaSource?.source_type === 'authorized_local' && videoRef.current) {
-      videoRef.current.currentTime = clamped
-    } else if (mediaSource?.source_type === 'youtube') {
-      try {
-        ytPlayerRef.current?.seekTo(clamped, true)
-      } catch {
-        // ignore
+      if (mediaSource?.source_type === 'authorized_local' && videoRef.current) {
+        videoRef.current.currentTime = clamped
+      } else if (mediaSource?.source_type === 'youtube') {
+        try {
+          ytPlayerRef.current?.seekTo(clamped, true)
+        } catch {
+          // ignore
+        }
       }
-    }
-  }, [duration, mediaSource?.source_type, onSeeked, onTimeUpdate])
+    },
+    [duration, mediaSource?.source_type, onSeeked, onTimeUpdate]
+  )
 
   // Mute Handler
   const toggleMute = useCallback(() => {
@@ -397,26 +414,29 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
   }, [isMuted, mediaSource?.source_type])
 
   // Volume Handler
-  const handleVolumeChange = useCallback((vol: number) => {
-    const clamped = Math.max(0, Math.min(vol, 1))
-    setVolume(clamped)
-    setIsMuted(clamped === 0)
+  const handleVolumeChange = useCallback(
+    (vol: number) => {
+      const clamped = Math.max(0, Math.min(vol, 1))
+      setVolume(clamped)
+      setIsMuted(clamped === 0)
 
-    if (mediaSource?.source_type === 'authorized_local' && videoRef.current) {
-      videoRef.current.volume = clamped
-      videoRef.current.muted = clamped === 0
-    } else if (mediaSource?.source_type === 'youtube') {
-      try {
-        if (ytPlayerRef.current) {
-          ytPlayerRef.current.setVolume(clamped * 100)
-          if (clamped === 0) ytPlayerRef.current.mute()
-          else ytPlayerRef.current.unMute()
+      if (mediaSource?.source_type === 'authorized_local' && videoRef.current) {
+        videoRef.current.volume = clamped
+        videoRef.current.muted = clamped === 0
+      } else if (mediaSource?.source_type === 'youtube') {
+        try {
+          if (ytPlayerRef.current) {
+            ytPlayerRef.current.setVolume(clamped * 100)
+            if (clamped === 0) ytPlayerRef.current.mute()
+            else ytPlayerRef.current.unMute()
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
       }
-    }
-  }, [mediaSource?.source_type])
+    },
+    [mediaSource?.source_type]
+  )
 
   // Fullscreen Handler
   const toggleFullscreen = useCallback(() => {
@@ -434,7 +454,14 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
   const isGuardedTarget = (target: EventTarget | null): boolean => {
     if (!target || !(target instanceof HTMLElement)) return false
     const tagName = target.tagName.toUpperCase()
-    if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || tagName === 'BUTTON' || tagName === 'A') return true
+    if (
+      tagName === 'INPUT' ||
+      tagName === 'TEXTAREA' ||
+      tagName === 'SELECT' ||
+      tagName === 'BUTTON' ||
+      tagName === 'A'
+    )
+      return true
     if (target.isContentEditable) return true
     const role = target.getAttribute('role')
     if (role === 'slider' || role === 'button' || role === 'link') return true
@@ -631,19 +658,23 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
                   : 'Tập phim này chưa có quyền phát trực tiếp theo chính sách bản quyền của Kotodama.')}
           </p>
 
-          {playerError && /YouTube \((101|150)\)/.test(playerError) && mediaSource?.source_type === 'youtube' && mediaSource.page_url && (
-            <a className="anime-btn anime-btn--primary" href={mediaSource.page_url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink size={16} aria-hidden="true" />
-              <span>Mở video trên YouTube</span>
-            </a>
-          )}
+          {playerError &&
+            /YouTube \((101|150)\)/.test(playerError) &&
+            mediaSource?.source_type === 'youtube' &&
+            mediaSource.page_url && (
+              <a
+                className="anime-btn anime-btn--primary"
+                href={mediaSource.page_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink size={16} aria-hidden="true" />
+                <span>Mở video trên YouTube</span>
+              </a>
+            )}
 
           {onBackToEpisodes && (
-            <button
-              type="button"
-              onClick={onBackToEpisodes}
-              className="anime-btn anime-btn--secondary"
-            >
+            <button type="button" onClick={onBackToEpisodes} className="anime-btn anime-btn--secondary">
               <ArrowLeft size={16} aria-hidden="true" />
               <span>Quay lại danh sách tập</span>
             </button>
@@ -698,7 +729,11 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
         )}
 
         {/* Subtitle Overlay Slot */}
-        {hideVideo && <div className="anime-player-hidden-screen" aria-label="Video đang được ẩn, âm thanh vẫn phát">Video đã ẩn · âm thanh vẫn hoạt động</div>}
+        {hideVideo && (
+          <div className="anime-player-hidden-screen" aria-label="Video đang được ẩn, âm thanh vẫn phát">
+            Video đã ẩn · âm thanh vẫn hoạt động
+          </div>
+        )}
         {children}
       </div>
 
@@ -709,7 +744,13 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
           type="button"
           onClick={togglePlayPause}
           className="anime-player-btn anime-player-btn--play"
-          aria-label={isYouTube && !isYoutubeReady ? 'Đang chuẩn bị trình phát YouTube' : isPlaying ? 'Tạm dừng (Space)' : 'Phát (Space)'}
+          aria-label={
+            isYouTube && !isYoutubeReady
+              ? 'Đang chuẩn bị trình phát YouTube'
+              : isPlaying
+                ? 'Tạm dừng (Space)'
+                : 'Phát (Space)'
+          }
           disabled={isYouTube && !isYoutubeReady}
         >
           {isPlaying ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
@@ -763,9 +804,7 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
           <button
             type="button"
             onClick={() => void togglePictureInPicture()}
-            className={`anime-player-btn anime-player-btn--pip ${
-              isPipActive ? 'anime-player-btn--active' : ''
-            }`}
+            className={`anime-player-btn anime-player-btn--pip ${isPipActive ? 'anime-player-btn--active' : ''}`}
             aria-label={isPipActive ? 'Thoát Picture-in-Picture' : 'Mở Picture-in-Picture'}
             title={isPipActive ? 'Thoát Picture-in-Picture' : 'Mở Picture-in-Picture'}
             aria-pressed={isPipActive}
@@ -788,7 +827,8 @@ export const AnimePlayer: React.FC<AnimePlayerProps> = ({
       {/* Keyboard Shortcuts Hint */}
       <div className="anime-player-shortcuts-hint" aria-hidden="true">
         <span>Phím tắt:</span>
-        <kbd>Space</kbd> Phát/Dừng • <kbd>←</kbd> <kbd>→</kbd> ±5s • <kbd>M</kbd> Bật/Tắt âm • <kbd>F</kbd> Toàn màn hình
+        <kbd>Space</kbd> Phát/Dừng • <kbd>←</kbd> <kbd>→</kbd> ±5s • <kbd>M</kbd> Bật/Tắt âm • <kbd>F</kbd> Toàn màn
+        hình
       </div>
     </div>
   )

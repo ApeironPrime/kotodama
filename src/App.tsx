@@ -1,3 +1,4 @@
+import { UrlStateProvider } from './components/UrlStateProvider'
 import { lazy, startTransition, Suspense, useEffect, useRef } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import TopNav from './components/TopNav'
@@ -41,7 +42,7 @@ const CoursesPage = lazy(() =>
   import('./features/learning/CoursesPage').then(({ CoursesPage: Page }) => ({ default: Page }))
 )
 
-export default function App() {
+function AppWithBoundary() {
   const location = useLocation()
   const navigate = useNavigate()
   return (
@@ -166,7 +167,13 @@ function AppContent() {
             {page === 'dictionary' && <DictionaryPage inputRef={searchInputRef} onReview={() => goTo('review')} />}
             {page === 'jlpt' && <JlptPage />}
             {page === 'anime' && <AnimePage />}
-            {page === 'review' && <ReviewPage onDictionary={() => goTo('dictionary')} />}
+            {page === 'review' && (
+              <ReviewPage
+                onDictionary={(query) =>
+                  navigate(`${PAGE_PATHS.dictionary}${query ? `?q=${encodeURIComponent(query)}` : ''}`)
+                }
+              />
+            )}
             {page === 'video' && <VideoLearning />}
             {page === 'courses' && (
               <CoursesPage
@@ -189,5 +196,13 @@ function AppContent() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <UrlStateProvider>
+      <AppWithBoundary />
+    </UrlStateProvider>
   )
 }

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Award,
@@ -10,7 +9,6 @@ import {
   LogIn,
   Settings,
   Video,
-  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import { IconButton } from './ui'
@@ -18,14 +16,15 @@ import type { Page } from '../types/app'
 import { srsApi } from '../features/srs/srsApi'
 import { useAuth } from '../features/auth/authContext'
 
-const NAV_TABS: Array<{ id: Page; label: string; mobileLabel?: string; jp: string; icon: LucideIcon; badge?: string }> = [
-  { id: 'home', label: 'Trang chủ', mobileLabel: 'Trang', jp: '始まり', icon: House },
-  { id: 'dictionary', label: 'Từ Điển', mobileLabel: 'Từ điển', jp: '辞書', icon: BookOpen },
-  { id: 'review', label: 'Ôn Tập SRS', mobileLabel: 'Ôn tập', jp: '復習', icon: Layers },
-  { id: 'jlpt', label: 'Thi JLPT', mobileLabel: 'JLPT', jp: '試験', icon: Award },
-  { id: 'anime', label: 'Anime', jp: 'アニメ', icon: Clapperboard },
-  { id: 'video', label: 'Video AI', mobileLabel: 'Video', jp: '映像', icon: Video },
-]
+const NAV_TABS: Array<{ id: Page; label: string; mobileLabel?: string; jp: string; icon: LucideIcon; badge?: string }> =
+  [
+    { id: 'home', label: 'Trang chủ', mobileLabel: 'Trang', jp: '始まり', icon: House },
+    { id: 'dictionary', label: 'Từ Điển', mobileLabel: 'Từ điển', jp: '辞書', icon: BookOpen },
+    { id: 'review', label: 'Ôn Tập SRS', mobileLabel: 'Ôn tập', jp: '復習', icon: Layers },
+    { id: 'jlpt', label: 'Thi JLPT', mobileLabel: 'JLPT', jp: '試験', icon: Award },
+    { id: 'anime', label: 'Anime', jp: 'アニメ', icon: Clapperboard },
+    { id: 'video', label: 'Video AI', mobileLabel: 'Video', jp: '映像', icon: Video },
+  ]
 
 export default function TopNav({
   page,
@@ -39,7 +38,6 @@ export default function TopNav({
   userName?: string | undefined
 }) {
   const { user } = useAuth()
-  const [credits] = useState(0)
 
   const { data: srsStats } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'stats', 'global'],
@@ -131,9 +129,6 @@ export default function TopNav({
                   />{' '}
                   {streak}
                 </div>
-                <div className="nav-stat nav-stat--credits">
-                  <Zap aria-hidden="true" size={17} strokeWidth={2} /> {credits}
-                </div>
               </>
             )}
             {isAuthenticated ? (
@@ -151,12 +146,7 @@ export default function TopNav({
                 <i>言</i>
               </span>
             ) : (
-              <button
-                type="button"
-                className="nav-login-link"
-                onClick={() => navigate('login')}
-                aria-label="Đăng nhập"
-              >
+              <button type="button" className="nav-login-link" onClick={() => navigate('login')} aria-label="Đăng nhập">
                 <LogIn aria-hidden="true" size={15} strokeWidth={1.5} />
                 <span>Đăng nhập</span>
               </button>

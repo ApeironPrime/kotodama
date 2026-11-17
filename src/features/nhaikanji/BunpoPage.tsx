@@ -1,3 +1,7 @@
+import { usePersistentState } from '../../lib/usePersistentState'
+import { useDebouncedValue } from '../../lib/useDebouncedValue'
+import { useUrlState } from '../../lib/useUrlState'
+import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -26,7 +30,7 @@ const GRAMMAR_CATALOG = [
     subtitle: 'Shinkanzen Master N3',
     badge: '99 mẫu • 19 bài • Audio',
     level: 'N3',
-    color: '#84cc16',
+    color: 'var(--color-accent)',
     bg: 'linear-gradient(135deg, rgba(132, 204, 22, 0.15) 0%, rgba(101, 163, 13, 0.05) 100%)',
     border: 'rgba(132, 204, 22, 0.3)',
   },
@@ -74,14 +78,17 @@ function speakJapanese(text: string) {
 export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const { user } = useAuth()
   // Navigation: 'catalog' -> 'lessons' -> 'study'
-  const [selectedBook, setSelectedBook] = useState<string | null>(null)
-  const [selectedLesson, setSelectedLesson] = useState<string | null>(null)
+  const [selectedBook, setSelectedBook] = useUrlState<string | null>('book', null)
+  const [selectedLesson, setSelectedLesson] = useUrlState<string | null>('lesson', null)
   const [studyMode, setStudyMode] = useState<'flashcard' | 'list'>('flashcard')
 
   // In-Lesson Flashcard state
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
-  const [, setKnownGrammars] = useState<Set<string>>(new Set())
+  const [, setKnownGrammars] = usePersistentState<string[]>(
+    `kotodama.known-grammar:${user?.id ?? 'guest'}:${selectedBook}:${selectedLesson}`,
+    []
+  )
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
   const [activePointId, setActivePointId] = useState<string | null>(null)
   const queryClient = useQueryClient()
@@ -90,6 +97,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const { data: savedTermsData } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'saved-terms'],
     queryFn: () => srsApi.fetchSavedTerms(),
+    enabled: Boolean(user),
     staleTime: 30_000,
   })
 
@@ -108,24 +116,33 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   }, [savedTermsData])
 
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebouncedValue(searchQuery)
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // 1. Fetch Lessons for the selected Book
-  const { data: lessonsList } = useQuery({
+  const {
+    data: lessonsList,
+    isError: lessonsError,
+    refetch: refetchLessons,
+  } = useQuery({
     queryKey: ['curriculum', 'lessons', selectedBook],
     queryFn: () => srsApi.fetchLessons(selectedBook || 'shinkanzen_n3'),
     enabled: Boolean(selectedBook),
   })
 
   // 2. Fetch Grammar items for the current Lesson
-  const { data: grammarData } = useQuery({
-    queryKey: ['curriculum', 'grammar', selectedBook, selectedLesson, searchQuery],
+  const {
+    data: grammarData,
+    isError: grammarError,
+    refetch: refetchGrammar,
+  } = useQuery({
+    queryKey: ['curriculum', 'grammar', selectedBook, selectedLesson, debouncedSearchQuery],
     queryFn: () =>
       srsApi.fetchCurriculumGrammar({
         curriculum: selectedBook || undefined,
         lesson: selectedLesson || undefined,
-        query: searchQuery,
+        query: debouncedSearchQuery,
         page: 1,
         limit: 100,
       }),
@@ -172,38 +189,41 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     }
   }
 
-  const handleSaveToSrs = useCallback(async (item: CurriculumGrammar) => {
-    try {
-      const summaryMeaning =
-        item.groups && item.groups.length > 1
-          ? item.groups
-              .map((g) => g.meaning || g.usage)
-              .filter(Boolean)
-              .join(' / ')
-          : item.shortMeaning || item.explanation
+  const handleSaveToSrs = useCallback(
+    async (item: CurriculumGrammar) => {
+      try {
+        const summaryMeaning =
+          item.groups && item.groups.length > 1
+            ? item.groups
+                .map((g) => g.meaning || g.usage)
+                .filter(Boolean)
+                .join(' / ')
+            : item.shortMeaning || item.explanation
 
-      await srsApi.addCard({
-        type: 'grammar',
-        term: item.pattern,
-        meaning: summaryMeaning,
-        structure: item.structure,
-        explanation: item.explanation,
-        jlptLevel: (item.level || 'N3').toUpperCase(),
-        groups: item.groups,
-        examples: item.examples?.map((e) => ({
-          jp: e.jp,
-          jp_furigana: e.jp_furigana,
-          jp_ruby: e.jp_ruby,
-          vi: e.vi,
-          audio: e.audio,
-        })),
-      })
-      setSavedSrs((prev) => ({ ...prev, [`grammar_${item.id}`]: true, [`grammar_term_${item.pattern}`]: true }))
-      await queryClient.invalidateQueries({ queryKey: ['srs'] })
-    } catch (err) {
-      console.error('Không thể lưu ngữ pháp vào SRS:', err)
-    }
-  }, [queryClient])
+        await srsApi.addCard({
+          type: 'grammar',
+          term: item.pattern,
+          meaning: summaryMeaning,
+          structure: item.structure,
+          explanation: item.explanation,
+          jlptLevel: (item.level || 'N3').toUpperCase(),
+          groups: item.groups,
+          examples: item.examples?.map((e) => ({
+            jp: e.jp,
+            jp_furigana: e.jp_furigana,
+            jp_ruby: e.jp_ruby,
+            vi: e.vi,
+            audio: e.audio,
+          })),
+        })
+        setSavedSrs((prev) => ({ ...prev, [`grammar_${item.id}`]: true, [`grammar_term_${item.pattern}`]: true }))
+        await queryClient.invalidateQueries({ queryKey: ['srs'] })
+      } catch (err) {
+        console.error('Không thể lưu ngữ pháp vào SRS:', err)
+      }
+    },
+    [queryClient]
+  )
 
   // Keyboard shortcut listener for in-lesson flashcard
   useEffect(() => {
@@ -217,7 +237,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         setIsFlipped((f) => !f)
       } else if (e.key === 'z' || e.key === 'Z') {
         e.preventDefault()
-        setKnownGrammars((prev) => new Set(prev).add(currentCard.id))
+        setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
         setIsFlipped(false)
         setCurrentIndex((i) => (i < grammars.length - 1 ? i + 1 : i))
       } else if (e.key === 'x' || e.key === 'X') {
@@ -236,13 +256,38 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedLesson, studyMode, currentCard, isFlipped, grammars.length, handleSaveToSrs, playAudio])
+  }, [selectedLesson, studyMode, currentCard, isFlipped, grammars.length, handleSaveToSrs, playAudio, setKnownGrammars])
 
   /** Check if a grammar item is saved — matches both local ID key and server term key */
   const isGrammarSaved = (item: CurriculumGrammar) =>
     savedSrs[`grammar_${item.id}`] || savedSrs[`grammar_term_${item.pattern}`] || false
 
   const currentBookInfo = GRAMMAR_CATALOG.find((b) => b.id === selectedBook)
+
+  if ((selectedBook && lessonsError) || (selectedLesson && grammarError))
+    return (
+      <section className="ui-status-panel" role="alert">
+        <h1>Chưa tải được bài ngữ pháp</h1>
+        <p>Kiểm tra kết nối rồi thử lại.</p>
+        <Button
+          onClick={() => {
+            void refetchLessons()
+            if (selectedLesson) void refetchGrammar()
+          }}
+        >
+          Thử lại
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setSelectedLesson(null)
+            setSelectedBook(null)
+          }}
+        >
+          Về kho giáo trình
+        </Button>
+      </section>
+    )
 
   // =========================================================================
   // VIEW 1: CATALOG OVERVIEW (Chọn bộ giáo trình Ngữ Pháp - media_1788263283117.png)
@@ -259,7 +304,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         {/* N3 Section */}
         <div style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <div style={{ width: '4px', height: '24px', background: '#84cc16', borderRadius: '2px' }} />
+            <div style={{ width: '4px', height: '24px', background: 'var(--color-accent)', borderRadius: '2px' }} />
             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>
               Ngữ pháp Chuyên sâu N3
             </h2>
@@ -538,7 +583,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 justifyContent: 'space-between',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = currentBookInfo?.color || '#84cc16'
+                e.currentTarget.style.borderColor = currentBookInfo?.color || 'var(--color-accent)'
                 e.currentTarget.style.transform = 'translateY(-2px)'
               }}
               onMouseLeave={(e) => {
@@ -633,8 +678,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             cursor: 'pointer',
             fontWeight: 700,
             fontSize: '0.88rem',
-            background: studyMode === 'flashcard' ? '#84cc16' : 'transparent',
-            color: studyMode === 'flashcard' ? '#000000' : 'var(--color-text-secondary)',
+            background: studyMode === 'flashcard' ? 'var(--color-accent)' : 'transparent',
+            color: studyMode === 'flashcard' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -655,8 +700,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             cursor: 'pointer',
             fontWeight: 700,
             fontSize: '0.88rem',
-            background: studyMode === 'list' ? '#84cc16' : 'transparent',
-            color: studyMode === 'list' ? '#000000' : 'var(--color-text-secondary)',
+            background: studyMode === 'list' ? 'var(--color-accent)' : 'transparent',
+            color: studyMode === 'list' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -921,7 +966,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                       color: '#f1f5f9',
                                       lineHeight: 1.6,
                                     }}
-                                    dangerouslySetInnerHTML={{ __html: firstEx.jp_ruby || firstEx.jp }}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp) }}
                                   />
                                   {firstEx.vi && (
                                     <div style={{ color: '#cbd5e1', fontSize: '0.84rem', marginTop: '3px' }}>
@@ -1009,7 +1054,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   lineHeight: 1.6,
                                 }}
                                 dangerouslySetInnerHTML={{
-                                  __html: firstEx.jp_ruby || firstEx.jp,
+                                  __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
                                 }}
                               />
                               {firstEx.vi && (
@@ -1100,7 +1145,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               variant="primary"
               size="lg"
               onClick={() => {
-                setKnownGrammars((prev) => new Set(prev).add(currentCard.id))
+                setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
                 handleNextCard()
               }}
               style={{ minWidth: '130px', fontWeight: 700, background: '#10b981', borderColor: '#10b981' }}
@@ -1121,218 +1166,393 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         </div>
       )}
 
-      {/* 3.4 LAYER 2: SPACIOUS FULL-WIDTH LIST (Danh sách mẫu ngữ pháp trong bài) */}
-      <div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '0.75rem',
-            marginBottom: '1rem',
-          }}
-        >
-          <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text)' }}>
-            Danh sách mẫu ngữ pháp trong bài ({grammars.length})
-          </h3>
-
-          <div style={{ position: 'relative', width: '280px' }}>
-            <Search
-              size={15}
-              style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--color-text-muted)' }}
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Lọc mẫu câu trong bài..."
+      {studyMode === 'list' && (
+        <label className="bunpo-mobile-toc">
+          Chuyển tới mẫu ngữ pháp
+          <select
+            className="ui-select"
+            value={activePointId ?? ''}
+            onChange={(event) => {
+              setActivePointId(event.target.value)
+              document.getElementById(`grammar-point-${event.target.value}`)?.scrollIntoView({ block: 'start' })
+            }}
+          >
+            <option value="">Chọn mẫu trong bài</option>
+            {grammars.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.pattern}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {studyMode === 'list' && (
+        <>
+          {/* 3.4 LAYER 2: SPACIOUS FULL-WIDTH LIST (Danh sách mẫu ngữ pháp trong bài) */}
+          <div>
+            <div
               style={{
-                width: '100%',
-                height: '34px',
-                background: 'var(--color-bg, #0f172a)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '6px',
-                paddingLeft: '2rem',
-                color: 'var(--color-text)',
-                fontSize: '0.85rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                marginBottom: '1rem',
               }}
-            />
-          </div>
-        </div>
+            >
+              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                Danh sách mẫu ngữ pháp trong bài ({grammars.length})
+              </h3>
 
-        {/* 2-Column Responsive Layout: Grammar Cards + Sticky Sidebar TOC */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) 260px',
-            gap: '1.5rem',
-            alignItems: 'start',
-          }}
-          className="bunpo-lesson-grid"
-        >
-          {/* Column 1: Spacious Grammar Cards */}
-          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {grammars.map((item, index) => {
-              const isSaved = isGrammarSaved(item)
-              const hasMultipleGroups = Boolean(item.groups && item.groups.length > 1)
-              const isSelected = activePointId === item.id
-
-              return (
-                <div
-                  id={`grammar-point-${item.id}`}
-                  key={item.id}
+              <div style={{ position: 'relative', width: '280px' }}>
+                <Search
+                  size={15}
+                  style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--color-text-muted)' }}
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Lọc mẫu câu trong bài..."
                   style={{
-                    scrollMarginTop: '85px',
-                    background: 'var(--color-surface)',
-                    border: isSelected ? '2px solid #ec4899' : '1px solid var(--color-border)',
-                    borderRadius: '14px',
-                    padding: '1.5rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.85rem',
-                    boxShadow: isSelected ? '0 4px 20px rgba(236, 72, 153, 0.15)' : '0 2px 10px rgba(0, 0, 0, 0.04)',
-                    transition: 'border 0.2s ease, box-shadow 0.2s ease',
+                    width: '100%',
+                    height: '34px',
+                    background: 'var(--color-bg, #0f172a)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '6px',
+                    paddingLeft: '2rem',
+                    color: 'var(--color-text)',
+                    fontSize: '0.85rem',
                   }}
-                >
-                  {/* Header: Pattern & Level & SRS Button */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-                      <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
-                        {index + 1}.
-                      </span>
-                      <h3
-                        style={{
-                          margin: 0,
-                          fontSize: '1.6rem',
-                          fontFamily: 'var(--font-jp)',
-                          fontWeight: 800,
-                          color: 'var(--color-text)',
-                        }}
-                      >
-                        {item.pattern}
-                      </h3>
-                    </div>
+                />
+              </div>
+            </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Badge variant="primary" className="text-xs font-bold">
-                        {item.level}
-                      </Badge>
-                      <button
-                        type="button"
-                        onClick={() => handleSaveToSrs(item)}
-                        style={{
-                          background: isSaved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                          border: '1px solid var(--color-border)',
-                          color: isSaved ? '#10b981' : 'var(--color-text-muted)',
-                          borderRadius: '6px',
-                          padding: '4px 10px',
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        {isSaved ? (
-                          <>
-                            <Check size={14} /> Đã vào SRS
-                          </>
-                        ) : (
-                          <>
-                            <BookmarkPlus size={14} /> +SRS
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+            {/* 2-Column Responsive Layout: Grammar Cards + Sticky Sidebar TOC */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) 260px',
+                gap: '1.5rem',
+                alignItems: 'start',
+              }}
+              className="bunpo-lesson-grid"
+            >
+              {/* Column 1: Spacious Grammar Cards */}
+              <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {grammars.map((item, index) => {
+                  const isSaved = isGrammarSaved(item)
+                  const hasMultipleGroups = Boolean(item.groups && item.groups.length > 1)
+                  const isSelected = activePointId === item.id
 
-                  {/* Multi-Group Rendering if multiple usages */}
-                  {hasMultipleGroups && item.groups ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span
-                          style={{
-                            fontSize: '0.78rem',
-                            fontWeight: 800,
-                            padding: '2px 10px',
-                            borderRadius: '999px',
-                            background: 'rgba(245, 158, 11, 0.15)',
-                            color: '#fbbf24',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                          }}
-                        >
-                          Bao gồm {item.groups.length} nhóm nghĩa & cách dùng:
-                        </span>
+                  return (
+                    <div
+                      id={`grammar-point-${item.id}`}
+                      key={item.id}
+                      style={{
+                        scrollMarginTop: '85px',
+                        background: 'var(--color-surface)',
+                        border: isSelected ? '2px solid #ec4899' : '1px solid var(--color-border)',
+                        borderRadius: '14px',
+                        padding: '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.85rem',
+                        boxShadow: isSelected
+                          ? '0 4px 20px rgba(236, 72, 153, 0.15)'
+                          : '0 2px 10px rgba(0, 0, 0, 0.04)',
+                        transition: 'border 0.2s ease, box-shadow 0.2s ease',
+                      }}
+                    >
+                      {/* Header: Pattern & Level & SRS Button */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
+                          <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                            {index + 1}.
+                          </span>
+                          <h3
+                            style={{
+                              margin: 0,
+                              fontSize: '1.6rem',
+                              fontFamily: 'var(--font-jp)',
+                              fontWeight: 800,
+                              color: 'var(--color-text)',
+                            }}
+                          >
+                            {item.pattern}
+                          </h3>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Badge variant="primary" className="text-xs font-bold">
+                            {item.level}
+                          </Badge>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveToSrs(item)}
+                            style={{
+                              background: isSaved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid var(--color-border)',
+                              color: isSaved ? '#10b981' : 'var(--color-text-muted)',
+                              borderRadius: '6px',
+                              padding: '4px 10px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            {isSaved ? (
+                              <>
+                                <Check size={14} /> Đã vào SRS
+                              </>
+                            ) : (
+                              <>
+                                <BookmarkPlus size={14} /> +SRS
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
 
-                      {item.groups.map((group, gIdx) => (
-                        <div
-                          key={gIdx}
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '10px',
-                            padding: '1rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.6rem',
-                          }}
-                        >
+                      {/* Multi-Group Rendering if multiple usages */}
+                      {hasMultipleGroups && item.groups ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span
                               style={{
-                                fontSize: '0.75rem',
+                                fontSize: '0.78rem',
                                 fontWeight: 800,
-                                background: '#3b82f6',
-                                color: '#ffffff',
+                                padding: '2px 10px',
                                 borderRadius: '999px',
-                                padding: '2px 8px',
+                                background: 'rgba(245, 158, 11, 0.15)',
+                                color: '#fbbf24',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
                               }}
                             >
-                              Nghĩa {group.group_no || gIdx + 1}
-                            </span>
-                            <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                              👉 {group.meaning || group.usage || ''}
+                              Bao gồm {item.groups.length} nhóm nghĩa & cách dùng:
                             </span>
                           </div>
 
-                          {group.structure && (
+                          {item.groups.map((group, gIdx) => (
                             <div
+                              key={gIdx}
                               style={{
-                                fontFamily: 'var(--font-jp)',
-                                fontSize: '0.92rem',
-                                fontWeight: 600,
-                                color: '#3b82f6',
-                                background: 'rgba(59, 130, 246, 0.06)',
-                                padding: '0.4rem 0.75rem',
-                                borderRadius: '6px',
+                                background: 'rgba(255, 255, 255, 0.02)',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: '10px',
+                                padding: '1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.6rem',
                               }}
                             >
-                              ✦ Cấu trúc: {group.structure}
-                            </div>
-                          )}
-
-                          {group.usage && group.usage !== group.meaning && (
-                            <div style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
-                              ◎ Giải thích: {group.usage}
-                            </div>
-                          )}
-
-                          {/* Examples in group */}
-                          {group.examples && group.examples.length > 0 && (
-                            <div
-                              style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.2rem' }}
-                            >
-                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                VÍ DỤ (Nghĩa {group.group_no || gIdx + 1}):
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    background: '#3b82f6',
+                                    color: '#ffffff',
+                                    borderRadius: '999px',
+                                    padding: '2px 8px',
+                                  }}
+                                >
+                                  Nghĩa {group.group_no || gIdx + 1}
+                                </span>
+                                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                  👉 {group.meaning || group.usage || ''}
+                                </span>
                               </div>
-                              {group.examples.map((ex, exIdx) => (
+
+                              {group.structure && (
+                                <div
+                                  style={{
+                                    fontFamily: 'var(--font-jp)',
+                                    fontSize: '0.92rem',
+                                    fontWeight: 600,
+                                    color: '#3b82f6',
+                                    background: 'rgba(59, 130, 246, 0.06)',
+                                    padding: '0.4rem 0.75rem',
+                                    borderRadius: '6px',
+                                  }}
+                                >
+                                  ✦ Cấu trúc: {group.structure}
+                                </div>
+                              )}
+
+                              {group.usage && group.usage !== group.meaning && (
+                                <div
+                                  style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}
+                                >
+                                  ◎ Giải thích: {group.usage}
+                                </div>
+                              )}
+
+                              {/* Examples in group */}
+                              {group.examples && group.examples.length > 0 && (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.45rem',
+                                    marginTop: '0.2rem',
+                                  }}
+                                >
+                                  <div
+                                    style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}
+                                  >
+                                    VÍ DỤ (Nghĩa {group.group_no || gIdx + 1}):
+                                  </div>
+                                  {group.examples.map((ex, exIdx) => (
+                                    <div
+                                      key={exIdx}
+                                      style={{
+                                        background: 'var(--color-bg, #0f172a)',
+                                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                                        borderRadius: '8px',
+                                        padding: '0.65rem 0.9rem',
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            fontFamily: 'var(--font-jp)',
+                                            fontSize: '1rem',
+                                            fontWeight: 600,
+                                            color: 'var(--color-text)',
+                                            lineHeight: 1.6,
+                                          }}
+                                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(ex.jp_ruby || ex.jp) }}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => playAudio(ex.audio, ex.jp)}
+                                          style={{
+                                            background:
+                                              playingAudioUrl === ex.audio ? '#3b82f6' : 'rgba(59, 130, 246, 0.12)',
+                                            border: 'none',
+                                            color: playingAudioUrl === ex.audio ? '#ffffff' : '#3b82f6',
+                                            borderRadius: '50%',
+                                            padding: '6px',
+                                            cursor: 'pointer',
+                                            flexShrink: 0,
+                                          }}
+                                          title="Nghe phát âm"
+                                        >
+                                          <Volume2 size={15} />
+                                        </button>
+                                      </div>
+                                      {ex.vi && (
+                                        <div
+                                          style={{
+                                            fontSize: '0.85rem',
+                                            color: 'var(--color-text-secondary)',
+                                            marginTop: '3px',
+                                          }}
+                                        >
+                                          {ex.vi}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        /* Single Meaning Rendering */
+                        <>
+                          {/* Meaning */}
+                          <div
+                            style={{
+                              background: 'rgba(236, 72, 153, 0.08)',
+                              border: '1px solid rgba(236, 72, 153, 0.2)',
+                              borderRadius: '8px',
+                              padding: '0.65rem 1rem',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                color: 'var(--color-accent)',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              Ý NGHĨA:
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '1.05rem',
+                                fontWeight: 700,
+                                color: 'var(--color-text)',
+                                marginTop: '2px',
+                              }}
+                            >
+                              👉 {item.shortMeaning || item.explanation}
+                            </div>
+                          </div>
+
+                          {/* Structure */}
+                          {item.structure && (
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  color: 'var(--color-text-muted)',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                CẤU TRÚC:
+                              </div>
+                              <div
+                                style={{
+                                  fontFamily: 'var(--font-jp)',
+                                  fontSize: '0.95rem',
+                                  fontWeight: 600,
+                                  color: '#3b82f6',
+                                  marginTop: '3px',
+                                  background: 'rgba(59, 130, 246, 0.06)',
+                                  padding: '0.5rem 0.8rem',
+                                  borderRadius: '6px',
+                                }}
+                              >
+                                {item.structure}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Examples list */}
+                          {item.examples && item.examples.length > 0 && (
+                            <div
+                              style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  color: 'var(--color-text-muted)',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                VÍ DỤ MẪU ({item.examples.length}):
+                              </div>
+                              {item.examples.map((ex, exIdx) => (
                                 <div
                                   key={exIdx}
                                   style={{
-                                    background: 'var(--color-bg, #0f172a)',
+                                    background: 'rgba(255, 255, 255, 0.02)',
                                     border: '1px solid rgba(255, 255, 255, 0.06)',
                                     borderRadius: '8px',
                                     padding: '0.65rem 0.9rem',
@@ -1349,7 +1569,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                         color: 'var(--color-text)',
                                         lineHeight: 1.6,
                                       }}
-                                      dangerouslySetInnerHTML={{ __html: ex.jp_ruby || ex.jp }}
+                                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(ex.jp_ruby || ex.jp) }}
                                     />
                                     <button
                                       type="button"
@@ -1384,291 +1604,165 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               ))}
                             </div>
                           )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    /* Single Meaning Rendering */
-                    <>
-                      {/* Meaning */}
-                      <div
-                        style={{
-                          background: 'rgba(236, 72, 153, 0.08)',
-                          border: '1px solid rgba(236, 72, 153, 0.2)',
-                          borderRadius: '8px',
-                          padding: '0.65rem 1rem',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            color: '#ec4899',
-                            textTransform: 'uppercase',
-                          }}
-                        >
-                          Ý NGHĨA:
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '1.05rem',
-                            fontWeight: 700,
-                            color: 'var(--color-text)',
-                            marginTop: '2px',
-                          }}
-                        >
-                          👉 {item.shortMeaning || item.explanation}
-                        </div>
-                      </div>
-
-                      {/* Structure */}
-                      {item.structure && (
-                        <div>
-                          <div
-                            style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              color: 'var(--color-text-muted)',
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            CẤU TRÚC:
-                          </div>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-jp)',
-                              fontSize: '0.95rem',
-                              fontWeight: 600,
-                              color: '#3b82f6',
-                              marginTop: '3px',
-                              background: 'rgba(59, 130, 246, 0.06)',
-                              padding: '0.5rem 0.8rem',
-                              borderRadius: '6px',
-                            }}
-                          >
-                            {item.structure}
-                          </div>
-                        </div>
+                        </>
                       )}
 
-                      {/* Examples list */}
-                      {item.examples && item.examples.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
-                          <div
-                            style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              color: 'var(--color-text-muted)',
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            VÍ DỤ MẪU ({item.examples.length}):
-                          </div>
-                          {item.examples.map((ex, exIdx) => (
-                            <div
-                              key={exIdx}
-                              style={{
-                                background: 'rgba(255, 255, 255, 0.02)',
-                                border: '1px solid rgba(255, 255, 255, 0.06)',
-                                borderRadius: '8px',
-                                padding: '0.65rem 0.9rem',
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div
-                                  style={{
-                                    fontFamily: 'var(--font-jp)',
-                                    fontSize: '1rem',
-                                    fontWeight: 600,
-                                    color: 'var(--color-text)',
-                                    lineHeight: 1.6,
-                                  }}
-                                  dangerouslySetInnerHTML={{ __html: ex.jp_ruby || ex.jp }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => playAudio(ex.audio, ex.jp)}
-                                  style={{
-                                    background: playingAudioUrl === ex.audio ? '#3b82f6' : 'rgba(59, 130, 246, 0.12)',
-                                    border: 'none',
-                                    color: playingAudioUrl === ex.audio ? '#ffffff' : '#3b82f6',
-                                    borderRadius: '50%',
-                                    padding: '6px',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
-                                  }}
-                                  title="Nghe phát âm"
-                                >
-                                  <Volume2 size={15} />
-                                </button>
-                              </div>
-                              {ex.vi && (
-                                <div
-                                  style={{
-                                    fontSize: '0.85rem',
-                                    color: 'var(--color-text-secondary)',
-                                    marginTop: '3px',
-                                  }}
-                                >
-                                  {ex.vi}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                      {/* Notes / Usage */}
+                      {item.notes && (
+                        <div
+                          style={{
+                            fontSize: '0.86rem',
+                            color: 'var(--color-text-secondary)',
+                            lineHeight: 1.45,
+                            background: 'rgba(239, 68, 68, 0.05)',
+                            border: '1px solid rgba(239, 68, 68, 0.15)',
+                            borderRadius: '8px',
+                            padding: '0.6rem 0.85rem',
+                            whiteSpace: 'pre-line',
+                          }}
+                        >
+                          <b style={{ color: '#f87171' }}>⚠ Chú ý / Lưu ý:</b>
+                          <div style={{ marginTop: '2px' }}>{item.notes}</div>
                         </div>
                       )}
-                    </>
-                  )}
-
-                  {/* Notes / Usage */}
-                  {item.notes && (
-                    <div
-                      style={{
-                        fontSize: '0.86rem',
-                        color: 'var(--color-text-secondary)',
-                        lineHeight: 1.45,
-                        background: 'rgba(239, 68, 68, 0.05)',
-                        border: '1px solid rgba(239, 68, 68, 0.15)',
-                        borderRadius: '8px',
-                        padding: '0.6rem 0.85rem',
-                        whiteSpace: 'pre-line',
-                      }}
-                    >
-                      <b style={{ color: '#f87171' }}>⚠ Chú ý / Lưu ý:</b>
-                      <div style={{ marginTop: '2px' }}>{item.notes}</div>
                     </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Column 2: Sticky Table of Contents (Mục lục bài học) */}
-          <aside
-            style={{
-              position: 'sticky',
-              top: '80px',
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '14px',
-              padding: '1rem',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-              maxHeight: 'calc(100vh - 100px)',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.6rem',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottom: '1px solid var(--color-border)',
-                paddingBottom: '0.6rem',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ListTree size={16} style={{ color: '#ec4899' }} />
-                <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text)' }}>Mục Lục Bài</span>
+                  )
+                })}
               </div>
-              <span
+
+              {/* Column 2: Sticky Table of Contents (Mục lục bài học) */}
+              <aside
                 style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  color: 'var(--color-text-muted)',
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  padding: '2px 8px',
-                  borderRadius: '999px',
+                  position: 'sticky',
+                  top: '80px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '14px',
+                  padding: '1rem',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+                  maxHeight: 'calc(100vh - 100px)',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem',
                 }}
               >
-                {grammars.length} mẫu
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              {grammars.map((item, idx) => {
-                const isSaved = isGrammarSaved(item)
-                const isItemActive = activePointId === item.id
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setActivePointId(item.id)
-                      const el = document.getElementById(`grammar-point-${item.id}`)
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      }
-                    }}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    borderBottom: '1px solid var(--color-border)',
+                    paddingBottom: '0.6rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ListTree size={16} style={{ color: 'var(--color-accent)' }} />
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text)' }}>
+                      Mục Lục Bài
+                    </span>
+                  </div>
+                  <span
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '6px 8px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: isItemActive ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
-                      color: isItemActive ? '#ec4899' : 'var(--color-text)',
-                      cursor: 'pointer',
-                      fontSize: '0.82rem',
-                      fontWeight: isItemActive ? 700 : 500,
-                      transition: 'all 0.15s ease',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: 'var(--color-text-muted)',
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
                     }}
-                    onMouseEnter={(e) => {
-                      if (!isItemActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isItemActive) e.currentTarget.style.background = 'transparent'
-                    }}
-                    title={item.shortMeaning || item.pattern}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: '6px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          color: isItemActive ? '#ec4899' : 'var(--color-text-muted)',
-                          fontWeight: 700,
-                          minWidth: '16px',
+                    {grammars.length} mẫu
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {grammars.map((item, idx) => {
+                    const isSaved = isGrammarSaved(item)
+                    const isItemActive = activePointId === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setActivePointId(item.id)
+                          const el = document.getElementById(`grammar-point-${item.id}`)
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }
                         }}
-                      >
-                        {idx + 1}.
-                      </span>
-                      <span
                         style={{
-                          fontFamily: 'var(--font-jp)',
-                          fontWeight: 700,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '6px 8px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: isItemActive ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
+                          color: isItemActive ? 'var(--color-accent)' : 'var(--color-text)',
+                          cursor: 'pointer',
+                          fontSize: '0.82rem',
+                          fontWeight: isItemActive ? 700 : 500,
+                          transition: 'all 0.15s ease',
                         }}
+                        onMouseEnter={(e) => {
+                          if (!isItemActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isItemActive) e.currentTarget.style.background = 'transparent'
+                        }}
+                        title={item.shortMeaning || item.pattern}
                       >
-                        {item.pattern}
-                      </span>
-                    </div>
-                    {isSaved && (
-                      <span title="Đã lưu vào SRS" style={{ color: '#10b981', display: 'inline-flex', flexShrink: 0 }}>
-                        <Check size={13} />
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            gap: '6px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '0.75rem',
+                              color: isItemActive ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                              fontWeight: 700,
+                              minWidth: '16px',
+                            }}
+                          >
+                            {idx + 1}.
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-jp)',
+                              fontWeight: 700,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {item.pattern}
+                          </span>
+                        </div>
+                        {isSaved && (
+                          <span
+                            title="Đã lưu vào SRS"
+                            style={{ color: '#10b981', display: 'inline-flex', flexShrink: 0 }}
+                          >
+                            <Check size={13} />
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </aside>
             </div>
-          </aside>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

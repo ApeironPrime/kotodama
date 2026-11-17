@@ -1,3 +1,4 @@
+import { useReducedMotion } from '../../lib/useReducedMotion'
 import { useEffect, useRef, useState, useCallback } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,7 +23,7 @@ interface ConstellationEdge {
 
 interface Props {
   kanji: string
-  components: Array<{ char: string; label: string }>   // upstream radical pieces
+  components: Array<{ char: string; label: string }> // upstream radical pieces
   descendants?: Array<{ char: string; label: string }> // derived kanji (Phả hệ nở rộng)
   onSelectKanji?: (k: string) => void
 }
@@ -44,12 +45,10 @@ function polar(cx: number, cy: number, r: number, angle: number): [number, numbe
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export function KanjiConstellationGraph({
-  kanji,
-  components,
-  descendants = [],
-  onSelectKanji,
-}: Props) {
+export function KanjiConstellationGraph({ kanji, components, descendants = [], onSelectKanji }: Props) {
+  const reducedMotion = useReducedMotion()
+  const sizeRef = useRef({ width: 360, height: 340 })
+  const wakeRef = useRef(() => {})
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nodesRef = useRef<ConstellationNode[]>([])
   const edgesRef = useRef<ConstellationEdge[]>([])
@@ -217,7 +216,7 @@ export function KanjiConstellationGraph({
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const { width: w, height: h } = canvas
+    const { width: w, height: h } = sizeRef.current
     ctx.clearRect(0, 0, w, h)
 
     const nodes = nodesRef.current
@@ -384,11 +383,22 @@ export function KanjiConstellationGraph({
       const w = Math.floor(parent.clientWidth || 360)
       const h = Math.min(Math.max(Math.floor(parent.clientHeight || 340), 280), 380)
       if (w > 0 && h > 0) {
-        if (canvas.width !== w || canvas.height !== h) {
-          canvas.width = w
-          canvas.height = h
-        }
+        const dpr = Math.min(window.devicePixelRatio || 1, 2)
+        sizeRef.current = { width: w, height: h }
+        canvas.width = Math.round(w * dpr)
+        canvas.height = Math.round(h * dpr)
+        canvas.style.width = `${w}px`
+        canvas.style.height = `${h}px`
+        canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
         buildGraph(w, h)
+        if (reducedMotion)
+          for (const node of nodesRef.current) {
+            node.x = node.targetX
+            node.y = node.targetY
+            node.vx = 0
+            node.vy = 0
+          }
+        wakeRef.current()
       }
     }
     applySizeAndBuild()
@@ -405,9 +415,19 @@ export function KanjiConstellationGraph({
 
     const tick = () => {
       draw()
-      animRef.current = requestAnimationFrame(tick)
+      const moving =
+        !reducedMotion &&
+        nodesRef.current.some(
+          (node) =>
+            Math.abs(node.x - node.targetX) + Math.abs(node.y - node.targetY) + Math.abs(node.vx) + Math.abs(node.vy) >
+            0.2
+        )
+      animRef.current = moving ? requestAnimationFrame(tick) : 0
     }
-    animRef.current = requestAnimationFrame(tick)
+    wakeRef.current = () => {
+      if (!animRef.current) animRef.current = requestAnimationFrame(tick)
+    }
+    wakeRef.current()
 
     return () => {
       if (ro) {
@@ -416,8 +436,10 @@ export function KanjiConstellationGraph({
         window.removeEventListener('resize', applySizeAndBuild)
       }
       cancelAnimationFrame(animRef.current)
+      animRef.current = 0
+      wakeRef.current = () => {}
     }
-  }, [buildGraph, draw])
+  }, [buildGraph, draw, reducedMotion])
 
   // ─── Mouse handlers ────────────────────────────────────────────────────────
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -425,9 +447,11 @@ export function KanjiConstellationGraph({
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    wakeRef.current()
   }
   const handleMouseLeave = () => {
     mouseRef.current = { x: -999, y: -999 }
+    wakeRef.current()
   }
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current

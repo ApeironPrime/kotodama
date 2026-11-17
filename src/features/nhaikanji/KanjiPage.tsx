@@ -1,3 +1,4 @@
+import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Sparkles, Layers, BookOpen, ChevronLeft, ChevronRight, X } from 'lucide-react'
@@ -25,17 +26,18 @@ function getVisiblePages(currentPage: number, totalPages: number): (number | str
 export function KanjiPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebouncedValue(searchQuery)
   const [page, setPage] = useState(1)
   const [selectedKanji, setSelectedKanji] = useState<KanjiSummary | null>(null)
   const [sortBy, setSortBy] = useState<'default' | 'stroke_asc' | 'stroke_desc' | 'hanzi_az'>('default')
   const [limit, setLimit] = useState<number>(48)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['nhaikanji', 'kanjiList', selectedLevel, searchQuery, page, sortBy, limit],
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['nhaikanji', 'kanjiList', selectedLevel, debouncedSearchQuery, page, sortBy, limit],
     queryFn: () =>
       nhaikanjiApi.fetchKanjiList({
         level: selectedLevel,
-        query: searchQuery,
+        query: debouncedSearchQuery,
         page,
         limit,
         sort: sortBy,
@@ -68,6 +70,14 @@ export function KanjiPage() {
     }
   }
 
+  if (isError)
+    return (
+      <section className="ui-status-panel" role="alert">
+        <h1>Chưa tải được Hán tự</h1>
+        <p>Kiểm tra kết nối rồi thử lại.</p>
+        <Button onClick={() => void refetch()}>Thử lại</Button>
+      </section>
+    )
   return (
     <div className="nhaikanji-container">
       <PageHeader
@@ -122,11 +132,11 @@ export function KanjiPage() {
             <BookOpen size={14} className="text-emerald-500" /> Luyện viết nét tay
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
-          {data && (
-            <span style={{ fontWeight: 600 }}>
-              Tổng cộng: <b>{data.total}</b> chữ Hán
-            </span>
-          )}
+            {data && (
+              <span style={{ fontWeight: 600 }}>
+                Tổng cộng: <b>{data.total}</b> chữ Hán
+              </span>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Sắp xếp:</span>
               <select

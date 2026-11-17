@@ -1,3 +1,5 @@
+import { bootstrapTheme } from './lib/theme'
+import { PreferencesBootstrap } from './features/account/PreferencesBootstrap'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
@@ -6,6 +8,9 @@ import App from './App'
 import { AuthProvider } from './features/auth/AuthProvider'
 import './index.css'
 import './styles/home-washi.css'
+import './styles/reliability.css'
+
+bootstrapTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +32,7 @@ ReactDOM.createRoot(root).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <PreferencesBootstrap />
           <App />
         </AuthProvider>
       </QueryClientProvider>

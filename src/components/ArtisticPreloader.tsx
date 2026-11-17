@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { sumiAudio } from '../features/dictionary/sumiAudio'
 import '../styles/preloader.css'
 
 interface ArtisticPreloaderProps {
@@ -12,6 +11,11 @@ export default function ArtisticPreloader({ onLoaded }: ArtisticPreloaderProps) 
   const [isUnmounted, setIsUnmounted] = useState(false)
 
   useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setIsUnmounted(true)
+      onLoaded?.()
+      return
+    }
     try {
       if (sessionStorage.getItem('kotodama_preloaded')) {
         setIsUnmounted(true)
@@ -27,12 +31,6 @@ export default function ArtisticPreloader({ onLoaded }: ArtisticPreloaderProps) 
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
-    // Sound effect upon droplet impact
-    sumiAudio.initOnGesture()
-    const soundTimer = setTimeout(() => {
-      sumiAudio.playSuikinkutsu()
-    }, 450)
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const size = 440
@@ -122,12 +120,12 @@ export default function ArtisticPreloader({ onLoaded }: ArtisticPreloaderProps) 
       }
 
       // Transition out once min animation time (1.6s) and assets are ready
-      if (elapsed >= 1.6 && assetsReady) {
+      if (elapsed >= 0.45 && assetsReady) {
         setIsExiting(true)
         setTimeout(() => {
           setIsUnmounted(true)
           onLoaded?.()
-        }, 800)
+        }, 150)
         return
       }
 
@@ -137,7 +135,6 @@ export default function ArtisticPreloader({ onLoaded }: ArtisticPreloaderProps) 
     reqId = requestAnimationFrame(render)
 
     return () => {
-      clearTimeout(soundTimer)
       clearTimeout(maxSafetyTimer)
       if (reqId) cancelAnimationFrame(reqId)
     }
@@ -146,10 +143,7 @@ export default function ArtisticPreloader({ onLoaded }: ArtisticPreloaderProps) 
   if (isUnmounted) return null
 
   return (
-    <aside
-      className={`artistic-preloader ${isExiting ? 'is-exiting' : ''}`}
-      aria-label="Khai mở không gian Kotodama"
-    >
+    <aside className={`artistic-preloader ${isExiting ? 'is-exiting' : ''}`} aria-label="Khai mở không gian Kotodama">
       <canvas ref={canvasRef} className="artistic-preloader__canvas" />
       <div className="artistic-preloader__meta" aria-hidden="true">
         <span className="artistic-preloader__kanji">言霊 · 和紙</span>

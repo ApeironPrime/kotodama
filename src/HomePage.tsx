@@ -152,7 +152,7 @@ export default function HomePage({
       hero.removeEventListener('pointerleave', resetPointer)
       if (frame) window.cancelAnimationFrame(frame)
     }
-  }, [])
+  }, [sound.enabled])
 
   return (
     <div className="showcase-home" ref={homeRef}>
@@ -261,8 +261,8 @@ export default function HomePage({
             ordinal="02  /  学びの書"
             title="Những trang đầu"
             description="Ba hành trình mẫu để bạn hình dung con đường học tiếng Nhật của mình."
-            action="Khám phá khóa học"
-            onClick={() => setPage('courses')}
+            action="Khám phá Từ điển"
+            onClick={() => setPage('dictionary')}
           />
           <div className="showcase-course-gallery__sound">
             <button
@@ -305,26 +305,9 @@ export default function HomePage({
                   <span className="showcase-course-plate__level">{course.level}</span>
                   <h3>{course.title}</h3>
                   <p>{course.description}</p>
-                  <div className="showcase-course-plate__progress-copy">
-                    <span>Nhịp học minh họa</span>
-                    <span>
-                      {course.chapter} / {course.total} chặng
-                    </span>
-                  </div>
-                  <div className="showcase-course-plate__progress">
-                    <progress
-                      value={course.chapter}
-                      max={course.total}
-                      aria-label={`Tiến độ minh họa: ${course.chapter} trên ${course.total} chặng`}
-                    />
-                    <span
-                      className="showcase-course-plate__brush"
-                      aria-hidden="true"
-                      style={{ width: `${(course.chapter / course.total) * 100}%` }}
-                    />
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setPage('courses')}>
-                    Xem hành trình <ArrowRight aria-hidden="true" size={15} />
+                  <p className="showcase-course-plate__progress-copy">Lộ trình tham khảo · Đang chuẩn bị</p>
+                  <Button variant="ghost" size="sm" disabled>
+                    Sắp ra mắt
                   </Button>
                 </div>
               </article>
@@ -569,11 +552,7 @@ function SectionHeader({
           }
 
           // Header micro tremor
-          gsap.fromTo(
-            header,
-            { y: 1.5 },
-            { y: 0, duration: 0.12, ease: 'elastic.out(1.2, 0.3)' }
-          )
+          gsap.fromTo(header, { y: 1.5 }, { y: 0, duration: 0.12, ease: 'elastic.out(1.2, 0.3)' })
 
           // 3. Mechanical Overshoot Rebound (Nảy nhẹ 1.2px rồi mới nằm im!)
           tl.to(hanko, {

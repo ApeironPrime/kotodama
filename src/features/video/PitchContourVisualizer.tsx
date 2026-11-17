@@ -153,7 +153,7 @@ export default function PitchContourVisualizer({
       <div style={{ position: 'relative', width: '100%', overflowX: 'auto' }}>
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          style={{ width: '100%', height: 'auto', display: 'block', minWidth: '400px' }}
+          style={{ width: '100%', height: 'auto', display: 'block', minWidth: '0' }}
         >
           {/* Background grid lines */}
           <line
@@ -265,6 +265,13 @@ export default function PitchContourVisualizer({
                   fill="#06b6d4"
                   opacity="0.8"
                   style={{ cursor: 'pointer' }}
+                  tabIndex={0}
+                  role="img"
+                  aria-label={`Cao độ tại ${(pt.timeMs / 1000).toFixed(1)} giây: ${(pt.f0Hz || 0).toFixed(1)} Hz`}
+                  onFocus={() =>
+                    setHoveredPoint({ label: 'Cao độ', timeMs: pt.timeMs, f0Hz: pt.f0Hz || 0, semitone, x, y })
+                  }
+                  onBlur={() => setHoveredPoint(null)}
                   onMouseEnter={() =>
                     setHoveredPoint({
                       label: 'Mẫu',
@@ -297,6 +304,13 @@ export default function PitchContourVisualizer({
                   fill="#ec4899"
                   opacity="0.85"
                   style={{ cursor: 'pointer' }}
+                  tabIndex={0}
+                  role="img"
+                  aria-label={`Cao độ tại ${(pt.timeMs / 1000).toFixed(1)} giây: ${(pt.f0Hz || 0).toFixed(1)} Hz`}
+                  onFocus={() =>
+                    setHoveredPoint({ label: 'Cao độ', timeMs: pt.timeMs, f0Hz: pt.f0Hz || 0, semitone, x, y })
+                  }
+                  onBlur={() => setHoveredPoint(null)}
                   onMouseEnter={() =>
                     setHoveredPoint({
                       label: 'Bạn',
@@ -321,7 +335,7 @@ export default function PitchContourVisualizer({
               left: `${(hoveredPoint.x / WIDTH) * 100}%`,
               top: `${(hoveredPoint.y / HEIGHT) * 100}%`,
               transform: 'translate(-50%, -120%)',
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--color-bg-elevated)',
               border: '1px solid var(--color-border)',
               borderRadius: '6px',
               padding: '4px 8px',

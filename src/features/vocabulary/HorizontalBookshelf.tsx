@@ -75,7 +75,7 @@ export function HorizontalBookshelf({ trackTitle, items, onSelectCourse, onOpenD
 
   // Show up to 6 companion books in the horizontal track to keep performance lightning fast
   const displayedItems = items.slice(0, 6)
-  const hasMore = items.length > 4
+  const hasMore = items.length > 6
 
   return (
     <div className="curriculum-horizontal-shelf-wrap">
@@ -136,7 +136,7 @@ export function HorizontalBookshelf({ trackTitle, items, onSelectCourse, onOpenD
       >
         <div className="curriculum-horizontal-shelf-list" role="list">
           {displayedItems.map(({ course, meta }) => (
-            <div key={course.course_code} className="curriculum-horizontal-shelf-item">
+            <div key={course.course_code} className="curriculum-horizontal-shelf-item" role="listitem">
               <TactileWatojiCard
                 course={course}
                 meta={meta}
@@ -151,7 +151,7 @@ export function HorizontalBookshelf({ trackTitle, items, onSelectCourse, onOpenD
 
           {/* End of Shelf: Expand Library Card */}
           {hasMore && (
-            <div className="curriculum-horizontal-shelf-item">
+            <div className="curriculum-horizontal-shelf-item" role="listitem">
               <button
                 type="button"
                 className="curriculum-expand-shelf-card"

@@ -2123,7 +2123,9 @@ html.lenis:has(.showcase-home) {
   }
 }
 
- .showcase-home .showcase-section::after { display: none !important; }
+.showcase-home .showcase-section::after {
+  display: none !important;
+}
 .showcase-section__hanko-wrapper {
   position: absolute;
   top: 0.15rem;

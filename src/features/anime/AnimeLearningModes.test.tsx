@@ -32,10 +32,18 @@ afterEach(() => {
 })
 
 describe('Anime learning practice', () => {
+  it('advances one sentence even when a round contains more than one sentence', () => {
+    render(<AnimeLearningPractice {...baseProps} mode="listening" />)
+    fireEvent.click(screen.getByRole('button', { name: '2' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Câu tiếp theo' }))
+    expect(baseProps.onChooseCue).toHaveBeenCalledWith(cues[1])
+  })
   it('hides the Japanese answer for listening and checks normalized transcription', () => {
     render(<AnimeLearningPractice {...baseProps} mode="listening" />)
     expect(screen.queryByText(cues[0].ja || '')).toBeNull()
-    fireEvent.change(screen.getByLabelText('Chép lại câu bạn nghe được'), { target: { value: '授業の前に予習をします' } })
+    fireEvent.change(screen.getByLabelText('Chép lại câu bạn nghe được'), {
+      target: { value: '授業の前に予習をします' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra' }))
     expect(screen.getByRole('status').textContent).toContain('Chính xác!')
     fireEvent.click(screen.getByRole('button', { name: 'Câu tiếp' }))
@@ -70,12 +78,22 @@ describe('Anime learning practice', () => {
   it('opens the exercise picker and wires video visibility and completion controls', () => {
     const onToggleVideo = vi.fn()
     const onCompleteCue = vi.fn()
-    render(<AnimeLearningPractice {...baseProps} mode="exercise" pickerOpen onToggleVideo={onToggleVideo} onCompleteCue={onCompleteCue} />)
+    render(
+      <AnimeLearningPractice
+        {...baseProps}
+        mode="exercise"
+        pickerOpen
+        onToggleVideo={onToggleVideo}
+        onCompleteCue={onCompleteCue}
+      />
+    )
     expect(screen.getByRole('dialog', { name: 'Chọn chế độ học' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Chép chính tả' }))
     fireEvent.click(screen.getByRole('button', { name: 'Ẩn video' }))
     expect(onToggleVideo).toHaveBeenCalledTimes(1)
-    fireEvent.change(screen.getByLabelText('Chép lại câu bạn nghe được'), { target: { value: '授業の前に予習をします。' } })
+    fireEvent.change(screen.getByLabelText('Chép lại câu bạn nghe được'), {
+      target: { value: '授業の前に予習をします。' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra' }))
     expect(onCompleteCue).toHaveBeenCalledWith(1)
   })

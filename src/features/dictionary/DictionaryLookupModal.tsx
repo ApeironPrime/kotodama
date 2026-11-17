@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2, Volume2, X } from 'lucide-react'
 import { apiPaths, requestApi, type DictionarySearchResult } from '../../lib/apiClient'
@@ -13,7 +15,9 @@ function speakJapanese(text: string) {
 }
 
 export function DictionaryLookupModal({ keyword, onClose }: { keyword: string; onClose: () => void }) {
-  const { data, isLoading, isError } = useQuery<DictionarySearchResult>({
+  const dialogRef = useRef<HTMLElement>(null)
+  useDialogAccessibility(dialogRef, onClose)
+  const { data, isLoading, isError, refetch } = useQuery<DictionarySearchResult>({
     queryKey: ['dictionary-search', keyword],
     queryFn: () =>
       requestApi<DictionarySearchResult>({
@@ -30,6 +34,8 @@ export function DictionaryLookupModal({ keyword, onClose }: { keyword: string; o
     <div className="ui-modal-backdrop" role="presentation" onMouseDown={onClose} style={{ zIndex: 10000 }}>
       <section
         className="ui-modal"
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="Từ điển"
@@ -48,9 +54,16 @@ export function DictionaryLookupModal({ keyword, onClose }: { keyword: string; o
             <div
               style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}
             >
-              <Loader2 className="animate-spin" />
+              <Loader2 className="ui-spin" />
             </div>
-          ) : isError || !word ? (
+          ) : isError ? (
+            <div role="alert">
+              <p>Chưa tải được nghĩa của từ.</p>
+              <button type="button" onClick={() => void refetch()}>
+                Thử lại
+              </button>
+            </div>
+          ) : !word ? (
             <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
               Không tìm thấy kết quả cho từ này.
             </div>
@@ -69,11 +82,25 @@ export function DictionaryLookupModal({ keyword, onClose }: { keyword: string; o
                   <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                     {word.reading}
                   </div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1.2, color: 'var(--color-accent, #b82e2e)' }}>
+                  <div
+                    style={{
+                      fontSize: '2.5rem',
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                      color: 'var(--color-accent, #b82e2e)',
+                    }}
+                  >
                     {word.word}
                   </div>
                   {word.hanViet && (
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--home-ink, #292723)', marginTop: '0.25rem' }}>
+                    <div
+                      style={{
+                        fontSize: '1rem',
+                        fontWeight: 700,
+                        color: 'var(--home-ink, #292723)',
+                        marginTop: '0.25rem',
+                      }}
+                    >
                       {word.hanViet}
                     </div>
                   )}

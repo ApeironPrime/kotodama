@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { RefreshCw, ArrowUpRight } from 'lucide-react'
 import { sumiAudio } from './sumiAudio'
 
@@ -29,7 +29,15 @@ export interface WordOfTheDayItem {
  * Simulates ripples radiating through serene water / washi ink fibers,
  * replacing the generic software loudspeaker horn with authentic Japanese calligraphic resonance.
  */
-function InkSoundWaveIcon({ className, size = 22, isPlaying = false }: { className?: string; size?: number; isPlaying?: boolean }) {
+function InkSoundWaveIcon({
+  className,
+  size = 22,
+  isPlaying = false,
+}: {
+  className?: string
+  size?: number
+  isPlaying?: boolean
+}) {
   return (
     <svg
       width={size}
@@ -46,10 +54,7 @@ function InkSoundWaveIcon({ className, size = 22, isPlaying = false }: { classNa
       {/* Central Ink Sound Seed (Hạt âm mộc) */}
       <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" />
       {/* Harmonic sound ripples imitating water droplets in Suikinkutsu / ink waves */}
-      <path
-        d="M9 8.5C10.3 9.5 11 10.7 11 12C11 13.3 10.3 14.5 9 15.5"
-        className={isPlaying ? 'ink-wave-1' : ''}
-      />
+      <path d="M9 8.5C10.3 9.5 11 10.7 11 12C11 13.3 10.3 14.5 9 15.5" className={isPlaying ? 'ink-wave-1' : ''} />
       <path
         d="M13.5 6C15.8 7.8 17 9.8 17 12C17 14.2 15.8 16.2 13.5 18"
         strokeOpacity="0.85"
@@ -95,12 +100,19 @@ export const MASTER_WORDS_OF_THE_DAY: WordOfTheDayItem[] = [
       { base: 'しむべし。' },
     ],
     quoteAuthor: '千利休 · Sen no Rikyū (Trà đạo)',
-    quoteVi: 'Lòng người nơi cõi thế cũng là nhất kỳ nhất hội; hãy nâng niu và trân trọng từng khoảnh khắc lóe sáng của đời người.',
+    quoteVi:
+      'Lòng người nơi cõi thế cũng là nhất kỳ nhất hội; hãy nâng niu và trân trọng từng khoảnh khắc lóe sáng của đời người.',
     radicals: '一 (Nhất) · 其 (Kỳ) · 会 (Hội)',
     characters: [
       { char: '一', hanViet: 'NHẤT', strokes: 1, radical: 'Bộ Nhất (一)', meaning: 'Khởi đầu nguyên sơ của vạn vật' },
       { char: '期', hanViet: 'KỲ', strokes: 12, radical: 'Bộ Nguyệt (月)', meaning: 'Thời khắc, ước hẹn tuần hoàn' },
-      { char: '一', hanViet: 'NHẤT', strokes: 1, radical: 'Bộ Nhất (一)', meaning: 'Duy nhất, không lặp lại trong cõi thế' },
+      {
+        char: '一',
+        hanViet: 'NHẤT',
+        strokes: 1,
+        radical: 'Bộ Nhất (一)',
+        meaning: 'Duy nhất, không lặp lại trong cõi thế',
+      },
       { char: '会', hanViet: 'HỘI', strokes: 6, radical: 'Bộ Nhân (人)', meaning: 'Gặp gỡ, tao ngộ duyên lành' },
     ],
   },
@@ -133,9 +145,27 @@ export const MASTER_WORDS_OF_THE_DAY: WordOfTheDayItem[] = [
     radicals: '艸 (Thảo) · 鳥 (Điểu) · 風 (Phong) · 月 (Nguyệt)',
     characters: [
       { char: '花', hanViet: 'HOA', strokes: 7, radical: 'Bộ Thảo (艸)', meaning: 'Sắc hương rực rỡ của mùa xuân' },
-      { char: '鳥', hanViet: 'ĐIỂU', strokes: 11, radical: 'Bộ Điểu (鳥)', meaning: 'Cánh chim trời hạ tự do bay lượn' },
-      { char: '風', hanViet: 'PHONG', strokes: 9, radical: 'Bộ Phong (風)', meaning: 'Làn gió thu thanh mát xao xác lá' },
-      { char: '月', hanViet: 'NGUYỆT', strokes: 4, radical: 'Bộ Nguyệt (月)', meaning: 'Vầng trăng vằng vặc giữa đêm đông' },
+      {
+        char: '鳥',
+        hanViet: 'ĐIỂU',
+        strokes: 11,
+        radical: 'Bộ Điểu (鳥)',
+        meaning: 'Cánh chim trời hạ tự do bay lượn',
+      },
+      {
+        char: '風',
+        hanViet: 'PHONG',
+        strokes: 9,
+        radical: 'Bộ Phong (風)',
+        meaning: 'Làn gió thu thanh mát xao xác lá',
+      },
+      {
+        char: '月',
+        hanViet: 'NGUYỆT',
+        strokes: 4,
+        radical: 'Bộ Nguyệt (月)',
+        meaning: 'Vầng trăng vằng vặc giữa đêm đông',
+      },
     ],
   },
   {
@@ -161,11 +191,18 @@ export const MASTER_WORDS_OF_THE_DAY: WordOfTheDayItem[] = [
       { base: 'る。' },
     ],
     quoteAuthor: '日本の美意識 · Trực cảm mỹ học Zen',
-    quoteVi: 'Những thứ vẹn toàn chưa hẳn đã là cái đẹp tuyệt mỹ. Chính nơi chiếc chén rạn vỡ mới là nơi bóng trăng soi rọi tỏ tường nhất.',
+    quoteVi:
+      'Những thứ vẹn toàn chưa hẳn đã là cái đẹp tuyệt mỹ. Chính nơi chiếc chén rạn vỡ mới là nơi bóng trăng soi rọi tỏ tường nhất.',
     radicals: '亻(Nhân) · 宀 (Miên) · 叔 (Thúc)',
     characters: [
       { char: '侘', hanViet: 'SÁP', strokes: 8, radical: 'Bộ Nhân (亻)', meaning: 'Đơn sơ, đạm bạc, xa lánh xô bồ' },
-      { char: '寂', hanViet: 'TỊCH', strokes: 11, radical: 'Bộ Miên (宀)', meaning: 'Tĩnh lặng, lắng đọng cùng năm tháng' },
+      {
+        char: '寂',
+        hanViet: 'TỊCH',
+        strokes: 11,
+        radical: 'Bộ Miên (宀)',
+        meaning: 'Tĩnh lặng, lắng đọng cùng năm tháng',
+      },
     ],
   },
   {
@@ -196,7 +233,13 @@ export const MASTER_WORDS_OF_THE_DAY: WordOfTheDayItem[] = [
     characters: [
       { char: '木', hanViet: 'MỘC', strokes: 4, radical: 'Bộ Mộc (木)', meaning: 'Tán cây cổ thụ sum suê bóng mát' },
       { char: '漏', hanViet: 'LẬU', strokes: 14, radical: 'Bộ Thủy (氵)', meaning: 'Giọt rỉ, kẽ hở lọc ánh ban mai' },
-      { char: '日', hanViet: 'NHẬT', strokes: 4, radical: 'Bộ Nhật (日)', meaning: 'Vầng thái dương, nguồn sống tự nhiên' },
+      {
+        char: '日',
+        hanViet: 'NHẬT',
+        strokes: 4,
+        radical: 'Bộ Nhật (日)',
+        meaning: 'Vầng thái dương, nguồn sống tự nhiên',
+      },
     ],
   },
   {
@@ -228,7 +271,13 @@ export const MASTER_WORDS_OF_THE_DAY: WordOfTheDayItem[] = [
     quoteVi: 'Muốn thấu hiểu được lòng người, trước hết phải biết lắng nghe sự tĩnh lặng nơi đáy lòng của chính mình.',
     radicals: '心 (Tâm bộ)',
     characters: [
-      { char: '心', hanViet: 'TÂM', strokes: 4, radical: 'Bộ Tâm (心)', meaning: 'Tấm lòng, nguồn cội của mọi trực cảm' },
+      {
+        char: '心',
+        hanViet: 'TÂM',
+        strokes: 4,
+        radical: 'Bộ Tâm (心)',
+        meaning: 'Tấm lòng, nguồn cội của mọi trực cảm',
+      },
     ],
   },
   {
@@ -256,7 +305,13 @@ export const MASTER_WORDS_OF_THE_DAY: WordOfTheDayItem[] = [
     quoteVi: 'Tựa như giấc mộng giữa chốn phù hoa, dẫu mong manh ngắn ngủi nhưng vẫn trọn vẹn nét đẹp thiêng liêng.',
     radicals: '夕 (Tịch) · 艸 (Thảo) · 罒 (Võng)',
     characters: [
-      { char: '夢', hanViet: 'MỘNG', strokes: 13, radical: 'Bộ Tịch (夕)', meaning: 'Giấc mơ, ảo ảnh tuyệt mỹ của kiếp người' },
+      {
+        char: '夢',
+        hanViet: 'MỘNG',
+        strokes: 13,
+        radical: 'Bộ Tịch (夕)',
+        meaning: 'Giấc mơ, ảo ảnh tuyệt mỹ của kiếp người',
+      },
     ],
   },
 ]
@@ -277,6 +332,16 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
     }
   }
 
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  useEffect(
+    () => () => {
+      timersRef.current.forEach(clearTimeout)
+    },
+    []
+  )
+  const later = useCallback((callback: () => void, delay: number) => {
+    timersRef.current.push(setTimeout(callback, delay))
+  }, [])
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isHankoPressed, setIsHankoPressed] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -292,11 +357,11 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
       // ignore
     }
     setIsTransitioning(true)
-    setTimeout(() => {
+    later(() => {
       setCurrentIndex((prev) => (prev + 1) % MASTER_WORDS_OF_THE_DAY.length)
       setIsTransitioning(false)
     }, 180)
-  }, [])
+  }, [later])
 
   const handleHankoClick = useCallback(() => {
     try {
@@ -305,14 +370,14 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
       // ignore
     }
     setIsHankoPressed(true)
-    setTimeout(() => setIsHankoPressed(false), 360)
-  }, [])
+    later(() => setIsHankoPressed(false), 360)
+  }, [later])
 
   const handleSpeak = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       setIsSpeaking(true)
-      setTimeout(() => setIsSpeaking(false), 1400)
+      later(() => setIsSpeaking(false), 1400)
       if (onSpeak) {
         onSpeak(current.kanji)
       } else if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -325,7 +390,7 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
         window.speechSynthesis.speak(utterance)
       }
     },
-    [current.kanji, onSpeak]
+    [current.kanji, onSpeak, later]
   )
 
   const handleKanjiHover = useCallback(() => {
@@ -337,10 +402,7 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
   }, [])
 
   return (
-    <article
-      className="wotd-stage"
-      aria-label="Tác phẩm thư pháp - Từ của ngày"
-    >
+    <article className="wotd-stage" aria-label="Tác phẩm thư pháp - Từ của ngày">
       {/* Decorative Faint Guideline */}
       <div className="wotd-stage__guideline" aria-hidden="true" />
 
@@ -437,26 +499,28 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
         <div className="wotd-stage__secondary-col">
           <div className="wotd-stage__etymology-panel">
             <div className="wotd-stage__etymology-header">
-              <span className="wotd-stage__etymology-seal" aria-hidden="true">解</span>
+              <span className="wotd-stage__etymology-seal" aria-hidden="true">
+                解
+              </span>
               <span className="wotd-stage__etymology-title">BẢN ĐỒ CHIẾT TỰ</span>
-              <span className="wotd-stage__etymology-dot" aria-hidden="true">·</span>
+              <span className="wotd-stage__etymology-dot" aria-hidden="true">
+                ·
+              </span>
               <span className="wotd-stage__etymology-sub">Cấu trúc tự vị</span>
             </div>
 
             <div className="wotd-stage__etymology-list">
               {current.characters.map((ch, idx) => (
-                <div
-                  key={`${ch.char}-${idx}`}
-                  className="wotd-stage__etymology-item"
-                  onMouseEnter={handleKanjiHover}
-                >
+                <div key={`${ch.char}-${idx}`} className="wotd-stage__etymology-item" onMouseEnter={handleKanjiHover}>
                   <div className="wotd-stage__etymology-char-badge" title={`${ch.char} · ${ch.strokes} nét`}>
                     <span>{ch.char}</span>
                   </div>
                   <div className="wotd-stage__etymology-info">
                     <div className="wotd-stage__etymology-row-top">
                       <strong className="wotd-stage__etymology-hanviet">{ch.hanViet}</strong>
-                      <span className="wotd-stage__etymology-meta">{ch.strokes} nét · {ch.radical}</span>
+                      <span className="wotd-stage__etymology-meta">
+                        {ch.strokes} nét · {ch.radical}
+                      </span>
                     </div>
                     <p className="wotd-stage__etymology-meaning">{ch.meaning}</p>
                   </div>
@@ -478,7 +542,9 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
               onClick={() => onSearch(current.kanji)}
               title={`Tra cứu chi tiết chữ ${current.kanji}`}
             >
-              <span className="wotd-stage__explore-seal" aria-hidden="true">檢</span>
+              <span className="wotd-stage__explore-seal" aria-hidden="true">
+                檢
+              </span>
               <span className="wotd-stage__explore-text">Tra cứu từ này</span>
               <ArrowUpRight size={14} className="wotd-stage__explore-arrow" aria-hidden="true" />
             </button>

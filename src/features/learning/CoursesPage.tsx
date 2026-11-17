@@ -8,13 +8,13 @@ export function CoursesPage({ canManageCourses, onManage }: { canManageCourses: 
       <PageHeader
         eyebrow="KHÓA HỌC"
         title="Khám phá khóa học phù hợp với bạn"
-        description="Các khóa học sẽ xuất hiện khi nội dung được kết nối với hệ thống."
+        description="Các lộ trình có hướng dẫn đang được chuẩn bị."
         icon={BookOpen}
       />
       <section className="courses-empty">
         <EmptyState
-          title="Chưa có khóa học"
-          description="Nội dung khóa học sẽ được bổ sung khi dữ liệu thật sẵn sàng."
+          title="Khóa học sắp ra mắt"
+          description="Trong lúc chờ, bạn có thể khám phá Tủ sách tại trang Tra từ."
           action={
             canManageCourses ? (
               <Button variant="secondary" onClick={onManage}>

@@ -1,3 +1,4 @@
+import { useReducedMotion } from '../lib/useReducedMotion'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
@@ -119,13 +120,14 @@ function createProceduralDepthMap(image: HTMLImageElement): THREE.CanvasTexture 
 }
 
 export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: string; videoSrc?: string }) {
+  const reducedMotion = useReducedMotion()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const container = containerRef.current
     if (!container || typeof window === 'undefined') return
 
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    if (reducedMotion) return
 
     let isVisible = true
     let reqId = 0
@@ -376,7 +378,7 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
         container.removeChild(renderer.domElement)
       }
     }
-  }, [imageSrc, videoSrc])
+  }, [imageSrc, videoSrc, reducedMotion])
 
   return (
     <div

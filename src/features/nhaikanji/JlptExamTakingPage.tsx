@@ -1,3 +1,4 @@
+import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -38,6 +39,12 @@ interface JlptExamTakingPageProps {
   attemptId?: string | undefined
 }
 
+function pauseOtherAudio(current: HTMLAudioElement) {
+  document.querySelectorAll<HTMLAudioElement>('audio').forEach((audio) => {
+    if (audio !== current && !audio.paused) audio.pause()
+  })
+}
+
 function formatExamTitle(exam: { level?: string; year?: number | string; session?: number | string }) {
   const rawSession = String(exam.session ?? '').trim()
   const month =
@@ -61,6 +68,12 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
   const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1.0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  useEffect(
+    () => () => {
+      audioRef.current?.pause()
+    },
+    []
+  )
 
   const togglePlay = () => {
     if (!audioRef.current) return
@@ -116,6 +129,7 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
       <audio
         ref={audioRef}
         src={url}
+        onPlay={(event) => pauseOtherAudio(event.currentTarget)}
         onTimeUpdate={() => {
           if (audioRef.current) setCurrentTime(audioRef.current.currentTime)
         }}
@@ -158,6 +172,7 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flex: 1, minWidth: '120px' }}>
         <input
           type="range"
+          aria-label="Vị trí phát âm thanh"
           min={0}
           max={duration || 100}
           value={currentTime}
@@ -678,6 +693,12 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
 
   // Audio Player State for Main Exam Audio
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  useEffect(
+    () => () => {
+      audioRef.current?.pause()
+    },
+    []
+  )
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -960,6 +981,27 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
     if (timeLeft > 0 && timeLeft % 15 === 0) void saveDraft()
   }, [timeLeft, saveDraft])
 
+  if (examQuery.isError || attemptQuery.isError) {
+    return (
+      <section className="ui-status-panel" role="alert">
+        <h1>Chưa tải được bài thi</h1>
+        <p>Kiểm tra kết nối rồi thử lại. Bài làm đã lưu vẫn được giữ nguyên.</p>
+        <button
+          type="button"
+          onClick={() => {
+            void examQuery.refetch()
+            if (attemptId) void attemptQuery.refetch()
+          }}
+        >
+          Thử lại
+        </button>
+        <button type="button" onClick={onBack}>
+          Quay lại danh sách đề
+        </button>
+      </section>
+    )
+  }
+
   if (isLoading || !exam || (attemptId && attemptQuery.isLoading)) {
     return (
       <div className="nhaikanji-container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
@@ -1178,6 +1220,8 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
           <audio
             ref={audioRef}
             src={exam.audioUrl}
+            onPlay={(event) => pauseOtherAudio(event.currentTarget)}
+            onPause={() => setIsPlaying(false)}
             onTimeUpdate={() => {
               if (audioRef.current) setCurrentTime(audioRef.current.currentTime)
             }}
@@ -1239,6 +1283,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
             <div className="jlpt-audio-progress-row">
               <input
                 type="range"
+                aria-label="Vị trí phát âm thanh"
                 min={0}
                 max={duration || 100}
                 value={currentTime}
@@ -1368,7 +1413,10 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                       >
                         <span>📄 ĐOẠN VĂN / BÀI ĐỌC</span>
                       </div>
-                      <div className="jlpt-reading-passage" dangerouslySetInnerHTML={{ __html: part.passage }} />
+                      <div
+                        className="jlpt-reading-passage"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(part.passage) }}
+                      />
                     </div>
                   )}
 
@@ -1423,34 +1471,44 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                           }}
                         >
                           {/* Reading Passage attached to Question */}
-                          {q.passage && (!part.passage || !part.passage.includes(q.passage.replace(/<[^>]*>/g, '').trim().slice(0, 20))) && (
-                            <div
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.5rem',
-                                marginBottom: '0.5rem',
-                              }}
-                            >
+                          {q.passage &&
+                            (!part.passage ||
+                              !part.passage.includes(
+                                q.passage
+                                  .replace(/<[^>]*>/g, '')
+                                  .trim()
+                                  .slice(0, 20)
+                              )) && (
                               <div
                                 style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.375rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 800,
-                                  color: '#4338ca',
-                                  background: '#e0e7ff',
-                                  padding: '0.2rem 0.6rem',
-                                  borderRadius: '0.375rem',
-                                  width: 'fit-content',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '0.5rem',
+                                  marginBottom: '0.5rem',
                                 }}
                               >
-                                <span>📄 ĐOẠN VĂN / BÀI ĐỌC</span>
+                                <div
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.375rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    color: '#4338ca',
+                                    background: '#e0e7ff',
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: '0.375rem',
+                                    width: 'fit-content',
+                                  }}
+                                >
+                                  <span>📄 ĐOẠN VĂN / BÀI ĐỌC</span>
+                                </div>
+                                <div
+                                  className="jlpt-reading-passage"
+                                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(q.passage) }}
+                                />
                               </div>
-                              <div className="jlpt-reading-passage" dangerouslySetInnerHTML={{ __html: q.passage }} />
-                            </div>
-                          )}
+                            )}
 
                           {/* Question Header */}
                           <div
@@ -1487,7 +1545,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                   fontFamily: 'var(--font-serif, "Fraunces", serif)',
                                   lineHeight: 1.6,
                                 }}
-                                dangerouslySetInnerHTML={{ __html: questionText }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(questionText) }}
                               />
                             </div>
 

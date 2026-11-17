@@ -1,3 +1,7 @@
+import { usePersistentState } from '../../lib/usePersistentState'
+import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
+import { useDebouncedValue } from '../../lib/useDebouncedValue'
+import { useUrlState } from '../../lib/useUrlState'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -56,10 +60,11 @@ function speakJapanese(text: string) {
 
 export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // Navigation level: 'catalog' -> 'lessons' -> 'study'
-  const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null)
-  const [selectedUnitKey, setSelectedUnitKey] = useState<string | null>(null)
+  const [selectedCourseCode, setSelectedCourseCode] = useUrlState<string | null>('course', null)
+  const [selectedUnitKey, setSelectedUnitKey] = useUrlState<string | null>('unit', null)
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebouncedValue(searchQuery)
 
   // Full-screen archival drawer modal state (Kho lưu trữ văn thư cổ · 開架書庫)
   const [activeDrawerTrack, setActiveDrawerTrack] = useState<{
@@ -72,6 +77,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // In-Unit study mode: list (default) or flashcard
   const [studyMode, setStudyMode] = useState<'flashcard' | 'list'>('list')
   const [unitSearchQuery, setUnitSearchQuery] = useState('')
+  const debouncedUnitSearchQuery = useDebouncedValue(unitSearchQuery)
   const [unitPage, setUnitPage] = useState(1)
   const [cardContentMode, setCardContentMode] = useState<'word' | 'example'>('word')
 
@@ -79,9 +85,14 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const { user } = useAuth()
-  const [, setKnownWords] = useState<Set<number>>(new Set())
+  const [, setKnownWords] = usePersistentState<string[]>(
+    `kotodama.known:${user?.id ?? 'guest'}:${selectedCourseCode}:${selectedUnitKey}`,
+    []
+  )
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
   const [selectedDictWord, setSelectedDictWord] = useState<string | null>(null)
+  const dictionaryDialogRef = useRef<HTMLDivElement>(null)
+  useDialogAccessibility(dictionaryDialogRef, () => setSelectedDictWord(null), Boolean(selectedDictWord))
   const [authNotice, setAuthNotice] = useState<string | null>(null)
   const [srsError, setSrsError] = useState<string | null>(null)
   const queryClient = useQueryClient()
@@ -93,13 +104,13 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     isError: isCatalogError,
     refetch: refetchCatalog,
   } = useQuery({
-    queryKey: ['curriculum', 'catalog', selectedLevelFilter, searchQuery],
+    queryKey: ['curriculum', 'catalog', selectedLevelFilter, debouncedSearchQuery],
     queryFn: () => {
       const apiLevel =
         selectedLevelFilter === 'A1/A2' || selectedLevelFilter === 'ALL' ? undefined : selectedLevelFilter
       return curriculumApi.fetchCatalog({
         level: apiLevel,
-        q: searchQuery || undefined,
+        q: debouncedSearchQuery || undefined,
         page: 1,
         limit: 100,
       })
@@ -124,14 +135,26 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   })
 
   // 3. Fetch terms when a unit is selected for study (server-side pagination and search)
-  const { data: termsData, isLoading: isTermsLoading } = useQuery({
-    queryKey: ['curriculum', 'unit-terms', selectedCourseCode, selectedUnitKey, unitPage, unitSearchQuery.trim()],
+  const {
+    data: termsData,
+    isLoading: isTermsLoading,
+    isError: isTermsError,
+    refetch: refetchTerms,
+  } = useQuery({
+    queryKey: [
+      'curriculum',
+      'unit-terms',
+      selectedCourseCode,
+      selectedUnitKey,
+      unitPage,
+      debouncedUnitSearchQuery.trim(),
+    ],
     queryFn: () => {
       if (!selectedCourseCode || !selectedUnitKey) throw new Error('Yêu cầu khóa học và bài học')
       return curriculumApi.fetchUnitTerms(selectedCourseCode, selectedUnitKey, {
         page: unitPage,
         limit: 20,
-        q: unitSearchQuery.trim() || undefined,
+        q: debouncedUnitSearchQuery.trim() || undefined,
       })
     },
     enabled: Boolean(selectedCourseCode && selectedUnitKey),
@@ -419,7 +442,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         setIsFlipped((f) => !f)
       } else if (e.key === 'z' || e.key === 'Z') {
         e.preventDefault()
-        setKnownWords((prev) => new Set(prev).add(currentCard.id))
+        setKnownWords((prev) => [...new Set([...prev, currentCard.termId || String(currentCard.id)])])
         setIsFlipped(false)
         setCurrentIndex((i) => (i < words.length - 1 ? i + 1 : i))
       } else if (e.key === 'x' || e.key === 'X') {
@@ -437,7 +460,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedUnitKey, studyMode, currentCard, words.length, handleSaveWordToSrs, selectedDictWord])
+  }, [selectedUnitKey, studyMode, currentCard, words.length, handleSaveWordToSrs, selectedDictWord, setKnownWords])
 
   // =========================================================================
   // VIEW 1: CATALOG OVERVIEW (Duyệt theo cấp độ A1..N1, SE & phong cách giấy kem)
@@ -793,7 +816,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           <button
             type="button"
             className="curriculum-unit-view__back-btn"
-            onClick={() => setSelectedCourseCode(null)}
+            onClick={() => {
+              setSelectedCourseCode(null)
+              setSelectedUnitKey(null)
+            }}
             aria-label="Quay lại danh mục giáo trình"
           >
             <ArrowLeft size={16} aria-hidden="true" /> Quay lại danh mục giáo trình
@@ -1080,6 +1106,12 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
               <p style={{ margin: 0 }}>Đang tải danh sách từ vựng...</p>
             </div>
+          ) : isTermsError ? (
+            <RetryState
+              title="Chưa tải được từ vựng"
+              description="Kiểm tra kết nối rồi thử lại."
+              onRetry={() => void refetchTerms()}
+            />
           ) : words.length === 0 ? (
             <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
               <p style={{ margin: '0 0 1rem 0' }}>Không tìm thấy từ vựng nào khớp với từ khóa "{unitSearchQuery}".</p>
@@ -1471,7 +1503,12 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           aria-label="Chi tiết từ điển"
           onClick={() => setSelectedDictWord(null)}
         >
-          <div className="curriculum-modal-dialog" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="curriculum-modal-dialog"
+            ref={dictionaryDialogRef}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               className="curriculum-modal-close-btn"

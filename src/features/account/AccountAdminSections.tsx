@@ -26,11 +26,11 @@ export function UserListSection({
         </div>
         <div className="account-admin-table" role="table">
           <div className="account-admin-table__head" role="row">
-            <span>Người dùng</span>
-            <span>Vai trò</span>
-            <span>Trạng thái</span>
-            <span>Hoạt động gần nhất</span>
-            <span>Thao tác</span>
+            <span role="columnheader">Người dùng</span>
+            <span role="columnheader">Vai trò</span>
+            <span role="columnheader">Trạng thái</span>
+            <span role="columnheader">Hoạt động gần nhất</span>
+            <span role="columnheader">Thao tác</span>
           </div>
           {data.items.map((user) => (
             <UserRow key={user.id} user={user} onAction={onAction} />
@@ -127,18 +127,20 @@ export function Confirmation({
 function UserRow({ user, onAction }: { user: ManagedUser; onAction: (action: PendingAction) => void }) {
   return (
     <div className="account-admin-table__row" role="row">
-      <div>
+      <div role="cell">
         <strong>{user.name}</strong>
         <small>
           {user.email} · {user.emailVerified ? 'Email đã xác minh' : 'Chưa xác minh'}
         </small>
       </div>
-      <span className={`account-admin-badge is-${user.role}`}>{user.role}</span>
-      <span className={`account-admin-badge is-${user.status}`}>
+      <span role="cell" className={`account-admin-badge is-${user.role}`}>
+        {user.role}
+      </span>
+      <span role="cell" className={`account-admin-badge is-${user.status}`}>
         {user.status === 'active' ? 'Hoạt động' : 'Đã khóa'}
       </span>
-      <small>{user.lastActivityAt ? formatDate(user.lastActivityAt) : 'Chưa có'}</small>
-      <div className="account-admin-actions">
+      <small role="cell">{user.lastActivityAt ? formatDate(user.lastActivityAt) : 'Chưa có'}</small>
+      <div className="account-admin-actions" role="cell">
         <Button
           size="sm"
           variant="secondary"
@@ -159,6 +161,7 @@ function UserRow({ user, onAction }: { user: ManagedUser; onAction: (action: Pen
 }
 
 function formatDate(value: string) {
+  if (Number.isNaN(new Date(value).getTime())) return '—'
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
 }
 function formatAction(value: string) {

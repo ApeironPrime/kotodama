@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useRef,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type InputHTMLAttributes,
@@ -7,6 +8,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
+import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 
 function classes(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -163,8 +165,28 @@ export function Tabs({
           type="button"
           role="tab"
           aria-selected={tab.id === value}
+          tabIndex={tab.id === value ? 0 : -1}
           className={classes('ui-tabs__tab', tab.id === value && 'is-active')}
           onClick={() => onChange(tab.id)}
+          onKeyDown={(event) => {
+            const index = tabs.findIndex((item) => item.id === value)
+            const nextIndex =
+              event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? tabs.length - 1
+                  : event.key === 'ArrowRight'
+                    ? (index + 1) % tabs.length
+                    : event.key === 'ArrowLeft'
+                      ? (index + tabs.length - 1) % tabs.length
+                      : -1
+            if (nextIndex < 0) return
+            event.preventDefault()
+            const next = tabs[nextIndex]
+            if (next) onChange(next.id)
+            const buttons = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+            buttons?.[nextIndex]?.focus()
+          }}
         >
           {tab.label}
         </button>
@@ -174,9 +196,13 @@ export function Tabs({
 }
 
 export function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
+  const panelRef = useRef<HTMLElement>(null)
+  useDialogAccessibility(panelRef, onClose)
   return (
     <div className="ui-modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
+        ref={panelRef}
+        tabIndex={-1}
         className="ui-modal"
         role="dialog"
         aria-modal="true"
@@ -203,17 +229,7 @@ export function Badge({
   ...props
 }: HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
   return (
-    <span
-      className={classes(
-        'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium',
-        variant === 'primary' && 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300',
-        variant === 'secondary' && 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
-        variant === 'outline' && 'border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300',
-        variant === 'danger' && 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300',
-        className
-      )}
-      {...props}
-    >
+    <span className={classes('ui-badge', `ui-badge--${variant}`, className)} {...props}>
       {children}
     </span>
   )

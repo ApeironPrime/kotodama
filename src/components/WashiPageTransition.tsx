@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { sumiAudio } from '../features/dictionary/sumiAudio'
 import '../styles/page-transition.css'
 
 export default function WashiPageTransition() {
@@ -12,8 +11,8 @@ export default function WashiPageTransition() {
     const supportsViewTransition = typeof document !== 'undefined' && 'startViewTransition' in document
     if (supportsViewTransition) return
 
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
     setIsTransitioning(true)
-    sumiAudio.playWindSwoosh()
 
     const timer = setTimeout(() => {
       setIsTransitioning(false)
@@ -22,10 +21,5 @@ export default function WashiPageTransition() {
     return () => clearTimeout(timer)
   }, [location.pathname, location.search])
 
-  return (
-    <div
-      className={`washi-mist-overlay ${isTransitioning ? 'is-active' : ''}`}
-      aria-hidden="true"
-    />
-  )
+  return <div className={`washi-mist-overlay ${isTransitioning ? 'is-active' : ''}`} aria-hidden="true" />
 }

@@ -32,7 +32,19 @@
     cursor: not-allowed !important;
   }
 
-  html.has-brush-cursor :is(.kanji-canvas, .kanji-canvas canvas) {
+  html.has-brush-cursor .curriculum-horizontal-shelf-track,
+  html.has-brush-cursor .curriculum-horizontal-shelf-track * {
+    cursor: grab !important;
+  }
+  html.has-brush-cursor .curriculum-horizontal-shelf-track.is-dragging,
+  html.has-brush-cursor .curriculum-horizontal-shelf-track.is-dragging * {
+    cursor: grabbing !important;
+  }
+  html.has-brush-cursor :is(input[type='range'], select, summary) {
+    cursor: pointer !important;
+  }
+
+  html.has-brush-cursor :is(.kanji-canvas, .kanji-canvas canvas, .shodo-canvas-draw) {
     cursor: crosshair !important;
   }
 }

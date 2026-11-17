@@ -1,3 +1,4 @@
+import { useUrlState } from '../../lib/useUrlState'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -59,13 +60,14 @@ function sectionLabel(exam: JlptExamSummary) {
 
 export function JlptPage() {
   const { user } = useAuth()
-  const [selectedLevel, setSelectedLevel] = useState<string | null>(null)
-  const [selectedPaper, setSelectedPaper] = useState<string | null>(null)
+  const [selectedLevel, setSelectedLevel] = useUrlState<string | null>('level', null, ['N5', 'N4', 'N3', 'N2', 'N1'])
+  const [selectedPaper, setSelectedPaper] = useUrlState<string | null>('paper', null)
   const [launch, setLaunch] = useState<LaunchState | null>(null)
   const [query, setQuery] = useState('')
   const [yearFilter, setYearFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'not-started' | 'in-progress' | 'completed'>('all')
-  const [answerMode, setAnswerMode] = useState(false)
+  const [launchingId, setLaunchingId] = useState<string | null>(null)
+  const [launchError, setLaunchError] = useState<string | null>(null)
 
   const examQuery = useQuery({
     queryKey: ['jlpt-exams', selectedLevel],
@@ -88,9 +90,18 @@ export function JlptPage() {
   }, [attemptsQuery.data])
 
   const launchExam = async (exam: JlptExamSummary) => {
-    const attempt = await startJlptAttempt(exam.id, selectedLevel || 'N3', user?.id, exam.timeLimit)
-    setLaunch({ examId: exam.id, mode: 'exam', attemptId: attempt.id })
-    void attemptsQuery.refetch()
+    if (launchingId) return
+    setLaunchingId(exam.id)
+    setLaunchError(null)
+    try {
+      const attempt = await startJlptAttempt(exam.id, selectedLevel || 'N3', user?.id, exam.timeLimit)
+      setLaunch({ examId: exam.id, mode: 'exam', attemptId: attempt.id })
+      void attemptsQuery.refetch()
+    } catch {
+      setLaunchError('Không thể mở bài thi. Hãy thử lại.')
+    } finally {
+      setLaunchingId(null)
+    }
   }
 
   const papers = useMemo(() => {
@@ -151,7 +162,7 @@ export function JlptPage() {
 
   if (!selectedLevel) {
     return (
-      <main className="jlpt-page jlpt-level-page">
+      <section className="jlpt-page jlpt-level-page">
         <header className="jlpt-level-page__heading">
           <span>
             <GraduationCap size={22} aria-hidden="true" /> Luyện thi JLPT
@@ -187,14 +198,14 @@ export function JlptPage() {
           </div>
           <Badge variant="secondary">Sắp mở</Badge>
         </article>
-      </main>
+      </section>
     )
   }
 
   const representative = currentPaper[0]
   if (selectedPaper && representative) {
     return (
-      <main className="jlpt-page">
+      <section className="jlpt-page">
         <section className="jlpt-paper-picker">
           <button type="button" className="jlpt-back-button" onClick={() => setSelectedPaper(null)}>
             <ArrowLeft size={17} /> Quay lại danh sách kỳ đề
@@ -207,6 +218,7 @@ export function JlptPage() {
               được hiển thị khi có dữ liệu.
             </p>
           </header>
+          {launchError && <p role="alert">{launchError}</p>}
           <div className="jlpt-paper-picker__grid">
             {currentPaper.map((exam) => (
               <article className="jlpt-paper-option jlpt-exam-card" key={exam.id}>
@@ -294,7 +306,7 @@ export function JlptPage() {
                             <FileText size={16} /> Tiếp tục
                           </Button>
                         ) : (
-                          <Button size="sm" onClick={() => void launchExam(exam)}>
+                          <Button size="sm" disabled={Boolean(launchingId)} onClick={() => void launchExam(exam)}>
                             <FileText size={16} />{' '}
                             {completed
                               ? exam.isFullMock || exam.section === 'full_mock'
@@ -313,12 +325,12 @@ export function JlptPage() {
             ))}
           </div>
         </section>
-      </main>
+      </section>
     )
   }
 
   return (
-    <main className="jlpt-page jlpt-paper-list-page">
+    <section className="jlpt-page jlpt-paper-list-page">
       <button type="button" className="jlpt-back-button" onClick={() => setSelectedLevel(null)}>
         <ArrowLeft size={17} /> Luyện thi JLPT
       </button>
@@ -328,9 +340,6 @@ export function JlptPage() {
           <h1>{selectedLevel}</h1>
           <p>Luyện đề theo kỳ để chuẩn bị nhịp làm bài trước khi vào phòng thi.</p>
         </div>
-        <Button variant={answerMode ? 'secondary' : 'primary'} onClick={() => setAnswerMode((value) => !value)}>
-          <BookOpenCheck size={17} /> {answerMode ? 'Quay lại làm đề' : 'Học đáp án các kỳ đề'}
-        </Button>
       </header>
 
       <section className="jlpt-paper-filters" aria-label="Lọc kỳ đề">
@@ -412,9 +421,7 @@ export function JlptPage() {
                       <strong>
                         {session.label} — tháng {session.month}
                       </strong>
-                      <small>
-                        {answerMode ? 'Mở lời giải và đáp án' : `${exam.questionCount} câu · ${sectionLabel(exam)}`}
-                      </small>
+                      <small>{`${exam.questionCount} câu · ${sectionLabel(exam)}`}</small>
                       <em>
                         {attemptsByExam.has(exam.id)
                           ? `${attemptsByExam.get(exam.id)?.[0]?.status === 'in_progress' ? 'Đang làm · ' : 'Đã làm · '}`
@@ -446,7 +453,7 @@ export function JlptPage() {
           </p>
         </section>
       )}
-    </main>
+    </section>
   )
 }
 
