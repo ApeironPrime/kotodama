@@ -152,6 +152,6 @@ textarea::placeholder,
 .ui-input::placeholder,
 .ui-textarea::placeholder,
 .curriculum-unit-search__input::placeholder {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   opacity: 1;
 }
