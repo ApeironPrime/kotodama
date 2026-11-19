@@ -422,7 +422,9 @@ function readBrowserCookie(name: string) {
 
 /** Runs a typed request, unwraps `{ data }`, and can merge an in-flight duplicate. */
 export function requestApi<T>(config: ApiRequestConfig): Promise<T> {
-  const { dedupeKey, skipSessionExpiry, ...axiosConfig } = config
+  const { dedupeKey: requestedDedupeKey, skipSessionExpiry, ...axiosConfig } = config
+  // A caller-owned signal must not cancel a request shared by another lifecycle.
+  const dedupeKey = axiosConfig.signal ? undefined : requestedDedupeKey
   if (dedupeKey) {
     const pending = pendingRequests.get(dedupeKey) as Promise<T> | undefined
     if (pending) return pending

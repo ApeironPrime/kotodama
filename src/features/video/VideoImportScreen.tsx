@@ -131,9 +131,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
               {uploading ? 'Đang nhập…' : 'Nhập YouTube'}
             </Button>
           </div>
-          <p className="video-import-showcase__hint">
-            Local: video được tải riêng bằng yt-dlp, rồi xử lý transcript như tệp cục bộ.
-          </p>
+          <p className="video-import-showcase__hint">Nhập liên kết YouTube để tạo bài học với phụ đề tương tác.</p>
         </div>
       ) : (
         <button

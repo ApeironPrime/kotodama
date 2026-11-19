@@ -1,5 +1,14 @@
 /* Kotodama design foundations. Component styles consume semantic tokens. */
 :root {
+  --color-danger-text: #a51d32;
+  --color-accent-text: var(--color-accent);
+  --color-surface: var(--color-bg-elevated);
+  --home-paper: var(--color-bg-canvas);
+  --home-paper-deep: var(--color-bg-subtle);
+  --home-ink: var(--color-text);
+  --home-ink-soft: var(--color-text-secondary);
+  --home-vermilion: var(--color-accent);
+
   color-scheme: light;
 
   /* Typography */

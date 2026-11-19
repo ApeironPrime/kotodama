@@ -1,34 +1,6 @@
 /* Shared functional surfaces follow the active theme. */
-:root {
-  --color-danger-text: #a51d32;
-  --color-surface: var(--color-bg-elevated);
-}
-.ui-button--secondary,
-.ui-icon-button {
-  background: var(--color-bg-subtle);
-}
-.ui-button--secondary:hover:not(:disabled),
-.ui-icon-button:hover:not(:disabled),
-.ui-button--ghost:hover:not(:disabled) {
-  background: var(--color-bg-hover);
-}
-.ui-input,
-.ui-textarea,
-.ui-select {
-  background-color: var(--color-bg-elevated);
-  color: var(--color-text);
-  border-color: var(--color-border-strong);
-}
-.ui-select {
-  color-scheme: inherit;
-}
-.ui-field__error,
-.ui-button--danger,
 .ui-error-text {
   color: var(--color-danger-text);
-}
-.ui-switch {
-  background: var(--color-border-strong);
 }
 .ui-badge {
   display: inline-flex;

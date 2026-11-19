@@ -30,10 +30,18 @@ import { useAuth } from '../auth/authContext'
 import { DictionaryWordDetail } from './DictionaryWordDetail'
 import { DictionarySentenceDetail } from './DictionarySentenceDetail'
 import { DictionaryWordOfTheDay } from './DictionaryWordOfTheDay'
+import { Link } from 'react-router-dom'
 
 const POPULAR_SEARCHES = ['学校', '先生', '桜', '儚い', '木漏れ日', 'もののあわれ', '幽玄', '勉強']
 
 const VocabularyPage = lazy(() => import('../vocabulary/VocabularyPage'))
+const BunpoPage = lazy(() => import('../nhaikanji/BunpoPage').then((module) => ({ default: module.BunpoPage })))
+const KanjiPage = lazy(() => import('../nhaikanji/KanjiPage').then((module) => ({ default: module.KanjiPage })))
+
+function grammarLink(item: BunpoItem) {
+  const params = new URLSearchParams({ tab: 'grammar', book: item.bookId, lesson: item.lessonId, point: item.id })
+  return `?${params}`
+}
 
 // 4 chế độ khám phá khi chưa nhập từ khóa tìm kiếm (Explore Modes)
 const EXPLORE_TABS = [
@@ -101,7 +109,12 @@ export default function DictionaryPage({
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
 
   // Kanji Search filters
-  const [kanjiLevel, setKanjiLevel] = useState<string>('ALL')
+  const [kanjiLevel, setKanjiLevel] = useState<string>('N5')
+  const [kanjiView, setKanjiView] = useUrlState<'grid' | 'ink'>(
+    'view',
+    typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches ? 'grid' : 'ink',
+    ['grid', 'ink']
+  )
   const [selectedKanjiModal, setSelectedKanjiModal] = useState<KanjiSummary | null>(null)
 
   // Fetch saved terms from server
@@ -217,6 +230,7 @@ export default function DictionaryPage({
   // Reset active result index when search term changes
   useEffect(() => {
     setSelectedResultIndex(0)
+    setSaveError(null)
   }, [searchTerm])
 
   // 1. Query từ điển chung VNJP
@@ -240,16 +254,16 @@ export default function DictionaryPage({
     isError: isKanjiError,
     refetch: retryKanji,
   } = useQuery({
-    queryKey: ['nhaikanji', 'kanjiList', searchTerm ? 'ALL' : kanjiLevel, searchTerm],
+    queryKey: ['nhaikanji', 'kanjiList', searchTerm ? 'ALL' : kanjiLevel, searchTerm, activeTab === 'all' ? 6 : 120],
     queryFn: () =>
       nhaikanjiApi.fetchKanjiList({
         level: searchTerm ? 'ALL' : kanjiLevel,
         query: searchTerm,
         page: 1,
-        limit: 3000,
+        limit: activeTab === 'all' ? 6 : 120,
         sort: 'default',
       }),
-    enabled: activeTab === 'kanji' || (Boolean(searchTerm) && activeTab === 'all'),
+    enabled: (activeTab === 'kanji' && kanjiView === 'ink') || (Boolean(searchTerm) && activeTab === 'all'),
     staleTime: 1000 * 60 * 10,
     placeholderData: (previousData) => previousData,
   })
@@ -261,13 +275,28 @@ export default function DictionaryPage({
     isError: isBunpoError,
     refetch: retryBunpo,
   } = useQuery({
-    queryKey: ['nhaikanji', 'bunpoList', searchTerm],
-    queryFn: () =>
-      nhaikanjiApi.fetchBunpoList({
+    queryKey: ['curriculum', 'dictionary-grammar', searchTerm],
+    queryFn: async () => {
+      const result = await srsApi.fetchCurriculumGrammar({
         query: searchTerm,
         limit: 30,
-      }),
-    enabled: activeTab === 'grammar' || (Boolean(searchTerm) && activeTab === 'all'),
+      })
+      return {
+        ...result,
+        items: result.items.map((item) => ({
+          id: item.id,
+          pattern: item.pattern,
+          structure: item.structure,
+          shortMeaning: item.shortMeaning,
+          bookId: item.curriculumCode,
+          bookName: item.curriculumCode.replaceAll('_', ' '),
+          lessonId: item.lessonId,
+          lessonTitle: item.lessonTitle,
+          level: item.level,
+        })),
+      }
+    },
+    enabled: Boolean(searchTerm) && (activeTab === 'grammar' || activeTab === 'all'),
     staleTime: 1000 * 60 * 10,
   })
 
@@ -333,12 +362,7 @@ export default function DictionaryPage({
 
   return (
     <section className="dictionary-page">
-      {saveError && (
-        <p role="alert" className="ui-error-text">
-          {saveError}
-        </p>
-      )}
-      {((activeTab === 'kanji' && isKanjiError) || (activeTab === 'grammar' && isBunpoError)) && (
+      {((activeTab === 'kanji' && kanjiView === 'ink' && isKanjiError) || (activeTab === 'grammar' && isBunpoError)) && (
         <div role="alert" className="ui-status-panel">
           <p>Chưa tải được nội dung. Hãy kiểm tra kết nối rồi thử lại.</p>
           <Button
@@ -429,6 +453,20 @@ export default function DictionaryPage({
         <div
           className="dictionary-tabs"
           role="tablist"
+          onKeyDown={(event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+            const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+            const current = tabs.indexOf(document.activeElement as HTMLButtonElement)
+            const next =
+              event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? tabs.length - 1
+                  : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+            event.preventDefault()
+            tabs[next]?.focus()
+            tabs[next]?.click()
+          }}
           aria-label={searchTerm ? 'Phạm vi kết quả tìm kiếm' : 'Loại nội dung từ điển'}
         >
           {searchTerm
@@ -441,6 +479,7 @@ export default function DictionaryPage({
                     type="button"
                     role="tab"
                     aria-selected={selected}
+                    tabIndex={selected ? 0 : -1}
                     className={selected ? 'is-active' : ''}
                     onClick={() => selectTab(tab.id)}
                   >
@@ -459,6 +498,7 @@ export default function DictionaryPage({
                     type="button"
                     role="tab"
                     aria-selected={selected}
+                    tabIndex={selected ? 0 : -1}
                     className={selected ? 'is-active' : ''}
                     onClick={() => selectTab(tab.id)}
                   >
@@ -476,7 +516,19 @@ export default function DictionaryPage({
             {/* 1. VIEW: TAB HÁN TỰ */}
             {activeTab === 'kanji' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {!kanjiListData && isKanjiListLoading ? (
+                <div className="dictionary-view-switch" role="group" aria-label="Cách xem Hán tự">
+                  <Button variant="secondary" aria-pressed={kanjiView === 'grid'} onClick={() => setKanjiView('grid')}>
+                    Danh sách
+                  </Button>
+                  <Button variant="secondary" aria-pressed={kanjiView === 'ink'} onClick={() => setKanjiView('ink')}>
+                    Thủy mặc
+                  </Button>
+                </div>
+                {kanjiView === 'grid' ? (
+                  <Suspense fallback={<p role="status">Đang mở kho Hán tự…</p>}>
+                    <KanjiPage query={searchTerm} />
+                  </Suspense>
+                ) : !kanjiListData && isKanjiListLoading ? (
                   <SumiDropOpening />
                 ) : kanjiListData && kanjiListData.items.length > 0 ? (
                   <SumiECanvas
@@ -491,18 +543,31 @@ export default function DictionaryPage({
                     description="Hãy thử tìm bằng chữ Hán khác, âm Hán Việt (như gian, nhật, học) hoặc chọn cấp độ khác."
                   />
                 )}
+                {kanjiView === 'ink' && (kanjiListData?.total ?? 0) > 120 && (
+                  <p>
+                    Đang hiển thị 120 chữ.{' '}
+                    <Button variant="ghost" onClick={() => setKanjiView('grid')}>
+                      Xem toàn bộ trong danh sách
+                    </Button>
+                  </p>
+                )}
               </div>
             )}
 
             {/* 2. VIEW: TAB NGỮ PHÁP */}
-            {activeTab === 'grammar' && (
+            {activeTab === 'grammar' && !searchTerm && (
+              <Suspense fallback={<p role="status">Đang mở thư viện ngữ pháp…</p>}>
+                <BunpoPage />
+              </Suspense>
+            )}
+            {activeTab === 'grammar' && Boolean(searchTerm) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {isBunpoLoading ? (
                   <div style={{ textAlign: 'center', padding: '4rem 0' }}>
                     <Loader2
                       size={36}
                       className="animate-spin"
-                      style={{ margin: '0 auto', color: 'var(--color-accent)' }}
+                      style={{ margin: '0 auto', color: 'var(--color-accent-text)' }}
                     />
                     <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Đang tra cứu ngữ pháp...</p>
                   </div>
@@ -533,7 +598,7 @@ export default function DictionaryPage({
                                   fontSize: '1.2rem',
                                   fontWeight: 800,
                                   fontFamily: 'var(--font-jp)',
-                                  color: 'var(--color-accent)',
+                                  color: 'var(--color-accent-text)',
                                 }}
                               >
                                 {b.pattern}
@@ -553,7 +618,7 @@ export default function DictionaryPage({
                                 fontWeight: 600,
                               }}
                             >
-                              👉 {b.shortMeaning}
+                              {b.shortMeaning}
                             </div>
                             {b.structure && (
                               <div
@@ -584,6 +649,9 @@ export default function DictionaryPage({
                             </span>
                           )}
                         </div>
+                        <Link to={grammarLink(b)}>
+                          Mở bài học <ArrowRight size={14} aria-hidden="true" />
+                        </Link>
                       </Card>
                     ))}
                   </div>
@@ -604,7 +672,7 @@ export default function DictionaryPage({
                     <Loader2
                       size={32}
                       className="animate-spin"
-                      style={{ margin: '0 auto', color: 'var(--color-accent)' }}
+                      style={{ margin: '0 auto', color: 'var(--color-accent-text)' }}
                     />
                     <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
                       Đang mở tủ sách Kotodama...
@@ -625,7 +693,7 @@ export default function DictionaryPage({
                     <Loader2
                       size={36}
                       className="animate-spin"
-                      style={{ margin: '0 auto', color: 'var(--color-accent)' }}
+                      style={{ margin: '0 auto', color: 'var(--color-accent-text)' }}
                     />
                     <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
                       Đang tra cứu từ điển VNJP...
@@ -691,19 +759,14 @@ export default function DictionaryPage({
                               </span>
                             </div>
                           </header>
-                          <nav
-                            className="dictionary-editorial-catalog__list"
-                            role="tablist"
-                            aria-orientation="vertical"
-                          >
+                          <nav className="dictionary-editorial-catalog__list" aria-label="Chọn kết quả tra cứu">
                             {results.map((item, index) => {
                               const isSelected = selectedResultIndex === index
                               return (
                                 <button
                                   key={`${item.id}-${item.word}-${index}`}
                                   type="button"
-                                  role="tab"
-                                  aria-selected={isSelected}
+                                  aria-pressed={isSelected}
                                   className={`dictionary-editorial-item ${isSelected ? 'is-active' : ''}`}
                                   onClick={() => setSelectedResultIndex(index)}
                                 >
@@ -729,6 +792,7 @@ export default function DictionaryPage({
                           word={primaryWord}
                           results={results}
                           isSaved={Boolean(savedSrs[primaryWord.word])}
+                          saveError={saveError}
                           onSave={() =>
                             handleSaveToSrs(primaryWord.word, primaryWord.meanings[0] || '', primaryWord.reading || '')
                           }
@@ -747,6 +811,14 @@ export default function DictionaryPage({
                               {kanjiListData.items.slice(0, 6).map((k) => (
                                 <article
                                   key={k.kanji}
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                      event.preventDefault()
+                                      setSelectedKanjiModal(k)
+                                    }
+                                  }}
                                   className="dictionary-kanji-card"
                                   style={{ cursor: 'pointer' }}
                                   onClick={() => setSelectedKanjiModal(k)}
@@ -796,7 +868,7 @@ export default function DictionaryPage({
                                         fontSize: '1.1rem',
                                         fontWeight: 800,
                                         fontFamily: 'var(--font-jp)',
-                                        color: 'var(--color-accent)',
+                                        color: 'var(--color-accent-text)',
                                       }}
                                     >
                                       {b.pattern}
@@ -813,6 +885,7 @@ export default function DictionaryPage({
                                   >
                                     {b.shortMeaning}
                                   </div>
+                                  <Link to={grammarLink(b)}>Mở bài học</Link>
                                 </div>
                               ))}
                             </div>

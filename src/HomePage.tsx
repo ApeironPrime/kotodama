@@ -1,7 +1,6 @@
 import { Button } from './components/ui'
 import HomeInkCanvas from './components/HomeInkCanvas'
 import HomeStory from './components/HomeStory'
-import HeroCreativeWebGL from './components/HeroCreativeWebGL'
 import { useHomeSmoothScroll } from './components/useHomeSmoothScroll'
 import { useInkSound } from './components/useInkSound'
 import { sumiAudio } from './features/dictionary/sumiAudio'
@@ -20,11 +19,12 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 const HERO_VIDEO = '/assets/kotodama-ink-journey.mp4'
 const HERO_POSTER = '/assets/ink-journey-poster.jpg'
 const HERO_START_FRAME = '/assets/ink-journey-start.jpg'
+const HeroCreativeWebGL = lazy(() => import('./components/HeroCreativeWebGL'))
 
 const COURSE_PREVIEWS = [
   {
@@ -76,6 +76,15 @@ export default function HomePage({
   const heroRef = useRef<HTMLElement>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
   const sound = useInkSound()
+  const [desktopArtwork, setDesktopArtwork] = useState(() => window.matchMedia?.('(min-width: 601px)').matches ?? true)
+  useEffect(() => {
+    const media = window.matchMedia?.('(min-width: 601px)')
+    if (!media) return
+    const sync = () => setDesktopArtwork(media.matches)
+    sync()
+    media.addEventListener('change', sync)
+    return () => media.removeEventListener('change', sync)
+  }, [])
   useHomeSmoothScroll()
   const visiblePlan = isAuthenticated ? plan : null
   const language = visiblePlan ? LEARNING_LANGUAGES[visiblePlan.language] : null
@@ -158,7 +167,11 @@ export default function HomePage({
     <div className="showcase-home" ref={homeRef}>
       <section className="showcase-hero" ref={heroRef}>
         <div className="showcase-hero__landscape" aria-hidden="true">
-          <HeroCreativeWebGL imageSrc={HERO_POSTER} videoSrc={HERO_VIDEO} />
+          {desktopArtwork && (
+            <Suspense fallback={<img src={HERO_POSTER} alt="" />}>
+              <HeroCreativeWebGL imageSrc={HERO_POSTER} videoSrc={HERO_VIDEO} />
+            </Suspense>
+          )}
         </div>
         <div className="showcase-hero__veil" aria-hidden="true" />
         <HomeInkCanvas />
@@ -176,7 +189,7 @@ export default function HomePage({
             </h1>
             <figure className="showcase-hero__mobile-art">
               <img src={HERO_POSTER} alt="Người lữ hành đi qua cầu giữa phong cảnh núi Phú Sĩ vẽ theo lối thủy mặc" />
-              <ArtworkVideo mobile />
+              {!desktopArtwork && <ArtworkVideo mobile />}
             </figure>
             <p className="showcase-hero__description">
               Tra từ sâu hơn, học qua video thực tế và xây dựng lộ trình phù hợp với mục tiêu của bạn.
@@ -270,7 +283,6 @@ export default function HomePage({
               aria-pressed={sound.enabled}
               onClick={() => {
                 sound.toggle()
-                sumiAudio.toggleMute()
                 if (!sound.enabled) {
                   sumiAudio.playSuikinkutsu()
                 }
@@ -306,8 +318,8 @@ export default function HomePage({
                   <h3>{course.title}</h3>
                   <p>{course.description}</p>
                   <p className="showcase-course-plate__progress-copy">Lộ trình tham khảo · Đang chuẩn bị</p>
-                  <Button variant="ghost" size="sm" disabled>
-                    Sắp ra mắt
+                  <Button variant="ghost" size="sm" onClick={() => setPage('vocabulary')}>
+                    Khám phá tủ sách
                   </Button>
                 </div>
               </article>

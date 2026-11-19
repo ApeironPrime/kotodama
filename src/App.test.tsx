@@ -40,6 +40,17 @@ function renderApp(path: string, auth: AuthContextValue = anonymousAuth) {
 }
 
 describe('application journeys', () => {
+  it('reaches the full grammar catalog through the legacy grammar route', async () => {
+    renderApp('/bunpo')
+    expect(
+      await screen.findByRole(
+        'heading',
+        { name: 'Kho Giáo Trình Ngữ Pháp (Shinkanzen Master & Mimikara)' },
+        { timeout: 8000 }
+      )
+    ).toBeTruthy()
+  })
+
   it('sends anonymous visitors from protected routes to login', async () => {
     renderApp('/on-tap')
 
@@ -48,7 +59,6 @@ describe('application journeys', () => {
 
   it('opens the login page from the home primary action', async () => {
     renderApp('/')
-
 
     fireEvent.click(await screen.findByRole('button', { name: /Đăng nhập để bắt đầu/i }, { timeout: 8000 }))
 

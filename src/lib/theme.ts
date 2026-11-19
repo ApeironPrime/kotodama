@@ -105,12 +105,22 @@ export function applyTheme(accentValue: unknown, backgroundValue: unknown) {
     typeof backgroundValue === 'string' && Object.hasOwn(backgrounds, backgroundValue)
       ? (backgroundValue as Background)
       : 'ivory'
-  const palette = accents[accent]
   const backgroundPalette = backgrounds[background]
+  const palette =
+    accent === 'white' && backgroundPalette.tone === 'light'
+      ? { base: '#514a40', hover: '#302b25', subtle: 'rgb(81 74 64 / 12%)' }
+      : accents[accent]
   document.documentElement.style.setProperty('--color-accent', palette.base)
+  document.documentElement.style.setProperty(
+    '--color-accent-text',
+    backgroundPalette.tone === 'dark' ? `color-mix(in srgb, ${palette.base} 65%, white)` : palette.base
+  )
   document.documentElement.style.setProperty('--color-accent-hover', palette.hover)
   document.documentElement.style.setProperty('--color-accent-subtle', palette.subtle)
-  document.documentElement.style.setProperty('--color-text-inverse', accent === 'white' ? '#1c1b20' : '#ffffff')
+  document.documentElement.style.setProperty(
+    '--color-text-inverse',
+    accent === 'white' && backgroundPalette.tone === 'dark' ? '#1c1b20' : '#ffffff'
+  )
   document.documentElement.style.setProperty('--color-bg-canvas', backgroundPalette.canvas)
   document.documentElement.style.setProperty('--color-bg-subtle', backgroundPalette.subtle)
   document.documentElement.style.setProperty('--color-bg-surface', backgroundPalette.surface)
@@ -142,6 +152,14 @@ export function applyTheme(accentValue: unknown, backgroundValue: unknown) {
           selected: 'rgb(255 255 255 / 8%)',
           overlay: 'rgb(13 13 23 / 92%)',
         }
+  const dark = backgroundPalette.tone === 'dark'
+  for (const [token, value] of Object.entries({
+    success: dark ? '#34d399' : '#08794b',
+    warning: dark ? '#fbbf24' : '#8a5700',
+    info: dark ? '#7dabff' : '#245cc4',
+  })) {
+    document.documentElement.style.setProperty(`--color-${token}`, value)
+  }
   document.documentElement.style.setProperty('--color-text', textPalette.text)
   document.documentElement.style.setProperty('--color-text-secondary', textPalette.secondary)
   document.documentElement.style.setProperty('--color-text-muted', textPalette.muted)
@@ -155,6 +173,8 @@ export function applyTheme(accentValue: unknown, backgroundValue: unknown) {
   document.documentElement.dataset['accent'] = accent
   document.documentElement.dataset['background'] = background
   document.documentElement.dataset['backgroundTone'] = backgroundPalette.tone
+  document.documentElement.dataset['theme'] = backgroundPalette.tone
+  document.documentElement.classList.toggle('dark', backgroundPalette.tone === 'dark')
 
   document.documentElement.style.colorScheme = backgroundPalette.tone
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', backgroundPalette.canvas)

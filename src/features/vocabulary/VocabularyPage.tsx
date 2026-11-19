@@ -955,7 +955,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
         {onGoToSrs && (
           <Button variant="secondary" size="sm" onClick={onGoToSrs}>
-            <Layers size={15} /> Mở Thẻ Ôn Tập Anki
+            <Layers size={15} /> Mở sổ tay ôn tập SRS
           </Button>
         )}
       </div>
@@ -996,7 +996,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       {authNotice && (
         <div className="curriculum-auth-banner" role="alert">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Info size={16} style={{ color: '#d97706' }} aria-hidden="true" />
+            <Info size={16} style={{ color: 'var(--color-warning)' }} aria-hidden="true" />
             <span>{authNotice}</span>
           </div>
           <button
@@ -1024,7 +1024,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           role="alert"
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Info size={16} style={{ color: '#dc2626' }} aria-hidden="true" />
+            <Info size={16} style={{ color: 'var(--color-danger-text)' }} aria-hidden="true" />
             <span>{srsError}</span>
           </div>
           <button
@@ -1152,7 +1152,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               {item.word}
                             </span>
                             {item.reading && (
-                              <span style={{ fontSize: '0.95rem', color: '#2563eb', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.95rem', color: 'var(--color-accent-text)', fontWeight: 600 }}>
                                 【{item.reading}】
                               </span>
                             )}
@@ -1381,14 +1381,14 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   }}
                   style={{
                     background: isCurrentCardSaved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                    border: isCurrentCardSaved ? '1px solid #10b981' : 'none',
+                    border: isCurrentCardSaved ? '1px solid var(--color-success)' : 'none',
                     borderRadius: '50%',
                     width: '36px',
                     height: '36px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: isCurrentCardSaved ? '#10b981' : '#ffffff',
+                    color: isCurrentCardSaved ? 'var(--color-success)' : '#ffffff',
                     cursor: 'pointer',
                   }}
                   title={isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'}
@@ -1454,7 +1454,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               )}
 
               {!isFlipped && (
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '1.5rem' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '1.5rem' }}>
                   Nhấn [Space] hoặc chạm để lật xem nghĩa
                 </div>
               )}
@@ -1462,11 +1462,11 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
             {/* Bottom Counter Bar */}
             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                 Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {unitTotalTerms || words.length} (Trang {unitPage}{' '}
                 / {totalPages})
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
                 Phím tắt: [Z] Đã thuộc • [X] Chưa thuộc • [Space] Lật • [R] Nghe • [C] Lưu SRS
               </span>
             </div>

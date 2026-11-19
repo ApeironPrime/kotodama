@@ -9,6 +9,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import DictionaryPage from './DictionaryPage'
 import { nhaikanjiApi } from '../nhaikanji/nhaikanjiApi'
 import { requestApi } from '../../lib/apiClient'
+import { srsApi } from '../srs/srsApi'
+
+vi.mock('../srs/srsApi', () => ({ srsApi: { fetchCurriculumGrammar: vi.fn(), fetchLessons: vi.fn() } }))
 
 vi.mock('../../lib/apiClient', () => ({
   apiPaths: {
@@ -37,12 +40,12 @@ vi.mock('../nhaikanji/nhaikanjiApi', () => ({
   },
 }))
 
-function renderWithClient(ui: React.ReactElement) {
+function renderWithClient(ui: React.ReactElement, path = '/') {
   const testClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <UrlStateProvider>
         <QueryClientProvider client={testClient}>{ui}</QueryClientProvider>
       </UrlStateProvider>
@@ -51,7 +54,63 @@ function renderWithClient(ui: React.ReactElement) {
 }
 
 describe('DictionaryPage Feature Suite', () => {
+  it('opens the real grammar catalog from the dictionary tab', async () => {
+    renderWithClient(<DictionaryPage inputRef={{ current: null }} />, '/tra-tu?tab=grammar')
+    expect(
+      await screen.findByRole('heading', { name: 'Kho Giáo Trình Ngữ Pháp (Shinkanzen Master & Mimikara)' })
+    ).toBeTruthy()
+    expect(srsApi.fetchCurriculumGrammar).not.toHaveBeenCalled()
+  })
+
+  it('opens the matching full lesson from grammar search results', async () => {
+    const item = {
+      id: 'mimikara_n3_5',
+      source: 'mimikara',
+      curriculumCode: 'mimikara_n3',
+      lessonId: '1',
+      lessonTitle: 'Bài 1',
+      title: 'みたいだ',
+      pattern: 'みたいだ',
+      structure: 'N + みたいだ',
+      shortMeaning: 'giống như',
+      explanation: 'Giải thích đầy đủ từ giáo trình',
+      level: 'N3',
+      examples: [],
+    }
+    vi.mocked(srsApi.fetchLessons).mockResolvedValue([{ lesson_id: '1', lesson_title: 'Bài 1', count: 1 }])
+    vi.mocked(srsApi.fetchCurriculumGrammar).mockImplementation(async (params) => ({
+      items: params.curriculum ? [{ ...item, id: 'other', pattern: '別の文法' }, item] : [item],
+      total: 2,
+      totalPages: 1,
+    }))
+    renderWithClient(<DictionaryPage inputRef={{ current: null }} />, '/tra-tu?tab=grammar&q=みたいだ')
+    const link = await screen.findByRole('link', { name: 'Mở bài học' })
+    expect(link.getAttribute('href')).toContain('point=mimikara_n3_5')
+    fireEvent.click(link)
+    await waitFor(() =>
+      expect(srsApi.fetchCurriculumGrammar).toHaveBeenCalledWith(
+        expect.objectContaining({ curriculum: 'mimikara_n3', lesson: '1' })
+      )
+    )
+    expect(await screen.findByText(/chạm để lật xem ý nghĩa/)).toBeTruthy()
+    expect(screen.queryByText('別の文法')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Lật thẻ ngữ pháp' }))
+    expect(await screen.findByText('Giải thích đầy đủ từ giáo trình')).toBeTruthy()
+  })
+
+  it('loads the paginated Kanji view without fetching the ink canvas dataset', async () => {
+    vi.mocked(nhaikanjiApi.fetchKanjiList).mockResolvedValue({ items: [], total: 0, totalPages: 0, page: 1, limit: 48 })
+    renderWithClient(<DictionaryPage inputRef={{ current: null }} />, '/tra-tu?tab=kanji&view=grid&q=森')
+    expect(await screen.findByRole('heading', { name: 'Kho Hán Tự (Kanji) & Chiết Tự' })).toBeTruthy()
+    await waitFor(() =>
+      expect(nhaikanjiApi.fetchKanjiList).toHaveBeenCalledWith(expect.objectContaining({ query: '森', limit: 48 }))
+    )
+    expect(vi.mocked(nhaikanjiApi.fetchKanjiList).mock.calls.every(([params]) => (params?.limit ?? 0) <= 48)).toBe(true)
+  })
+
   beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(srsApi.fetchLessons).mockResolvedValue([])
     if (typeof window !== 'undefined' && window.history?.replaceState) {
       window.history.replaceState({}, '', '/')
     }

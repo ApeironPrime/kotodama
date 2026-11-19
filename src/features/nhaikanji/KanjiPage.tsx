@@ -1,5 +1,5 @@
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Sparkles, Layers, BookOpen, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { nhaikanjiApi } from './nhaikanjiApi'
@@ -23,11 +23,12 @@ function getVisiblePages(currentPage: number, totalPages: number): (number | str
   return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages]
 }
 
-export function KanjiPage() {
+export function KanjiPage({ query }: { query?: string } = {}) {
   const [selectedLevel, setSelectedLevel] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
-  const debouncedSearchQuery = useDebouncedValue(searchQuery)
+  const debouncedSearchQuery = useDebouncedValue(query ?? searchQuery)
   const [page, setPage] = useState(1)
+  useEffect(() => setPage(1), [query])
   const [selectedKanji, setSelectedKanji] = useState<KanjiSummary | null>(null)
   const [sortBy, setSortBy] = useState<'default' | 'stroke_asc' | 'stroke_desc' | 'hanzi_az'>('default')
   const [limit, setLimit] = useState<number>(48)
@@ -104,20 +105,22 @@ export function KanjiPage() {
           </div>
 
           {/* Search Box */}
-          <div className="nhaikanji-search-box">
-            <Search size={18} className="nhaikanji-search-icon" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Tìm Kanji, Âm Hán Việt (thổ, nhật...), nghĩa..."
-            />
-            {searchQuery && (
-              <button type="button" onClick={() => handleSearchChange('')} className="nhaikanji-search-clear">
-                <X size={16} />
-              </button>
-            )}
-          </div>
+          {query === undefined && (
+            <div className="nhaikanji-search-box">
+              <Search size={18} className="nhaikanji-search-icon" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="Tìm Kanji, Âm Hán Việt (thổ, nhật...), nghĩa..."
+              />
+              {searchQuery && (
+                <button type="button" onClick={() => handleSearchChange('')} className="nhaikanji-search-clear">
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Feature quick badges */}

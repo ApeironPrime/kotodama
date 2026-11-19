@@ -127,6 +127,37 @@ describe('SRS Flashcard & Review Feature Suite', () => {
     vi.mocked(srsApi.fetchStats).mockResolvedValue(sampleStats)
   })
 
+  it('subtracts reviews already completed today when opening a card with the keyboard', async () => {
+    localStorage.setItem('kotodama.settings.review-limit', JSON.stringify('9'))
+    renderWithClient(<ReviewPage />)
+    const card = await screen.findByRole('button', { name: 'Ôn tập 学校' })
+    fireEvent.keyDown(card, { key: 'Enter' })
+    expect(await screen.findByText('Thẻ 1 / 1')).toBeTruthy()
+  })
+
+  it('keeps a new session closed after the daily review limit is reached', async () => {
+    localStorage.setItem('kotodama.settings.review-limit', JSON.stringify('8'))
+    renderWithClient(<ReviewPage />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Ôn tập 学校' }))
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('loads subsequent deck pages for an unlimited session', async () => {
+    localStorage.setItem('kotodama.settings.review-limit', JSON.stringify('unlimited'))
+    vi.mocked(srsApi.fetchDeck).mockImplementation(async (params) => ({
+      items: params.page === 2 ? sampleCards.slice(2) : sampleCards.slice(0, 2),
+      total: 3,
+      page: params.page || 1,
+      limit: 2,
+      totalPages: 2,
+    }))
+    renderWithClient(<ReviewPage />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Ôn tập 学校' }))
+    expect(await screen.findByText('Thẻ 1 / 3')).toBeTruthy()
+    expect(srsApi.fetchDeck).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
+  })
+
   it('renders ReviewPage with 4 KPI stats cards, category tabs, and mastery progress bars', async () => {
     const onDictionaryMock = vi.fn()
     renderWithClient(<ReviewPage onDictionary={onDictionaryMock} />)
@@ -196,7 +227,7 @@ describe('SRS Flashcard & Review Feature Suite', () => {
     await waitFor(() => expect(screen.getByText('学校')).toBeTruthy())
 
     // Test Launch Anki Study Button
-    const ankiBtn = screen.getByText('Ôn tập Anki')
+    const ankiBtn = screen.getByText('Bắt đầu ôn tập')
     fireEvent.click(ankiBtn)
     await waitFor(() => {
       expect(screen.getByText(/Thẻ 1 \//i)).toBeTruthy()
@@ -244,7 +275,7 @@ describe('SRS Flashcard & Review Feature Suite', () => {
 
     // Verify back face and SM-2 buttons
     expect(screen.getByText(/Ý NGHĨA:/i)).toBeTruthy()
-    expect(screen.getByText('👉 trường học')).toBeTruthy()
+    expect(screen.getByText('trường học')).toBeTruthy()
     expect(screen.getByText(/Quên \(1\)/i)).toBeTruthy()
     expect(screen.getByText(/Tốt \(3\)/i)).toBeTruthy()
 
@@ -319,11 +350,11 @@ describe('SRS Flashcard & Review Feature Suite', () => {
 
     // Verify Back Side renders both groups
     expect(screen.getByText('Nghĩa 1')).toBeTruthy()
-    expect(screen.getByText('👉 Có vẻ như…/Hình như…')).toBeTruthy()
+    expect(screen.getByText('Có vẻ như…/Hình như…')).toBeTruthy()
     expect(screen.getByText('Trời có nhiều sao. Có vẻ mai cũng sẽ nắng.')).toBeTruthy()
 
     expect(screen.getByText('Nghĩa 2')).toBeTruthy()
-    expect(screen.getByText('👉 Cứ như là…')).toBeTruthy()
+    expect(screen.getByText('Cứ như là…')).toBeTruthy()
     expect(screen.getByText('Cứ như đang mơ vậy.')).toBeTruthy()
 
     // Verify audio speak buttons exist

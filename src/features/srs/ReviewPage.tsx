@@ -19,6 +19,7 @@ import { srsApi } from './srsApi'
 import type { SrsCard, SrsCardType, SrsHeatmapDay, SrsRating } from './srsTypes'
 import { FlashcardStudyModal } from './FlashcardStudyModal'
 import { useAuth } from '../auth/authContext'
+import { usePersistentState } from '../../lib/usePersistentState'
 
 const QUICK_SUGGESTIONS = ['食べる', '育つ', '必ず', '愛', '成長', '学校', '勉強', '難しい']
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
@@ -26,6 +27,8 @@ const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
 export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: string) => void }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [reviewLimit] = usePersistentState('kotodama.settings.review-limit', '100')
+  const dailyLimit = reviewLimit === 'unlimited' ? Infinity : Math.max(1, Number(reviewLimit) || 100)
   const [activeTab, setActiveTab] = useState<SrsCardType | 'search'>('vocab')
   const [searchQuery, setSearchQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState<string>('all')
@@ -36,6 +39,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
   // Study Modal State
   const [studyModalCards, setStudyModalCards] = useState<SrsCard[] | null>(null)
   const [studyInitialIndex, setStudyInitialIndex] = useState(0)
+  const [preparingStudy, setPreparingStudy] = useState(false)
+  const [studyError, setStudyError] = useState<string | null>(null)
 
   // Query Deck Cards
   const {
@@ -65,13 +70,18 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
   })
 
   // Global counts across all categories
-  const { data: globalStats } = useQuery({
+  const {
+    data: globalStats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'stats', 'global'],
     queryFn: () => srsApi.fetchStats('all'),
     refetchOnMount: 'always',
   })
 
   const cards = deckData?.items || []
+  const sessionLimit = dailyLimit === Infinity ? Infinity : Math.max(0, dailyLimit - (globalStats?.reviewedToday ?? 0))
 
   // Count items per category dynamically from real deck stats
   const vocabCount = globalStats?.vocabCount ?? (activeTab === 'vocab' ? (deckData?.total ?? 0) : 0)
@@ -92,15 +102,51 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
     void refetch()
   }
 
-  const openStudySession = (startIndex = 0) => {
-    if (cards.length > 0) {
-      setStudyModalCards(cards)
-      setStudyInitialIndex(startIndex)
+  const openStudySession = async (startIndex = 0) => {
+    if (!cards.length || preparingStudy) return
+    if (dailyLimit !== Infinity && (statsLoading || statsError)) {
+      setStudyError('Chưa tải được số lượt ôn hôm nay. Hãy thử lại sau khi tải lại tiến độ.')
+      void queryClient.invalidateQueries({ queryKey: ['srs', user?.id ?? 'me', 'stats'] })
+      return
+    }
+    if (sessionLimit === 0) {
+      setStudyError('Bạn đã đạt giới hạn ôn tập hôm nay. Nghỉ ngơi hoặc điều chỉnh giới hạn trong Cài đặt.')
+      return
+    }
+    setPreparingStudy(true)
+    setStudyError(null)
+    try {
+      const allCards = [...cards]
+      for (let page = 2; page <= (deckData?.totalPages ?? 1) && allCards.length < sessionLimit; page++) {
+        const next = await srsApi.fetchDeck({
+          type: activeTab === 'search' ? 'all' : activeTab,
+          status: activeStatus,
+          level: activeLevel,
+          query: searchQuery,
+          page,
+          limit: 100,
+        })
+        if (!next.items.length) break
+        allCards.push(...next.items)
+      }
+      const ordered = [...allCards.slice(startIndex), ...allCards.slice(0, startIndex)]
+      setStudyModalCards(ordered.slice(0, sessionLimit))
+      setStudyInitialIndex(0)
+    } catch {
+      setStudyError('Chưa tải đủ thẻ cho phiên ôn tập. Kiểm tra kết nối rồi thử lại.')
+    } finally {
+      setPreparingStudy(false)
     }
   }
 
   return (
     <section className="review-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.25rem' }}>
+      {preparingStudy && <p role="status">Đang chuẩn bị thẻ ôn tập…</p>}
+      {studyError && (
+        <p role="alert" className="ui-error-text">
+          {studyError}
+        </p>
+      )}
       {isError && (
         <div role="alert" className="ui-status-panel">
           <p>Chưa tải được kho thẻ. Kiểm tra kết nối và thử lại.</p>
@@ -108,8 +154,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
         </div>
       )}
       {/* 1. TOP SEARCH & AI ANALYSIS BAR */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 14rem', minWidth: 0 }}>
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -183,8 +229,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'search' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'search' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+            borderBottom: activeTab === 'search' ? '2px solid var(--color-accent)' : '2px solid transparent',
+            color: activeTab === 'search' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -204,8 +250,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'vocab' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'vocab' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+            borderBottom: activeTab === 'vocab' ? '2px solid var(--color-accent)' : '2px solid transparent',
+            color: activeTab === 'vocab' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -225,8 +271,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'grammar' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'grammar' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+            borderBottom: activeTab === 'grammar' ? '2px solid var(--color-accent)' : '2px solid transparent',
+            color: activeTab === 'grammar' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -246,8 +292,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'kanji' ? '2px solid #ec4899' : '2px solid transparent',
-            color: activeTab === 'kanji' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+            borderBottom: activeTab === 'kanji' ? '2px solid var(--color-accent)' : '2px solid transparent',
+            color: activeTab === 'kanji' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
             fontWeight: 700,
             fontSize: '0.95rem',
             padding: '8px 4px',
@@ -266,7 +312,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '1rem',
           marginBottom: '1.5rem',
         }}
@@ -281,7 +327,13 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           }}
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#3b82f6', marginBottom: '0.5rem' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--color-accent-text)',
+              marginBottom: '0.5rem',
+            }}
           >
             <Layers size={20} />
           </div>
@@ -301,11 +353,19 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           }}
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', marginBottom: '0.5rem' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--color-success)',
+              marginBottom: '0.5rem',
+            }}
           >
             <CheckCircle2 size={20} />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#10b981' }}>{stats.masteredCount}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-success)' }}>
+            {stats.masteredCount}
+          </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Đã thành thạo</div>
         </Card>
 
@@ -319,11 +379,19 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           }}
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', marginBottom: '0.5rem' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--color-warning)',
+              marginBottom: '0.5rem',
+            }}
           >
             <Flame size={20} />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f59e0b' }}>{stats.dueTodayCount}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-warning)' }}>
+            {stats.dueTodayCount}
+          </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Cần ôn hôm nay</div>
         </Card>
 
@@ -337,7 +405,13 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
           }}
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#8b5cf6', marginBottom: '0.5rem' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--color-accent-text)',
+              marginBottom: '0.5rem',
+            }}
           >
             <TrendingUp size={20} />
           </div>
@@ -378,7 +452,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                   border: '1px solid rgba(245, 158, 11, 0.4)',
                   padding: '10px',
                   borderRadius: '12px',
-                  color: '#f59e0b',
+                  color: 'var(--color-warning)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -391,10 +465,12 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                   <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text)' }}>
                     {globalStats?.streak ?? stats.streak ?? 0}
                   </span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f59e0b' }}>ngày liên tiếp</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-warning)' }}>
+                    ngày liên tiếp
+                  </span>
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                  🏆 Kỷ lục: {globalStats?.longestStreak ?? stats.longestStreak ?? 0} ngày · ⚡ Hôm nay:{' '}
+                  Kỷ lục: {globalStats?.longestStreak ?? stats.longestStreak ?? 0} ngày · Hôm nay:{' '}
                   {globalStats?.reviewedToday ?? stats.reviewedToday ?? 0} thẻ
                 </div>
               </div>
@@ -413,7 +489,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                   gap: '6px',
                   fontSize: '0.82rem',
                   fontWeight: 700,
-                  color: '#ef4444',
+                  color: 'var(--color-danger-text)',
                 }}
               >
                 <Flame size={15} /> Bạn còn {stats.dueTodayCount} thẻ cần hoàn thành hôm nay để giữ chuỗi!
@@ -430,7 +506,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                   gap: '6px',
                   fontSize: '0.82rem',
                   fontWeight: 700,
-                  color: '#10b981',
+                  color: 'var(--color-success)',
                 }}
               >
                 <CheckCircle2 size={15} /> Đã hoàn thành toàn bộ mục tiêu hôm nay!
@@ -444,7 +520,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             onClick={() => openStudySession(0)}
             disabled={cards.length === 0}
             style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              background: 'linear-gradient(135deg, var(--color-success) 0%, var(--color-success) 100%)',
               color: '#ffffff',
               fontWeight: 700,
               gap: '6px',
@@ -462,7 +538,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
               Biểu đồ học tập 16 tuần gần nhất
             </span>
             {hoveredDay && (
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginLeft: 'auto' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-success)', marginLeft: 'auto' }}>
                 {hoveredDay.date}: Đã ôn {hoveredDay.count} thẻ
               </span>
             )}
@@ -502,13 +578,13 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
               const getColorForLevel = (level: number) => {
                 switch (level) {
                   case 4:
-                    return '#10b981'
+                    return 'var(--color-success)'
                   case 3:
-                    return '#059669'
+                    return 'var(--color-success)'
                   case 2:
                     return '#047857'
                   case 1:
-                    return '#065f46'
+                    return 'var(--color-success)'
                   default:
                     return 'var(--color-border)'
                 }
@@ -528,6 +604,11 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                       {week.map((day, dIdx) => (
                         <div
                           key={dIdx}
+                          tabIndex={0}
+                          role="img"
+                          aria-label={`${day.date}: ${day.count} thẻ`}
+                          onFocus={() => setHoveredDay(day)}
+                          onBlur={() => setHoveredDay(null)}
                           onMouseEnter={() => setHoveredDay(day)}
                           onMouseLeave={() => setHoveredDay(null)}
                           style={{
@@ -562,10 +643,10 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             >
               <span>Ít</span>
               <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-border)' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#065f46' }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-success)' }} />
               <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#047857' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#059669' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#10b981' }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-success)' }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-success)' }} />
               <span>Nhiều</span>
             </div>
           </div>
@@ -601,8 +682,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
               onClick={() => setActiveStatus(st.id)}
               style={{
                 background: activeStatus === st.id ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                color: activeStatus === st.id ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                border: activeStatus === st.id ? '1px solid #ec4899' : '1px solid var(--color-border)',
+                color: activeStatus === st.id ? 'var(--color-accent-text)' : 'var(--color-text-secondary)',
+                border: activeStatus === st.id ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
                 borderRadius: '8px',
                 padding: '4px 12px',
                 fontSize: '0.82rem',
@@ -616,7 +697,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
         </div>
 
         {/* JLPT Levels & Anki Launch Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center', gap: '0.5rem' }}>
           <div
             style={{
               display: 'flex',
@@ -632,7 +713,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 type="button"
                 onClick={() => setActiveLevel(lvl)}
                 style={{
-                  background: activeLevel === lvl ? '#3b82f6' : 'transparent',
+                  background: activeLevel === lvl ? 'var(--color-accent)' : 'transparent',
                   color: activeLevel === lvl ? '#ffffff' : 'var(--color-text-muted)',
                   border: 'none',
                   borderRadius: '4px',
@@ -652,7 +733,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             size="sm"
             onClick={() => openStudySession(0)}
             style={{
-              background: '#10b981',
+              background: 'var(--color-accent)',
               color: '#ffffff',
               fontWeight: 700,
               fontSize: '0.82rem',
@@ -661,7 +742,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
               gap: '4px',
             }}
           >
-            <Play size={14} /> Ôn tập Anki
+            <Play size={14} /> Bắt đầu ôn tập
           </Button>
 
           <div
@@ -710,7 +791,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
       {/* 5. FLASHCARD GRID LIST */}
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-accent)' }} />
+          <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-accent-text)' }} />
           <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Đang nạp thẻ ôn tập SRS...</p>
         </div>
       ) : cards.length === 0 ? (
@@ -727,7 +808,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 210px), 1fr))',
             gap: '1rem',
           }}
         >
@@ -741,11 +822,24 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
               : isDue
                 ? 'rgba(245, 158, 11, 0.15)'
                 : 'rgba(59, 130, 246, 0.15)'
-            const badgeColor = isMastered ? '#10b981' : isDue ? '#f59e0b' : '#3b82f6'
+            const badgeColor = isMastered
+              ? 'var(--color-success)'
+              : isDue
+                ? 'var(--color-warning)'
+                : 'var(--color-accent)'
 
             return (
               <div
                 key={card.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Ôn tập ${card.term}`}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    openStudySession(idx)
+                  }
+                }}
                 onClick={() => openStudySession(idx)}
                 style={{
                   background: 'var(--color-surface)',
@@ -878,6 +972,16 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             <Card
               key={card.id}
               padding="sm"
+              className="review-list-card"
+              role="button"
+              tabIndex={0}
+              aria-label={`Ôn tập ${card.term}`}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  openStudySession(idx)
+                }
+              }}
               onClick={() => openStudySession(idx)}
               style={{
                 display: 'flex',
@@ -891,7 +995,14 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 <span style={{ fontFamily: 'var(--font-jp)', fontWeight: 800, fontSize: '1.2rem', minWidth: '100px' }}>
                   {card.term}
                 </span>
-                <span style={{ fontFamily: 'var(--font-jp)', color: '#3b82f6', fontSize: '0.9rem', minWidth: '90px' }}>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-jp)',
+                    color: 'var(--color-accent-text)',
+                    fontSize: '0.9rem',
+                    minWidth: '90px',
+                  }}
+                >
                   {card.reading}
                 </span>
                 <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>{card.meaning}</span>
@@ -904,7 +1015,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                   style={{
                     fontSize: '0.85rem',
                     fontWeight: 800,
-                    color: card.masteryPercentage >= 80 ? '#10b981' : '#3b82f6',
+                    color: card.masteryPercentage >= 80 ? 'var(--color-success)' : 'var(--color-accent-text)',
                   }}
                 >
                   {card.masteryPercentage}%

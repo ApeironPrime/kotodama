@@ -3,7 +3,7 @@ import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   BookmarkPlus,
@@ -17,7 +17,7 @@ import {
   Search,
   Volume2,
 } from 'lucide-react'
-import { Badge, Button } from '../../components/ui'
+import { Badge, Button, EmptyState } from '../../components/ui'
 import PageHeader from '../../components/PageHeader'
 import { srsApi } from '../srs/srsApi'
 import type { CurriculumGrammar } from '../srs/srsTypes'
@@ -28,41 +28,37 @@ const GRAMMAR_CATALOG = [
     id: 'shinkanzen_n3',
     title: 'Shinkanzen Master N3 (新完全マスター)',
     subtitle: 'Shinkanzen Master N3',
-    badge: '99 mẫu • 19 bài • Audio',
     level: 'N3',
-    color: 'var(--color-accent)',
-    bg: 'linear-gradient(135deg, rgba(132, 204, 22, 0.15) 0%, rgba(101, 163, 13, 0.05) 100%)',
-    border: 'rgba(132, 204, 22, 0.3)',
+    color: 'var(--color-accent-text)',
+    bg: 'var(--color-bg-surface)',
+    border: 'var(--color-border)',
   },
   {
     id: 'mimikara_n3',
     title: 'Mimikara Oboeru N3 (耳から覚える文法)',
     subtitle: 'Mimikara Oboeru N3',
-    badge: '110 mẫu • 11 bài • Furigana',
     level: 'N3',
-    color: '#06b6d4',
-    bg: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.05) 100%)',
-    border: 'rgba(6, 182, 212, 0.3)',
+    color: 'var(--color-accent-text)',
+    bg: 'var(--color-bg-surface)',
+    border: 'var(--color-border)',
   },
   {
     id: 'shinkanzen_n2',
     title: 'Shinkanzen Master N2 (新完全マスター)',
     subtitle: 'Shinkanzen Master N2',
-    badge: '151 mẫu • 26 bài • Audio',
     level: 'N2',
-    color: '#10b981',
-    bg: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.05) 100%)',
-    border: 'rgba(16, 185, 129, 0.3)',
+    color: 'var(--color-accent-text)',
+    bg: 'var(--color-bg-surface)',
+    border: 'var(--color-border)',
   },
   {
     id: 'shinkanzen_n1',
     title: 'Shinkanzen Master N1 (新完全マスター)',
     subtitle: 'Shinkanzen Master N1',
-    badge: '88 mẫu • 20 bài • Audio',
     level: 'N1',
-    color: '#f59e0b',
-    bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.05) 100%)',
-    border: 'rgba(245, 158, 11, 0.3)',
+    color: 'var(--color-accent-text)',
+    bg: 'var(--color-bg-surface)',
+    border: 'var(--color-border)',
   },
 ] as const
 
@@ -77,9 +73,12 @@ function speakJapanese(text: string) {
 
 export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const { user } = useAuth()
+  const [saveError, setSaveError] = useState<string | null>(null)
   // Navigation: 'catalog' -> 'lessons' -> 'study'
   const [selectedBook, setSelectedBook] = useUrlState<string | null>('book', null)
   const [selectedLesson, setSelectedLesson] = useUrlState<string | null>('lesson', null)
+  const [selectedPoint] = useUrlState<string | null>('point', null)
+  const openedPoint = useRef<string | null>(null)
   const [studyMode, setStudyMode] = useState<'flashcard' | 'list'>('flashcard')
 
   // In-Lesson Flashcard state
@@ -92,6 +91,21 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
   const [activePointId, setActivePointId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const catalogQueries = useQueries({
+    queries: GRAMMAR_CATALOG.map((book) => ({
+      queryKey: ['curriculum', 'lessons', book.id],
+      queryFn: () => srsApi.fetchLessons(book.id),
+      enabled: !selectedBook,
+      staleTime: 60_000,
+    })),
+  })
+  const catalogBadge = (bookId: string) => {
+    const query = catalogQueries[GRAMMAR_CATALOG.findIndex((book) => book.id === bookId)]
+    if (query?.isError) return 'Chưa tải được dữ liệu'
+    if (!query?.data) return 'Đang tải nội dung…'
+    if (!query.data.length) return 'Chưa có nội dung'
+    return `${query.data.reduce((total, lesson) => total + lesson.count, 0)} mẫu · ${query.data.length} bài`
+  }
 
   // Fetch saved SRS terms from server to know which items are already saved
   const { data: savedTermsData } = useQuery({
@@ -151,6 +165,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   const grammars = grammarData?.items || []
   const currentCard = grammars[currentIndex] || null
+  useEffect(() => {
+    const key = `${selectedBook}:${selectedLesson}:${selectedPoint}`
+    if (!grammarData || openedPoint.current === key) return
+    const index = grammarData.items.findIndex((item) => item.id === selectedPoint)
+    setCurrentIndex(Math.max(0, index))
+    setIsFlipped(false)
+    openedPoint.current = key
+  }, [grammarData, selectedBook, selectedLesson, selectedPoint])
 
   const playAudio = useCallback((url?: string, fallbackText?: string) => {
     if (audioRef.current) {
@@ -191,6 +213,11 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   const handleSaveToSrs = useCallback(
     async (item: CurriculumGrammar) => {
+      setSaveError(null)
+      if (!user) {
+        setSaveError('Đăng nhập để lưu ngữ pháp vào sổ tay ôn tập.')
+        return
+      }
       try {
         const summaryMeaning =
           item.groups && item.groups.length > 1
@@ -218,11 +245,11 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         })
         setSavedSrs((prev) => ({ ...prev, [`grammar_${item.id}`]: true, [`grammar_term_${item.pattern}`]: true }))
         await queryClient.invalidateQueries({ queryKey: ['srs'] })
-      } catch (err) {
-        console.error('Không thể lưu ngữ pháp vào SRS:', err)
+      } catch {
+        setSaveError('Chưa lưu được ngữ pháp. Kiểm tra kết nối rồi thử lại.')
       }
     },
-    [queryClient]
+    [queryClient, user]
   )
 
   // Keyboard shortcut listener for in-lesson flashcard
@@ -298,7 +325,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         <PageHeader
           eyebrow="NGỮ PHÁP TIẾNG NHẬT CHUẨN JLPT"
           title="Kho Giáo Trình Ngữ Pháp (Shinkanzen Master & Mimikara)"
-          description="Học theo từng bài và mẫu câu với cấu trúc chi tiết, furigana sạch sẽ, file nghe audio MP3 gốc và flashcard ôn tập trực tiếp."
+          description="Học ngữ pháp theo từng bài: đọc giải thích, xem ví dụ và luyện ghi nhớ bằng thẻ ôn tập."
         />
 
         {/* N3 Section */}
@@ -312,11 +339,23 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </div>
 
           <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.25rem' }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+              gap: '1.25rem',
+            }}
           >
             {GRAMMAR_CATALOG.filter((b) => b.level === 'N3').map((book) => (
               <div
                 key={book.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.currentTarget.click()
+                  }
+                }}
                 onClick={() => setSelectedBook(book.id)}
                 style={{
                   background: book.bg,
@@ -369,7 +408,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}
                 >
                   <Badge variant="primary" className="text-xs font-bold">
-                    {book.badge}
+                    {catalogBadge(book.id)}
                   </Badge>
                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: book.color }}>Vào học ngay →</span>
                 </div>
@@ -381,7 +420,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         {/* N2 Section */}
         <div style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <div style={{ width: '4px', height: '24px', background: '#10b981', borderRadius: '2px' }} />
+            <div style={{ width: '4px', height: '24px', background: 'var(--color-accent)', borderRadius: '2px' }} />
             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>
               Ngữ pháp Chuyên sâu N2
             </h2>
@@ -389,11 +428,23 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </div>
 
           <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.25rem' }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+              gap: '1.25rem',
+            }}
           >
             {GRAMMAR_CATALOG.filter((b) => b.level === 'N2').map((book) => (
               <div
                 key={book.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.currentTarget.click()
+                  }
+                }}
                 onClick={() => setSelectedBook(book.id)}
                 style={{
                   background: book.bg,
@@ -446,7 +497,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}
                 >
                   <Badge variant="primary" className="text-xs font-bold">
-                    {book.badge}
+                    {catalogBadge(book.id)}
                   </Badge>
                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: book.color }}>Vào học ngay →</span>
                 </div>
@@ -458,7 +509,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         {/* N1 Section */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <div style={{ width: '4px', height: '24px', background: '#f59e0b', borderRadius: '2px' }} />
+            <div style={{ width: '4px', height: '24px', background: 'var(--color-accent)', borderRadius: '2px' }} />
             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>
               Ngữ pháp Chuyên sâu N1
             </h2>
@@ -466,11 +517,23 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </div>
 
           <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.25rem' }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+              gap: '1.25rem',
+            }}
           >
             {GRAMMAR_CATALOG.filter((b) => b.level === 'N1').map((book) => (
               <div
                 key={book.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.currentTarget.click()
+                  }
+                }}
                 onClick={() => setSelectedBook(book.id)}
                 style={{
                   background: book.bg,
@@ -523,7 +586,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}
                 >
                   <Badge variant="primary" className="text-xs font-bold">
-                    {book.badge}
+                    {catalogBadge(book.id)}
                   </Badge>
                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: book.color }}>Vào học ngay →</span>
                 </div>
@@ -562,10 +625,31 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         </div>
 
         {/* Lesson Cards Grid (media_1788263395027.png) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 360px), 1fr))',
+            gap: '1rem',
+          }}
+        >
+          {lessonsList && !lessonsList.length && (
+            <EmptyState
+              title="Giáo trình này chưa có bài học"
+              description="Bạn có thể quay lại chọn giáo trình khác hoặc thử tải lại."
+              action={<Button onClick={() => void refetchLessons()}>Thử tải lại</Button>}
+            />
+          )}
           {lessonsList?.map((lesson) => (
             <div
               key={lesson.lesson_id}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  event.currentTarget.click()
+                }
+              }}
               onClick={() => {
                 setSelectedLesson(lesson.lesson_id)
                 setCurrentIndex(0)
@@ -627,6 +711,11 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
+      {saveError && (
+        <p role="alert" className="ui-error-text">
+          {saveError}
+        </p>
+      )}
       {/* 3.1 Header Navigation */}
       <div
         style={{
@@ -716,11 +805,21 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       {studyMode === 'flashcard' && currentCard && (
         <div style={{ marginBottom: '2.5rem' }}>
           <div
+            role="button"
+            tabIndex={0}
+            aria-label="Lật thẻ ngữ pháp"
+            aria-expanded={isFlipped}
+            onKeyDown={(event) => {
+              if (event.target === event.currentTarget && event.key === 'Enter') {
+                event.preventDefault()
+                setIsFlipped((f) => !f)
+              }
+            }}
             onClick={() => setIsFlipped((f) => !f)}
             style={{
               minHeight: '340px',
-              background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
-              border: '2px solid rgba(255, 255, 255, 0.1)',
+              background: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border-strong)',
               borderRadius: '20px',
               padding: '2.5rem 2rem',
               cursor: 'pointer',
@@ -729,7 +828,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               justifyContent: 'space-between',
               alignItems: 'center',
               textAlign: 'center',
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.3)',
+              boxShadow: 'var(--shadow-lg)',
               position: 'relative',
               userSelect: 'none',
               transition: 'all 0.2s ease',
@@ -754,7 +853,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     border: 'none',
                     borderRadius: '50%',
                     padding: '8px',
-                    color: '#a3e635',
+                    color: 'var(--color-accent-text)',
                     cursor: 'pointer',
                   }}
                   title="Nghe phát âm"
@@ -768,16 +867,16 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     void handleSaveToSrs(currentCard)
                   }}
                   style={{
-                    background: isGrammarSaved(currentCard) ? '#10b981' : 'rgba(255, 255, 255, 0.1)',
+                    background: isGrammarSaved(currentCard) ? 'var(--color-accent-subtle)' : 'var(--color-bg-selected)',
                     border: 'none',
                     borderRadius: '6px',
                     padding: '6px 10px',
                     fontSize: '0.75rem',
                     fontWeight: 700,
-                    color: '#ffffff',
+                    color: 'var(--color-text)',
                     cursor: 'pointer',
                   }}
-                  title="Lưu vào Deck Anki SRS"
+                  title="Lưu vào sổ tay ôn tập"
                 >
                   {isGrammarSaved(currentCard) ? '✓ Đã vào SRS' : '+ Thêm SRS (C)'}
                 </button>
@@ -794,7 +893,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       fontSize: '2.5rem',
                       fontFamily: 'var(--font-jp)',
                       fontWeight: 800,
-                      color: '#ffffff',
+                      color: 'var(--color-text)',
                     }}
                   >
                     {currentCard.pattern}
@@ -804,7 +903,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       style={{
                         marginTop: '0.75rem',
                         fontFamily: 'var(--font-jp)',
-                        color: '#60a5fa',
+                        color: 'var(--color-accent-text)',
                         fontSize: '1.05rem',
                         fontWeight: 600,
                       }}
@@ -822,7 +921,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           padding: '3px 10px',
                           borderRadius: '999px',
                           background: 'rgba(245, 158, 11, 0.15)',
-                          color: '#fbbf24',
+                          color: 'var(--color-warning)',
                           border: '1px solid rgba(245, 158, 11, 0.3)',
                         }}
                       >
@@ -831,7 +930,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     </div>
                   )}
 
-                  <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginTop: '0.85rem' }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.85rem' }}>
                     Nhấn [Space] hoặc chạm để lật xem ý nghĩa & 1 ví dụ mỗi nghĩa
                   </div>
                 </div>
@@ -843,7 +942,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       fontSize: '1.8rem',
                       fontFamily: 'var(--font-jp)',
                       fontWeight: 800,
-                      color: '#ffffff',
+                      color: 'var(--color-text)',
                       marginBottom: '0.5rem',
                     }}
                   >
@@ -878,7 +977,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             padding: '2px 10px',
                             borderRadius: '999px',
                             background: 'rgba(245, 158, 11, 0.2)',
-                            color: '#fbbf24',
+                            color: 'var(--color-warning)',
                             border: '1px solid rgba(245, 158, 11, 0.3)',
                           }}
                         >
@@ -903,15 +1002,15 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 style={{
                                   fontSize: '0.75rem',
                                   fontWeight: 800,
-                                  background: '#3b82f6',
-                                  color: '#ffffff',
+                                  background: 'var(--color-accent)',
+                                  color: 'var(--color-text-inverse)',
                                   borderRadius: '999px',
                                   padding: '1px 8px',
                                 }}
                               >
                                 Nghĩa {group.group_no || gIdx + 1}
                               </span>
-                              <span style={{ fontSize: '0.98rem', fontWeight: 700, color: '#34d399' }}>
+                              <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}>
                                 {group.meaning || group.usage || ''}
                               </span>
                             </div>
@@ -921,7 +1020,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 style={{
                                   fontFamily: 'var(--font-jp)',
                                   fontSize: '0.86rem',
-                                  color: '#60a5fa',
+                                  color: 'var(--color-accent-text)',
                                   fontWeight: 600,
                                   margin: '3px 0',
                                 }}
@@ -934,7 +1033,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               <div
                                 style={{
                                   fontSize: '0.82rem',
-                                  color: '#94a3b8',
+                                  color: 'var(--color-text-secondary)',
                                   margin: '3px 0 6px 0',
                                   lineHeight: 1.35,
                                 }}
@@ -963,13 +1062,19 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                     style={{
                                       fontFamily: 'var(--font-jp)',
                                       fontSize: '0.98rem',
-                                      color: '#f1f5f9',
+                                      color: 'var(--color-text)',
                                       lineHeight: 1.6,
                                     }}
                                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp) }}
                                   />
                                   {firstEx.vi && (
-                                    <div style={{ color: '#cbd5e1', fontSize: '0.84rem', marginTop: '3px' }}>
+                                    <div
+                                      style={{
+                                        color: 'var(--color-text-secondary)',
+                                        fontSize: '0.84rem',
+                                        marginTop: '3px',
+                                      }}
+                                    >
                                       {firstEx.vi}
                                     </div>
                                   )}
@@ -984,7 +1089,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   style={{
                                     background: 'rgba(59, 130, 246, 0.15)',
                                     border: '1px solid rgba(59, 130, 246, 0.3)',
-                                    color: '#60a5fa',
+                                    color: 'var(--color-accent-text)',
                                     borderRadius: '50%',
                                     padding: '7px',
                                     cursor: 'pointer',
@@ -1003,15 +1108,22 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   ) : (
                     // Single Group Case
                     <div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34d399', marginTop: '0.5rem' }}>
-                        👉 {currentCard.shortMeaning || currentCard.explanation}
+                      <div
+                        style={{
+                          fontSize: '1.25rem',
+                          fontWeight: 800,
+                          color: 'var(--color-success)',
+                          marginTop: '0.5rem',
+                        }}
+                      >
+                        {currentCard.shortMeaning || currentCard.explanation}
                       </div>
 
                       {currentCard.structure && (
                         <div
                           style={{
                             fontFamily: 'var(--font-jp)',
-                            color: '#60a5fa',
+                            color: 'var(--color-accent-text)',
                             fontSize: '0.95rem',
                             fontWeight: 600,
                             marginTop: '0.5rem',
@@ -1022,7 +1134,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       )}
 
                       {currentCard.explanation && currentCard.explanation !== currentCard.shortMeaning && (
-                        <div style={{ fontSize: '0.9rem', color: '#cbd5e1', marginTop: '0.5rem', lineHeight: 1.4 }}>
+                        <div
+                          style={{
+                            fontSize: '0.9rem',
+                            color: 'var(--color-text-secondary)',
+                            marginTop: '0.5rem',
+                            lineHeight: 1.4,
+                          }}
+                        >
                           {currentCard.explanation}
                         </div>
                       )}
@@ -1050,7 +1169,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 style={{
                                   fontFamily: 'var(--font-jp)',
                                   fontSize: '1.02rem',
-                                  color: '#f1f5f9',
+                                  color: 'var(--color-text)',
                                   lineHeight: 1.6,
                                 }}
                                 dangerouslySetInnerHTML={{
@@ -1058,7 +1177,13 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 }}
                               />
                               {firstEx.vi && (
-                                <div style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '4px' }}>
+                                <div
+                                  style={{
+                                    color: 'var(--color-text-secondary)',
+                                    fontSize: '0.88rem',
+                                    marginTop: '4px',
+                                  }}
+                                >
                                   {firstEx.vi}
                                 </div>
                               )}
@@ -1073,7 +1198,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               style={{
                                 background: 'rgba(59, 130, 246, 0.15)',
                                 border: '1px solid rgba(59, 130, 246, 0.3)',
-                                color: '#60a5fa',
+                                color: 'var(--color-accent-text)',
                                 borderRadius: '50%',
                                 padding: '8px',
                                 cursor: 'pointer',
@@ -1100,13 +1225,13 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 fontSize: '0.78rem',
-                color: '#64748b',
+                color: 'var(--color-text-secondary)',
                 borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                 paddingTop: '0.75rem',
               }}
             >
               <span>Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)</span>
-              <span style={{ fontWeight: 700, color: '#94a3b8' }}>
+              <span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>
                 {currentIndex + 1} / {grammars.length}
               </span>
             </div>
@@ -1148,7 +1273,12 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
                 handleNextCard()
               }}
-              style={{ minWidth: '130px', fontWeight: 700, background: '#10b981', borderColor: '#10b981' }}
+              style={{
+                minWidth: '130px',
+                fontWeight: 700,
+                background: 'var(--color-accent)',
+                borderColor: 'var(--color-accent)',
+              }}
             >
               ✓ Đã biết (Z)
             </Button>
@@ -1252,7 +1382,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       style={{
                         scrollMarginTop: '85px',
                         background: 'var(--color-surface)',
-                        border: isSelected ? '2px solid #ec4899' : '1px solid var(--color-border)',
+                        border: isSelected ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
                         borderRadius: '14px',
                         padding: '1.5rem',
                         display: 'flex',
@@ -1293,7 +1423,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             style={{
                               background: isSaved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid var(--color-border)',
-                              color: isSaved ? '#10b981' : 'var(--color-text-muted)',
+                              color: isSaved ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
                               borderRadius: '6px',
                               padding: '4px 10px',
                               fontSize: '0.78rem',
@@ -1328,7 +1458,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 padding: '2px 10px',
                                 borderRadius: '999px',
                                 background: 'rgba(245, 158, 11, 0.15)',
-                                color: '#fbbf24',
+                                color: 'var(--color-warning)',
                                 border: '1px solid rgba(245, 158, 11, 0.3)',
                               }}
                             >
@@ -1354,8 +1484,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   style={{
                                     fontSize: '0.75rem',
                                     fontWeight: 800,
-                                    background: '#3b82f6',
-                                    color: '#ffffff',
+                                    background: 'var(--color-accent)',
+                                    color: 'var(--color-text)',
                                     borderRadius: '999px',
                                     padding: '2px 8px',
                                   }}
@@ -1363,7 +1493,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   Nghĩa {group.group_no || gIdx + 1}
                                 </span>
                                 <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                                  👉 {group.meaning || group.usage || ''}
+                                  {group.meaning || group.usage || ''}
                                 </span>
                               </div>
 
@@ -1373,7 +1503,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                     fontFamily: 'var(--font-jp)',
                                     fontSize: '0.92rem',
                                     fontWeight: 600,
-                                    color: '#3b82f6',
+                                    color: 'var(--color-accent-text)',
                                     background: 'rgba(59, 130, 246, 0.06)',
                                     padding: '0.4rem 0.75rem',
                                     borderRadius: '6px',
@@ -1438,9 +1568,12 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                           onClick={() => playAudio(ex.audio, ex.jp)}
                                           style={{
                                             background:
-                                              playingAudioUrl === ex.audio ? '#3b82f6' : 'rgba(59, 130, 246, 0.12)',
+                                              playingAudioUrl === ex.audio
+                                                ? 'var(--color-accent)'
+                                                : 'rgba(59, 130, 246, 0.12)',
                                             border: 'none',
-                                            color: playingAudioUrl === ex.audio ? '#ffffff' : '#3b82f6',
+                                            color:
+                                              playingAudioUrl === ex.audio ? '#ffffff' : 'var(--color-accent-text)',
                                             borderRadius: '50%',
                                             padding: '6px',
                                             cursor: 'pointer',
@@ -1485,7 +1618,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 700,
-                                color: 'var(--color-accent)',
+                                color: 'var(--color-accent-text)',
                                 textTransform: 'uppercase',
                               }}
                             >
@@ -1499,7 +1632,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 marginTop: '2px',
                               }}
                             >
-                              👉 {item.shortMeaning || item.explanation}
+                              {item.shortMeaning || item.explanation}
                             </div>
                           </div>
 
@@ -1521,7 +1654,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   fontFamily: 'var(--font-jp)',
                                   fontSize: '0.95rem',
                                   fontWeight: 600,
-                                  color: '#3b82f6',
+                                  color: 'var(--color-accent-text)',
                                   marginTop: '3px',
                                   background: 'rgba(59, 130, 246, 0.06)',
                                   padding: '0.5rem 0.8rem',
@@ -1576,9 +1709,11 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                       onClick={() => playAudio(ex.audio, ex.jp)}
                                       style={{
                                         background:
-                                          playingAudioUrl === ex.audio ? '#3b82f6' : 'rgba(59, 130, 246, 0.12)',
+                                          playingAudioUrl === ex.audio
+                                            ? 'var(--color-accent)'
+                                            : 'rgba(59, 130, 246, 0.12)',
                                         border: 'none',
-                                        color: playingAudioUrl === ex.audio ? '#ffffff' : '#3b82f6',
+                                        color: playingAudioUrl === ex.audio ? '#ffffff' : 'var(--color-accent-text)',
                                         borderRadius: '50%',
                                         padding: '6px',
                                         cursor: 'pointer',
@@ -1657,7 +1792,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <ListTree size={16} style={{ color: 'var(--color-accent)' }} />
+                    <ListTree size={16} style={{ color: 'var(--color-accent-text)' }} />
                     <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text)' }}>
                       Mục Lục Bài
                     </span>
@@ -1701,7 +1836,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           borderRadius: '8px',
                           border: 'none',
                           background: isItemActive ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
-                          color: isItemActive ? 'var(--color-accent)' : 'var(--color-text)',
+                          color: isItemActive ? 'var(--color-accent-text)' : 'var(--color-text)',
                           cursor: 'pointer',
                           fontSize: '0.82rem',
                           fontWeight: isItemActive ? 700 : 500,
@@ -1728,7 +1863,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           <span
                             style={{
                               fontSize: '0.75rem',
-                              color: isItemActive ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                              color: isItemActive ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
                               fontWeight: 700,
                               minWidth: '16px',
                             }}
@@ -1749,7 +1884,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         {isSaved && (
                           <span
                             title="Đã lưu vào SRS"
-                            style={{ color: '#10b981', display: 'inline-flex', flexShrink: 0 }}
+                            style={{ color: 'var(--color-accent-text)', display: 'inline-flex', flexShrink: 0 }}
                           >
                             <Check size={13} />
                           </span>

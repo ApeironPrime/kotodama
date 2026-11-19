@@ -54,7 +54,7 @@ export default function TopNav({
       <a className="skip-link" href="#main-content">
         Chuyển đến nội dung chính
       </a>
-      <nav className={`nav-bar${page === 'home' ? ' nav-bar--home' : ''}`} aria-label="Điều hướng chính">
+      <nav className="nav-bar" aria-label="Điều hướng chính">
         <div className="nav-inner">
           <button
             type="button"
@@ -140,11 +140,6 @@ export default function TopNav({
                   {userName?.trim().slice(0, 1).toUpperCase() || 'K'}
                 </IconButton>
               </>
-            ) : page === 'home' ? (
-              <span className="nav-home-colophon" aria-hidden="true">
-                <span>言葉に、心を。</span>
-                <i>言</i>
-              </span>
             ) : (
               <button type="button" className="nav-login-link" onClick={() => navigate('login')} aria-label="Đăng nhập">
                 <LogIn aria-hidden="true" size={15} strokeWidth={1.5} />

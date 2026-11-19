@@ -1,3 +1,4 @@
+import { getUiSoundEnabled, setUiSoundEnabled, subscribeUiSound } from '../../lib/uiSound'
 /**
  * Tactile Audio Synthesizer (和紙・木版 音響合成)
  * Pure Web Audio API synthesis for organic Japanese tactile interactions:
@@ -7,7 +8,6 @@
  */
 
 let audioCtx: AudioContext | null = null
-let soundEnabled = true
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null
@@ -17,6 +17,9 @@ function getAudioContext(): AudioContext | null {
     if (AudioContextClass) {
       try {
         audioCtx = new AudioContextClass()
+        subscribeUiSound(() => {
+          if (!getUiSoundEnabled()) void audioCtx?.suspend().catch(() => undefined)
+        })
       } catch {
         audioCtx = null
       }
@@ -29,18 +32,18 @@ function getAudioContext(): AudioContext | null {
 }
 
 export function setTactileAudioEnabled(enabled: boolean) {
-  soundEnabled = enabled
+  setUiSoundEnabled(enabled)
 }
 
 export function isTactileAudioEnabled(): boolean {
-  return soundEnabled
+  return getUiSoundEnabled()
 }
 
 /**
  * Subtle Washi paper flutter / brush sound on book hover
  */
 export function playWashiPaperSound() {
-  if (!soundEnabled) return
+  if (!getUiSoundEnabled()) return
   const ctx = getAudioContext()
   if (!ctx) return
 
@@ -80,7 +83,7 @@ export function playWashiPaperSound() {
  * Subtle wooden book pull / slide resonance on shelf navigation
  */
 export function playWoodShelfSound() {
-  if (!soundEnabled) return
+  if (!getUiSoundEnabled()) return
   const ctx = getAudioContext()
   if (!ctx) return
 

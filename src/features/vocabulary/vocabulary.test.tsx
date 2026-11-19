@@ -471,7 +471,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     })
 
     // Click Go To SRS
-    const srsDeckBtn = screen.getByText('Mở Thẻ Ôn Tập Anki')
+    const srsDeckBtn = screen.getByText('Mở sổ tay ôn tập SRS')
     fireEvent.click(srsDeckBtn)
     expect(onGoToSrsMock).toHaveBeenCalled()
   })

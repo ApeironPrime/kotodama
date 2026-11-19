@@ -1,13 +1,4 @@
 .auth-washi {
-  --color-text: #292723;
-  --color-text-secondary: #676158;
-  --color-text-muted: #766f65;
-  --color-accent: #ae382f;
-  --color-accent-hover: #932d26;
-  --color-focus-ring: rgb(174 56 47 / 40%);
-  --color-border: rgb(77 64 49 / 22%);
-  --color-border-hover: rgb(77 64 49 / 40%);
-  --color-danger: #a52c26;
   position: relative;
   isolation: isolate;
   min-height: calc(100svh - 4rem);
@@ -15,7 +6,7 @@
   color: var(--color-text);
   background:
     radial-gradient(ellipse at 7% 30%, rgb(204 184 146 / 13%), transparent 55%),
-    radial-gradient(ellipse at 95% 85%, rgb(204 184 146 / 9%), transparent 50%), #f7f2e8;
+    radial-gradient(ellipse at 95% 85%, rgb(204 184 146 / 9%), transparent 50%), var(--color-bg-canvas);
 }
 
 .auth-washi::before {
@@ -114,7 +105,7 @@
 
 .auth-washi__caption {
   margin: 0 0 1rem;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.18em;
@@ -160,7 +151,7 @@
   align-items: center;
   gap: 0.65rem;
   margin: 0 0 1.5rem;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.17em;
@@ -277,7 +268,7 @@
 .auth-washi__switch .ui-button {
   min-height: 2.75rem;
   padding: 0 0.4rem;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-size: inherit;
 }
 

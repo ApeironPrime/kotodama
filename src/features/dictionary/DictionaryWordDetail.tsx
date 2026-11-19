@@ -1,13 +1,6 @@
-import { useMemo } from 'react'
-import {
-  BookOpenCheck,
-  Check,
-  ChevronRight,
-  Layers3,
-  Link2,
-  MessageCircleMore,
-  Volume2,
-} from 'lucide-react'
+import { useEffect, useMemo, useRef } from 'react'
+import { usePersistentState } from '../../lib/usePersistentState'
+import { BookOpenCheck, Check, ChevronRight, Layers3, Link2, MessageCircleMore, Volume2 } from 'lucide-react'
 import type { DictionaryWordItem } from '../../lib/apiClient'
 import { sumiAudio } from './sumiAudio'
 
@@ -21,26 +14,39 @@ function conjugations(word: DictionaryWordItem): Conjugation[] {
   if (/^v1/i.test(pos) && word.word.endsWith('る')) {
     const stem = word.word.slice(0, -1)
     return [
-      { label: 'Từ điển', value: word.word }, { label: 'Lịch sự (ます)', value: `${stem}ます` },
-      { label: 'Phủ định (ない)', value: `${stem}ない` }, { label: 'Thể て', value: `${stem}て` },
-      { label: 'Quá khứ (た)', value: `${stem}た` }, { label: 'Khả năng', value: `${stem}られる` },
-      { label: 'Điều kiện (ば)', value: `${stem}れば` }, { label: 'Ý chí', value: `${stem}よう` },
+      { label: 'Từ điển', value: word.word },
+      { label: 'Lịch sự (ます)', value: `${stem}ます` },
+      { label: 'Phủ định (ない)', value: `${stem}ない` },
+      { label: 'Thể て', value: `${stem}て` },
+      { label: 'Quá khứ (た)', value: `${stem}た` },
+      { label: 'Khả năng', value: `${stem}られる` },
+      { label: 'Điều kiện (ば)', value: `${stem}れば` },
+      { label: 'Ý chí', value: `${stem}よう` },
     ]
   }
   const tail = word.word.at(-1) || ''
   const stem = word.word.slice(0, -1)
   const changes: Record<string, [string, string, string, string, string]> = {
-    う: ['い', 'わ', 'って', 'った', 'える'], つ: ['ち', 'た', 'って', 'った', 'てる'], る: ['り', 'ら', 'って', 'った', 'れる'],
-    む: ['み', 'ま', 'んで', 'んだ', 'める'], ぶ: ['び', 'ば', 'んで', 'んだ', 'べる'], ぬ: ['に', 'な', 'んで', 'んだ', 'ねる'],
-    く: ['き', 'か', 'いて', 'いた', 'ける'], ぐ: ['ぎ', 'が', 'いで', 'いだ', 'げる'], す: ['し', 'さ', 'して', 'した', 'せる'],
+    う: ['い', 'わ', 'って', 'った', 'える'],
+    つ: ['ち', 'た', 'って', 'った', 'てる'],
+    る: ['り', 'ら', 'って', 'った', 'れる'],
+    む: ['み', 'ま', 'んで', 'んだ', 'める'],
+    ぶ: ['び', 'ば', 'んで', 'んだ', 'べる'],
+    ぬ: ['に', 'な', 'んで', 'んだ', 'ねる'],
+    く: ['き', 'か', 'いて', 'いた', 'ける'],
+    ぐ: ['ぎ', 'が', 'いで', 'いだ', 'げる'],
+    す: ['し', 'さ', 'して', 'した', 'せる'],
   }
   const ending = changes[tail]
   if (!ending) return []
   const [masu, nai, te, ta, conditional] = ending
   return [
-    { label: 'Từ điển', value: word.word }, { label: 'Lịch sự (ます)', value: `${stem}${masu}ます` },
-    { label: 'Phủ định (ない)', value: `${stem}${nai}ない` }, { label: 'Thể て', value: `${stem}${te}` },
-    { label: 'Quá khứ (た)', value: `${stem}${ta}` }, { label: 'Điều kiện (ば)', value: `${stem}${conditional}ば` },
+    { label: 'Từ điển', value: word.word },
+    { label: 'Lịch sự (ます)', value: `${stem}${masu}ます` },
+    { label: 'Phủ định (ない)', value: `${stem}${nai}ない` },
+    { label: 'Thể て', value: `${stem}${te}` },
+    { label: 'Quá khứ (た)', value: `${stem}${ta}` },
+    { label: 'Điều kiện (ば)', value: `${stem}${conditional}ば` },
   ]
 }
 
@@ -66,6 +72,7 @@ export function DictionaryWordDetail({
   word,
   results,
   isSaved,
+  saveError,
   onSave,
   onSpeak,
   onSearch,
@@ -73,21 +80,44 @@ export function DictionaryWordDetail({
   word: DictionaryWordItem
   results: DictionaryWordItem[]
   isSaved: boolean
+  saveError?: string | null
   onSave: () => void
   onSpeak: (text: string) => void
   onSearch: (word: string) => void
 }) {
+  const [autoPronounce] = usePersistentState('kotodama.settings.auto-pronounce', true)
+  const spoken = useRef<string | null>(null)
+  const speakRef = useRef(onSpeak)
+  speakRef.current = onSpeak
+  useEffect(() => {
+    if (!autoPronounce || spoken.current === word.word) return
+    spoken.current = word.word
+    speakRef.current(word.reading || word.word)
+  }, [autoPronounce, word.word, word.reading])
   const forms = useMemo(() => conjugations(word), [word])
   const readings = useMemo(() => {
     const fromApi = [word.reading || '', ...(word.readingVariants || [])]
-    return fromApi.flatMap(cleanReadingTokens).filter((item, index, list) => list.indexOf(item) === index).slice(0, 8)
+    return fromApi
+      .flatMap(cleanReadingTokens)
+      .filter((item, index, list) => list.indexOf(item) === index)
+      .slice(0, 8)
   }, [word.reading, word.readingVariants])
   const primaryReading = readings[0] || '—'
   const readingVariants = readings.slice(1)
   const romaji = (word.romaji || '').split(/\s+/)[0] || null
   const related = useMemo(() => {
-    const merged = [...(word.relatedWords || []), ...results.slice(1).map((item) => ({ word: item.word, reading: item.reading || undefined, meaning: item.meanings[0] }))]
-    return merged.filter((item, index, list) => item.word !== word.word && list.findIndex((candidate) => candidate.word === item.word) === index).slice(0, 6)
+    const merged = [
+      ...(word.relatedWords || []),
+      ...results
+        .slice(1)
+        .map((item) => ({ word: item.word, reading: item.reading || undefined, meaning: item.meanings[0] })),
+    ]
+    return merged
+      .filter(
+        (item, index, list) =>
+          item.word !== word.word && list.findIndex((candidate) => candidate.word === item.word) === index
+      )
+      .slice(0, 6)
   }, [results, word])
   const type = wordTypeLabel(word.partOfSpeech)
 
@@ -141,10 +171,17 @@ export function DictionaryWordDetail({
           </button>
         </div>
       </header>
+      {saveError && (
+        <p role="alert" className="ui-error-text">
+          {saveError}
+        </p>
+      )}
 
       <div className="dictionary-word-detail__content">
         <section className="dictionary-word-section">
-          <h2><BookOpenCheck size={18} /> Tổng quan</h2>
+          <h2>
+            <BookOpenCheck size={18} /> Tổng quan
+          </h2>
           <div className="dictionary-definitions-list">
             {word.meanings.length > 0 ? (
               word.meanings.map((meaning, idx) => (
@@ -182,7 +219,9 @@ export function DictionaryWordDetail({
 
         {forms.length > 0 && (
           <section className="dictionary-word-section">
-            <h2><Layers3 size={18} /> Chia động từ</h2>
+            <h2>
+              <Layers3 size={18} /> Chia động từ
+            </h2>
             <div className="dictionary-conjugation">
               {forms.map((form) => (
                 <div key={form.label} className="dictionary-conjugation-item">
@@ -196,7 +235,9 @@ export function DictionaryWordDetail({
 
         {word.kanjis.length > 0 && (
           <section className="dictionary-word-section">
-            <h2><span className="dictionary-kanji-heading">漢</span> Phân tích Kanji</h2>
+            <h2>
+              <span className="dictionary-kanji-heading">漢</span> Phân tích Kanji
+            </h2>
             <div className="dictionary-kanji-grid">
               {word.kanjis.map((kanji) => (
                 <article key={kanji.character} className="dictionary-kanji-card">
@@ -229,16 +270,18 @@ export function DictionaryWordDetail({
 
         {word.examples && word.examples.length > 0 && (
           <section className="dictionary-word-section">
-            <h2><MessageCircleMore size={18} /> Câu ví dụ</h2>
+            <h2>
+              <MessageCircleMore size={18} /> Câu ví dụ
+            </h2>
             <div className="dictionary-examples">
               {word.examples.map((example, index) => (
                 <article key={`${example.sentenceJp}-${index}`} className="dictionary-example-item">
                   <div className="dictionary-example-body">
-                    <div className="dictionary-example-jp">
-                      {example.sentenceJp}
-                    </div>
+                    <div className="dictionary-example-jp">{example.sentenceJp}</div>
                     {example.furigana && (
-                      <small style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-jp)' }}>
+                      <small
+                        style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-jp)' }}
+                      >
                         {example.furigana}
                       </small>
                     )}
@@ -265,7 +308,9 @@ export function DictionaryWordDetail({
 
         {related.length > 0 && (
           <section className="dictionary-word-section">
-            <h2><Link2 size={18} /> Từ tương ứng</h2>
+            <h2>
+              <Link2 size={18} /> Từ tương ứng
+            </h2>
             <div className="dictionary-related-grid">
               {related.map((item) => (
                 <button

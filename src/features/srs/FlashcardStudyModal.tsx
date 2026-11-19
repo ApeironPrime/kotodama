@@ -95,6 +95,12 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
 
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest('button, a, select, [role="button"]') &&
+        e.target.getAttribute('aria-expanded') === null
+      )
+        return
       if (e.code === 'Space') {
         e.preventDefault()
         setIsFlipped((prev) => !prev)
@@ -133,7 +139,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
         style={{ zIndex: 9999 }}
       >
         <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
-          <Check size={48} color="#10b981" style={{ margin: '0 auto 1rem auto' }} />
+          <Check size={48} color="var(--color-success)" style={{ margin: '0 auto 1rem auto' }} />
           <h2>Hoàn thành phiên ôn tập!</h2>
           <p style={{ color: 'var(--color-text-secondary)', margin: '1rem 0' }}>
             Bạn đã hoàn thành toàn bộ {completedCount} thẻ ôn tập.
@@ -147,7 +153,8 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
   }
 
   const mastery = currentCard.masteryPercentage || 0
-  const masteryColor = mastery >= 80 ? '#10b981' : mastery >= 50 ? '#3b82f6' : '#f59e0b'
+  const masteryColor =
+    mastery >= 80 ? 'var(--color-success)' : mastery >= 50 ? 'var(--color-accent)' : 'var(--color-warning)'
 
   return (
     <div
@@ -209,7 +216,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 color: masteryColor,
-                background: `${masteryColor}15`,
+                background: `color-mix(in srgb, ${masteryColor} 12%, transparent)`,
                 padding: '2px 8px',
                 borderRadius: '999px',
               }}
@@ -226,7 +233,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
               style={{
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid var(--color-border)',
-                color: showFurigana ? '#3b82f6' : 'var(--color-text-muted)',
+                color: showFurigana ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
                 borderRadius: '6px',
                 padding: '4px 8px',
                 fontSize: '0.75rem',
@@ -260,6 +267,16 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
 
         {/* Card Body - 3D Flip Area */}
         <div
+          role="button"
+          tabIndex={0}
+          aria-label={isFlipped ? 'Ẩn đáp án thẻ' : 'Lật thẻ xem đáp án'}
+          aria-expanded={isFlipped}
+          onKeyDown={(event) => {
+            if (event.target === event.currentTarget && event.key === 'Enter') {
+              event.preventDefault()
+              setIsFlipped((prev) => !prev)
+            }
+          }}
           onClick={() => setIsFlipped((prev) => !prev)}
           style={{
             minHeight: '340px',
@@ -283,7 +300,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   style={{
                     fontSize: '1.25rem',
                     fontFamily: 'var(--font-jp)',
-                    color: '#3b82f6',
+                    color: 'var(--color-accent-text)',
                     fontWeight: 600,
                   }}
                 >
@@ -304,7 +321,14 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
               </div>
 
               {currentCard.hanViet && (
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    fontSize: '1.1rem',
+                    fontWeight: 800,
+                    color: 'var(--color-danger-text)',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   [{currentCard.hanViet}]
                 </div>
               )}
@@ -318,7 +342,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                       padding: '2px 10px',
                       borderRadius: '999px',
                       background: 'rgba(245, 158, 11, 0.15)',
-                      color: '#fbbf24',
+                      color: 'var(--color-warning)',
                       border: '1px solid rgba(245, 158, 11, 0.3)',
                     }}
                   >
@@ -337,7 +361,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   style={{
                     background: 'rgba(59, 130, 246, 0.15)',
                     border: '1px solid rgba(59, 130, 246, 0.3)',
-                    color: '#3b82f6',
+                    color: 'var(--color-accent-text)',
                     borderRadius: '50%',
                     padding: '10px',
                     cursor: 'pointer',
@@ -352,7 +376,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
               </div>
 
               <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                👉 Bấm vào thẻ hoặc phím{' '}
+                Bấm vào thẻ hoặc phím{' '}
                 <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
                   Space
                 </kbd>{' '}
@@ -388,7 +412,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                       style={{
                         fontSize: '1.1rem',
                         fontFamily: 'var(--font-jp)',
-                        color: '#3b82f6',
+                        color: 'var(--color-accent-text)',
                         marginLeft: '0.75rem',
                         fontWeight: 700,
                       }}
@@ -397,7 +421,14 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                     </span>
                   )}
                   {currentCard.hanViet && (
-                    <span style={{ fontSize: '1rem', color: '#dc2626', fontWeight: 800, marginLeft: '0.5rem' }}>
+                    <span
+                      style={{
+                        fontSize: '1rem',
+                        color: 'var(--color-danger-text)',
+                        fontWeight: 800,
+                        marginLeft: '0.5rem',
+                      }}
+                    >
                       [{currentCard.hanViet}]
                     </span>
                   )}
@@ -411,7 +442,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   style={{
                     background: 'rgba(59, 130, 246, 0.15)',
                     border: 'none',
-                    color: '#3b82f6',
+                    color: 'var(--color-accent-text)',
                     borderRadius: '50%',
                     padding: '8px',
                     cursor: 'pointer',
@@ -442,7 +473,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                         padding: '2px 10px',
                         borderRadius: '999px',
                         background: 'rgba(245, 158, 11, 0.2)',
-                        color: '#fbbf24',
+                        color: 'var(--color-warning)',
                         border: '1px solid rgba(245, 158, 11, 0.3)',
                       }}
                     >
@@ -470,7 +501,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                             style={{
                               fontSize: '0.72rem',
                               fontWeight: 800,
-                              background: '#3b82f6',
+                              background: 'var(--color-accent)',
                               color: '#ffffff',
                               borderRadius: '999px',
                               padding: '1px 7px',
@@ -478,8 +509,8 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                           >
                             Nghĩa {group.group_no || gIdx + 1}
                           </span>
-                          <span style={{ fontSize: '0.98rem', fontWeight: 700, color: '#10b981' }}>
-                            👉 {group.meaning || group.usage || ''}
+                          <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}>
+                            {group.meaning || group.usage || ''}
                           </span>
                         </div>
 
@@ -488,7 +519,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                             style={{
                               fontFamily: 'var(--font-jp)',
                               fontSize: '0.86rem',
-                              color: '#60a5fa',
+                              color: 'var(--color-accent-text)',
                               fontWeight: 600,
                             }}
                           >
@@ -555,7 +586,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                               style={{
                                 background: 'rgba(59, 130, 246, 0.15)',
                                 border: 'none',
-                                color: '#3b82f6',
+                                color: 'var(--color-accent-text)',
                                 borderRadius: '50%',
                                 padding: '6px',
                                 cursor: 'pointer',
@@ -585,8 +616,10 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                     >
                       Ý NGHĨA:
                     </div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#10b981', marginTop: '2px' }}>
-                      👉 {currentCard.meaning}
+                    <div
+                      style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-success)', marginTop: '2px' }}
+                    >
+                      {currentCard.meaning}
                     </div>
                     {currentCard.explanation && (
                       <div
@@ -649,14 +682,16 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
-                          color: '#f59e0b',
+                          color: 'var(--color-warning)',
                           fontWeight: 700,
                           fontSize: '0.85rem',
                         }}
                       >
                         <Sparkles size={14} /> Mẹo nhớ chiết tự (NhaiKanji):
                       </div>
-                      <div style={{ color: '#fbbf24', fontSize: '0.9rem', fontWeight: 600, marginTop: '2px' }}>
+                      <div
+                        style={{ color: 'var(--color-warning)', fontSize: '0.9rem', fontWeight: 600, marginTop: '2px' }}
+                      >
                         {currentCard.story}
                       </div>
                     </div>
@@ -723,7 +758,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                             style={{
                               background: 'rgba(59, 130, 246, 0.15)',
                               border: 'none',
-                              color: '#3b82f6',
+                              color: 'var(--color-accent-text)',
                               borderRadius: '50%',
                               padding: '6px',
                               cursor: 'pointer',
@@ -802,9 +837,9 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   minWidth: '70px',
                   padding: '8px 10px',
                   borderRadius: '8px',
-                  border: '1px solid #ef4444',
+                  border: '1px solid var(--color-danger-text)',
                   background: 'rgba(239, 68, 68, 0.15)',
-                  color: '#f87171',
+                  color: 'var(--color-danger-text)',
                   fontWeight: 700,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
@@ -821,9 +856,9 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   minWidth: '70px',
                   padding: '8px 10px',
                   borderRadius: '8px',
-                  border: '1px solid #f59e0b',
+                  border: '1px solid var(--color-warning)',
                   background: 'rgba(245, 158, 11, 0.15)',
-                  color: '#fbbf24',
+                  color: 'var(--color-warning)',
                   fontWeight: 700,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
@@ -840,9 +875,9 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   minWidth: '70px',
                   padding: '8px 10px',
                   borderRadius: '8px',
-                  border: '1px solid #3b82f6',
+                  border: '1px solid var(--color-accent)',
                   background: 'rgba(59, 130, 246, 0.15)',
-                  color: '#60a5fa',
+                  color: 'var(--color-accent-text)',
                   fontWeight: 700,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
@@ -859,9 +894,9 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   minWidth: '70px',
                   padding: '8px 10px',
                   borderRadius: '8px',
-                  border: '1px solid #10b981',
+                  border: '1px solid var(--color-success)',
                   background: 'rgba(16, 185, 129, 0.15)',
-                  color: '#34d399',
+                  color: 'var(--color-success)',
                   fontWeight: 700,
                   fontSize: '0.85rem',
                   cursor: 'pointer',

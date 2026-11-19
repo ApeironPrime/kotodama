@@ -335,24 +335,26 @@ describe('NhaiKanji Frontend Feature Suite', () => {
       ],
     }
     vi.mocked(nhaikanjiApi.fetchJlptExamDetail).mockResolvedValue(sampleExamDetail)
-    vi.mocked(nhaikanjiApi.submitJlptExam).mockResolvedValue({
-      examId: 'n4-2025-1-vocab',
-      totalQuestions: 1,
-      correctCount: 1,
-      scorePercentage: 100,
-      passed: true,
-      questionResults: [
-        {
-          id: 'q1',
-          number: 1,
-          questionText: '田中さんは【学生】です。',
-          userAnswer: 1,
-          correctAnswer: 1,
-          isCorrect: true,
-          explanation: '学生 đọc là がくせい',
-        },
-      ],
-    })
+    vi.mocked(nhaikanjiApi.submitJlptExam)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({
+        examId: 'n4-2025-1-vocab',
+        totalQuestions: 1,
+        correctCount: 1,
+        scorePercentage: 100,
+        passed: true,
+        questionResults: [
+          {
+            id: 'q1',
+            number: 1,
+            questionText: '田中さんは【学生】です。',
+            userAnswer: 1,
+            correctAnswer: 1,
+            isCorrect: true,
+            explanation: '学生 đọc là がくせい',
+          },
+        ],
+      })
 
     renderWithClient(<JlptPage />)
 
@@ -376,7 +378,17 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     const submitBtn = screen.getAllByRole('button', { name: /Nộp bài thi/i })[0]
     if (submitBtn) {
       fireEvent.click(submitBtn)
+      expect(screen.getByRole('dialog', { name: 'Nộp bài thi?' })).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'Xác nhận nộp bài' }))
     }
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.getByText('がくせい')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Thử nộp lại' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục làm bài' }))
+    expect(screen.queryByRole('dialog', { name: 'Nộp bài thi?' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Thử nộp lại' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận nộp bài' }))
 
     await waitFor(() => {
       expect(screen.getByText(/CHÚC MỪNG! BẠN ĐÃ ĐỖ/i)).toBeTruthy()
@@ -476,6 +488,8 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     expect(submitBtn).toBeDefined()
     if (submitBtn) {
       fireEvent.click(submitBtn)
+      expect(screen.getByRole('dialog', { name: 'Nộp bài thi?' })).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'Xác nhận nộp bài' }))
     }
 
     // Kiểm tra xem Script có xuất hiện không
@@ -660,6 +674,8 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     expect(submitBtn).toBeDefined()
     if (submitBtn) {
       fireEvent.click(submitBtn)
+      expect(screen.getByRole('dialog', { name: 'Nộp bài thi?' })).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'Xác nhận nộp bài' }))
     }
 
     // Verify Certificate rendered

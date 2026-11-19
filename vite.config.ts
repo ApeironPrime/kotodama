@@ -11,6 +11,8 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
+          if (id.includes('node_modules/three/')) return 'graphics-vendor'
+          if (id.includes('node_modules/gsap/')) return 'motion-vendor'
           if (id.includes('@tanstack/react-query')) return 'query-vendor'
           if (id.includes('react-hook-form')) return 'form-vendor'
           if (id.includes('axios')) return 'api-vendor'

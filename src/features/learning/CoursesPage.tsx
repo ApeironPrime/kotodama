@@ -16,11 +16,16 @@ export function CoursesPage({ canManageCourses, onManage }: { canManageCourses: 
           title="Khóa học sắp ra mắt"
           description="Trong lúc chờ, bạn có thể khám phá Tủ sách tại trang Tra từ."
           action={
-            canManageCourses ? (
-              <Button variant="secondary" onClick={onManage}>
-                Quản lý khóa học
-              </Button>
-            ) : undefined
+            <>
+              <a className="ui-button ui-button--secondary" href="/tra-tu?tab=vocabulary">
+                Khám phá tủ sách
+              </a>
+              {canManageCourses && (
+                <Button variant="secondary" onClick={onManage}>
+                  Quản lý khóa học
+                </Button>
+              )}
+            </>
           }
         />
       </section>

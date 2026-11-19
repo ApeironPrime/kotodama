@@ -115,6 +115,20 @@ describe('API error contract', () => {
     })
   })
 
+  it('does not reuse a cancelled session restore in a new component lifecycle', async () => {
+    const request = vi
+      .spyOn(apiClient, 'request')
+      .mockRejectedValueOnce(axiosLikeError(undefined, undefined, 'ERR_CANCELED'))
+      .mockResolvedValueOnce({ data: { data: { id: 'learner-1' } } } as never)
+    const firstController = new AbortController()
+    const first = requestApi({ url: '/api/v1/auth/me', dedupeKey: 'auth:me', signal: firstController.signal })
+    firstController.abort()
+    const second = requestApi({ url: '/api/v1/auth/me', dedupeKey: 'auth:me', signal: new AbortController().signal })
+    await expect(first).rejects.toMatchObject({ kind: 'cancelled' })
+    await expect(second).resolves.toEqual({ id: 'learner-1' })
+    expect(request).toHaveBeenCalledTimes(2)
+  })
+
   it('attaches browser credentials, refreshes once, then retries an expired protected request', async () => {
     const storage = new Map([['kotodama.access-token', 'expired-access-token']])
     const getItem = vi.fn((key: string) => storage.get(key) ?? null)
@@ -136,7 +150,13 @@ describe('API error contract', () => {
     const defaultAdapter = apiClient.defaults.adapter
     apiClient.defaults.adapter = async (config) => {
       expect(config.url).toBe('/api/v1/auth/refresh')
-      return { data: { data: { accessToken: 'fresh-access-token' } }, status: 200, statusText: 'OK', headers: {}, config }
+      return {
+        data: { data: { accessToken: 'fresh-access-token' } },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      }
     }
     let protectedAttempts = 0
     try {

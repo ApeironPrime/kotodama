@@ -34,11 +34,14 @@ export const LEARNING_LEVELS: Record<LearningLevel, string> = {
 
 export function useLearningPlan() {
   const [storedPlan, setStoredPlan] = usePersistentState<LearningPlan | null>('kotodama.learning-plan', null)
+  const [dailyWords, setDailyWords] = usePersistentState(
+    'kotodama.settings.daily-words',
+    String(storedPlan?.dailyWords ?? 20)
+  )
   const { status } = useAuth()
-  const plan =
-    storedPlan && storedPlan.language !== ACTIVE_LEARNING_LANGUAGE
-      ? { ...storedPlan, language: ACTIVE_LEARNING_LANGUAGE }
-      : storedPlan
+  const plan = storedPlan
+    ? { ...storedPlan, language: ACTIVE_LEARNING_LANGUAGE, dailyWords: Number(dailyWords) || 20 }
+    : null
 
   useEffect(() => {
     if (storedPlan && storedPlan.language !== ACTIVE_LEARNING_LANGUAGE) {
@@ -65,10 +68,16 @@ export function useLearningPlan() {
 
   const savePlan = (nextPlan: LearningPlan | null) => {
     setStoredPlan(nextPlan)
+    if (nextPlan) setDailyWords(String(nextPlan.dailyWords))
     if (status !== 'authenticated' || !nextPlan) return
     void requestApi<LearningPlan>({ method: 'POST', url: apiPaths.account.learningPlan, data: nextPlan })
       .then(setStoredPlan)
       .catch(() => undefined)
+    void requestApi({
+      method: 'POST',
+      url: apiPaths.account.preferences,
+      data: { dailyWords: nextPlan.dailyWords },
+    }).catch(() => undefined)
   }
 
   return [plan, savePlan] as const

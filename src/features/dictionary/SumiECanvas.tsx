@@ -1,3 +1,4 @@
+import { useUiSound } from '../../lib/useUiSound'
 import { useReducedMotion } from '../../lib/useReducedMotion'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Volume2, VolumeX, Sparkles, ZoomIn, ZoomOut, RotateCcw, X, ExternalLink } from 'lucide-react'
@@ -158,7 +159,8 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     y: 0,
   })
 
-  const [isMuted, setIsMuted] = useState(sumiAudio.isMuted())
+  const uiSound = useUiSound()
+  const isMuted = !uiSound.enabled
 
   // Execute Hanko Stamp (Dập ấn nạp mực)
   const executeStampAction = useCallback((kanji: string, screenX: number, screenY: number) => {
@@ -203,9 +205,8 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
 
   // Toggle Audio
   const handleToggleAudio = () => {
-    const next = sumiAudio.toggleMute()
-    setIsMuted(next)
-    if (!next) {
+    uiSound.toggle()
+    if (isMuted) {
       sumiAudio.playSuikinkutsu()
     }
   }

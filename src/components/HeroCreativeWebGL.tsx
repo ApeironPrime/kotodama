@@ -13,7 +13,6 @@ void main() {
 
 const fragmentShader = `
 uniform sampler2D uTexture;
-uniform sampler2D uDepthMap;
 uniform float uTime;
 uniform vec2 uMouse;
 uniform vec2 uPointer;
@@ -31,7 +30,10 @@ void main() {
   vec2 uv = (uUvTransform * vec3(vUv, 1.0)).xy;
   
   // 1. Depth Map Parallax Layering (2.5D Spatial Diorama)
-  float depth = texture2D(uDepthMap, uv).r;
+  float y = 1.0 - uv.y;
+  float foreground = y * y * (3.0 - 2.0 * y);
+  float side = abs(uv.x - 0.5) * 2.0;
+  float depth = foreground * (0.7 + side * side * 0.3);
   
   // A continuous, restrained displacement keeps the painting in one piece.
   vec2 frameEdge = smoothstep(vec2(0.0), vec2(0.12), vUv)
@@ -81,43 +83,6 @@ void main() {
   gl_FragColor = color;
 }
 `
-
-/**
- * Build a smooth depth field without rectangular regions or luminance edges.
- */
-function createProceduralDepthMap(image: HTMLImageElement): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas')
-  const w = 512
-  const h = 512
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return new THREE.CanvasTexture(canvas)
-
-  ctx.drawImage(image, 0, 0, w, h)
-  const imgData = ctx.getImageData(0, 0, w, h)
-  const d = imgData.data
-
-  for (let i = 0; i < d.length; i += 4) {
-    const y = Math.floor(i / 4 / w) / h // 0 top, 1 bottom
-    const x = ((i / 4) % w) / w
-    const foreground = y * y * (3 - 2 * y)
-    const sideDepth = Math.pow(Math.abs(x - 0.5) * 2, 2)
-    const depth = foreground * (0.7 + sideDepth * 0.3)
-    const finalVal = Math.round(depth * 255)
-    d[i] = finalVal
-    d[i + 1] = finalVal
-    d[i + 2] = finalVal
-  }
-
-  ctx.putImageData(imgData, 0, 0)
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.wrapS = THREE.ClampToEdgeWrapping
-  texture.wrapT = THREE.ClampToEdgeWrapping
-  texture.minFilter = THREE.LinearFilter
-  texture.magFilter = THREE.LinearFilter
-  return texture
-}
 
 export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: string; videoSrc?: string }) {
   const reducedMotion = useReducedMotion()
@@ -194,7 +159,6 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
       fragmentShader,
       uniforms: {
         uTexture: { value: null },
-        uDepthMap: { value: null },
         uTime: { value: 0 },
         uMouse: { value: new THREE.Vector2(0, 0) },
         uPointer: { value: new THREE.Vector2(0.5, 0.2) },
@@ -207,18 +171,6 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
 
     const plane = new THREE.Mesh(geometry, material)
     scene.add(plane)
-
-    let depthTexture: THREE.CanvasTexture | null = null
-    const depthImg = new Image()
-    depthImg.crossOrigin = 'anonymous'
-    depthImg.src = imageSrc
-    depthImg.onload = () => {
-      depthTexture = createProceduralDepthMap(depthImg)
-      if (material.uniforms['uDepthMap']) {
-        material.uniforms['uDepthMap'].value = depthTexture
-      }
-      renderer.render(scene, camera)
-    }
 
     if (videoSrc) {
       videoEl = document.createElement('video')
@@ -373,7 +325,6 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
       geometry.dispose()
       material.dispose()
       activeTexture?.dispose()
-      depthTexture?.dispose()
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement)
       }
@@ -385,6 +336,9 @@ export default function HeroCreativeWebGL({ imageSrc, videoSrc }: { imageSrc: st
       ref={containerRef}
       className="showcase-hero__webgl-stage"
       style={{
+        backgroundImage: `url(${imageSrc})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'right top',
         position: 'absolute',
         inset: 0,
         zIndex: 1,

@@ -310,7 +310,7 @@ export default function FuriganaSubtitleBar({
             transition: 'all 0.15s ease',
           }}
         >
-          🇻🇳 Bản dịch
+          Bản dịch VI
         </button>
       </div>
     </div>

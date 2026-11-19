@@ -1,3 +1,4 @@
+import { useUiSound } from '../lib/useUiSound'
 import { accents, backgrounds, type Accent, type Background, type AccountPreferences } from '../lib/theme'
 import { useCallback, type CSSProperties, type ReactNode } from 'react'
 import PageHeader from '../components/PageHeader'
@@ -9,16 +10,12 @@ import { useAuth } from '../features/auth/authContext'
 
 export function SettingsPage({ onLogout }: { onLogout: () => void }) {
   const { status } = useAuth()
+  const sound = useUiSound()
   const [dailyWords, setDailyWords] = usePersistentState('kotodama.settings.daily-words', '20')
   const [reviewLimit, setReviewLimit] = usePersistentState('kotodama.settings.review-limit', '100')
   const [autoPronounce, setAutoPronounce] = usePersistentState('kotodama.settings.auto-pronounce', true)
   const [furigana, setFurigana] = usePersistentState('kotodama.settings.furigana', true)
   const [romaji, setRomaji] = usePersistentState('kotodama.settings.romaji', false)
-  const [pitchAccent, setPitchAccent] = usePersistentState('kotodama.settings.pitch-accent', true)
-  const [reminders, setReminders] = usePersistentState('kotodama.settings.reminders', false)
-  const [streakReminders, setStreakReminders] = usePersistentState('kotodama.settings.streak-reminders', true)
-  const [publicProfile, setPublicProfile] = usePersistentState('kotodama.settings.public-profile', false)
-  const [analytics, setAnalytics] = usePersistentState('kotodama.settings.analytics', true)
   const [accent, setAccent] = usePersistentState<Accent>('kotodama.settings.accent', 'rose')
   const [background, setBackground] = usePersistentState<Background>('kotodama.settings.background', 'ivory')
   const activeBackground = backgrounds[background] ? background : 'ivory'
@@ -60,7 +57,7 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
           />
           <SettingsSelect
             label="Giới hạn ôn tập mỗi ngày"
-            description="Giúp phiên ôn tập luôn vừa sức."
+            description="Tính cả các thẻ bạn đã ôn hôm nay khi mở phiên mới."
             value={reviewLimit}
             onChange={(value) => {
               setReviewLimit(value)
@@ -84,7 +81,7 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
           />
           <SettingsToggle
             label="Hiển thị Furigana"
-            description="Hiển thị cách đọc trên chữ Kanji."
+            description="Hiển thị cách đọc trong phụ đề Video AI."
             checked={furigana}
             onChange={(value) => {
               setFurigana(value)
@@ -93,7 +90,7 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
           />
           <SettingsToggle
             label="Hiển thị Romaji"
-            description="Hiển thị phiên âm Latinh khi cần."
+            description="Hiển thị phiên âm Latinh trong phụ đề Video AI."
             checked={romaji}
             onChange={(value) => {
               setRomaji(value)
@@ -102,16 +99,20 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
           />
           <SettingsToggle
             label="Cao độ (pitch accent)"
-            description="Hiện thông tin cao độ cho từ tiếng Nhật."
-            checked={pitchAccent}
-            onChange={(value) => {
-              setPitchAccent(value)
-              persistPreference({ pitchAccent: value })
-            }}
+            description="Chưa hỗ trợ dữ liệu cao độ trong phiên bản này."
+            checked={false}
+            disabled
+            onChange={() => {}}
           />
         </SettingsSection>
 
         <SettingsSection title="Giao diện" description="Cá nhân hóa sắc thái để Kotodama hợp với bạn hơn.">
+          <SettingsToggle
+            label="Âm thanh giao diện"
+            description="Âm thanh bút lông và thao tác. Mặc định tắt; lưu trên thiết bị này."
+            checked={sound.enabled}
+            onChange={sound.setEnabled}
+          />
           <div className="settings-row">
             <div className="settings-row__copy">
               <h3>Màu nền</h3>
@@ -160,45 +161,37 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
           </div>
         </SettingsSection>
 
-        <SettingsSection title="Thông báo" description="Các lựa chọn này được lưu trên thiết bị hiện tại.">
+        <SettingsSection title="Thông báo" description="Thông báo tự động chưa được triển khai.">
           <SettingsToggle
             label="Nhắc học tập"
-            description="Nhận lời nhắc cho lịch học bạn đã đặt."
-            checked={reminders}
-            onChange={(value) => {
-              setReminders(value)
-              persistPreference({ reminders: value })
-            }}
+            description="Chưa hỗ trợ gửi thông báo học tập."
+            checked={false}
+            disabled
+            onChange={() => {}}
           />
           <SettingsToggle
             label="Duy trì chuỗi ngày"
-            description="Nhắc bạn trước khi chuỗi học tập kết thúc."
-            checked={streakReminders}
-            onChange={(value) => {
-              setStreakReminders(value)
-              persistPreference({ streakReminders: value })
-            }}
+            description="Chưa hỗ trợ gửi thông báo duy trì chuỗi."
+            checked={false}
+            disabled
+            onChange={() => {}}
           />
         </SettingsSection>
 
         <SettingsSection title="Quyền riêng tư" description="Bạn luôn kiểm soát dữ liệu hiển thị của mình.">
           <SettingsToggle
             label="Hồ sơ công khai"
-            description="Cho phép người khác xem hồ sơ và các huy hiệu của bạn."
-            checked={publicProfile}
-            onChange={(value) => {
-              setPublicProfile(value)
-              persistPreference({ publicProfile: value })
-            }}
+            description="Hồ sơ hiện chỉ dành cho chủ tài khoản; chưa hỗ trợ chia sẻ công khai."
+            checked={false}
+            disabled
+            onChange={() => {}}
           />
           <SettingsToggle
             label="Dữ liệu cải thiện sản phẩm"
-            description="Cho phép sử dụng dữ liệu ẩn danh để cải thiện trải nghiệm."
-            checked={analytics}
-            onChange={(value) => {
-              setAnalytics(value)
-              persistPreference({ analytics: value })
-            }}
+            description="Chưa hỗ trợ tùy chọn thu thập dữ liệu phân tích."
+            checked={false}
+            disabled
+            onChange={() => {}}
           />
         </SettingsSection>
 
@@ -262,11 +255,13 @@ function SettingsToggle({
   label,
   description,
   checked,
+  disabled,
   onChange,
 }: {
   label: string
   description: string
   checked: boolean
+  disabled?: boolean
   onChange: (value: boolean) => void
 }) {
   return (
@@ -275,7 +270,7 @@ function SettingsToggle({
         <h3>{label}</h3>
         <p>{description}</p>
       </div>
-      <Switch label={label} checked={checked} onCheckedChange={onChange} />
+      <Switch label={label} checked={checked} disabled={disabled ?? false} onCheckedChange={onChange} />
     </div>
   )
 }
@@ -299,7 +294,7 @@ function SettingsSelect({
         <h3>{label}</h3>
         <p>{description}</p>
       </div>
-      <Select value={value} onChange={(event) => onChange(event.target.value)}>
+      <Select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>
             {optionLabel}

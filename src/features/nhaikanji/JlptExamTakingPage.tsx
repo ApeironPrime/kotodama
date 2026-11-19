@@ -1,4 +1,5 @@
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -117,8 +118,8 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: '0.5rem',
-        background: isPlaying ? '#eef2ff' : '#f8fafc',
-        border: `1.5px solid ${isPlaying ? '#6366f1' : '#cbd5e1'}`,
+        background: isPlaying ? 'var(--color-accent-subtle)' : '#f8fafc',
+        border: `1.5px solid ${isPlaying ? 'var(--color-accent)' : '#cbd5e1'}`,
         borderRadius: '0.875rem',
         padding: '0.4rem 0.875rem',
         boxShadow: isPlaying ? '0 2px 8px rgba(99, 102, 241, 0.15)' : 'none',
@@ -145,8 +146,8 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
         onClick={togglePlay}
         style={{
           border: 'none',
-          background: isPlaying ? '#4f46e5' : '#ffffff',
-          color: isPlaying ? '#ffffff' : '#4f46e5',
+          background: isPlaying ? 'var(--color-accent)' : '#ffffff',
+          color: isPlaying ? '#ffffff' : 'var(--color-accent-text)',
           borderRadius: '50%',
           width: '2rem',
           height: '2rem',
@@ -163,8 +164,10 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
       </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
-        <Volume2 size={15} color={isPlaying ? '#4f46e5' : '#64748b'} />
-        <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: isPlaying ? '#3730a3' : '#1e293b' }}>
+        <Volume2 size={15} color={isPlaying ? 'var(--color-accent)' : '#64748b'} />
+        <span
+          style={{ fontSize: '0.8125rem', fontWeight: 800, color: isPlaying ? 'var(--color-accent-text)' : '#1e293b' }}
+        >
           {label}
         </span>
       </div>
@@ -177,10 +180,15 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
           max={duration || 100}
           value={currentTime}
           onChange={handleSeek}
-          style={{ width: '100%', height: '4px', cursor: 'pointer', accentColor: '#4f46e5' }}
+          style={{ width: '100%', height: '4px', cursor: 'pointer', accentColor: 'var(--color-accent)' }}
         />
         <span
-          style={{ fontSize: '0.6875rem', color: '#64748b', fontFamily: 'var(--font-mono, monospace)', flexShrink: 0 }}
+          style={{
+            fontSize: '0.6875rem',
+            color: 'var(--color-text-secondary)',
+            fontFamily: 'var(--font-mono, monospace)',
+            flexShrink: 0,
+          }}
         >
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
@@ -193,8 +201,8 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
             type="button"
             onClick={() => handleRate(r)}
             style={{
-              border: `1px solid ${playbackRate === r ? '#4f46e5' : '#cbd5e1'}`,
-              background: playbackRate === r ? '#4f46e5' : '#ffffff',
+              border: `1px solid ${playbackRate === r ? 'var(--color-accent)' : '#cbd5e1'}`,
+              background: playbackRate === r ? 'var(--color-accent)' : '#ffffff',
               color: playbackRate === r ? '#ffffff' : '#475569',
               borderRadius: '0.375rem',
               padding: '0.15rem 0.4rem',
@@ -280,9 +288,9 @@ function JlptCertificate({
     >
       <div
         style={{
-          background: '#ffffff',
+          background: 'var(--color-bg-surface)',
           borderRadius: '1.5rem',
-          border: `2px solid ${isPassed ? '#10b981' : '#f43f5e'}`,
+          border: `2px solid ${isPassed ? 'var(--color-success)' : 'var(--color-danger-text)'}`,
           boxShadow: isPassed
             ? '0 10px 25px -5px rgba(16, 185, 129, 0.15)'
             : '0 10px 25px -5px rgba(244, 63, 94, 0.15)',
@@ -307,7 +315,7 @@ function JlptCertificate({
                 width: '2.5rem',
                 height: '2.5rem',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 100%)',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
@@ -319,10 +327,14 @@ function JlptCertificate({
               言
             </div>
             <div>
-              <span style={{ fontWeight: 900, fontSize: '1.25rem', letterSpacing: '0.05em', color: '#0f172a' }}>
+              <span
+                style={{ fontWeight: 900, fontSize: '1.25rem', letterSpacing: '0.05em', color: 'var(--color-text)' }}
+              >
                 KOTODAMA
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', fontWeight: 600 }}>
+              <span
+                style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block', fontWeight: 600 }}
+              >
                 {examTitle || '日本語能力試験 JLPT MOCK TEST'}
               </span>
             </div>
@@ -333,9 +345,9 @@ function JlptCertificate({
               textAlign: 'right',
               padding: '0.5rem 1rem',
               borderRadius: '0.875rem',
-              border: `1px solid ${isPassed ? '#a7f3d0' : '#fecdd3'}`,
-              background: isPassed ? '#ecfdf5' : '#fff1f2',
-              color: isPassed ? '#065f46' : '#9f1239',
+              border: `1px solid ${isPassed ? 'var(--color-success-subtle)' : 'var(--color-danger-subtle)'}`,
+              background: isPassed ? 'var(--color-success-subtle)' : 'var(--color-danger-subtle)',
+              color: isPassed ? 'var(--color-success)' : 'var(--color-danger-text)',
             }}
           >
             <div style={{ fontSize: '0.6875rem', fontWeight: 800, letterSpacing: '0.1em' }}>試験結果発表</div>
@@ -346,16 +358,16 @@ function JlptCertificate({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '120px 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
             gap: '1rem',
             alignItems: 'center',
             marginBottom: '1.5rem',
           }}
         >
           <div>
-            <div style={{ fontSize: '0.625rem', color: '#64748b' }}>しめい</div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a' }}>氏名</div>
-            <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Họ tên</div>
+            <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>しめい</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)' }}>氏名</div>
+            <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Họ tên</div>
           </div>
           <div
             style={{
@@ -365,7 +377,7 @@ function JlptCertificate({
               textAlign: 'center',
               fontWeight: 800,
               fontSize: '1.125rem',
-              color: '#0f172a',
+              color: 'var(--color-text)',
               letterSpacing: '0.05em',
             }}
           >
@@ -373,8 +385,8 @@ function JlptCertificate({
           </div>
 
           <div>
-            <div style={{ fontSize: '0.625rem', color: '#64748b' }}>レベル</div>
-            <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Cấp độ</div>
+            <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>レベル</div>
+            <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Cấp độ</div>
           </div>
           <div
             style={{
@@ -384,27 +396,27 @@ function JlptCertificate({
               textAlign: 'center',
               fontWeight: 900,
               fontSize: '1.125rem',
-              color: '#0f172a',
+              color: 'var(--color-text)',
             }}
           >
             {level}
           </div>
 
           <div>
-            <div style={{ fontSize: '0.625rem', color: '#64748b' }}>しけんけっか</div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a' }}>試験結果</div>
-            <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Kết quả thi</div>
+            <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>しけんけっか</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)' }}>試験結果</div>
+            <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Kết quả thi</div>
           </div>
           <div
             style={{
-              border: `1.5px solid ${isPassed ? '#15803d' : '#b91c1c'}`,
+              border: `1.5px solid ${isPassed ? 'var(--color-success)' : 'var(--color-danger-text)'}`,
               borderRadius: '9999px',
               padding: '0.625rem 1.5rem',
               textAlign: 'center',
               fontWeight: 900,
               fontSize: '1.375rem',
-              background: isPassed ? '#15803d' : '#fff1f2',
-              color: isPassed ? '#ffffff' : '#b91c1c',
+              background: isPassed ? 'var(--color-success-subtle)' : 'var(--color-danger-subtle)',
+              color: isPassed ? 'var(--color-success)' : 'var(--color-danger-text)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -412,7 +424,7 @@ function JlptCertificate({
             }}
           >
             <span>{isPassed ? '合格 Đỗ' : '不合格 Trượt'}</span>
-            {isPassed && <span>🏆</span>}
+            {isPassed && <CheckCircle2 size={18} aria-label="Đã đạt" />}
           </div>
         </div>
 
@@ -422,8 +434,8 @@ function JlptCertificate({
             borderRadius: '1rem',
             overflow: 'hidden',
             display: 'grid',
-            gridTemplateColumns: '1.5fr 1fr',
-            background: '#ffffff',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+            background: 'var(--color-bg-surface)',
           }}
         >
           <div style={{ borderRight: '1px solid #cbd5e1' }}>
@@ -431,13 +443,15 @@ function JlptCertificate({
               style={{
                 padding: '0.75rem',
                 textAlign: 'center',
-                background: '#f8fafc',
+                background: 'var(--color-bg-surface)',
                 borderBottom: '1px solid #cbd5e1',
               }}
             >
-              <div style={{ fontSize: '0.625rem', color: '#64748b' }}>とくてんくぶんべつとくてん</div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>得点区分別得点</div>
-              <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Điểm đạt được từng phần</div>
+              <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>
+                とくてんくぶんべつとくてん
+              </div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--color-text)' }}>得点区分別得点</div>
+              <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Điểm đạt được từng phần</div>
             </div>
 
             <div
@@ -450,23 +464,33 @@ function JlptCertificate({
               }}
             >
               <div>
-                <div style={{ fontSize: '0.625rem', color: '#64748b' }}>げんごちしき（もじ・ごい・ぶんぽう）</div>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#0f172a' }}>
+                <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>
+                  げんごちしき（もじ・ごい・ぶんぽう）
+                </div>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text)' }}>
                   言語知識(文字・語彙・文法)
                 </div>
-                <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Từ vựng & Ngữ pháp</div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Từ vựng & Ngữ pháp</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: sec1.isFailed ? '#dc2626' : '#ea580c' }}>
+                <div
+                  style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 900,
+                    color: sec1.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning)',
+                  }}
+                >
                   {sec1.score}
-                  <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 700 }}>/60</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', fontWeight: 700 }}>
+                    /60
+                  </span>
                 </div>
                 <Badge
                   variant="outline"
                   style={{
                     fontSize: '0.625rem',
-                    color: sec1.isFailed ? '#dc2626' : '#d97706',
-                    borderColor: sec1.isFailed ? '#f87171' : '#fde68a',
+                    color: sec1.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning)',
+                    borderColor: sec1.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning-subtle)',
                   }}
                 >
                   {sec1.isFailed ? '⚠️ Liệt < 19' : '• Liệt < 19'}
@@ -484,21 +508,29 @@ function JlptCertificate({
               }}
             >
               <div>
-                <div style={{ fontSize: '0.625rem', color: '#64748b' }}>どっかい</div>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#0f172a' }}>読解</div>
-                <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Đọc hiểu</div>
+                <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>どっかい</div>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text)' }}>読解</div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Đọc hiểu</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: sec2.isFailed ? '#dc2626' : '#ea580c' }}>
+                <div
+                  style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 900,
+                    color: sec2.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning)',
+                  }}
+                >
                   {sec2.score}
-                  <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 700 }}>/60</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', fontWeight: 700 }}>
+                    /60
+                  </span>
                 </div>
                 <Badge
                   variant="outline"
                   style={{
                     fontSize: '0.625rem',
-                    color: sec2.isFailed ? '#dc2626' : '#d97706',
-                    borderColor: sec2.isFailed ? '#f87171' : '#fde68a',
+                    color: sec2.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning)',
+                    borderColor: sec2.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning-subtle)',
                   }}
                 >
                   {sec2.isFailed ? '⚠️ Liệt < 19' : '• Liệt < 19'}
@@ -515,21 +547,29 @@ function JlptCertificate({
               }}
             >
               <div>
-                <div style={{ fontSize: '0.625rem', color: '#64748b' }}>ちょうかい</div>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#0f172a' }}>聴解</div>
-                <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Nghe hiểu</div>
+                <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>ちょうかい</div>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text)' }}>聴解</div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Nghe hiểu</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: sec3.isFailed ? '#dc2626' : '#ea580c' }}>
+                <div
+                  style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 900,
+                    color: sec3.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning)',
+                  }}
+                >
                   {sec3.score}
-                  <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 700 }}>/60</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', fontWeight: 700 }}>
+                    /60
+                  </span>
                 </div>
                 <Badge
                   variant="outline"
                   style={{
                     fontSize: '0.625rem',
-                    color: sec3.isFailed ? '#dc2626' : '#d97706',
-                    borderColor: sec3.isFailed ? '#f87171' : '#fde68a',
+                    color: sec3.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning)',
+                    borderColor: sec3.isFailed ? 'var(--color-danger-text)' : 'var(--color-warning-subtle)',
                   }}
                 >
                   {sec3.isFailed ? '⚠️ Liệt < 19' : '• Liệt < 19'}
@@ -542,20 +582,20 @@ function JlptCertificate({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              background: '#fffdfa',
+              background: 'var(--color-bg-surface)',
             }}
           >
             <div
               style={{
                 padding: '0.75rem',
                 textAlign: 'center',
-                background: '#f8fafc',
+                background: 'var(--color-bg-surface)',
                 borderBottom: '1px solid #cbd5e1',
               }}
             >
-              <div style={{ fontSize: '0.625rem', color: '#64748b' }}>そうごうとくてん</div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>総合得点</div>
-              <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>Tổng điểm</div>
+              <div style={{ fontSize: '0.625rem', color: 'var(--color-text-secondary)' }}>そうごうとくてん</div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--color-text)' }}>総合得点</div>
+              <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)' }}>Tổng điểm</div>
             </div>
 
             <div
@@ -569,20 +609,33 @@ function JlptCertificate({
                 gap: '0.5rem',
               }}
             >
-              <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#dc2626', lineHeight: 1 }}>{totalScore}</div>
-              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#64748b' }}>180</div>
-              <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 600, marginTop: '0.5rem' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--color-danger-text)', lineHeight: 1 }}>
+                {totalScore}
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text-secondary)' }}>180</div>
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--color-text-secondary)',
+                  fontWeight: 600,
+                  marginTop: '0.5rem',
+                }}
+              >
                 • Điểm đỗ: {passScore}/180
               </div>
               <div style={{ fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-                <span style={{ color: '#64748b' }}>Mức CEFR: </span>
-                <span style={{ fontWeight: 800, color: isPassed ? '#4f46e5' : '#94a3b8' }}>{cefr}</span>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Mức CEFR: </span>
+                <span style={{ fontWeight: 800, color: isPassed ? 'var(--color-accent-text)' : '#94a3b8' }}>
+                  {cefr}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        <div style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>{today}</div>
+        <div style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+          {today}
+        </div>
       </div>
 
       <div
@@ -594,45 +647,47 @@ function JlptCertificate({
       >
         <div
           style={{
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
+            background: 'var(--color-success-subtle)',
+            border: '1px solid var(--color-success-subtle)',
             borderRadius: '1rem',
             padding: '1rem',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#166534' }}>CÂU ĐÚNG</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#15803d', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-success)' }}>CÂU ĐÚNG</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-success)', marginTop: '0.25rem' }}>
             {correctCount} / {result.totalQuestions}
           </div>
         </div>
 
         <div
           style={{
-            background: '#fff1f2',
-            border: '1px solid #fecdd3',
+            background: 'var(--color-danger-subtle)',
+            border: '1px solid var(--color-danger-subtle)',
             borderRadius: '1rem',
             padding: '1rem',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9f1239' }}>CÂU SAI / CHƯA LÀM</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#e11d48', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-danger-text)' }}>
+            CÂU SAI / CHƯA LÀM
+          </div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-danger-text)', marginTop: '0.25rem' }}>
             {wrongCount}
           </div>
         </div>
 
         <div
           style={{
-            background: '#eff6ff',
-            border: '1px solid #bfdbfe',
+            background: 'var(--color-accent-subtle)',
+            border: '1px solid var(--color-accent-subtle)',
             borderRadius: '1rem',
             padding: '1rem',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e40af' }}>TỶ LỆ CHÍNH XÁC</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#2563eb', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent-text)' }}>TỶ LỆ CHÍNH XÁC</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-accent-text)', marginTop: '0.25rem' }}>
             {result.scorePercentage}%
           </div>
         </div>
@@ -642,9 +697,9 @@ function JlptCertificate({
         style={{
           padding: '1rem 1.5rem',
           borderRadius: '1rem',
-          background: isPassed ? '#f0fdf4' : '#fff1f2',
-          border: `1px solid ${isPassed ? '#86efac' : '#fecdd3'}`,
-          color: isPassed ? '#166534' : '#9f1239',
+          background: isPassed ? 'var(--color-success-subtle)' : 'var(--color-danger-subtle)',
+          border: `1px solid ${isPassed ? 'var(--color-success-subtle)' : 'var(--color-danger-subtle)'}`,
+          color: isPassed ? 'var(--color-success)' : 'var(--color-danger-text)',
           fontWeight: 800,
           textAlign: 'center',
           fontSize: '1rem',
@@ -718,16 +773,21 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
   const isLoading = examQuery.isLoading || Boolean(attemptId && attemptQuery.isLoading)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [confirmSubmit, setConfirmSubmit] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
 
   const handleSubmit = useCallback(async () => {
     if (isSubmitted || isSubmitting) return
     setIsSubmitting(true)
+    setSubmitError(null)
     try {
       const { result: res, synced } = activeAttempt
         ? await finishJlptAttempt(activeAttempt, user?.id, answers)
         : { result: await nhaikanjiApi.submitJlptExam({ examId, answers }), synced: false }
       setResult(res)
       setIsSubmitted(true)
+      setConfirmSubmit(false)
       setSaveStatus(
         synced || (activeAttempt as (JlptAttempt & { persistence?: string }) | null)?.persistence !== 'server'
           ? 'saved'
@@ -741,8 +801,9 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
       if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
-    } catch (err) {
-      console.error('Submit error:', err)
+    } catch {
+      setConfirmSubmit(false)
+      setSubmitError('Chưa nộp được bài. Câu trả lời vẫn được giữ nguyên; kiểm tra kết nối rồi thử lại.')
     } finally {
       setIsSubmitting(false)
     }
@@ -750,6 +811,16 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
 
   const submitRef = useRef(handleSubmit)
   submitRef.current = handleSubmit
+
+  useEffect(() => {
+    if (isSubmitted || !attemptHydrated) return
+    const protect = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', protect)
+    return () => window.removeEventListener('beforeunload', protect)
+  }, [isSubmitted, attemptHydrated])
 
   // Initialize from the saved timer only after the draft has loaded.
   useEffect(() => {
@@ -1005,7 +1076,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
   if (isLoading || !exam || (attemptId && attemptQuery.isLoading)) {
     return (
       <div className="nhaikanji-container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <div style={{ color: '#64748b', fontWeight: 600 }}>Đang tải nội dung đề thi...</div>
+        <div style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>Đang tải nội dung đề thi...</div>
       </div>
     )
   }
@@ -1050,6 +1121,37 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
 
   return (
     <div className="nhaikanji-container">
+      {submitError && (
+        <div role="alert" className="ui-status-panel">
+          <p>{submitError}</p>
+          <Button onClick={() => setConfirmSubmit(true)}>Thử nộp lại</Button>
+        </div>
+      )}
+      {confirmExit && (
+        <ConfirmDialog
+          title="Rời bài thi?"
+          confirmLabel="Rời bài thi"
+          onCancel={() => setConfirmExit(false)}
+          onConfirm={onBack}
+        >
+          <p>Bài thi chưa được nộp. Bạn có thể tiếp tục làm bài để giữ nhịp thi hiện tại.</p>
+        </ConfirmDialog>
+      )}
+      {confirmSubmit && (
+        <ConfirmDialog
+          title="Nộp bài thi?"
+          confirmLabel="Xác nhận nộp bài"
+          busy={isSubmitting}
+          onCancel={() => setConfirmSubmit(false)}
+          onConfirm={() => void handleSubmit()}
+        >
+          <p>
+            Đã trả lời {Object.values(answers).filter((value) => value !== null && value !== undefined).length} /{' '}
+            {exam?.parts?.reduce((total, part) => total + (part.questions?.length ?? 0), 0) ?? 0} câu. Câu chưa trả lời
+            sẽ không được tính điểm.
+          </p>
+        </ConfirmDialog>
+      )}
       {/* Top Header & Sticky Status */}
       <div
         className="jlpt-exam-header"
@@ -1067,7 +1169,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Button variant="ghost" size="sm" onClick={onBack}>
+          <Button variant="ghost" size="sm" onClick={() => (isSubmitted ? onBack() : setConfirmExit(true))}>
             <ArrowLeft size={16} /> Quay lại
           </Button>
           <div>
@@ -1076,7 +1178,14 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                 {exam.level}
               </Badge>
               {exam.isFullMock && (
-                <Badge variant="secondary" style={{ background: '#e0e7ff', color: '#4338ca', fontWeight: 800 }}>
+                <Badge
+                  variant="secondary"
+                  style={{
+                    background: 'var(--color-accent-subtle)',
+                    color: 'var(--color-accent-text)',
+                    fontWeight: 800,
+                  }}
+                >
                   180 ĐIỂM
                 </Badge>
               )}
@@ -1084,7 +1193,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                 {formatExamTitle(exam)}
               </h1>
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.125rem' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '0.125rem' }}>
               {exam.sectionLabelJP} • {exam.sectionLabel}
             </div>
             {!isSubmitted && attemptId && (
@@ -1093,7 +1202,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                 aria-live="polite"
                 style={{
                   fontSize: '0.6875rem',
-                  color: saveStatus === 'offline' ? '#b45309' : '#64748b',
+                  color: saveStatus === 'offline' ? 'var(--color-warning)' : '#64748b',
                   marginTop: '0.2rem',
                 }}
               >
@@ -1116,9 +1225,9 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                 gap: '0.5rem',
                 padding: '0.5rem 1rem',
                 borderRadius: '0.5rem',
-                background: timeLeft < 300 ? '#fee2e2' : 'var(--color-bg-subtle, #f8fafc)',
-                border: `1px solid ${timeLeft < 300 ? '#f87171' : 'var(--color-border, #cbd5e1)'}`,
-                color: timeLeft < 300 ? '#dc2626' : 'var(--color-text, #334155)',
+                background: timeLeft < 300 ? 'var(--color-danger-subtle)' : 'var(--color-bg-subtle, #f8fafc)',
+                border: `1px solid ${timeLeft < 300 ? 'var(--color-danger-text)' : 'var(--color-border, #cbd5e1)'}`,
+                color: timeLeft < 300 ? 'var(--color-danger-text)' : 'var(--color-text, #334155)',
                 fontWeight: 700,
                 fontSize: '0.9375rem',
                 fontFamily: 'var(--font-mono, monospace)',
@@ -1130,7 +1239,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
           )}
 
           {!isSubmitted && (
-            <Button variant="primary" size="sm" onClick={handleSubmit} disabled={isSubmitting}>
+            <Button variant="primary" size="sm" onClick={() => setConfirmSubmit(true)} disabled={isSubmitting}>
               {isSubmitting ? 'Đang chấm điểm...' : 'Nộp bài thi'}
             </Button>
           )}
@@ -1182,8 +1291,8 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                 style={{
                   padding: '0.875rem 1rem',
                   borderRadius: '0.875rem',
-                  border: `2px solid ${isActive ? '#4f46e5' : isDone ? '#86efac' : '#e2e8f0'}`,
-                  background: isActive ? '#eef2ff' : '#ffffff',
+                  border: `2px solid ${isActive ? 'var(--color-accent)' : isDone ? 'var(--color-success-subtle)' : '#e2e8f0'}`,
+                  background: isActive ? 'var(--color-accent-subtle)' : '#ffffff',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -1194,10 +1303,18 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 800, color: isActive ? '#3730a3' : '#1e293b' }}>
+                  <div
+                    style={{
+                      fontSize: '0.875rem',
+                      fontWeight: 800,
+                      color: isActive ? 'var(--color-accent-text)' : '#1e293b',
+                    }}
+                  >
                     {sec.title}
                   </div>
-                  <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.125rem' }}>{sec.titleJP}</div>
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)', marginTop: '0.125rem' }}>
+                    {sec.titleJP}
+                  </div>
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
@@ -1274,7 +1391,13 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                   <Headphones size={15} className="text-indigo-600" />
                   <span>Âm thanh bài thi ({exam.level})</span>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'var(--font-mono, monospace)' }}>
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-text-secondary)',
+                    fontFamily: 'var(--font-mono, monospace)',
+                  }}
+                >
                   {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
                 </div>
               </div>
@@ -1364,7 +1487,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span
                           style={{
-                            background: '#4f46e5',
+                            background: 'var(--color-accent)',
                             color: '#ffffff',
                             fontWeight: 800,
                             fontSize: '0.75rem',
@@ -1374,7 +1497,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                         >
                           Mondai {pIdx + 1}
                         </span>
-                        <h2 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 800, color: '#0f172a' }}>
+                        <h2 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 800, color: 'var(--color-text)' }}>
                           {part.title || part.titleJP || `Phần ${pIdx + 1}`}
                         </h2>
                       </div>
@@ -1388,7 +1511,14 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                     </div>
 
                     {part.instruction && (
-                      <p style={{ margin: 0, fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '0.8125rem',
+                          color: 'var(--color-text-secondary)',
+                          lineHeight: 1.5,
+                        }}
+                      >
                         {part.instruction}
                       </p>
                     )}
@@ -1404,14 +1534,14 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                           gap: '0.375rem',
                           fontSize: '0.75rem',
                           fontWeight: 800,
-                          color: '#4338ca',
-                          background: '#e0e7ff',
+                          color: 'var(--color-accent-text)',
+                          background: 'var(--color-accent-subtle)',
                           padding: '0.2rem 0.6rem',
                           borderRadius: '0.375rem',
                           width: 'fit-content',
                         }}
                       >
-                        <span>📄 ĐOẠN VĂN / BÀI ĐỌC</span>
+                        <span>ĐOẠN VĂN / BÀI ĐỌC</span>
                       </div>
                       <div
                         className="jlpt-reading-passage"
@@ -1457,13 +1587,13 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                             border: '1px solid',
                             borderColor: isSubmitted
                               ? qResult?.isCorrect
-                                ? '#86efac'
-                                : '#fda4af'
+                                ? 'var(--color-success-subtle)'
+                                : 'var(--color-danger-subtle)'
                               : 'var(--color-border, #e2e8f0)',
                             background: isSubmitted
                               ? qResult?.isCorrect
-                                ? '#f0fdf4'
-                                : '#fff1f2'
+                                ? 'var(--color-success-subtle)'
+                                : 'var(--color-danger-subtle)'
                               : 'var(--color-bg-subtle, #f8fafc)',
                             display: 'flex',
                             flexDirection: 'column',
@@ -1494,14 +1624,14 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                     gap: '0.375rem',
                                     fontSize: '0.75rem',
                                     fontWeight: 800,
-                                    color: '#4338ca',
-                                    background: '#e0e7ff',
+                                    color: 'var(--color-accent-text)',
+                                    background: 'var(--color-accent-subtle)',
                                     padding: '0.2rem 0.6rem',
                                     borderRadius: '0.375rem',
                                     width: 'fit-content',
                                   }}
                                 >
-                                  <span>📄 ĐOẠN VĂN / BÀI ĐỌC</span>
+                                  <span>ĐOẠN VĂN / BÀI ĐỌC</span>
                                 </div>
                                 <div
                                   className="jlpt-reading-passage"
@@ -1525,7 +1655,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                   width: '1.75rem',
                                   height: '1.75rem',
                                   borderRadius: '0.5rem',
-                                  background: '#4f46e5',
+                                  background: 'var(--color-accent)',
                                   color: '#ffffff',
                                   fontWeight: 700,
                                   fontSize: '0.75rem',
@@ -1542,7 +1672,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                 style={{
                                   fontSize: '1rem',
                                   fontWeight: 500,
-                                  fontFamily: 'var(--font-serif, "Fraunces", serif)',
+                                  fontFamily: 'var(--font-jp-serif)',
                                   lineHeight: 1.6,
                                 }}
                                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(questionText) }}
@@ -1693,17 +1823,17 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                         userSelect: 'text',
                                         WebkitUserSelect: 'text',
                                         borderColor: isCorrectOption
-                                          ? '#4ade80'
+                                          ? 'var(--color-success)'
                                           : isSelected
-                                            ? '#4f46e5'
+                                            ? 'var(--color-accent)'
                                             : 'var(--color-border, #cbd5e1)',
                                         background: isCorrectOption
-                                          ? '#dcfce7'
+                                          ? 'var(--color-success-subtle)'
                                           : isSelected
-                                            ? '#4f46e5'
+                                            ? 'var(--color-accent)'
                                             : 'var(--color-bg-surface, #ffffff)',
                                         color: isCorrectOption
-                                          ? '#14532d'
+                                          ? 'var(--color-success)'
                                           : isSelected
                                             ? '#ffffff'
                                             : 'var(--color-text, #334155)',
@@ -1726,7 +1856,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                           userSelect: 'none',
                                           WebkitUserSelect: 'none',
                                           background: isSelected ? '#ffffff' : 'var(--color-bg-subtle, #f1f5f9)',
-                                          color: isSelected ? '#4f46e5' : '#64748b',
+                                          color: isSelected ? 'var(--color-accent-text)' : '#64748b',
                                           border: isSelected ? 'none' : '1px solid var(--color-border, #cbd5e1)',
                                         }}
                                       >
@@ -1735,7 +1865,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                       <span
                                         className="jlpt-option-text"
                                         style={{
-                                          fontFamily: 'var(--font-serif, "Fraunces", serif)',
+                                          fontFamily: 'var(--font-jp-serif)',
                                           flex: 1,
                                           userSelect: 'text',
                                           WebkitUserSelect: 'text',
@@ -1758,8 +1888,8 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                 marginTop: '0.75rem',
                                 padding: '1rem 1.25rem',
                                 borderRadius: '0.75rem',
-                                background: '#fffbeb',
-                                border: '1px solid #fde68a',
+                                background: 'var(--color-warning-subtle)',
+                                border: '1px solid var(--color-warning-subtle)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '0.5rem',
@@ -1770,7 +1900,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '0.375rem',
-                                  color: '#b45309',
+                                  color: 'var(--color-warning)',
                                   fontWeight: 800,
                                   fontSize: '0.875rem',
                                 }}
@@ -1781,7 +1911,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                               <div
                                 style={{
                                   fontSize: '0.875rem',
-                                  color: '#78350f',
+                                  color: 'var(--color-warning)',
                                   lineHeight: 1.7,
                                   whiteSpace: 'pre-wrap',
                                 }}
@@ -1812,8 +1942,8 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                 <div
                                   style={{
                                     marginTop: '0.75rem',
-                                    border: '1px solid #bfdbfe',
-                                    background: '#eff6ff',
+                                    border: '1px solid var(--color-accent-subtle)',
+                                    background: 'var(--color-accent-subtle)',
                                     borderRadius: '0.75rem',
                                     overflow: 'hidden',
                                   }}
@@ -1827,10 +1957,10 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'space-between',
-                                      background: '#dbeafe',
+                                      background: 'var(--color-accent-subtle)',
                                       border: 'none',
                                       cursor: 'pointer',
-                                      color: '#1e40af',
+                                      color: 'var(--color-accent-text)',
                                       fontWeight: 700,
                                       fontSize: '0.875rem',
                                       textAlign: 'left',
@@ -1846,7 +1976,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                         alignItems: 'center',
                                         gap: '0.25rem',
                                         fontSize: '0.75rem',
-                                        color: '#2563eb',
+                                        color: 'var(--color-accent-text)',
                                       }}
                                     >
                                       {isExpanded ? 'Thu gọn' : 'Xem chi tiết'}
@@ -1868,7 +1998,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                           style={{
                                             fontSize: '0.75rem',
                                             fontWeight: 700,
-                                            color: '#1e3a8a',
+                                            color: 'var(--color-accent-text)',
                                             marginBottom: '0.375rem',
                                             textTransform: 'uppercase',
                                             letterSpacing: '0.05em',
@@ -1878,15 +2008,15 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                         </div>
                                         <div
                                           style={{
-                                            fontFamily: 'var(--font-serif, "Fraunces", serif)',
+                                            fontFamily: 'var(--font-jp-serif)',
                                             fontSize: '0.9375rem',
                                             lineHeight: 1.8,
-                                            color: '#0f172a',
+                                            color: 'var(--color-text)',
                                             whiteSpace: 'pre-wrap',
-                                            background: '#ffffff',
+                                            background: 'var(--color-bg-surface)',
                                             padding: '0.75rem 1rem',
                                             borderRadius: '0.5rem',
-                                            border: '1px solid #bfdbfe',
+                                            border: '1px solid var(--color-accent-subtle)',
                                           }}
                                         >
                                           {explanationToPlainText(scriptContent)}
@@ -1899,7 +2029,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                             style={{
                                               fontSize: '0.75rem',
                                               fontWeight: 700,
-                                              color: '#166534',
+                                              color: 'var(--color-success)',
                                               marginBottom: '0.375rem',
                                               textTransform: 'uppercase',
                                               letterSpacing: '0.05em',
@@ -1911,12 +2041,12 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                                             style={{
                                               fontSize: '0.875rem',
                                               lineHeight: 1.7,
-                                              color: '#166534',
+                                              color: 'var(--color-success)',
                                               whiteSpace: 'pre-wrap',
-                                              background: '#f0fdf4',
+                                              background: 'var(--color-success-subtle)',
                                               padding: '0.75rem 1rem',
                                               borderRadius: '0.5rem',
-                                              border: '1px solid #bbf7d0',
+                                              border: '1px solid var(--color-success-subtle)',
                                             }}
                                           >
                                             {explanationToPlainText(scriptViContent)}
@@ -1942,7 +2072,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                 borderRadius: '1rem',
                 padding: '3rem 1rem',
                 textAlign: 'center',
-                color: '#64748b',
+                color: 'var(--color-text-secondary)',
               }}
             >
               Chưa có câu hỏi nào trong phần thi này.
@@ -1955,7 +2085,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: '#ffffff',
+              background: 'var(--color-bg-surface)',
               padding: '1rem 1.5rem',
               borderRadius: '1rem',
               border: '1px solid #e2e8f0',
@@ -1976,7 +2106,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
               <ChevronLeft size={16} /> Phần trước
             </Button>
 
-            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#475569' }}>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
               Phần {activeSectionIdx + 1}/{sections.length} • {currentSectionAnsweredCount}/
               {currentSectionQuestionsCount} câu
             </div>
@@ -1996,7 +2126,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
               </Button>
             ) : (
               !isSubmitted && (
-                <Button variant="primary" size="sm" onClick={handleSubmit}>
+                <Button variant="primary" size="sm" onClick={() => setConfirmSubmit(true)}>
                   Nộp bài thi (180 Điểm)
                 </Button>
               )
@@ -2069,7 +2199,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                     style={{
                       fontSize: '0.6875rem',
                       fontWeight: 700,
-                      color: '#475569',
+                      color: 'var(--color-text-secondary)',
                       lineHeight: 1.4,
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -2094,24 +2224,24 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                       const isAnswered = answers[qKey] !== undefined
                       const qResult = result?.questionResults?.find((r) => r.id === qKey || r.number === q.number)
 
-                      let bg = '#f0f4f9'
+                      let bg = 'var(--color-bg-subtle)'
                       let color = '#334155'
                       let borderColor = '#dce3ec'
 
                       if (isSubmitted && qResult) {
                         if (qResult.isCorrect) {
-                          bg = '#dcfce7'
-                          color = '#15803d'
-                          borderColor = '#86efac'
+                          bg = 'var(--color-success-subtle)'
+                          color = 'var(--color-success)'
+                          borderColor = 'var(--color-success-subtle)'
                         } else {
-                          bg = '#ffe4e6'
-                          color = '#e11d48'
-                          borderColor = '#fda4af'
+                          bg = 'var(--color-danger-subtle)'
+                          color = 'var(--color-danger-text)'
+                          borderColor = 'var(--color-danger-subtle)'
                         }
                       } else if (isAnswered) {
-                        bg = '#4f46e5'
+                        bg = 'var(--color-accent)'
                         color = '#ffffff'
-                        borderColor = '#4338ca'
+                        borderColor = 'var(--color-accent)'
                       }
 
                       return (
@@ -2154,12 +2284,19 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
               alignItems: 'center',
               justifyContent: 'space-between',
               fontSize: '0.6875rem',
-              color: '#64748b',
-              background: '#fafafa',
+              color: 'var(--color-text-secondary)',
+              background: 'var(--color-bg-subtle)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              <span style={{ width: '0.625rem', height: '0.625rem', borderRadius: '0.2rem', background: '#4f46e5' }} />
+              <span
+                style={{
+                  width: '0.625rem',
+                  height: '0.625rem',
+                  borderRadius: '0.2rem',
+                  background: 'var(--color-accent)',
+                }}
+              />
               <span>Đã chọn</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
@@ -2168,7 +2305,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                   width: '0.625rem',
                   height: '0.625rem',
                   borderRadius: '0.2rem',
-                  background: '#f0f4f9',
+                  background: 'var(--color-bg-subtle)',
                   border: '1px solid #cbd5e1',
                 }}
               />
@@ -2177,7 +2314,12 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
             {isSubmitted && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                 <span
-                  style={{ width: '0.625rem', height: '0.625rem', borderRadius: '0.2rem', background: '#dcfce7' }}
+                  style={{
+                    width: '0.625rem',
+                    height: '0.625rem',
+                    borderRadius: '0.2rem',
+                    background: 'var(--color-success-subtle)',
+                  }}
                 />
                 <span>Đúng</span>
               </div>

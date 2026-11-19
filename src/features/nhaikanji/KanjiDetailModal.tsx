@@ -66,6 +66,7 @@ function extractStoryComponents(story: string, focalKanji: string): Array<{ char
 
 export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: KanjiDetailModalProps) {
   const { user } = useAuth()
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'info' | 'practice'>('info')
   const [viewMode, setViewMode] = useState<'calligraphy' | 'illustration'>('calligraphy')
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
@@ -86,6 +87,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   // Reset illustration error when kanji changes
   useEffect(() => {
     setIllustrationError(false)
+    setSaveError(null)
   }, [kanjiSummary.kanji])
 
   // Play brush sound on opening
@@ -139,6 +141,11 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   }
 
   const handleSaveToSrs = async (word: string, meaning: string, reading: string) => {
+    setSaveError(null)
+    if (!user) {
+      setSaveError('Đăng nhập để lưu từ vào sổ tay ôn tập.')
+      return
+    }
     try {
       await srsApi.addCard({
         type: 'vocab',
@@ -149,8 +156,8 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
       })
       setSavedSrs((prev) => ({ ...prev, [`vocab_${word}`]: true, [word]: true }))
       await queryClient.invalidateQueries({ queryKey: ['srs'] })
-    } catch (err) {
-      console.error('Không thể lưu từ vào SRS:', err)
+    } catch {
+      setSaveError('Chưa lưu được từ. Kiểm tra kết nối rồi thử lại.')
     }
   }
 
@@ -159,6 +166,11 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   const isKanjiSaved = Boolean(savedSrs[`kanji_${kanjiSummary.kanji}`] || savedSrs[kanjiSummary.kanji])
 
   const handleSaveKanjiToSrs = async () => {
+    setSaveError(null)
+    if (!user) {
+      setSaveError('Đăng nhập để lưu Hán tự vào sổ tay ôn tập.')
+      return
+    }
     try {
       const reading = `${kanjiSummary.onyomi || ''} ${kanjiSummary.kunyomi || ''}`.trim()
       const strokeCountNum =
@@ -179,8 +191,8 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
       })
       setSavedSrs((prev) => ({ ...prev, [`kanji_${kanjiSummary.kanji}`]: true, [kanjiSummary.kanji]: true }))
       await queryClient.invalidateQueries({ queryKey: ['srs'] })
-    } catch (err) {
-      console.error('Không thể lưu Hán tự vào SRS:', err)
+    } catch {
+      setSaveError('Chưa lưu được Hán tự. Kiểm tra kết nối rồi thử lại.')
     }
   }
 
@@ -258,6 +270,11 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
 
           <div className="shodo-theater-actions">
             {/* Hanko Seal SRS Action */}
+            {saveError && (
+              <p role="alert" className="ui-error-text">
+                {saveError}
+              </p>
+            )}
             <button
               type="button"
               className={`shodo-hanko-seal-btn ${isKanjiSaved ? 'is-stamped' : ''}`}
