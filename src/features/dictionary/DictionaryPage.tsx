@@ -362,7 +362,8 @@ export default function DictionaryPage({
 
   return (
     <section className="dictionary-page">
-      {((activeTab === 'kanji' && kanjiView === 'ink' && isKanjiError) || (activeTab === 'grammar' && isBunpoError)) && (
+      {((activeTab === 'kanji' && kanjiView === 'ink' && isKanjiError) ||
+        (activeTab === 'grammar' && isBunpoError)) && (
         <div role="alert" className="ui-status-panel">
           <p>Chưa tải được nội dung. Hãy kiểm tra kết nối rồi thử lại.</p>
           <Button
@@ -557,7 +558,7 @@ export default function DictionaryPage({
             {/* 2. VIEW: TAB NGỮ PHÁP */}
             {activeTab === 'grammar' && !searchTerm && (
               <Suspense fallback={<p role="status">Đang mở thư viện ngữ pháp…</p>}>
-                <BunpoPage />
+                <BunpoPage {...(onReview ? { onGoToSrs: onReview } : {})} />
               </Suspense>
             )}
             {activeTab === 'grammar' && Boolean(searchTerm) && (
@@ -604,11 +605,7 @@ export default function DictionaryPage({
                                 {b.pattern}
                               </span>
 
-                              {b.level && (
-                                <Badge variant="primary" className="text-xs font-bold">
-                                  {b.level}
-                                </Badge>
-                              )}
+                              {b.level && <Badge variant="primary">{b.level}</Badge>}
                             </div>
                             <div
                               style={{

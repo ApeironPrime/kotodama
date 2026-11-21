@@ -80,8 +80,10 @@ export function KanjiPage({ query }: { query?: string } = {}) {
       </section>
     )
   return (
-    <div className="nhaikanji-container">
+    <div className="nhaikanji-container washi-page">
       <PageHeader
+        hanko="漢"
+        jpVertical="漢字大辞典"
         eyebrow="KHO HÁN TỰ & CHIẾT TỰ"
         title="Kho Hán Tự (Kanji) & Chiết Tự"
         description="2500+ Chữ Hán phân loại N5→N1 với đầy đủ Âm Hán-Việt, câu chuyện gợi nhớ, nét viết và phát âm chuẩn"
@@ -126,13 +128,13 @@ export function KanjiPage({ query }: { query?: string } = {}) {
         {/* Feature quick badges */}
         <div className="nhaikanji-badge-line">
           <span>
-            <Sparkles size={14} className="text-amber-500" /> Chiết tự & Mẹo nhớ
+            <Sparkles size={14} className="kanji-icon--amber" /> Chiết tự & Mẹo nhớ
           </span>
           <span>
-            <Layers size={14} className="text-indigo-500" /> 214 Bộ thủ liên kết
+            <Layers size={14} className="kanji-icon--indigo" /> 214 Bộ thủ liên kết
           </span>
           <span>
-            <BookOpen size={14} className="text-emerald-500" /> Luyện viết nét tay
+            <BookOpen size={14} className="kanji-icon--emerald" /> Luyện viết nét tay
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
             {data && (
@@ -141,7 +143,9 @@ export function KanjiPage({ query }: { query?: string } = {}) {
               </span>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Sắp xếp:</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                Sắp xếp:
+              </span>
               <select
                 value={sortBy}
                 onChange={(e) => {
@@ -153,7 +157,7 @@ export function KanjiPage({ query }: { query?: string } = {}) {
                   fontSize: '0.78rem',
                   padding: '3px 8px',
                   borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid var(--color-border)',
                   background: 'var(--color-surface, #ffffff)',
                   color: 'var(--color-text, #0f172a)',
                   cursor: 'pointer',
@@ -166,7 +170,9 @@ export function KanjiPage({ query }: { query?: string } = {}) {
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Hiển thị:</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                Hiển thị:
+              </span>
               <select
                 value={limit}
                 onChange={(e) => {
@@ -178,7 +184,7 @@ export function KanjiPage({ query }: { query?: string } = {}) {
                   fontSize: '0.78rem',
                   padding: '3px 8px',
                   borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid var(--color-border)',
                   background: 'var(--color-surface, #ffffff)',
                   color: 'var(--color-text, #0f172a)',
                   cursor: 'pointer',
@@ -240,7 +246,7 @@ export function KanjiPage({ query }: { query?: string } = {}) {
             >
               {/* JLPT Badge top right */}
               <div className="kanji-card__header">
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                <Badge variant="outline" className="kanji-badge-compact">
                   {k.jlpt_level || 'N5'}
                 </Badge>
                 <span>{k.stroke_count} nét</span>
@@ -264,11 +270,11 @@ export function KanjiPage({ query }: { query?: string } = {}) {
 
       {/* Pagination Controls */}
       {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
+        <div className="kanji-pagination">
           <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
             <ChevronLeft size={16} /> Trang trước
           </Button>
-          <div className="flex items-center gap-1">
+          <div className="kanji-pagination__pages">
             {getVisiblePages(page, data.totalPages).map((pNum, idx) =>
               typeof pNum === 'number' ? (
                 <button
@@ -280,9 +286,9 @@ export function KanjiPage({ query }: { query?: string } = {}) {
                     height: '32px',
                     padding: '0 6px',
                     borderRadius: '6px',
-                    border: page === pNum ? '1px solid #2563eb' : '1px solid #cbd5e1',
-                    background: page === pNum ? '#2563eb' : 'var(--color-surface, #ffffff)',
-                    color: page === pNum ? '#ffffff' : 'var(--color-text, #0f172a)',
+                    border: page === pNum ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+                    background: page === pNum ? 'var(--color-accent)' : 'var(--color-surface)',
+                    color: page === pNum ? 'var(--color-text-inverse)' : 'var(--color-text)',
                     fontWeight: page === pNum ? 700 : 500,
                     fontSize: '0.82rem',
                     cursor: 'pointer',
@@ -291,7 +297,7 @@ export function KanjiPage({ query }: { query?: string } = {}) {
                   {pNum}
                 </button>
               ) : (
-                <span key={idx} style={{ padding: '0 4px', color: '#64748b' }}>
+                <span key={idx} style={{ padding: '0 4px', color: 'var(--color-text-muted)' }}>
                   ...
                 </span>
               )
@@ -305,13 +311,15 @@ export function KanjiPage({ query }: { query?: string } = {}) {
           >
             Trang sau <ChevronRight size={16} />
           </Button>
-          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 px-3">
+          <span className="kanji-pagination__summary">
             Trang {page} / {data.totalPages} (Tổng {data.total} chữ)
           </span>
         </div>
       )}
       {data && data.totalPages === 1 && data.total > 0 && (
-        <div style={{ textAlign: 'center', paddingTop: '1rem', fontSize: '0.82rem', color: '#64748b' }}>
+        <div
+          style={{ textAlign: 'center', paddingTop: '1rem', fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}
+        >
           Đang hiển thị toàn bộ <b>{data.total}</b> chữ Hán
         </div>
       )}

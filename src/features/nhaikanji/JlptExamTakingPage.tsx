@@ -118,11 +118,11 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: '0.5rem',
-        background: isPlaying ? 'var(--color-accent-subtle)' : '#f8fafc',
-        border: `1.5px solid ${isPlaying ? 'var(--color-accent)' : '#cbd5e1'}`,
+        background: isPlaying ? 'var(--color-accent-subtle)' : 'var(--color-bg-subtle)',
+        border: `1.5px solid ${isPlaying ? 'var(--color-accent)' : 'var(--color-border)'}`,
         borderRadius: '0.875rem',
         padding: '0.4rem 0.875rem',
-        boxShadow: isPlaying ? '0 2px 8px rgba(99, 102, 241, 0.15)' : 'none',
+        boxShadow: isPlaying ? 'var(--shadow-sm)' : 'none',
         transition: 'all 0.15s ease',
         maxWidth: '100%',
       }}
@@ -146,8 +146,8 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
         onClick={togglePlay}
         style={{
           border: 'none',
-          background: isPlaying ? 'var(--color-accent)' : '#ffffff',
-          color: isPlaying ? '#ffffff' : 'var(--color-accent-text)',
+          background: isPlaying ? 'var(--color-accent)' : 'var(--color-surface)',
+          color: isPlaying ? 'var(--color-text-inverse)' : 'var(--color-accent-text)',
           borderRadius: '50%',
           width: '2rem',
           height: '2rem',
@@ -155,7 +155,7 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          boxShadow: 'var(--shadow-sm)',
           flexShrink: 0,
         }}
         title={isPlaying ? 'Tạm dừng' : 'Bấm để nghe audio'}
@@ -164,9 +164,13 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
       </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
-        <Volume2 size={15} color={isPlaying ? 'var(--color-accent)' : '#64748b'} />
+        <Volume2 size={15} color={isPlaying ? 'var(--color-accent)' : 'var(--color-text-secondary)'} />
         <span
-          style={{ fontSize: '0.8125rem', fontWeight: 800, color: isPlaying ? 'var(--color-accent-text)' : '#1e293b' }}
+          style={{
+            fontSize: '0.8125rem',
+            fontWeight: 800,
+            color: isPlaying ? 'var(--color-accent-text)' : 'var(--color-text)',
+          }}
         >
           {label}
         </span>
@@ -201,9 +205,9 @@ function QuestionAudioPlayer({ url, label = 'Nghe âm thanh' }: { url: string; l
             type="button"
             onClick={() => handleRate(r)}
             style={{
-              border: `1px solid ${playbackRate === r ? 'var(--color-accent)' : '#cbd5e1'}`,
-              background: playbackRate === r ? 'var(--color-accent)' : '#ffffff',
-              color: playbackRate === r ? '#ffffff' : '#475569',
+              border: `1px solid ${playbackRate === r ? 'var(--color-accent)' : 'var(--color-border)'}`,
+              background: playbackRate === r ? 'var(--color-accent)' : 'var(--color-surface)',
+              color: playbackRate === r ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
               borderRadius: '0.375rem',
               padding: '0.15rem 0.4rem',
               fontSize: '0.6875rem',
@@ -1717,12 +1721,12 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                               {isSubmitted && qResult && (
                                 <div>
                                   {qResult.isCorrect ? (
-                                    <Badge variant="outline" className="text-emerald-600 border-emerald-300 font-bold">
+                                    <Badge variant="outline" className="jlpt-result-badge--correct">
                                       <CheckCircle2 size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />{' '}
                                       Đúng
                                     </Badge>
                                   ) : (
-                                    <Badge variant="outline" className="text-rose-600 border-rose-300 font-bold">
+                                    <Badge variant="outline" className="jlpt-result-badge--wrong">
                                       <XCircle size={14} style={{ display: 'inline', marginRight: '0.25rem' }} /> Sai
                                     </Badge>
                                   )}
@@ -2088,7 +2092,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
               background: 'var(--color-bg-surface)',
               padding: '1rem 1.5rem',
               borderRadius: '1rem',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--color-border)',
               marginTop: '0.5rem',
             }}
           >
@@ -2139,8 +2143,8 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
           {/* Header Banner matching Image 1 */}
           <div
             style={{
-              background: '#778da9',
-              color: '#ffffff',
+              background: 'var(--color-accent)',
+              color: 'var(--color-text-inverse)',
               padding: '0.875rem 1.25rem',
               display: 'flex',
               alignItems: 'center',
@@ -2225,8 +2229,8 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                       const qResult = result?.questionResults?.find((r) => r.id === qKey || r.number === q.number)
 
                       let bg = 'var(--color-bg-subtle)'
-                      let color = '#334155'
-                      let borderColor = '#dce3ec'
+                      let color = 'var(--color-text)'
+                      let borderColor = 'var(--color-border)'
 
                       if (isSubmitted && qResult) {
                         if (qResult.isCorrect) {
@@ -2240,7 +2244,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                         }
                       } else if (isAnswered) {
                         bg = 'var(--color-accent)'
-                        color = '#ffffff'
+                        color = 'var(--color-text-inverse)'
                         borderColor = 'var(--color-accent)'
                       }
 
@@ -2278,7 +2282,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
           {/* Footer legend */}
           <div
             style={{
-              borderTop: '1px solid #f1f5f9',
+              borderTop: '1px solid var(--color-border)',
               padding: '0.75rem 1rem',
               display: 'flex',
               alignItems: 'center',
@@ -2306,7 +2310,7 @@ export function JlptExamTakingPage({ examId, onBack, mode = 'exam', attemptId }:
                   height: '0.625rem',
                   borderRadius: '0.2rem',
                   background: 'var(--color-bg-subtle)',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid var(--color-border)',
                 }}
               />
               <span>Chưa làm</span>

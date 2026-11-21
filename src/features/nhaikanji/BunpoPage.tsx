@@ -320,280 +320,63 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // VIEW 1: CATALOG OVERVIEW (Chọn bộ giáo trình Ngữ Pháp - media_1788263283117.png)
   // =========================================================================
   if (!selectedBook) {
+    const sections = [
+      { level: 'N3', title: 'Ngữ pháp Chuyên sâu N3', subtitle: 'Shinkanzen & Mimikara N3' },
+      { level: 'N2', title: 'Ngữ pháp Chuyên sâu N2', subtitle: 'Shinkanzen Master N2' },
+      { level: 'N1', title: 'Ngữ pháp Chuyên sâu N1', subtitle: 'Shinkanzen Master N1' },
+    ] as const
+
     return (
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.25rem 1rem' }}>
+      <div className="nhaikanji-container washi-page">
         <PageHeader
+          hanko="文"
+          jpVertical="日本語文法"
           eyebrow="NGỮ PHÁP TIẾNG NHẬT CHUẨN JLPT"
           title="Kho Giáo Trình Ngữ Pháp (Shinkanzen Master & Mimikara)"
           description="Học ngữ pháp theo từng bài: đọc giải thích, xem ví dụ và luyện ghi nhớ bằng thẻ ôn tập."
         />
 
-        {/* N3 Section */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <div style={{ width: '4px', height: '24px', background: 'var(--color-accent)', borderRadius: '2px' }} />
-            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>
-              Ngữ pháp Chuyên sâu N3
-            </h2>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Shinkanzen & Mimikara N3</span>
-          </div>
+        {sections.map((section) => (
+          <section key={section.level} className="bunpo-section">
+            <div className="washi-section-head">
+              <h2>{section.title}</h2>
+              <span>{section.subtitle}</span>
+            </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
-              gap: '1.25rem',
-            }}
-          >
-            {GRAMMAR_CATALOG.filter((b) => b.level === 'N3').map((book) => (
-              <div
-                key={book.id}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    event.currentTarget.click()
-                  }
-                }}
-                onClick={() => setSelectedBook(book.id)}
-                style={{
-                  background: book.bg,
-                  border: `1px solid ${book.border}`,
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  minHeight: '160px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)'
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.1)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none'
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.04)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <span
-                      style={{ fontSize: '0.8rem', fontWeight: 700, color: book.color, textTransform: 'uppercase' }}
-                    >
-                      {book.subtitle}
-                    </span>
-                    <h3
-                      style={{ margin: '4px 0 0 0', fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)' }}
-                    >
-                      {book.title}
-                    </h3>
-                  </div>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      padding: '10px',
-                      borderRadius: '12px',
-                      color: book.color,
-                    }}
-                  >
-                    <GraduationCap size={24} />
-                  </div>
-                </div>
-
+            <div className="bunpo-folio-grid">
+              {GRAMMAR_CATALOG.filter((b) => b.level === section.level).map((book) => (
                 <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}
+                  key={book.id}
+                  role="button"
+                  tabIndex={0}
+                  className="bunpo-folio-card"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      event.currentTarget.click()
+                    }
+                  }}
+                  onClick={() => setSelectedBook(book.id)}
                 >
-                  <Badge variant="primary" className="text-xs font-bold">
-                    {catalogBadge(book.id)}
-                  </Badge>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: book.color }}>Vào học ngay →</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* N2 Section */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <div style={{ width: '4px', height: '24px', background: 'var(--color-accent)', borderRadius: '2px' }} />
-            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>
-              Ngữ pháp Chuyên sâu N2
-            </h2>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Shinkanzen Master N2</span>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
-              gap: '1.25rem',
-            }}
-          >
-            {GRAMMAR_CATALOG.filter((b) => b.level === 'N2').map((book) => (
-              <div
-                key={book.id}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    event.currentTarget.click()
-                  }
-                }}
-                onClick={() => setSelectedBook(book.id)}
-                style={{
-                  background: book.bg,
-                  border: `1px solid ${book.border}`,
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  minHeight: '160px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)'
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.1)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none'
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.04)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <span
-                      style={{ fontSize: '0.8rem', fontWeight: 700, color: book.color, textTransform: 'uppercase' }}
-                    >
-                      {book.subtitle}
-                    </span>
-                    <h3
-                      style={{ margin: '4px 0 0 0', fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)' }}
-                    >
-                      {book.title}
-                    </h3>
+                  <div className="bunpo-folio-card__head">
+                    <div>
+                      <span className="bunpo-folio-card__sub">{book.subtitle}</span>
+                      <h3 className="bunpo-folio-card__title">{book.title}</h3>
+                    </div>
+                    <div className="bunpo-folio-card__seal" aria-hidden="true">
+                      <GraduationCap size={20} />
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      padding: '10px',
-                      borderRadius: '12px',
-                      color: book.color,
-                    }}
-                  >
-                    <GraduationCap size={24} />
+
+                  <div className="bunpo-folio-card__footer">
+                    <Badge variant="primary">{catalogBadge(book.id)}</Badge>
+                    <span className="bunpo-folio-card__cta">Vào học ngay →</span>
                   </div>
                 </div>
-
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}
-                >
-                  <Badge variant="primary" className="text-xs font-bold">
-                    {catalogBadge(book.id)}
-                  </Badge>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: book.color }}>Vào học ngay →</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* N1 Section */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <div style={{ width: '4px', height: '24px', background: 'var(--color-accent)', borderRadius: '2px' }} />
-            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>
-              Ngữ pháp Chuyên sâu N1
-            </h2>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Shinkanzen Master N1</span>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
-              gap: '1.25rem',
-            }}
-          >
-            {GRAMMAR_CATALOG.filter((b) => b.level === 'N1').map((book) => (
-              <div
-                key={book.id}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    event.currentTarget.click()
-                  }
-                }}
-                onClick={() => setSelectedBook(book.id)}
-                style={{
-                  background: book.bg,
-                  border: `1px solid ${book.border}`,
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  minHeight: '160px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)'
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.1)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none'
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.04)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <span
-                      style={{ fontSize: '0.8rem', fontWeight: 700, color: book.color, textTransform: 'uppercase' }}
-                    >
-                      {book.subtitle}
-                    </span>
-                    <h3
-                      style={{ margin: '4px 0 0 0', fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)' }}
-                    >
-                      {book.title}
-                    </h3>
-                  </div>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      padding: '10px',
-                      borderRadius: '12px',
-                      color: book.color,
-                    }}
-                  >
-                    <GraduationCap size={24} />
-                  </div>
-                </div>
-
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}
-                >
-                  <Badge variant="primary" className="text-xs font-bold">
-                    {catalogBadge(book.id)}
-                  </Badge>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: book.color }}>Vào học ngay →</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
     )
   }
@@ -739,7 +522,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
         {onGoToSrs && (
           <Button variant="secondary" size="sm" onClick={onGoToSrs}>
-            <Layers size={15} /> Mở Thẻ Ôn Tập Anki
+            <Layers size={15} /> Mở Sổ Tay Ôn Tập SRS
           </Button>
         )}
       </div>
@@ -749,9 +532,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         style={{
           display: 'flex',
           gap: '0.6rem',
-          background: 'rgba(255, 255, 255, 0.04)',
+          background: 'var(--color-bg-subtle)',
+          border: '1px solid var(--color-border)',
           padding: '6px',
-          borderRadius: '12px',
+          borderRadius: '10px',
           marginBottom: '1.5rem',
           maxWidth: '400px',
         }}

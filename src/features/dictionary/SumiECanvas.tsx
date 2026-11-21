@@ -1721,68 +1721,23 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       />
 
       {/* ─── 2D INFINITE ZOOM HUD (Bottom Right Floating Controls) ────────── */}
-      <div
-        style={{
-          position: 'absolute',
-          right: '1.25rem',
-          bottom: '1.25rem',
-          display: 'flex',
-          gap: '0.35rem',
-          background: 'rgba(250, 248, 245, 0.88)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(215, 205, 190, 0.45)',
-          borderRadius: '9999px',
-          padding: '0.25rem 0.5rem',
-          boxShadow: '0 4px 16px rgba(40, 35, 30, 0.06)',
-          zIndex: 10,
-        }}
-        aria-label="Điều hướng không gian vô cực"
-      >
+      <div className="sumi-zoom-hud" aria-label="Điều hướng không gian vô cực">
         <button
           type="button"
           onClick={handleZoomIn}
           title="Phóng to lướt sâu vào Hán tự (+)"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            padding: '0.35rem',
-            cursor: 'pointer',
-            color: '#44403C',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className="sumi-zoom-hud__btn"
         >
           <ZoomIn size={15} />
         </button>
-        <button
-          type="button"
-          onClick={handleZoomReset}
-          title="Đưa về tỷ lệ chuẩn (0)"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            padding: '0.35rem',
-            cursor: 'pointer',
-            color: '#44403C',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
+        <button type="button" onClick={handleZoomReset} title="Đưa về tỷ lệ chuẩn (0)" className="sumi-zoom-hud__btn">
           <RotateCcw size={13} />
         </button>
         <button
           type="button"
           onClick={handleZoomOut}
           title="Thu nhỏ ngắm thiên hà Hán tự (-)"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            padding: '0.35rem',
-            cursor: 'pointer',
-            color: '#44403C',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className="sumi-zoom-hud__btn"
         >
           <ZoomOut size={15} />
         </button>
@@ -1790,19 +1745,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
 
       {/* ─── DECONSTRUCTION STAGE ACTION OVERLAY ──────────────────────────── */}
       {deconstructionStage && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '1.75rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: '0.85rem',
-            zIndex: 25,
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-          }}
-        >
+        <div className="sumi-stage-actions">
           {/* Hanko Direct Stamping in Stage */}
           <button
             type="button"
@@ -1812,21 +1755,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
               const rect = canvas ? canvas.getBoundingClientRect() : { width: 800, height: 600 }
               executeStampAction(item.kanji, rect.width / 2, rect.height / 2 - 35)
             }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              background: '#C23A2B',
-              color: '#FAF8F5',
-              border: 'none',
-              padding: '0.55rem 1.25rem',
-              borderRadius: '9999px',
-              fontFamily: '"Noto Serif JP", serif',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 18px rgba(194, 58, 43, 0.45)',
-            }}
+            className="sumi-stage-btn sumi-stage-btn--primary"
           >
             <span style={{ border: '1px solid currentColor', padding: '0 3px', borderRadius: '2px', fontSize: '10px' }}>
               印
@@ -1841,43 +1770,13 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
               setDeconstructionStage(null)
               onSelectKanji(item)
             }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              background: 'rgba(250, 248, 245, 0.9)',
-              color: '#44403C',
-              border: '1px solid rgba(215, 205, 190, 0.65)',
-              padding: '0.55rem 1.25rem',
-              borderRadius: '9999px',
-              fontFamily: '"Noto Serif JP", serif',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
-            }}
+            className="sumi-stage-btn"
           >
             <span>Luyện viết nét & Xem từ điển chi tiết</span>
             <ExternalLink size={14} />
           </button>
 
-          <button
-            type="button"
-            onClick={() => setDeconstructionStage(null)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              background: 'rgba(250, 248, 245, 0.9)',
-              color: '#44403C',
-              border: '1px solid rgba(215, 205, 190, 0.6)',
-              padding: '0.55rem 1rem',
-              borderRadius: '9999px',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={() => setDeconstructionStage(null)} className="sumi-stage-btn">
             <X size={14} />
             <span>Thu gọn bộ thủ</span>
           </button>

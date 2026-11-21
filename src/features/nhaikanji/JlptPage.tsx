@@ -162,13 +162,23 @@ export function JlptPage() {
 
   if (!selectedLevel) {
     return (
-      <section className="jlpt-page jlpt-level-page">
-        <header className="jlpt-level-page__heading">
-          <span>
-            <GraduationCap size={22} aria-hidden="true" /> Luyện thi JLPT
+      <section className="jlpt-page jlpt-level-page washi-page">
+        <header className="jlpt-level-page__heading washi-masthead">
+          <div className="washi-masthead__lead">
+            <span className="washi-hanko" aria-hidden="true">
+              試
+            </span>
+            <div>
+              <span className="washi-masthead__eyebrow">
+                <GraduationCap size={15} aria-hidden="true" /> Luyện thi JLPT
+              </span>
+              <h1 className="washi-masthead__title">Đề mô phỏng JLPT</h1>
+              <p className="washi-masthead__desc">Chọn cấp độ để xem các kỳ đề, làm từng phần hoặc học lại đáp án.</p>
+            </div>
+          </div>
+          <span className="washi-vertical-tag" aria-hidden="true">
+            日本語能力試験
           </span>
-          <h1>Đề mô phỏng JLPT</h1>
-          <p>Chọn cấp độ để xem các kỳ đề, làm từng phần hoặc học lại đáp án.</p>
         </header>
 
         <div className="jlpt-level-list" aria-label="Chọn cấp độ JLPT">
@@ -205,7 +215,7 @@ export function JlptPage() {
   const representative = currentPaper[0]
   if (selectedPaper && representative) {
     return (
-      <section className="jlpt-page">
+      <section className="jlpt-page washi-page">
         <section className="jlpt-paper-picker">
           <button type="button" className="jlpt-back-button" onClick={() => setSelectedPaper(null)}>
             <ArrowLeft size={17} /> Quay lại danh sách kỳ đề
@@ -330,7 +340,7 @@ export function JlptPage() {
   }
 
   return (
-    <section className="jlpt-page jlpt-paper-list-page">
+    <section className="jlpt-page jlpt-paper-list-page washi-page">
       <button type="button" className="jlpt-back-button" onClick={() => setSelectedLevel(null)}>
         <ArrowLeft size={17} /> Luyện thi JLPT
       </button>

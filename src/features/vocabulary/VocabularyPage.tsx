@@ -916,9 +916,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     </div>
 
                     <div className="curriculum-unit-card__meta">
-                      <Badge variant="primary" className="text-xs font-bold">
-                        {unit.term_count} từ
-                      </Badge>
+                      <Badge variant="primary">{unit.term_count} từ</Badge>
                       <ChevronRight size={18} style={{ color: 'var(--color-text-muted)' }} aria-hidden="true" />
                     </div>
                   </div>
@@ -1262,43 +1260,28 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         >
           {/* Card Frame */}
           <div
+            role="button"
+            tabIndex={0}
+            aria-pressed={isFlipped}
+            aria-label={`Thẻ ghi nhớ ${currentCard.word}`}
+            className="curriculum-flashcard"
             onClick={() => setIsFlipped((f) => !f)}
-            style={{
-              minHeight: '340px',
-              background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
-              border: '2px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              textAlign: 'center',
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.3)',
-              position: 'relative',
-              userSelect: 'none',
-              transition: 'all 0.2s ease',
+            onKeyDown={(e) => {
+              if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault()
+                setIsFlipped((f) => !f)
+              }
             }}
           >
             {/* Top Bar inside Card */}
             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   type="button"
+                  className={`curriculum-flashcard__pill${cardContentMode === 'word' ? ' is-active' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation()
                     setCardContentMode('word')
-                  }}
-                  style={{
-                    background: cardContentMode === 'word' ? 'var(--color-accent)' : 'rgba(255, 255, 255, 0.1)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#ffffff',
-                    padding: '4px 10px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
                   }}
                 >
                   Từ vựng
@@ -1306,19 +1289,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 {currentCard.examples && currentCard.examples.length > 0 && (
                   <button
                     type="button"
+                    className={`curriculum-flashcard__pill${cardContentMode === 'example' ? ' is-active' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation()
                       setCardContentMode('example')
-                    }}
-                    style={{
-                      background: cardContentMode === 'example' ? 'var(--color-accent)' : 'rgba(255, 255, 255, 0.1)',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#ffffff',
-                      padding: '4px 10px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
                     }}
                   >
                     Câu ví dụ
@@ -1326,22 +1300,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 )}
                 <button
                   type="button"
+                  className="curriculum-flashcard__pill"
                   onClick={(e) => {
                     e.stopPropagation()
                     setSelectedDictWord(currentCard.word)
-                  }}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#ffffff',
-                    padding: '4px 10px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
                   }}
                   title="Tra từ điển"
                 >
@@ -1352,21 +1314,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
                   type="button"
+                  className={`curriculum-flashcard__icon-btn${playingAudioUrl ? ' is-active' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation()
                     playAudio(currentCard.audioUrl, currentCard.word)
-                  }}
-                  style={{
-                    background: playingAudioUrl ? 'var(--color-accent)' : 'rgba(255, 255, 255, 0.1)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '36px',
-                    height: '36px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff',
-                    cursor: 'pointer',
                   }}
                   title="Phát âm (Phím R)"
                 >
@@ -1375,21 +1326,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                 <button
                   type="button"
+                  className={`curriculum-flashcard__icon-btn${isCurrentCardSaved ? ' is-saved' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation()
                     void handleSaveWordToSrs(currentCard)
-                  }}
-                  style={{
-                    background: isCurrentCardSaved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                    border: isCurrentCardSaved ? '1px solid var(--color-success)' : 'none',
-                    borderRadius: '50%',
-                    width: '36px',
-                    height: '36px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: isCurrentCardSaved ? 'var(--color-success)' : '#ffffff',
-                    cursor: 'pointer',
                   }}
                   title={isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'}
                   aria-label={isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'}
@@ -1403,53 +1343,27 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             <div style={{ margin: 'auto 0' }}>
               {cardContentMode === 'word' ? (
                 <>
-                  <div style={{ fontSize: '3rem', fontWeight: 800, color: '#ffffff', letterSpacing: '0.05em' }}>
-                    {currentCard.word}
-                  </div>
+                  <div className="curriculum-flashcard__word">{currentCard.word}</div>
                   {isFlipped && (
                     <div style={{ marginTop: '1rem', animation: 'fadeIn 0.2s ease' }}>
                       {currentCard.reading && (
-                        <div style={{ fontSize: '1.4rem', color: '#93c5fd', fontWeight: 600 }}>
-                          【{currentCard.reading}】
-                        </div>
+                        <div className="curriculum-flashcard__reading">【{currentCard.reading}】</div>
                       )}
                       {currentCard.hanViet && (
-                        <div style={{ fontSize: '0.9rem', color: '#cbd5e1', marginTop: '0.2rem' }}>
-                          Hán Việt: <strong style={{ color: '#ffffff' }}>{currentCard.hanViet}</strong>
+                        <div className="curriculum-flashcard__hanviet">
+                          Hán Việt: <strong>{currentCard.hanViet}</strong>
                         </div>
                       )}
-                      <div
-                        style={{
-                          fontSize: '1.3rem',
-                          color: '#f8fafc',
-                          fontWeight: 700,
-                          marginTop: '0.6rem',
-                          maxWidth: '600px',
-                        }}
-                      >
-                        {currentCard.meaning}
-                      </div>
+                      <div className="curriculum-flashcard__meaning">{currentCard.meaning}</div>
                     </div>
                   )}
                 </>
               ) : (
                 <div style={{ maxWidth: '650px' }}>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 600, color: '#ffffff', lineHeight: 1.6 }}>
+                  <div className="curriculum-flashcard__example-jp">
                     {currentCard.examples?.[0]?.jp || 'Không có câu ví dụ'}
                   </div>
-                  {isFlipped && (
-                    <div
-                      style={{
-                        fontSize: '1.15rem',
-                        color: '#93c5fd',
-                        marginTop: '1rem',
-                        lineHeight: 1.5,
-                        animation: 'fadeIn 0.2s ease',
-                      }}
-                    >
-                      {currentCard.examples?.[0]?.vi}
-                    </div>
-                  )}
+                  {isFlipped && <div className="curriculum-flashcard__example-vi">{currentCard.examples?.[0]?.vi}</div>}
                 </div>
               )}
 

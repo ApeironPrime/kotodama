@@ -140,7 +140,24 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
   }
 
   return (
-    <section className="review-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.25rem' }}>
+    <section className="review-page washi-page">
+      <header className="washi-masthead">
+        <div className="washi-masthead__lead">
+          <span className="washi-hanko" aria-hidden="true">
+            復
+          </span>
+          <div>
+            <span className="washi-masthead__eyebrow">SỔ TAY ÔN TẬP • 間隔反復</span>
+            <h1 className="washi-masthead__title">Phòng Ôn Tập SRS</h1>
+            <p className="washi-masthead__desc">
+              Nhịp lặp lại ngắt quãng SM-2 giúp khắc sâu kiến thức tiếng Nhật theo chu kỳ trí nhớ dài hạn.
+            </p>
+          </div>
+        </div>
+        <span className="washi-vertical-tag" aria-hidden="true">
+          復習記録
+        </span>
+      </header>
       {preparingStudy && <p role="status">Đang chuẩn bị thẻ ôn tập…</p>}
       {studyError && (
         <p role="alert" className="ui-error-text">
@@ -154,58 +171,35 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
         </div>
       )}
       {/* 1. TOP SEARCH & AI ANALYSIS BAR */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 14rem', minWidth: 0 }}>
+      <div className="washi-querybar">
+        <div className="srs-search-wrap">
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm kiếm từ vựng, kanji hoặc ngữ pháp..."
-            style={{ paddingLeft: '2.5rem', height: '46px', fontSize: '0.95rem' }}
+            style={{ paddingLeft: '2.5rem', height: '46px', fontSize: '1.05rem' }}
           />
           <Search
             size={18}
-            style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--color-text-muted)' }}
+            style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--color-accent-text)' }}
           />
         </div>
 
         <Button
           type="button"
-          style={{
-            background: 'var(--color-accent)',
-            color: '#ffffff',
-            fontWeight: 700,
-            padding: '0 1.25rem',
-            height: '46px',
-            borderRadius: '8px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
+          variant="primary"
           onClick={() => {
             if (onDictionary) onDictionary(searchQuery)
           }}
+          style={{ height: '44px', padding: '0 1.25rem', gap: '6px' }}
         >
           <Zap size={16} /> Mở Từ điển
         </Button>
 
         {/* Quick chip suggestions */}
-        <div style={{ display: 'none' }} className="sm:flex">
+        <div className="srs-quick-pills">
           {QUICK_SUGGESTIONS.slice(0, 5).map((word) => (
-            <button
-              key={word}
-              type="button"
-              onClick={() => setSearchQuery(word)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '6px',
-                padding: '4px 10px',
-                fontSize: '0.82rem',
-                color: 'var(--color-text-secondary)',
-                cursor: 'pointer',
-                marginRight: '6px',
-              }}
-            >
+            <button key={word} type="button" onClick={() => setSearchQuery(word)} className="srs-quick-pill">
               {word}
             </button>
           ))}
@@ -213,33 +207,11 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
       </div>
 
       {/* 2. CATEGORY SUB-TABS (TRA TỪ, TỪ VỰNG, NGỮ PHÁP, KANJI) */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '1.5rem',
-          borderBottom: '1px solid var(--color-border)',
-          marginBottom: '1.25rem',
-          overflowX: 'auto',
-          paddingBottom: '2px',
-        }}
-      >
+      <div className="washi-tabs">
         <button
           type="button"
           onClick={() => setActiveTab('search')}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'search' ? '2px solid var(--color-accent)' : '2px solid transparent',
-            color: activeTab === 'search' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
-          }}
+          className={`washi-tab${activeTab === 'search' ? ' is-active' : ''}`}
         >
           <Search size={16} /> Tất cả thẻ
         </button>
@@ -247,20 +219,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
         <button
           type="button"
           onClick={() => setActiveTab('vocab')}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'vocab' ? '2px solid var(--color-accent)' : '2px solid transparent',
-            color: activeTab === 'vocab' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
-          }}
+          className={`washi-tab${activeTab === 'vocab' ? ' is-active' : ''}`}
         >
           <Layers size={16} /> Từ vựng ({vocabCount} từ)
         </button>
@@ -268,20 +227,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
         <button
           type="button"
           onClick={() => setActiveTab('grammar')}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'grammar' ? '2px solid var(--color-accent)' : '2px solid transparent',
-            color: activeTab === 'grammar' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
-          }}
+          className={`washi-tab${activeTab === 'grammar' ? ' is-active' : ''}`}
         >
           <BookOpen size={16} /> Ngữ pháp ({grammarCount} mẫu)
         </button>
@@ -289,175 +235,56 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
         <button
           type="button"
           onClick={() => setActiveTab('kanji')}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'kanji' ? '2px solid var(--color-accent)' : '2px solid transparent',
-            color: activeTab === 'kanji' ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
-          }}
+          className={`washi-tab${activeTab === 'kanji' ? ' is-active' : ''}`}
         >
-          <span style={{ fontFamily: 'var(--font-jp)', fontWeight: 800 }}>漢</span> Kanji ({kanjiCount} chữ)
+          <span style={{ fontFamily: 'var(--font-jp-serif)', fontWeight: 700 }}>漢</span> Kanji ({kanjiCount} chữ)
         </button>
       </div>
 
-      {/* 3. 4 SUMMARY KPI STATS CARDS */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '1rem',
-          marginBottom: '1.5rem',
-        }}
-      >
-        {/* Total Cards */}
-        <Card
-          padding="md"
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '12px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: 'var(--color-accent-text)',
-              marginBottom: '0.5rem',
-            }}
-          >
-            <Layers size={20} />
+      {/* 3. 4 SUMMARY KPI STATS STRIP */}
+      <div className="washi-kpi-strip">
+        <div className="washi-kpi-cell">
+          <div className="washi-kpi-cell__head">
+            <Layers size={15} /> Kho thẻ
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{stats.totalCards}</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+          <div className="washi-kpi-cell__val">{stats.totalCards}</div>
+          <div className="washi-kpi-cell__label">
             Tổng {activeTab === 'grammar' ? 'ngữ pháp' : activeTab === 'kanji' ? 'chữ Hán' : 'từ vựng'}
           </div>
-        </Card>
+        </div>
 
-        {/* Mastered */}
-        <Card
-          padding="md"
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '12px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: 'var(--color-success)',
-              marginBottom: '0.5rem',
-            }}
-          >
-            <CheckCircle2 size={20} />
+        <div className="washi-kpi-cell">
+          <div className="washi-kpi-cell__head">
+            <CheckCircle2 size={15} /> Vững vàng
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-success)' }}>
-            {stats.masteredCount}
-          </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Đã thành thạo</div>
-        </Card>
+          <div className="washi-kpi-cell__val washi-kpi-cell__val--success">{stats.masteredCount}</div>
+          <div className="washi-kpi-cell__label">Đã thành thạo</div>
+        </div>
 
-        {/* Due Today */}
-        <Card
-          padding="md"
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '12px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: 'var(--color-warning)',
-              marginBottom: '0.5rem',
-            }}
-          >
-            <Flame size={20} />
+        <div className="washi-kpi-cell">
+          <div className="washi-kpi-cell__head">
+            <Flame size={15} /> Đến hạn
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-warning)' }}>
-            {stats.dueTodayCount}
-          </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Cần ôn hôm nay</div>
-        </Card>
+          <div className="washi-kpi-cell__val washi-kpi-cell__val--warning">{stats.dueTodayCount}</div>
+          <div className="washi-kpi-cell__label">Cần ôn hôm nay</div>
+        </div>
 
-        {/* Average Mastery % */}
-        <Card
-          padding="md"
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '12px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: 'var(--color-accent-text)',
-              marginBottom: '0.5rem',
-            }}
-          >
-            <TrendingUp size={20} />
+        <div className="washi-kpi-cell">
+          <div className="washi-kpi-cell__head">
+            <TrendingUp size={15} /> Độ nhớ
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{stats.averageMastery}%</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-            Trung bình thành thạo
-          </div>
-        </Card>
+          <div className="washi-kpi-cell__val washi-kpi-cell__val--accent">{stats.averageMastery}%</div>
+          <div className="washi-kpi-cell__label">Trung bình thành thạo</div>
+        </div>
       </div>
 
       {/* 3.5 STREAK & CONTRIBUTION HEATMAP WIDGET */}
-      <div
-        style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '16px',
-          padding: '1.25rem 1.5rem',
-          marginBottom: '1.5rem',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1rem',
-            marginBottom: '1rem',
-          }}
-        >
+      <div className="srs-heatmap-card">
+        <div className="srs-heatmap-header">
           {/* Left: Streak stats & Motivation */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+          <div className="srs-streak-row">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(239, 68, 68, 0.2) 100%)',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
-                  padding: '10px',
-                  borderRadius: '12px',
-                  color: 'var(--color-warning)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+              <div className="srs-streak-badge">
                 <Flame size={24} />
               </div>
               <div>
@@ -478,37 +305,11 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
 
             {/* Daily Urgency Pressure Banner */}
             {stats.dueTodayCount > 0 ? (
-              <div
-                style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '10px',
-                  padding: '6px 12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  color: 'var(--color-danger-text)',
-                }}
-              >
+              <div className="srs-urgency-banner srs-urgency-banner--due">
                 <Flame size={15} /> Bạn còn {stats.dueTodayCount} thẻ cần hoàn thành hôm nay để giữ chuỗi!
               </div>
             ) : (
-              <div
-                style={{
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  borderRadius: '10px',
-                  padding: '6px 12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  color: 'var(--color-success)',
-                }}
-              >
+              <div className="srs-urgency-banner srs-urgency-banner--done">
                 <CheckCircle2 size={15} /> Đã hoàn thành toàn bộ mục tiêu hôm nay!
               </div>
             )}
@@ -520,8 +321,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             onClick={() => openStudySession(0)}
             disabled={cards.length === 0}
             style={{
-              background: 'linear-gradient(135deg, var(--color-success) 0%, var(--color-success) 100%)',
-              color: '#ffffff',
+              background: 'var(--color-success)',
+              color: 'var(--color-text-inverse)',
               fontWeight: 700,
               gap: '6px',
             }}
@@ -575,21 +376,6 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 weeks.push(heatmapList.slice(i, i + 7))
               }
 
-              const getColorForLevel = (level: number) => {
-                switch (level) {
-                  case 4:
-                    return 'var(--color-success)'
-                  case 3:
-                    return 'var(--color-success)'
-                  case 2:
-                    return '#047857'
-                  case 1:
-                    return 'var(--color-success)'
-                  default:
-                    return 'var(--color-border)'
-                }
-              }
-
               return (
                 <div style={{ display: 'flex', gap: '3px' }}>
                   {weeks.map((week, wIdx) => (
@@ -607,18 +393,12 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                           tabIndex={0}
                           role="img"
                           aria-label={`${day.date}: ${day.count} thẻ`}
+                          className="srs-heatmap-cell"
+                          data-level={Math.min(4, Math.max(0, day.level || 0))}
                           onFocus={() => setHoveredDay(day)}
                           onBlur={() => setHoveredDay(null)}
                           onMouseEnter={() => setHoveredDay(day)}
                           onMouseLeave={() => setHoveredDay(null)}
-                          style={{
-                            width: '13px',
-                            height: '13px',
-                            borderRadius: '2.5px',
-                            background: getColorForLevel(day.level),
-                            cursor: 'pointer',
-                            transition: 'transform 0.1s ease',
-                          }}
                           title={`${day.date}: ${day.count} thẻ`}
                         />
                       ))}
@@ -642,11 +422,14 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
               }}
             >
               <span>Ít</span>
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-border)' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-success)' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#047857' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-success)' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-success)' }} />
+              {[0, 1, 2, 3, 4].map((lvl) => (
+                <div
+                  key={lvl}
+                  className="srs-heatmap-cell"
+                  data-level={lvl}
+                  style={{ width: '10px', height: '10px' }}
+                />
+              ))}
               <span>Nhiều</span>
             </div>
           </div>
@@ -680,16 +463,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
               key={st.id}
               type="button"
               onClick={() => setActiveStatus(st.id)}
-              style={{
-                background: activeStatus === st.id ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                color: activeStatus === st.id ? 'var(--color-accent-text)' : 'var(--color-text-secondary)',
-                border: activeStatus === st.id ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
-                borderRadius: '8px',
-                padding: '4px 12px',
-                fontSize: '0.82rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
+              className={`srs-status-btn${activeStatus === st.id ? ' is-active' : ''}`}
             >
               {st.label} {st.count > 0 && <span style={{ opacity: 0.8 }}>({st.count})</span>}
             </button>
@@ -698,30 +472,13 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
 
         {/* JLPT Levels & Anki Launch Button */}
         <div style={{ display: 'flex', flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center', gap: '0.5rem' }}>
-          <div
-            style={{
-              display: 'flex',
-              gap: '2px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              padding: '2px',
-              borderRadius: '6px',
-            }}
-          >
+          <div className="srs-level-group">
             {JLPT_LEVELS.map((lvl) => (
               <button
                 key={lvl}
                 type="button"
                 onClick={() => setActiveLevel(lvl)}
-                style={{
-                  background: activeLevel === lvl ? 'var(--color-accent)' : 'transparent',
-                  color: activeLevel === lvl ? '#ffffff' : 'var(--color-text-muted)',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '3px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
+                className={`srs-level-btn${activeLevel === lvl ? ' is-active' : ''}`}
               >
                 {lvl}
               </button>
@@ -733,8 +490,6 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             size="sm"
             onClick={() => openStudySession(0)}
             style={{
-              background: 'var(--color-accent)',
-              color: '#ffffff',
               fontWeight: 700,
               fontSize: '0.82rem',
               display: 'inline-flex',
@@ -745,26 +500,11 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             <Play size={14} /> Bắt đầu ôn tập
           </Button>
 
-          <div
-            style={{
-              display: 'flex',
-              gap: '2px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              padding: '2px',
-              borderRadius: '6px',
-            }}
-          >
+          <div className="srs-view-toggle">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              style={{
-                background: viewMode === 'grid' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px',
-                cursor: 'pointer',
-                color: 'var(--color-text)',
-              }}
+              className={`srs-view-btn${viewMode === 'grid' ? ' is-active' : ''}`}
               title="Xem dạng Lưới"
             >
               <LayoutGrid size={15} />
@@ -772,14 +512,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              style={{
-                background: viewMode === 'list' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px',
-                cursor: 'pointer',
-                color: 'var(--color-text)',
-              }}
+              className={`srs-view-btn${viewMode === 'list' ? ' is-active' : ''}`}
               title="Xem dạng Danh sách"
             >
               <List size={15} />
@@ -817,16 +550,12 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
             const isMastered = mastery >= 80
             const isDue = card.stage === 'due'
             const badgeLabel = isMastered ? 'Thành thạo' : isDue ? 'Cần ôn' : 'Đang học'
-            const badgeBg = isMastered
-              ? 'rgba(16, 185, 129, 0.15)'
-              : isDue
-                ? 'rgba(245, 158, 11, 0.15)'
-                : 'rgba(59, 130, 246, 0.15)'
+            const stageMod = isMastered ? 'mastered' : isDue ? 'due' : 'learning'
             const badgeColor = isMastered
               ? 'var(--color-success)'
               : isDue
                 ? 'var(--color-warning)'
-                : 'var(--color-accent)'
+                : 'var(--color-accent-text)'
 
             return (
               <div
@@ -834,6 +563,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 role="button"
                 tabIndex={0}
                 aria-label={`Ôn tập ${card.term}`}
+                className="srs-card-item"
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault()
@@ -842,22 +572,8 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 }}
                 onClick={() => openStudySession(idx)}
                 style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '12px',
-                  padding: '1rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  cursor: 'pointer',
-                  transition: 'transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.borderColor = 'var(--color-accent)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.borderColor = 'var(--color-border)'
                 }}
               >
                 {/* Header: Status badge & JLPT level */}
@@ -869,18 +585,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                     marginBottom: '0.5rem',
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      padding: '2px 7px',
-                      borderRadius: '4px',
-                      background: badgeBg,
-                      color: badgeColor,
-                    }}
-                  >
-                    {badgeLabel}
-                  </span>
+                  <span className={`srs-stage-pill srs-stage-pill--${stageMod}`}>{badgeLabel}</span>
                   {card.jlptLevel && (
                     <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                       {card.jlptLevel}
@@ -928,13 +633,7 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 </div>
 
                 {/* Footer: Progress bar with % text */}
-                <div
-                  style={{
-                    marginTop: '0.75rem',
-                    paddingTop: '0.5rem',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-                  }}
-                >
+                <div className="srs-card-footer" style={{ display: 'block', marginTop: '0.75rem' }}>
                   <div
                     style={{
                       display: 'flex',
@@ -991,26 +690,13 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 cursor: 'pointer',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontFamily: 'var(--font-jp)', fontWeight: 800, fontSize: '1.2rem', minWidth: '100px' }}>
-                  {card.term}
-                </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-jp)',
-                    color: 'var(--color-accent-text)',
-                    fontSize: '0.9rem',
-                    minWidth: '90px',
-                  }}
-                >
-                  {card.reading}
-                </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem 1rem' }}>
+                <span className="srs-list-term">{card.term}</span>
+                <span className="srs-list-reading">{card.reading}</span>
                 <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>{card.meaning}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Badge variant="primary" className="text-xs">
-                  {card.jlptLevel || 'N5'}
-                </Badge>
+                <Badge variant="primary">{card.jlptLevel || 'N5'}</Badge>
                 <span
                   style={{
                     fontSize: '0.85rem',

@@ -89,19 +89,7 @@ export default function TopNav({
                   <span>{tab.label}</span>
                 </span>
                 {tab.id === 'review' && dueCount > 0 ? (
-                  <span
-                    style={{
-                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                      color: '#ffffff',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      padding: '1px 6px',
-                      borderRadius: '999px',
-                      marginLeft: '4px',
-                      boxShadow: '0 0 8px rgba(239, 68, 68, 0.4)',
-                    }}
-                    title={`Còn ${dueCount} thẻ cần ôn hôm nay!`}
-                  >
+                  <span className="nav-due-badge" title={`Còn ${dueCount} thẻ cần ôn hôm nay!`}>
                     {dueCount}
                   </span>
                 ) : tab.badge ? (
@@ -114,20 +102,10 @@ export default function TopNav({
             {isAuthenticated && (
               <>
                 <div
-                  className="nav-stat nav-stat--streak"
+                  className={`nav-stat nav-stat--streak${streak > 0 ? ' is-active' : ''}`}
                   title={`Chuỗi học tập liên tục: ${streak} ngày`}
-                  style={{
-                    color: streak > 0 ? '#f59e0b' : 'inherit',
-                    fontWeight: streak > 0 ? 800 : 600,
-                  }}
                 >
-                  <Flame
-                    aria-hidden="true"
-                    size={17}
-                    strokeWidth={2}
-                    style={{ color: streak > 0 ? '#f59e0b' : undefined }}
-                  />{' '}
-                  {streak}
+                  <Flame aria-hidden="true" size={17} strokeWidth={2} /> {streak}
                 </div>
               </>
             )}
@@ -162,9 +140,7 @@ export default function TopNav({
             <tab.icon aria-hidden="true" size={18} strokeWidth={1.9} />
             <span>{tab.mobileLabel || tab.label}</span>
             {tab.id === 'review' && dueCount > 0 ? (
-              <i style={{ background: '#ef4444', color: '#fff', padding: '1px 5px', borderRadius: '999px' }}>
-                {dueCount}
-              </i>
+              <i className="nav-mobile__badge">{dueCount}</i>
             ) : tab.badge ? (
               <i>{tab.badge}</i>
             ) : null}

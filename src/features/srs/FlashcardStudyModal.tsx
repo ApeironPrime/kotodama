@@ -1,12 +1,18 @@
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import { usePersistentState } from '../../lib/usePersistentState'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, Eye, RotateCcw, Sparkles, Volume2, X } from 'lucide-react'
 import { Badge, Button } from '../../components/ui'
 import type { SrsCard, SrsExample, SrsRating } from './srsTypes'
 
 function speakJapanese(text: string) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  if (
+    typeof window === 'undefined' ||
+    !('speechSynthesis' in window) ||
+    typeof SpeechSynthesisUtterance === 'undefined'
+  )
+    return
   window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = 'ja-JP'
@@ -48,12 +54,19 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
   useDialogAccessibility(dialogRef, onClose)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isFlipped, setIsFlipped] = useState(false)
-  const [showFurigana, setShowFurigana] = useState(true)
+  const [showFurigana, setShowFurigana] = usePersistentState('kotodama.settings.furigana', true)
+  const [autoPronounce] = usePersistentState('kotodama.settings.auto-pronounce', true)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [completedCount, setCompletedCount] = useState(0)
 
   const currentCard = cards[currentIndex]
+
+  useEffect(() => {
+    if (!autoPronounce || !currentCard) return
+    const text = currentCard.term || currentCard.reading || ''
+    if (text) speakJapanese(text)
+  }, [autoPronounce, currentCard])
 
   const goToNext = useCallback(() => {
     if (currentIndex < cards.length - 1) {
@@ -158,32 +171,18 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
 
   return (
     <div
-      className="modal-overlay"
+      className="modal-overlay srs-modal-backdrop"
       ref={dialogRef}
       tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="Ôn tập thẻ"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(8px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-      }}
     >
       <div
+        className="srs-modal-shell"
         style={{
-          width: '100%',
           maxWidth: '720px',
-          background: 'var(--color-surface, #18181b)',
-          borderRadius: '16px',
-          border: '1px solid var(--color-border, #27272a)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          padding: 0,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -201,16 +200,14 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '1rem 1.25rem',
-            borderBottom: '1px solid var(--color-border, #27272a)',
+            borderBottom: '1px solid var(--color-border)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
               Thẻ {currentIndex + 1} / {cards.length}
             </span>
-            <Badge variant="primary" className="text-xs">
-              {currentCard.jlptLevel || 'N5'}
-            </Badge>
+            <Badge variant="primary">{currentCard.jlptLevel || 'N5'}</Badge>
             <span
               style={{
                 fontSize: '0.75rem',
@@ -231,7 +228,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
               type="button"
               onClick={() => setShowFurigana((prev) => !prev)}
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
+                background: 'var(--color-surface-elevated, var(--color-surface))',
                 border: '1px solid var(--color-border)',
                 color: showFurigana ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
                 borderRadius: '6px',
@@ -278,6 +275,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
             }
           }}
           onClick={() => setIsFlipped((prev) => !prev)}
+          className={!isFlipped ? 'washi-genko-bg' : undefined}
           style={{
             minHeight: '340px',
             padding: '2rem 1.5rem',
@@ -288,7 +286,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
             justifyContent: 'center',
             textAlign: 'center',
             position: 'relative',
-            background: isFlipped ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+            backgroundColor: isFlipped ? 'color-mix(in srgb, var(--color-bg-subtle) 40%, transparent)' : 'transparent',
             transition: 'background-color 0.2s ease',
           }}
         >
@@ -310,10 +308,10 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
 
               <div
                 style={{
-                  fontSize: currentCard.type === 'kanji' ? '5rem' : '3rem',
-                  fontFamily: 'var(--font-jp)',
-                  fontWeight: 800,
-                  color: 'var(--color-text, #ffffff)',
+                  fontSize: currentCard.type === 'kanji' ? '5.25rem' : '3.15rem',
+                  fontFamily: 'var(--font-jp-serif)',
+                  fontWeight: 500,
+                  color: 'var(--color-text)',
                   lineHeight: 1.1,
                 }}
               >
@@ -779,7 +777,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
         </div>
 
         {/* Progress Bar under card */}
-        <div style={{ height: '4px', width: '100%', background: 'rgba(255, 255, 255, 0.05)' }}>
+        <div style={{ height: '4px', width: '100%', background: 'var(--color-bg-subtle)' }}>
           <div
             style={{ height: '100%', width: `${mastery}%`, background: masteryColor, transition: 'width 0.3s ease' }}
           />
@@ -789,8 +787,8 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
         <div
           style={{
             padding: '1rem 1.25rem',
-            borderTop: '1px solid var(--color-border, #27272a)',
-            background: 'rgba(0, 0, 0, 0.2)',
+            borderTop: '1px solid var(--color-border)',
+            background: 'var(--color-surface-elevated, var(--color-surface))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',

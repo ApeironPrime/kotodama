@@ -7,6 +7,7 @@ import { sumiAudio } from '../features/dictionary/sumiAudio'
 import { isTactileAudioEnabled, playWashiPaperSound, setTactileAudioEnabled } from '../features/vocabulary/tactileAudio'
 import { applyTheme } from './theme'
 import { SettingsPage } from '../pages/AccountPages'
+import { FlashcardStudyModal } from '../features/srs/FlashcardStudyModal'
 
 function SoundControl({ label }: { label: string }) {
   const sound = useUiSound()
@@ -80,5 +81,47 @@ describe('shared interface preferences', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(false)
     expect(document.documentElement.style.colorScheme).toBe('light')
     applyTheme('rose', 'ivory')
+  })
+
+  it('persists brush cursor preference when toggled in SettingsPage', () => {
+    localStorage.removeItem('kotodama.settings.brush-cursor')
+    render(<SettingsPage onLogout={() => {}} />)
+    const toggle = screen.getByRole('switch', { name: 'Con trỏ bút lông & sóng nước' })
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-checked')).toBe('false')
+    expect(localStorage.getItem('kotodama.settings.brush-cursor')).toBe('false')
+  })
+
+  it('initializes and persists furigana preference in FlashcardStudyModal', () => {
+    localStorage.setItem('kotodama.settings.furigana', 'false')
+    render(
+      <FlashcardStudyModal
+        cards={[
+          {
+            id: 'card-1',
+            type: 'vocab',
+            term: '食べる',
+            reading: 'たべる',
+            meaning: 'Ăn',
+            jlptLevel: 'N5',
+            masteryPercentage: 40,
+            stage: 'learning',
+            repetition: 1,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            nextReviewDate: '2026-11-22',
+            examples: [],
+          },
+        ]}
+        onClose={() => {}}
+        onReview={async () => {}}
+      />
+    )
+    const furiganaBtn = screen.getByRole('button', { name: 'Hiện Furigana' })
+    fireEvent.click(furiganaBtn)
+    expect(localStorage.getItem('kotodama.settings.furigana')).toBe('true')
+    expect(screen.getByRole('button', { name: 'Ẩn Furigana' })).toBeTruthy()
+    localStorage.removeItem('kotodama.settings.furigana')
   })
 })

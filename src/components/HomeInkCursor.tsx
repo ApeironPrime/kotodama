@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { usePersistentState } from '../lib/usePersistentState'
 import '../styles/home-cursor.css'
 
 const ACTION_SELECTOR = [
@@ -29,11 +30,16 @@ function getAction(target: EventTarget | null): HTMLElement | null {
 export default function HomeInkCursor() {
   const ripplesRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
+  const [brushCursorEnabled] = usePersistentState('kotodama.settings.brush-cursor', true)
 
   useEffect(() => setMounted(true), [])
 
   useEffect(() => {
     const layer = ripplesRef.current
+    if (!brushCursorEnabled) {
+      document.documentElement.classList.remove('has-brush-cursor')
+      return
+    }
     if (!mounted || !layer || typeof window.matchMedia !== 'function') return
 
     const pointer = window.matchMedia('(min-width: 701px) and (pointer: fine)')
@@ -215,7 +221,7 @@ export default function HomeInkCursor() {
       window.removeEventListener('resize', clearRipples)
       document.documentElement.classList.remove('has-brush-cursor')
     }
-  }, [mounted])
+  }, [mounted, brushCursorEnabled])
 
   if (!mounted || typeof document === 'undefined') return null
   return createPortal(<div ref={ripplesRef} className="button-water-ripples" aria-hidden="true" />, document.body)

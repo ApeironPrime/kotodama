@@ -1,0 +1,331 @@
+/* ==========================================================================
+   KOTODAMA EDITORIAL WASHI & SUMI-E DESIGN SYSTEM
+   Shared art direction bringing Home / Dictionary / Sumi-e craft to all pages.
+   Supports both Light Washi and Dark Sumi Lacquer ([data-theme='dark']).
+   ========================================================================== */
+
+.washi-page {
+  position: relative;
+  isolation: isolate;
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-16);
+  background:
+    radial-gradient(
+      ellipse 75% 32% at 50% 0%,
+      color-mix(in srgb, var(--color-accent) 4%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(circle at 92% 10%, rgb(198 180 151 / 12%), transparent 34%),
+    radial-gradient(circle at 6% 72%, rgb(139 125 104 / 7%), transparent 36%);
+}
+
+[data-theme='dark'] .washi-page {
+  background:
+    radial-gradient(
+      ellipse 75% 32% at 50% 0%,
+      color-mix(in srgb, var(--color-accent) 7%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(circle at 92% 10%, rgb(255 255 255 / 2.5%), transparent 34%);
+}
+
+/* Editorial Masthead */
+.washi-masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-6);
+  padding-bottom: var(--space-6);
+  margin-bottom: var(--space-7);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.washi-masthead__lead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.washi-hanko {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  margin-top: 0.15rem;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1;
+  transform: rotate(-3deg);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 16%, transparent);
+  user-select: none;
+}
+
+.washi-masthead__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.washi-masthead__title {
+  margin: 0.35rem 0 0.5rem;
+  font-family: var(--font-display), var(--font-jp-serif);
+  font-size: clamp(1.85rem, 3.6vw, 2.85rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.washi-masthead__desc {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--color-text-secondary);
+  font-size: 0.96rem;
+  line-height: 1.65;
+}
+
+.washi-vertical-tag {
+  writing-mode: vertical-rl;
+  font-family: var(--font-jp-serif);
+  font-size: 0.85rem;
+  letter-spacing: 0.32em;
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  border-left: 1px solid var(--color-border);
+  padding-left: 0.65rem;
+  line-height: 1.2;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .washi-masthead {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+    padding-bottom: var(--space-5);
+    margin-bottom: var(--space-5);
+  }
+  .washi-vertical-tag {
+    display: none;
+  }
+  .washi-hanko {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.15rem;
+  }
+}
+
+/* Ink-Hairline Query Bar */
+.washi-querybar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.45rem 0.15rem 0.65rem;
+  border-bottom: 1.5px solid var(--color-border-strong);
+  transition: border-color 0.25s ease;
+  margin-bottom: var(--space-5);
+}
+
+.washi-querybar:focus-within {
+  border-bottom-color: var(--color-accent);
+}
+
+.washi-querybar .ui-input {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--font-jp-serif);
+  font-size: 1.08rem;
+}
+
+/* Hairline Underline Tabs */
+.washi-tabs {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-6);
+}
+
+.washi-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.15rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.washi-tab:hover {
+  color: var(--color-text);
+}
+
+.washi-tab.is-active {
+  color: var(--color-accent-text);
+  border-bottom-color: var(--color-accent);
+}
+
+/* Editorial 4-Column KPI Index Strip */
+.washi-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-6);
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+}
+
+.washi-kpi-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.washi-kpi-cell + .washi-kpi-cell {
+  border-left: 1px solid var(--color-border);
+}
+
+.washi-kpi-cell__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.washi-kpi-cell__val {
+  font-family: var(--font-display), var(--font-jp-serif);
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--color-text);
+}
+
+.washi-kpi-cell__val--success {
+  color: var(--color-success);
+}
+
+.washi-kpi-cell__val--warning {
+  color: var(--color-warning);
+}
+
+.washi-kpi-cell__val--accent {
+  color: var(--color-accent-text);
+}
+
+.washi-kpi-cell__label {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .washi-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .washi-kpi-cell:nth-child(3) {
+    border-left: 0;
+  }
+  .washi-kpi-cell:nth-child(n + 3) {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+@media (max-width: 420px) {
+  .washi-kpi-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .washi-kpi-cell + .washi-kpi-cell {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+/* Calm Washi Paper Panel */
+.washi-paper-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 14px -6px rgb(28 27 32 / 6%);
+}
+
+/* Editorial Section Heading */
+.washi-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.washi-section-head::before {
+  content: '';
+  width: 0.35rem;
+  height: 1.15rem;
+  border-radius: 1px;
+  background: var(--color-accent);
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.washi-section-head h2 {
+  margin: 0;
+  font-family: var(--font-display), var(--font-jp-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.washi-section-head span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* Subtle Genko Yoshi Calligraphy Crosshair */
+.washi-genko-bg {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 55%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 55%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    );
+}

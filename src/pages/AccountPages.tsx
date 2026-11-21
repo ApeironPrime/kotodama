@@ -16,6 +16,7 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
   const [autoPronounce, setAutoPronounce] = usePersistentState('kotodama.settings.auto-pronounce', true)
   const [furigana, setFurigana] = usePersistentState('kotodama.settings.furigana', true)
   const [romaji, setRomaji] = usePersistentState('kotodama.settings.romaji', false)
+  const [brushCursor, setBrushCursor] = usePersistentState('kotodama.settings.brush-cursor', true)
   const [accent, setAccent] = usePersistentState<Accent>('kotodama.settings.accent', 'rose')
   const [background, setBackground] = usePersistentState<Background>('kotodama.settings.background', 'ivory')
   const activeBackground = backgrounds[background] ? background : 'ivory'
@@ -31,8 +32,10 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
   )
 
   return (
-    <PageShell width="wide" className="settings-page">
+    <PageShell width="wide" className="settings-page washi-page">
       <PageHeader
+        hanko="調"
+        jpVertical="環境設定"
         eyebrow="TÙY CHỈNH"
         title="Cài đặt"
         description="Tùy chỉnh nhịp học và giao diện để Kotodama hợp với bạn hơn."
@@ -72,7 +75,7 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
           />
           <SettingsToggle
             label="Tự phát âm"
-            description="Tự động phát âm khi mở một từ mới."
+            description="Tự động phát âm khi mở từ mới hoặc thẻ ôn tập SRS."
             checked={autoPronounce}
             onChange={(value) => {
               setAutoPronounce(value)
@@ -81,7 +84,7 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
           />
           <SettingsToggle
             label="Hiển thị Furigana"
-            description="Hiển thị cách đọc trong phụ đề Video AI."
+            description="Hiển thị cách đọc trong thẻ ôn tập SRS và phụ đề Video AI."
             checked={furigana}
             onChange={(value) => {
               setFurigana(value)
@@ -112,6 +115,12 @@ export function SettingsPage({ onLogout }: { onLogout: () => void }) {
             description="Âm thanh bút lông và thao tác. Mặc định tắt; lưu trên thiết bị này."
             checked={sound.enabled}
             onChange={sound.setEnabled}
+          />
+          <SettingsToggle
+            label="Con trỏ bút lông & sóng nước"
+            description="Hiển thị đầu cọ mực và hiệu ứng sóng nước khi di chuột hoặc bấm nút trên máy tính."
+            checked={brushCursor}
+            onChange={setBrushCursor}
           />
           <div className="settings-row">
             <div className="settings-row__copy">

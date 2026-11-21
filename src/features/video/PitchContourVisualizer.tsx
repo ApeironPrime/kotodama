@@ -343,11 +343,16 @@ export default function PitchContourVisualizer({
               color: 'var(--color-text)',
               pointerEvents: 'none',
               whiteSpace: 'nowrap',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--shadow-md)',
               zIndex: 10,
             }}
           >
-            <span style={{ fontWeight: 700, color: hoveredPoint.label === 'Mẫu' ? '#06b6d4' : '#ec4899' }}>
+            <span
+              style={{
+                fontWeight: 700,
+                color: hoveredPoint.label === 'Mẫu' ? 'var(--color-accent-text)' : 'var(--color-danger-text)',
+              }}
+            >
               [{hoveredPoint.label}]
             </span>{' '}
             {(hoveredPoint.timeMs / 1000).toFixed(2)}s: {hoveredPoint.f0Hz.toFixed(1)} Hz (

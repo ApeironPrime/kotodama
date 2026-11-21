@@ -354,8 +354,8 @@ export default function VideoStudyPlayer({
               fontSize: '0.8rem',
               padding: '3px 10px',
               height: '28px',
-              background: activeMode === 'study' ? '#10b981' : undefined,
-              color: activeMode === 'study' ? '#ffffff' : undefined,
+              background: activeMode === 'study' ? 'var(--color-accent)' : undefined,
+              color: activeMode === 'study' ? 'var(--color-text-inverse)' : undefined,
             }}
           >
             <Captions size={14} /> Học Phụ đề
@@ -372,8 +372,8 @@ export default function VideoStudyPlayer({
               fontSize: '0.8rem',
               padding: '3px 10px',
               height: '28px',
-              background: activeMode === 'shadowing' ? '#10b981' : undefined,
-              color: activeMode === 'shadowing' ? '#ffffff' : undefined,
+              background: activeMode === 'shadowing' ? 'var(--color-accent)' : undefined,
+              color: activeMode === 'shadowing' ? 'var(--color-text-inverse)' : undefined,
             }}
           >
             <Mic size={14} /> Shadowing
@@ -394,8 +394,8 @@ export default function VideoStudyPlayer({
               fontSize: '0.8rem',
               padding: '3px 10px',
               height: '28px',
-              background: activeMode === 'listening' ? '#10b981' : undefined,
-              color: activeMode === 'listening' ? '#ffffff' : undefined,
+              background: activeMode === 'listening' ? 'var(--color-accent)' : undefined,
+              color: activeMode === 'listening' ? 'var(--color-text-inverse)' : undefined,
             }}
           >
             <Ear size={14} /> Luyện nghe
@@ -412,8 +412,8 @@ export default function VideoStudyPlayer({
               fontSize: '0.8rem',
               padding: '3px 10px',
               height: '28px',
-              background: activeMode === 'summary' ? '#10b981' : undefined,
-              color: activeMode === 'summary' ? '#ffffff' : undefined,
+              background: activeMode === 'summary' ? 'var(--color-accent)' : undefined,
+              color: activeMode === 'summary' ? 'var(--color-text-inverse)' : undefined,
             }}
           >
             <FileText size={14} /> Tóm tắt
@@ -492,7 +492,7 @@ export default function VideoStudyPlayer({
                   }}
                 >
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.75rem 0' }}>
-                    <Sparkles size={18} color="#f43f5e" /> Thông tin bài học
+                    <Sparkles size={18} color="var(--color-accent)" /> Thông tin bài học
                   </h3>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: 1.6 }}>
                     Bài học gồm <strong>{timelineSegments.length} câu thoại</strong> với thời lượng khoảng{' '}
@@ -533,9 +533,9 @@ export default function VideoStudyPlayer({
                       flex: 1,
                       padding: '10px 8px',
                       border: 'none',
-                      borderBottom: sidebarTab === t.id ? '2px solid #ec4899' : '2px solid transparent',
+                      borderBottom: sidebarTab === t.id ? '2px solid var(--color-accent)' : '2px solid transparent',
                       background: 'transparent',
-                      color: sidebarTab === t.id ? '#ec4899' : 'var(--color-text-muted)',
+                      color: sidebarTab === t.id ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
                       fontWeight: 700,
                       fontSize: '0.85rem',
                       cursor: 'pointer',
@@ -573,7 +573,7 @@ export default function VideoStudyPlayer({
                           alignItems: 'center',
                           gap: '4px',
                           cursor: 'pointer',
-                          color: autoScroll ? '#10b981' : '#64748b',
+                          color: autoScroll ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
                           userSelect: 'none',
                         }}
                       >
@@ -581,7 +581,7 @@ export default function VideoStudyPlayer({
                           type="checkbox"
                           checked={autoScroll}
                           onChange={(e) => setAutoScroll(e.target.checked)}
-                          style={{ accentColor: '#10b981' }}
+                          style={{ accentColor: 'var(--color-accent)' }}
                         />
                         Tự cuộn
                       </label>
@@ -635,8 +635,8 @@ export default function VideoStudyPlayer({
                                 width: '26px',
                                 height: '26px',
                                 borderRadius: '50%',
-                                background: active ? '#10b981' : 'var(--color-bg-subtle, #f1f5f9)',
-                                color: active ? '#ffffff' : '#64748b',
+                                background: active ? 'var(--color-accent)' : 'var(--color-bg-subtle)',
+                                color: active ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -647,7 +647,7 @@ export default function VideoStudyPlayer({
                             >
                               {active ? '▶' : index + 1}
                             </span>
-                            <time style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                            <time style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
                               {formatTimestamp(segment.startMs)}
                             </time>
                           </div>
@@ -662,7 +662,7 @@ export default function VideoStudyPlayer({
                               style={{
                                 fontSize: '1rem',
                                 fontFamily: 'var(--font-jp)',
-                                color: active ? '#059669' : 'var(--color-text, #0f172a)',
+                                color: active ? 'var(--color-accent-text)' : 'var(--color-text)',
                                 lineHeight: 1.5,
                               }}
                             >
@@ -670,7 +670,12 @@ export default function VideoStudyPlayer({
                             </strong>
                             {segment.textVi && (
                               <span
-                                style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.4, marginTop: '2px' }}
+                                style={{
+                                  fontSize: '0.88rem',
+                                  color: 'var(--color-text-secondary)',
+                                  lineHeight: 1.4,
+                                  marginTop: '2px',
+                                }}
                               >
                                 {segment.textVi}
                               </span>
@@ -686,7 +691,7 @@ export default function VideoStudyPlayer({
                             style={{
                               background: 'transparent',
                               border: 'none',
-                              color: isSaved ? '#10b981' : 'var(--color-text-muted)',
+                              color: isSaved ? 'var(--color-success)' : 'var(--color-text-muted)',
                               cursor: 'pointer',
                               padding: '4px',
                             }}
@@ -725,7 +730,7 @@ export default function VideoStudyPlayer({
                     style={{
                       flex: 1,
                       minHeight: '220px',
-                      background: 'rgba(0, 0, 0, 0.25)',
+                      background: 'var(--color-bg-subtle)',
                       border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                       padding: '0.85rem',
@@ -741,8 +746,8 @@ export default function VideoStudyPlayer({
                       onClick={savePersonalNote}
                       style={{
                         flex: 1,
-                        background: '#f43f5e',
-                        color: '#ffffff',
+                        background: 'var(--color-accent)',
+                        color: 'var(--color-text-inverse)',
                         fontWeight: 700,
                         height: '40px',
                         borderRadius: '8px',
@@ -814,7 +819,7 @@ export default function VideoStudyPlayer({
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: '#ef4444',
+                            color: 'var(--color-danger-text)',
                             cursor: 'pointer',
                             padding: '4px',
                             fontSize: '0.8rem',

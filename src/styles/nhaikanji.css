@@ -11,11 +11,11 @@
 
 /* Filter & Search Bar */
 .nhaikanji-filter-card {
-  background: var(--color-bg-surface, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
   padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -33,57 +33,61 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.375rem;
-  background: var(--color-bg-subtle, #f1f5f9);
-  padding: 0.25rem;
-  border-radius: 0.75rem;
+  gap: 0.25rem;
+  background: transparent;
+  padding: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
 }
 
 .nhaikanji-tab-btn {
-  padding: 0.375rem 0.875rem;
-  border-radius: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0;
   font-size: 0.8125rem;
   font-weight: 700;
   border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   background: transparent;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .nhaikanji-tab-btn:hover {
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
 }
 
 .nhaikanji-tab-btn.is-active {
-  background: var(--color-accent);
-  color: #ffffff;
-  box-shadow: 0 1px 2px rgba(99, 102, 241, 0.3);
+  background: transparent;
+  color: var(--color-accent-text);
+  border-bottom-color: var(--color-accent);
+  box-shadow: none;
 }
 
 .nhaikanji-search-box {
   position: relative;
   width: 100%;
-  max-width: 320px;
+  max-width: 340px;
 }
 
 .nhaikanji-search-box input {
   width: 100%;
   padding: 0.5rem 2.25rem 0.5rem 2.25rem;
-  background: var(--color-bg-subtle, #f8fafc);
-  border: 1px solid var(--color-border, #cbd5e1);
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  color: var(--color-text, #0f172a);
+  background: transparent;
+  border: 0;
+  border-bottom: 1.5px solid var(--color-border-strong);
+  border-radius: 0;
+  font-family: var(--font-jp-serif);
+  font-size: 0.95rem;
+  color: var(--color-text);
   outline: none;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: border-color 0.2s ease;
 }
 
 .nhaikanji-search-box input:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-bottom-color: var(--color-accent);
+  box-shadow: none;
 }
 
 .nhaikanji-search-icon {
@@ -149,9 +153,24 @@
 }
 
 .kanji-card {
-  background: var(--color-bg-surface, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 1rem;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 55%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 55%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    );
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
   padding: 1rem 0.75rem;
   display: flex;
   flex-direction: column;
@@ -160,16 +179,33 @@
   gap: 0.25rem;
   cursor: pointer;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
+    transform 0.2s var(--ease-out, ease),
+    box-shadow 0.2s var(--ease-out, ease),
+    border-color 0.2s var(--ease-out, ease);
   user-select: none;
 }
 
+.kanji-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.24s var(--ease-out, ease);
+}
+
 .kanji-card:hover {
-  transform: translateY(-3px);
-  border-color: #818cf8;
-  box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.12);
+  transform: translateY(-2px);
+  border-color: var(--color-accent-border);
+  box-shadow: 0 10px 24px -10px rgb(28 27 32 / 14%);
+}
+
+.kanji-card:hover::before {
+  transform: scaleX(1);
 }
 
 .kanji-card__header {
@@ -178,34 +214,35 @@
   justify-content: space-between;
   align-items: center;
   font-size: 0.6875rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin-bottom: 0.25rem;
 }
 
 .kanji-card__char {
-  font-family: var(--font-serif, 'Fraunces', serif);
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--color-text, #0f172a);
-  line-height: 1.1;
+  font-family: var(--font-jp-serif);
+  font-size: 3.35rem;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.15;
+  margin: 0.2rem 0;
   transition: color 0.15s;
 }
 
 .kanji-card:hover .kanji-card__char {
-  color: var(--color-accent-hover);
+  color: var(--color-accent-text);
 }
 
 .kanji-card__hanzi {
-  font-size: 0.875rem;
-  font-weight: 800;
-  color: #d97706;
-  letter-spacing: 0.05em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-accent-text);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .kanji-card__meaning {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -214,7 +251,7 @@
 
 .kanji-card__onyomi {
   font-size: 0.6875rem;
-  color: var(--color-accent);
+  color: var(--color-text-muted);
   font-family: var(--font-mono, monospace);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -834,35 +871,17 @@
 }
 .jlpt-level-page {
   gap: var(--space-7);
-  --jlpt-paper: #f7f2e8;
-  --jlpt-ink: #292723;
-  --jlpt-vermilion: #ae382f;
+  --jlpt-paper: var(--color-surface);
+  --jlpt-ink: var(--color-text);
+  --jlpt-vermilion: var(--color-accent);
 }
 .jlpt-level-page__heading {
-  max-width: 48rem;
-}
-.jlpt-level-page__heading > span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-accent);
-  font: 800 var(--font-size-sm) var(--font-mono);
-  letter-spacing: 0.04em;
-}
-.jlpt-level-page__heading h1 {
-  margin: var(--space-3) 0 var(--space-2);
-  color: var(--color-text);
-  font: 750 clamp(2rem, 4vw, 3.15rem) / 1.08 var(--font-display);
-}
-.jlpt-level-page__heading p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  line-height: var(--line-height-relaxed);
+  max-width: 100%;
 }
 .jlpt-level-list {
   display: grid;
   gap: 0;
-  border-top: 1px solid rgb(77 64 49 / 24%);
+  border-top: 1px solid var(--color-border);
 }
 .jlpt-level-row {
   --jlpt-level-tone: #ae382f;
@@ -873,10 +892,10 @@
   width: 100%;
   padding: 1.35rem var(--space-4);
   border: 0;
-  border-bottom: 1px solid rgb(77 64 49 / 20%);
+  border-bottom: 1px solid var(--color-border);
   border-radius: 0;
   background: transparent;
-  color: var(--jlpt-ink);
+  color: var(--color-text);
   text-align: left;
   cursor: pointer;
   transition:
@@ -885,7 +904,7 @@
 }
 .jlpt-level-row:hover {
   padding-left: calc(var(--space-4) + 0.5rem);
-  background: rgb(174 56 47 / 5%);
+  background: var(--color-accent-subtle);
 }
 .jlpt-level-row:focus-visible,
 .jlpt-session-card:focus-visible {
@@ -1210,14 +1229,14 @@
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent-hover), var(--color-accent));
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+  box-shadow: var(--shadow-sm);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
@@ -1226,7 +1245,7 @@
 
 .jlpt-audio-play-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 12px rgba(79, 70, 229, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
 .jlpt-audio-progress-row {
@@ -1292,24 +1311,24 @@
 
 .jlpt-script-line {
   font-size: 0.875rem;
-  line-height: 1.6;
-  font-family: var(--font-serif, 'Fraunces', serif);
-  color: var(--color-text, #1e293b);
+  line-height: 1.65;
+  font-family: var(--font-jp-serif);
+  color: var(--color-text);
   white-space: pre-wrap;
 }
 
 /* JLPT Reading Passage (Dokkai) Styles - Full natural reading width */
 .jlpt-reading-passage {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-left: 4px solid var(--color-accent-hover);
-  border-radius: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3.5px solid var(--color-accent);
+  border-radius: 0.5rem;
   padding: 1.5rem;
   font-size: 1rem;
   line-height: 1.9;
-  font-family: var(--font-serif, 'Fraunces', serif);
-  color: var(--color-text, #0f172a);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  font-family: var(--font-jp-serif);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
   max-width: 100%;
 }
 
@@ -1640,20 +1659,20 @@
   gap: 0.25rem;
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
-  border-left: 3px solid #cbd5e1;
-  background: var(--color-bg-surface, #ffffff);
+  border-left: 3px solid var(--color-border);
+  background: var(--color-surface);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .jlpt-dialogue-item:hover {
   border-left-color: var(--color-accent-hover);
-  background: #f8fafc;
+  background: var(--color-surface-elevated, var(--color-bg-subtle));
 }
 
 .jlpt-dialogue-item.is-active {
   border-left-color: var(--color-accent-hover);
-  background: #eef2ff;
+  background: var(--color-accent-subtle);
 }
 
 /* Dark mode adjustments */
@@ -1663,18 +1682,18 @@
 [data-theme='dark'] .jlpt-card,
 [data-theme='dark'] .jlpt-audio-player,
 [data-theme='dark'] .nhaikanji-modal {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 [data-theme='dark'] .nhaikanji-tab-group {
-  background: #0f172a;
+  background: var(--color-surface-elevated, var(--color-bg-canvas));
 }
 
 [data-theme='dark'] .nhaikanji-search-box input {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f8fafc;
+  background: var(--color-surface-elevated, var(--color-bg-canvas));
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 /* JLPT Exam Taking Layout & Responsive Sidebar */
@@ -1769,4 +1788,136 @@
   .jlpt-exam-sidebar {
     grid-row: auto;
   }
+}
+
+.kanji-icon--amber {
+  color: var(--color-warning, #f59e0b);
+}
+.kanji-icon--indigo {
+  color: var(--color-accent-text);
+}
+.kanji-icon--emerald {
+  color: var(--color-success, #10b981);
+}
+.kanji-badge-compact {
+  font-size: 0.65rem;
+  padding: 0.05rem 0.375rem;
+}
+.kanji-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-top: 1rem;
+}
+.kanji-pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.kanji-pagination__summary {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 0 0.75rem;
+}
+.jlpt-result-badge--correct {
+  color: var(--color-success);
+  border-color: var(--color-success);
+  font-weight: 700;
+}
+.jlpt-result-badge--wrong {
+  color: var(--color-danger-text);
+  border-color: var(--color-danger-text);
+  font-weight: 700;
+}
+
+/* Bunpo Editorial Monograph Catalog */
+.bunpo-section {
+  margin-bottom: 2.5rem;
+}
+
+.bunpo-folio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 1.25rem;
+}
+
+.bunpo-folio-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: 0.375rem;
+  padding: 1.45rem 1.5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 162px;
+  box-shadow: 0 2px 14px -6px rgb(28 27 32 / 6%);
+  transition:
+    transform 0.2s var(--ease-out, ease),
+    border-color 0.2s var(--ease-out, ease),
+    box-shadow 0.2s var(--ease-out, ease);
+}
+
+.bunpo-folio-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent-border);
+  box-shadow: 0 10px 24px -10px rgb(28 27 32 / 14%);
+}
+
+.bunpo-folio-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.bunpo-folio-card__sub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-text);
+  text-transform: uppercase;
+}
+
+.bunpo-folio-card__title {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display), var(--font-jp-serif);
+  font-size: 1.32rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.bunpo-folio-card__seal {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  background: var(--color-bg-subtle);
+  color: var(--color-accent-text);
+}
+
+.bunpo-folio-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.bunpo-folio-card__cta {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-accent-text);
 }

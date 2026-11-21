@@ -69,14 +69,15 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
 
   return (
     <section
-      className="video-import-screen video-import-screen--showcase"
+      className="video-import-screen video-import-screen--showcase washi-page"
       style={{ maxWidth: '980px', margin: '0 auto' }}
     >
-      <div className="video-import-orb video-import-orb--rose" />
-      <div className="video-import-orb video-import-orb--violet" />
       <header className="video-import-showcase__header">
+        <span className="washi-hanko" style={{ margin: '0 auto 1rem' }} aria-hidden="true">
+          映
+        </span>
         <p className="video-import-showcase__badge">
-          <Zap aria-hidden="true" size={15} /> NHẬP VIDEO AI & SHADOWING
+          <Zap aria-hidden="true" size={14} /> NHẬP VIDEO AI & SHADOWING
         </p>
         <h1>
           Nhập video để bắt đầu
@@ -169,26 +170,10 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
       )}
 
       {/* ── Pre-cached & Existing Video Lessons ── */}
-      <div style={{ marginTop: '2.5rem', textAlign: 'left', width: '100%' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '1rem',
-          }}
-        >
-          <h2
-            style={{
-              fontSize: '1.05rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: 'var(--color-text)',
-            }}
-          >
-            <Film size={18} color="var(--rose-400)" />
+      <div style={{ marginTop: '2.75rem', textAlign: 'left', width: '100%' }}>
+        <div className="washi-section-head">
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Film size={18} style={{ color: 'var(--color-accent-text)' }} />
             BÀI HỌC VIDEO ĐÃ XỬ LÝ & SẴN SÀNG SHADOWING ({uniqueItems.length})
           </h2>
           {isLoadingAssets && <Loader2 size={16} className="ui-spin" color="var(--color-text-muted)" />}
@@ -212,13 +197,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
             Chưa có bài học nào. Hãy dán link YouTube ở trên để tạo bài học đầu tiên!
           </Card>
         ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
-              gap: '1rem',
-            }}
-          >
+          <div className="video-lesson-grid">
             {uniqueItems.map((item) => {
               const isFailed = item.processingStatus === 'failed'
               const isReady = item.processingStatus === 'ready'
@@ -227,27 +206,9 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
               return (
                 <Card
                   key={item.id}
-                  style={{
-                    padding: '1.1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '0.75rem',
-                    cursor: isReady || isProcessing ? 'pointer' : 'default',
-                    transition: 'all 0.2s ease',
-                    border: isReady ? '1px solid rgba(255, 77, 109, 0.25)' : '1px solid var(--color-border)',
-                    background: isReady ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
-                  }}
+                  className={`video-lesson-card${isReady ? ' is-ready' : ''}${isReady || isProcessing ? ' is-interactive' : ''}`}
                   onClick={() => {
                     onImport(item)
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--rose-400)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = isReady ? 'rgba(255, 77, 109, 0.25)' : 'var(--color-border)'
-                    e.currentTarget.style.transform = 'none'
                   }}
                 >
                   <div>
@@ -257,35 +218,15 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: '0.5rem',
-                        marginBottom: '0.4rem',
+                        marginBottom: '0.45rem',
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          background:
-                            item.sourceType === 'youtube' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                          color: item.sourceType === 'youtube' ? '#f87171' : '#60a5fa',
-                        }}
-                      >
+                      <span className="video-lesson-card__source">
                         {item.sourceType === 'youtube' ? 'YouTube' : 'Tệp tải lên'}
                       </span>
 
                       {isReady && (
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: '#34d399',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
+                        <span className="video-lesson-card__status video-lesson-card__status--ready">
                           <CheckCircle2 size={13} /> Sẵn sàng học
                         </span>
                       )}
@@ -295,16 +236,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
                         </span>
                       )}
                       {isProcessing && (
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: '#fbbf24',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
+                        <span className="video-lesson-card__status video-lesson-card__status--processing">
                           <Loader2 size={13} className="ui-spin" /> Đang xử lý
                         </span>
                       )}
@@ -312,9 +244,9 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
 
                     <h3
                       style={{
-                        fontSize: '0.92rem',
+                        fontSize: '0.95rem',
                         fontWeight: 700,
-                        lineHeight: 1.4,
+                        lineHeight: 1.45,
                         color: 'var(--color-text)',
                         margin: 0,
                         display: '-webkit-box',
@@ -327,15 +259,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
                     </h3>
                   </div>
 
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingTop: '0.5rem',
-                      borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-                    }}
-                  >
+                  <div className="video-lesson-card__footer">
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Tiếng Nhật (JA)</span>
                     <Button
                       variant={isReady ? 'primary' : 'secondary'}

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import PageHeader from '../../components/PageHeader'
 import { Button, Card, EmptyState, PageShell } from '../../components/ui'
 import type { Page } from '../../types/app'
 import { useAuth } from '../auth/authContext'
@@ -14,28 +15,33 @@ export default function LocalProfilePage({ onNavigate }: { onNavigate: (page: Pa
   const activity = (stats.data?.heatmap ?? [])
     .filter((day) => day.count > 0)
     .sort((a, b) => b.date.localeCompare(a.date))
+  const maxCount = Math.max(1, ...activity.slice(0, 14).map((day) => day.count))
+
   return (
-    <PageShell width="wide" className="profile-page">
-      <header className="page-header">
-        <h1>Hành trình của {user?.name || 'bạn'}</h1>
-        <p>Theo dõi kho thẻ và những lần ôn tập đã ghi nhận.</p>
-      </header>
+    <PageShell width="wide" className="profile-page washi-page">
+      <PageHeader
+        hanko="学"
+        jpVertical="学習記録"
+        eyebrow="NHẬT KÝ HỌC GIẢ"
+        title={`Hành trình của ${user?.name || 'bạn'}`}
+        description="Theo dõi kho thẻ và những lần ôn tập đã ghi nhận."
+      />
       {stats.isLoading && <p role="status">Đang tải tiến độ của bạn…</p>}
       {stats.isError && (
-        <Card padding="md">
+        <Card padding="md" className="washi-paper-panel">
           <p role="alert">Chưa tải được tiến độ. Hãy kiểm tra kết nối và thử lại.</p>
           <Button onClick={() => void stats.refetch()}>Thử lại</Button>
         </Card>
       )}
       {stats.data && (
         <>
-          <div className="profile-stat-grid">
+          <div className="washi-kpi-strip">
             <Stat value={stats.data.totalCards} label="Thẻ đã lưu" />
-            <Stat value={stats.data.masteredCount} label="Thẻ thành thạo" />
-            <Stat value={stats.data.dueTodayCount} label="Thẻ đến hạn" />
-            <Stat value={stats.data.streak ?? '—'} label="Chuỗi ngày ôn tập" />
+            <Stat value={stats.data.masteredCount} label="Thẻ thành thạo" tone="success" />
+            <Stat value={stats.data.dueTodayCount} label="Thẻ đến hạn" tone="warning" />
+            <Stat value={stats.data.streak ?? '—'} label="Chuỗi ngày ôn tập" tone="accent" />
           </div>
-          <Card padding="lg">
+          <Card padding="lg" className="washi-paper-panel">
             <h2>Ôn tập hôm nay</h2>
             <p>
               {stats.data.dueTodayCount > 0
@@ -44,14 +50,17 @@ export default function LocalProfilePage({ onNavigate }: { onNavigate: (page: Pa
             </p>
             <Button onClick={() => onNavigate('review')}>Mở thẻ ôn tập</Button>
           </Card>
-          <Card padding="lg">
+          <Card padding="lg" className="washi-paper-panel">
             <h2>Hoạt động gần đây</h2>
             {activity.length ? (
-              <ul className="profile-activity-list">
+              <ul className="profile-activity-ledger">
                 {activity.slice(0, 14).map((day) => (
-                  <li key={day.date}>
-                    <time dateTime={day.date}>{new Date(`${day.date}T12:00:00`).toLocaleDateString('vi-VN')}</time> ·{' '}
-                    {day.count} lượt ôn tập
+                  <li key={day.date} className="profile-activity-ledger__row">
+                    <time dateTime={day.date}>{new Date(`${day.date}T12:00:00`).toLocaleDateString('vi-VN')}</time>
+                    <span className="profile-activity-ledger__bar" aria-hidden="true">
+                      <span style={{ width: `${Math.max(8, Math.round((day.count / maxCount) * 100))}%` }} />
+                    </span>
+                    <span className="profile-activity-ledger__count">{day.count} lượt ôn tập</span>
                   </li>
                 ))}
               </ul>
@@ -64,7 +73,7 @@ export default function LocalProfilePage({ onNavigate }: { onNavigate: (page: Pa
           </Card>
         </>
       )}
-      <Card padding="lg">
+      <Card padding="lg" className="washi-paper-panel">
         <h2>Tài khoản của bạn</h2>
         <p>{user?.email}</p>
         {user && !user.emailVerified && (
@@ -82,11 +91,19 @@ export default function LocalProfilePage({ onNavigate }: { onNavigate: (page: Pa
     </PageShell>
   )
 }
-function Stat({ value, label }: { value: number | string; label: string }) {
+function Stat({
+  value,
+  label,
+  tone,
+}: {
+  value: number | string
+  label: string
+  tone?: 'success' | 'warning' | 'accent'
+}) {
   return (
-    <div className="profile-stat">
-      <strong>{value}</strong>
-      <span>{label}</span>
+    <div className="washi-kpi-cell">
+      <span className="washi-kpi-cell__label">{label}</span>
+      <strong className={`washi-kpi-cell__val${tone ? ` washi-kpi-cell__val--${tone}` : ''}`}>{value}</strong>
     </div>
   )
 }

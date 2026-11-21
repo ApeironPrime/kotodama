@@ -10,7 +10,7 @@
 .curriculum-paper-grid {
   position: relative;
   overflow: hidden;
-  background-color: var(--color-bg-canvas, #FAF8F3);
+  background-color: var(--color-bg-canvas, #faf8f3);
   border-radius: var(--radius-2xl, 16px);
   border: 1px solid var(--color-border-subtle, rgba(215, 205, 190, 0.45));
   padding: var(--space-8) var(--space-8);
@@ -52,24 +52,24 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-accent, #C23A2B);
+  color: var(--color-accent, #c23a2b);
   margin-bottom: var(--space-2);
 }
 
 .curriculum-hero__title {
   margin: 0 0 var(--space-2) 0;
-  font-family: var(--font-display, "Noto Serif JP", serif);
+  font-family: var(--font-display, 'Noto Serif JP', serif);
   font-size: clamp(1.85rem, 3.4vw, 2.6rem);
   font-weight: 700;
   line-height: var(--line-height-snug);
-  color: var(--color-text, #1A1817);
+  color: var(--color-text, #1a1817);
   letter-spacing: -0.01em;
 }
 
 .curriculum-hero__desc {
   margin: 0;
   font-size: var(--font-size-md, 0.95rem);
-  color: var(--color-text-secondary, #6B6359);
+  color: var(--color-text-secondary, #6b6359);
   max-width: 75ch;
   line-height: var(--line-height-relaxed, 1.65);
 }
@@ -115,7 +115,7 @@
   position: relative;
   border: none;
   background: transparent;
-  color: var(--color-text-secondary, #6B6359);
+  color: var(--color-text-secondary, #6b6359);
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
   font-size: 0.92rem;
   font-weight: 600;
@@ -123,8 +123,9 @@
   padding: 0.42rem 0.85rem 0.55rem;
   border-radius: 4px 4px 0 0;
   cursor: pointer;
-  transition: color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 0.18s ease;
+  transition:
+    color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.18s ease;
   display: inline-flex;
   align-items: center;
   gap: 0.38rem;
@@ -135,24 +136,24 @@
 
 .curriculum-filter-pill:hover {
   background: rgba(184, 46, 46, 0.04);
-  color: var(--color-text, #1A1817);
+  color: var(--color-text, #1a1817);
 }
 
 .curriculum-filter-pill:focus-visible {
-  outline: 2px solid var(--color-focus-ring, #B82E2E);
+  outline: 2px solid var(--color-focus-ring, #b82e2e);
   outline-offset: 2px;
 }
 
 .curriculum-filter-pill--active {
   background: transparent;
-  color: var(--color-text, #1A1817);
+  color: var(--color-text, #1a1817);
   font-weight: 750;
-  border-bottom-color: var(--color-accent, #B82E2E);
+  border-bottom-color: var(--color-accent, #b82e2e);
 }
 
 .curriculum-filter-pill--active:hover {
   background: rgba(184, 46, 46, 0.04);
-  color: var(--color-text, #1A1817);
+  color: var(--color-text, #1a1817);
 }
 
 .curriculum-filter-dot {
@@ -160,7 +161,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-accent, #B82E2E);
+  background: var(--color-accent, #b82e2e);
   box-shadow: 0 0 4px rgba(184, 46, 46, 0.4);
 }
 
@@ -169,21 +170,21 @@
 }
 
 [data-theme='dark'] .curriculum-filter-pill {
-  color: #A39E93;
+  color: #a39e93;
 }
 
 [data-theme='dark'] .curriculum-filter-pill:hover {
-  color: #F5F2EB;
+  color: #f5f2eb;
   background: rgba(212, 67, 67, 0.08);
 }
 
 [data-theme='dark'] .curriculum-filter-pill--active {
-  color: #F5F2EB;
-  border-bottom-color: #D44343;
+  color: #f5f2eb;
+  border-bottom-color: #d44343;
 }
 
 [data-theme='dark'] .curriculum-filter-dot {
-  background: #D44343;
+  background: #d44343;
   box-shadow: 0 0 5px rgba(212, 67, 67, 0.6);
 }
 
@@ -214,15 +215,15 @@
   font-size: var(--font-size-sm);
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border, rgba(215, 205, 190, 0.6));
-  background: var(--color-bg-elevated, #FFFFFF);
+  background: var(--color-bg-elevated, #ffffff);
   color: var(--color-text);
   transition: border-color 0.16s ease;
 }
 
 .curriculum-search-box__input:focus {
-  outline: 2px solid var(--color-focus-ring, #C23A2B);
+  outline: 2px solid var(--color-focus-ring, #c23a2b);
   outline-offset: 1px;
-  border-color: #C23A2B;
+  border-color: #c23a2b;
 }
 
 /* Authentic Japanese Hanko SRS Pill Button */
@@ -235,7 +236,7 @@
   border-radius: var(--radius-pill, 9999px);
   padding: 0.35rem 0.85rem;
   font-size: 0.82rem;
-  color: var(--color-text, #2C2623);
+  color: var(--color-text, #2c2623);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
@@ -243,13 +244,13 @@
 
 .curriculum-hanko-srs-pill:hover {
   background: rgba(194, 58, 43, 0.1);
-  border-color: #C23A2B;
+  border-color: #c23a2b;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(194, 58, 43, 0.14);
 }
 
 .curriculum-hanko-srs-pill:focus-visible {
-  outline: 2px solid #C23A2B;
+  outline: 2px solid #c23a2b;
   outline-offset: 2px;
 }
 
@@ -260,8 +261,8 @@
   width: 20px;
   height: 20px;
   border-radius: 3px;
-  background: #C23A2B;
-  color: #FAF8F3;
+  background: #c23a2b;
+  color: #faf8f3;
   font-size: 0.72rem;
   font-weight: 700;
   font-family: var(--font-display, serif);
@@ -269,17 +270,17 @@
 
 .curriculum-hanko-srs-pill__text {
   font-weight: 500;
-  color: var(--color-text, #2C2623);
+  color: var(--color-text, #2c2623);
 }
 
 .curriculum-hanko-srs-pill__text strong {
-  color: #C23A2B;
+  color: #c23a2b;
   font-weight: 700;
 }
 
 .curriculum-hanko-srs-pill__action {
   font-weight: 600;
-  color: #C23A2B;
+  color: #c23a2b;
   margin-left: 0.15rem;
 }
 
@@ -308,29 +309,29 @@
   font-weight: 700;
   padding: 0.15rem 0.55rem;
   border-radius: 4px;
-  color: #C23A2B;
+  color: #c23a2b;
   background: rgba(194, 58, 43, 0.08);
   border: 1px solid rgba(194, 58, 43, 0.3);
   letter-spacing: 0.05em;
 }
 
 .curriculum-track-title {
-  font-family: var(--font-display, "Noto Serif JP", serif);
+  font-family: var(--font-display, 'Noto Serif JP', serif);
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--color-text, #1A1817);
+  color: var(--color-text, #1a1817);
   margin: 0;
 }
 
 .curriculum-track-count {
   font-size: 0.85rem;
-  color: var(--color-text-muted, #8C8275);
+  color: var(--color-text-muted, #8c8275);
   font-weight: 500;
 }
 
 .curriculum-track-desc {
   font-size: 0.88rem;
-  color: var(--color-text-secondary, #6B6359);
+  color: var(--color-text-secondary, #6b6359);
   margin: 0 0 0.75rem 0;
   line-height: 1.55;
   max-width: 85ch;
@@ -341,16 +342,16 @@
   align-items: center;
   gap: 0.5rem;
   background: rgba(194, 58, 43, 0.035);
-  border-left: 3px solid #C23A2B;
+  border-left: 3px solid #c23a2b;
   padding: 0.55rem 0.95rem;
   border-radius: 0 6px 6px 0;
   font-size: 0.84rem;
-  color: var(--color-text, #3D3630);
+  color: var(--color-text, #3d3630);
   line-height: 1.45;
 }
 
 .curriculum-roadmap-banner__icon {
-  color: #C23A2B;
+  color: #c23a2b;
   flex-shrink: 0;
 }
 
@@ -371,9 +372,12 @@
   border-radius: 4px;
   overflow: hidden;
   user-select: none;
-  box-shadow: -2px 3px 12px rgba(28, 25, 23, 0.16), 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    -2px 3px 12px rgba(28, 25, 23, 0.16),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
   transform-style: preserve-3d;
   transform-origin: left center;
@@ -435,7 +439,9 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset -3px 0 6px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset -3px 0 6px rgba(0, 0, 0, 0.25);
   z-index: 4;
 }
 
@@ -664,16 +670,19 @@
   border-left: 4px solid var(--color-accent, #b82e2e);
   border-radius: 10px;
   padding: 1.65rem 1.85rem;
-  box-shadow: 0 4px 20px -4px rgba(44, 38, 35, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03);
+  box-shadow:
+    0 4px 20px -4px rgba(44, 38, 35, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.03);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 2rem;
   align-items: center;
   cursor: pointer;
   outline: none;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.2s ease;
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
   margin-bottom: 1.85rem;
 }
 
@@ -688,13 +697,16 @@
 .curriculum-featured-spread:hover {
   transform: translateY(-2px);
   border-color: rgba(184, 46, 46, 0.45);
-  box-shadow: 0 14px 36px -6px rgba(184, 46, 46, 0.12), 0 3px 10px rgba(44, 38, 35, 0.05);
+  box-shadow:
+    0 14px 36px -6px rgba(184, 46, 46, 0.12),
+    0 3px 10px rgba(44, 38, 35, 0.05);
 }
 
 .curriculum-featured-spread:hover .watoji-cover {
   transform: rotateY(-5deg) rotateX(1.5deg) translateY(-5px) translateZ(10px);
-  box-shadow: -12px 16px 32px -4px rgba(28, 25, 23, 0.26),
-              -2px 4px 10px rgba(28, 25, 23, 0.12);
+  box-shadow:
+    -12px 16px 32px -4px rgba(28, 25, 23, 0.26),
+    -2px 4px 10px rgba(28, 25, 23, 0.12);
 }
 
 .curriculum-featured-spread:focus-visible {
@@ -867,7 +879,10 @@
   font-weight: 800;
   line-height: 1;
   transform: rotate(-2deg);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, color 0.2s ease;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .curriculum-featured-spread:hover .curriculum-featured-spread__hanko-seal {
@@ -936,15 +951,18 @@
   gap: 1.15rem;
   cursor: pointer;
   outline: none;
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.22s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.22s ease;
 }
 
 .curriculum-companion-card:hover {
   transform: translateY(-2px);
   border-color: rgba(184, 46, 46, 0.38);
-  box-shadow: 0 10px 28px -4px rgba(44, 38, 35, 0.08), 0 2px 8px rgba(184, 46, 46, 0.05);
+  box-shadow:
+    0 10px 28px -4px rgba(44, 38, 35, 0.08),
+    0 2px 8px rgba(184, 46, 46, 0.05);
 }
 
 .curriculum-companion-card__cover-wrap {
@@ -955,9 +973,10 @@
 
 .curriculum-companion-card:hover .watoji-cover {
   transform: rotateY(-6.5deg) rotateX(2deg) translateY(-4px) translateZ(8px);
-  box-shadow: -10px 14px 26px -3px rgba(28, 25, 23, 0.25),
-              -2px 4px 10px rgba(28, 25, 23, 0.12),
-              0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    -10px 14px 26px -3px rgba(28, 25, 23, 0.25),
+    -2px 4px 10px rgba(28, 25, 23, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .curriculum-companion-card:focus-visible {
@@ -1270,8 +1289,12 @@
 }
 
 @keyframes kaikaFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .kaika-shoko-drawer {
@@ -1288,8 +1311,12 @@
 }
 
 @keyframes kaikaSlideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .kaika-shoko-header {
@@ -1428,13 +1455,15 @@
   flex-direction: column;
   justify-content: space-between;
   min-height: 180px;
-  transition: transform 0.2s ease, border-left-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-left-color 0.2s ease;
   outline: none;
 }
 
 .curriculum-sketch-card:hover {
   transform: translateY(-2px);
-  border-left-color: #C23A2B;
+  border-left-color: #c23a2b;
 }
 
 /* Subtle Editorial Level Badge */
@@ -1448,14 +1477,14 @@
   padding: 0.15rem 0.55rem;
   border-radius: var(--radius-sm, 4px);
   background: var(--color-bg-subtle, rgba(235, 230, 222, 0.6));
-  color: var(--color-text-secondary, #5C5449);
+  color: var(--color-text-secondary, #5c5449);
   border: 1px solid var(--color-border-subtle, rgba(215, 205, 190, 0.6));
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 [data-level] {
-  --level-accent: #C23A2B;
+  --level-accent: #c23a2b;
   --level-accent-bg: rgba(194, 58, 43, 0.08);
   --level-accent-border: rgba(194, 58, 43, 0.25);
 }
@@ -1890,7 +1919,6 @@
   }
 }
 
-
 /* Published textbooks retain their own jackets and proportions. */
 .published-book {
   position: relative;
@@ -1925,4 +1953,145 @@
   .curriculum-companion-card:hover .published-book {
     transform: none;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Curriculum Flashcard Surface (Light & Dark Tokenized)
+   -------------------------------------------------------------------------- */
+.curriculum-flashcard {
+  min-height: 340px;
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 42%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 42%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    );
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 2.5rem 2rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  box-shadow:
+    var(--shadow-md),
+    inset 0 0 0 4px var(--color-bg-canvas),
+    inset 0 0 0 5px color-mix(in srgb, var(--color-border) 60%, transparent);
+  position: relative;
+  user-select: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.curriculum-flashcard:hover,
+.curriculum-flashcard:focus-visible {
+  border-color: var(--color-accent-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.curriculum-flashcard__pill {
+  background: var(--color-surface-elevated, var(--color-bg-subtle));
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.curriculum-flashcard__pill.is-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-inverse);
+}
+
+.curriculum-flashcard__icon-btn {
+  background: var(--color-surface-elevated, var(--color-bg-subtle));
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.curriculum-flashcard__icon-btn.is-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-inverse);
+}
+
+.curriculum-flashcard__icon-btn.is-saved {
+  background: var(--color-success-subtle, rgba(16, 185, 129, 0.16));
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.curriculum-flashcard__word {
+  font-family: var(--font-jp-serif);
+  font-size: 3.35rem;
+  font-weight: 500;
+  color: var(--color-text);
+  letter-spacing: 0.05em;
+}
+
+.curriculum-flashcard__reading {
+  font-family: var(--font-jp);
+  font-size: 1.4rem;
+  color: var(--color-accent-text);
+  font-weight: 600;
+}
+
+.curriculum-flashcard__hanviet {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.2rem;
+}
+
+.curriculum-flashcard__hanviet strong {
+  color: var(--color-text);
+}
+
+.curriculum-flashcard__meaning {
+  font-size: 1.3rem;
+  color: var(--color-text);
+  font-weight: 700;
+  margin-top: 0.6rem;
+  max-width: 600px;
+}
+
+.curriculum-flashcard__example-jp {
+  font-family: var(--font-jp);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.curriculum-flashcard__example-vi {
+  font-size: 1.15rem;
+  color: var(--color-accent-text);
+  margin-top: 1rem;
+  line-height: 1.5;
+  animation: fadeIn 0.2s ease;
 }
