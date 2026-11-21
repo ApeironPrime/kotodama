@@ -54,7 +54,7 @@ export default function TopNav({
       <a className="skip-link" href="#main-content">
         Chuyển đến nội dung chính
       </a>
-      <nav className="nav-bar" aria-label="Điều hướng chính">
+      <nav className="nav-bar nav-bar--home" aria-label="Điều hướng chính">
         <div className="nav-inner">
           <button
             type="button"

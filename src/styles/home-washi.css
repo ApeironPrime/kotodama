@@ -269,6 +269,7 @@ html .showcase-home.showcase-home {
   gap: clamp(0.1rem, 0.8vw, 0.7rem);
 }
 .nav-bar--home .nav-tab {
+  position: relative;
   min-width: 5.7rem;
   min-height: 100%;
   justify-content: center;
@@ -280,6 +281,11 @@ html .showcase-home.showcase-home {
   font-weight: 650;
   letter-spacing: 0.01em;
   transition: color 200ms ease;
+}
+.nav-bar--home .nav-due-badge {
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  padding: 0.05rem 0.35rem;
 }
 .nav-bar--home .nav-tab > svg,
 .nav-bar--home .nav-ai-badge {
@@ -453,6 +459,56 @@ html .showcase-home.showcase-home {
   .nav-bar--home .nav-home-colophon {
     display: none;
   }
+  .nav-bar--home .nav-due-badge {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.35rem;
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 1360px) {
+  .nav-bar--home .nav-stat {
+    display: inline-flex;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid var(--color-border);
+    background: transparent;
+  }
+}
+
+[data-theme='dark'] .app-shell .nav-bar--home {
+  background: color-mix(in srgb, var(--color-bg-canvas) 95%, transparent);
+  border-bottom-color: var(--color-border);
+}
+[data-theme='dark'] .nav-bar--home .nav-brand,
+[data-theme='dark'] .nav-bar--home .nav-tab.active {
+  color: var(--color-text);
+}
+[data-theme='dark'] .nav-bar--home .nav-brand__wordmark small,
+[data-theme='dark'] .nav-bar--home .nav-tab,
+[data-theme='dark'] .nav-bar--home .nav-tab__jp {
+  color: var(--color-text-secondary);
+}
+[data-theme='dark'] .nav-bar--home .nav-tab:hover,
+[data-theme='dark'] .nav-bar--home .nav-tab:hover .nav-tab__jp,
+[data-theme='dark'] .nav-bar--home .nav-tab.active .nav-tab__jp {
+  color: var(--color-accent-text);
+}
+[data-theme='dark'] .nav-bar--home .nav-tab.active::after {
+  background: var(--color-accent);
+}
+[data-theme='dark'] .nav-bar--home .nav-brand::before {
+  border-color: color-mix(in srgb, var(--color-accent) 34%, transparent);
+  background:
+    repeating-conic-gradient(
+      from 224deg at 50% 100%,
+      transparent 0deg 11deg,
+      color-mix(in srgb, var(--color-accent) 18%, transparent) 11deg 11.5deg,
+      transparent 11.5deg 22deg
+    ),
+    radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent 68%),
+    color-mix(in srgb, var(--color-surface) 92%, transparent);
 }
 
 .showcase-home .showcase-hero {
@@ -1580,28 +1636,28 @@ html .showcase-home .showcase-tool:first-child:hover {
     z-index: 2;
     margin-left: 0;
   }
-  .app-shell:has(.showcase-home) .nav-mobile {
-    border-top-color: rgb(82 67 49 / 24%);
-    background: rgb(248 244 235 / 96%);
-    box-shadow: 0 -0.5rem 1.5rem rgb(76 57 35 / 7%);
+  .app-shell .nav-mobile {
+    border-top-color: var(--color-border);
+    background: var(--color-bg-overlay);
+    box-shadow: var(--shadow-sm);
   }
-  .app-shell:has(.showcase-home) .nav-mobile__item {
+  .app-shell .nav-mobile__item {
     min-height: 3.15rem;
     border-radius: 0;
-    color: #625c54;
+    color: var(--color-text-secondary);
     font-weight: 600;
   }
-  .app-shell:has(.showcase-home) .nav-mobile__item.is-active {
-    color: #a9382f;
+  .app-shell .nav-mobile__item.is-active {
+    color: var(--color-accent-text);
     background: transparent;
   }
-  .app-shell:has(.showcase-home) .nav-mobile__item.is-active::before {
+  .app-shell .nav-mobile__item.is-active::before {
     width: 2.2rem;
     height: 2px;
     border-radius: 0;
-    background: #ae382f;
+    background: var(--color-accent);
   }
-  .app-shell:has(.showcase-home) .nav-mobile__item > svg {
+  .app-shell .nav-mobile__item > svg {
     stroke-width: 1.55;
   }
 }
