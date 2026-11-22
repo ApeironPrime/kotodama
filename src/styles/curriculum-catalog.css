@@ -2342,7 +2342,7 @@
 }
 
 .curriculum-flashcard {
-  min-height: 360px;
+  min-height: 310px;
   background-color: var(--color-surface);
   background-image:
     linear-gradient(
@@ -2360,7 +2360,7 @@
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  padding: 2.25rem 2rem;
+  padding: 1.75rem 2rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -3023,10 +3023,193 @@
 @media (prefers-reduced-motion: reduce) {
   .curriculum-flashcard,
   .curriculum-flashcard-hud__track > span,
+  .lesson-dock-card,
   .dojo-mode-btn,
   .dojo-option-btn,
   .dojo-karuta-card {
     transition: none !important;
     transform: none !important;
   }
+}
+
+/* --------------------------------------------------------------------------
+   UNIFIED LESSON WORKSPACE: TOP STAGE + GAME DOCK + ALWAYS-VISIBLE LIST
+   -------------------------------------------------------------------------- */
+.lesson-stage-wrapper {
+  margin-bottom: 1.15rem;
+}
+
+.lesson-game-dock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+}
+
+.lesson-game-dock--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .lesson-game-dock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .lesson-game-dock,
+  .lesson-game-dock--two {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lesson-dock-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.lesson-dock-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -14px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.lesson-dock-card.is-active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent-subtle) 55%, var(--color-surface));
+  box-shadow: 0 4px 14px -8px color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+.lesson-dock-card__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex-shrink: 0;
+  border: 1.2px solid color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  border-radius: 7px;
+  background: var(--color-bg-subtle);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.92rem;
+  font-weight: 800;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.lesson-dock-card.is-active .lesson-dock-card__seal {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.lesson-dock-card__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lesson-dock-card__text strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.lesson-dock-card__text small {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.lesson-vocab-section {
+  margin-top: 2.15rem;
+  padding-top: 1.65rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.lesson-vocab-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.lesson-vocab-section__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.lesson-vocab-section__title-group h3 {
+  margin: 0;
+  font-family: var(--font-display), var(--font-jp-serif), serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.lesson-vocab-section__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 5px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.curriculum-term-row.is-current {
+  background: color-mix(in srgb, var(--color-accent-subtle) 35%, var(--color-surface));
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.curriculum-term-row__index-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  padding: 0.24rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-subtle);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.curriculum-term-row__index-btn:hover,
+.curriculum-term-row.is-current .curriculum-term-row__index-btn {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
 }

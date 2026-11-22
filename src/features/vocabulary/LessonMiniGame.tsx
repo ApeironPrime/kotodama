@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { BookmarkPlus, Check, Flame, Gamepad2, Headphones, RotateCcw, Sparkles, Volume2, Zap } from 'lucide-react'
 import type { CurriculumWord } from '../srs/srsTypes'
 import { sumiAudio } from '../dictionary/sumiAudio'
 
 interface LessonMiniGameProps {
   words: CurriculumWord[]
+  activeMode?: 'quiz' | 'karuta'
+  defaultAudioFirst?: boolean
   isTermSaved: (item: CurriculumWord) => boolean
   onSaveToSrs: (item: CurriculumWord) => Promise<void> | void
   onSpeak: (text: string, audioUrl?: string) => void
@@ -78,12 +80,20 @@ function buildKarutaDeck(words: CurriculumWord[]): KarutaCard[] {
   return shuffleArray(cards)
 }
 
-export function LessonMiniGame({ words, isTermSaved, onSaveToSrs, onSpeak }: LessonMiniGameProps) {
-  const [mode, setMode] = useState<DojoMode>('quiz')
-  const [roundSeed, setRoundSeed] = useState(0)
+export function LessonMiniGame({
+  words,
+  activeMode,
+  defaultAudioFirst = false,
+  isTermSaved,
+  onSaveToSrs,
+  onSpeak,
+}: LessonMiniGameProps) {
+  const [mode, setMode] = useState<DojoMode>(activeMode ?? 'quiz')
+  const [questions, setQuestions] = useState<QuizQuestion[]>(() => buildQuizQuestions(words))
+  const [karutaDeck, setKarutaDeck] = useState<KarutaCard[]>(() => buildKarutaDeck(words))
 
   // Quiz State
-  const [audioFirst, setAudioFirst] = useState(false)
+  const [audioFirst, setAudioFirst] = useState(defaultAudioFirst)
   const [qIndex, setQIndex] = useState(0)
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   const [score, setScore] = useState(0)
@@ -101,8 +111,6 @@ export function LessonMiniGame({ words, isTermSaved, onSaveToSrs, onSpeak }: Les
   const [karutaCombo, setKarutaCombo] = useState(0)
   const mismatchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const questions = useMemo(() => buildQuizQuestions(words), [words, roundSeed])
-  const karutaDeck = useMemo(() => buildKarutaDeck(words), [words, roundSeed])
   const totalPairs = Math.floor(karutaDeck.length / 2)
   const matchedCount = Object.keys(matchedPairIds).length
   const karutaFinished = totalPairs > 0 && matchedCount >= totalPairs
@@ -113,24 +121,33 @@ export function LessonMiniGame({ words, isTermSaved, onSaveToSrs, onSpeak }: Les
     }
   }, [])
 
-  const resetRound = useCallback((nextMode?: DojoMode) => {
-    if (mismatchTimerRef.current) clearTimeout(mismatchTimerRef.current)
-    if (nextMode) setMode(nextMode)
-    setRoundSeed((s) => s + 1)
-    setQIndex(0)
-    setSelectedWord(null)
-    setScore(0)
-    setCombo(0)
-    setBestCombo(0)
-    setCorrectCount(0)
-    setMissedWords([])
-    setQuizFinished(false)
-    setSelectedCardUid(null)
-    setMatchedPairIds({})
-    setMismatchUids(null)
-    setKarutaMoves(0)
-    setKarutaCombo(0)
-  }, [])
+  const resetRound = useCallback(
+    (nextMode?: DojoMode, nextAudioFirst?: boolean) => {
+      if (mismatchTimerRef.current) clearTimeout(mismatchTimerRef.current)
+      if (nextMode) setMode(nextMode)
+      if (typeof nextAudioFirst === 'boolean') setAudioFirst(nextAudioFirst)
+      setQuestions(buildQuizQuestions(words))
+      setKarutaDeck(buildKarutaDeck(words))
+      setQIndex(0)
+      setSelectedWord(null)
+      setScore(0)
+      setCombo(0)
+      setBestCombo(0)
+      setCorrectCount(0)
+      setMissedWords([])
+      setQuizFinished(false)
+      setSelectedCardUid(null)
+      setMatchedPairIds({})
+      setMismatchUids(null)
+      setKarutaMoves(0)
+      setKarutaCombo(0)
+    },
+    [words]
+  )
+
+  useEffect(() => {
+    resetRound(activeMode ?? 'quiz', defaultAudioFirst)
+  }, [activeMode, defaultAudioFirst, resetRound])
 
   const currentQ = questions[qIndex] || null
 
@@ -244,23 +261,25 @@ export function LessonMiniGame({ words, isTermSaved, onSaveToSrs, onSpeak }: Les
     <section className="dojo-game" aria-label="Võ Đường Mini-Game Kotodama">
       {/* Top Dojo HUD */}
       <header className="dojo-hud">
-        <div className="dojo-hud__modes" role="group" aria-label="Chọn trò chơi">
-          <button
-            type="button"
-            className={`dojo-mode-btn${mode === 'quiz' ? ' is-active' : ''}`}
-            onClick={() => resetRound('quiz')}
-          >
-            <Zap size={14} aria-hidden="true" />
-            <span>Phản Xạ Nghĩa</span>
-          </button>
-          <button
-            type="button"
-            className={`dojo-mode-btn${mode === 'karuta' ? ' is-active' : ''}`}
-            onClick={() => resetRound('karuta')}
-          >
-            <Sparkles size={14} aria-hidden="true" />
-            <span>Ghép Thẻ Karuta</span>
-          </button>
+        <div className="dojo-hud__modes">
+          <span className="dojo-mode-btn is-active">
+            {mode === 'karuta' ? (
+              <>
+                <Sparkles size={14} aria-hidden="true" />
+                <span>Ghép Thẻ Karuta</span>
+              </>
+            ) : audioFirst ? (
+              <>
+                <Headphones size={14} aria-hidden="true" />
+                <span>Luyện Nghe Phản Xạ</span>
+              </>
+            ) : (
+              <>
+                <Zap size={14} aria-hidden="true" />
+                <span>Phản Xạ Nghĩa</span>
+              </>
+            )}
+          </span>
         </div>
 
         <div className="dojo-hud__stats">

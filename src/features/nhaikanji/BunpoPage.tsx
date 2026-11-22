@@ -82,8 +82,11 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [selectedLesson, setSelectedLesson] = useUrlState<string | null>('lesson', null)
   const [selectedPoint] = useUrlState<string | null>('point', null)
   const openedPoint = useRef<string | null>(null)
-  const [studyMode, setStudyMode] = useState<'flashcard' | 'list' | 'game'>('flashcard')
-  const [quizSeed, setQuizSeed] = useState(0)
+  const [stageMode, setStageMode] = useState<'flashcard' | 'game'>('flashcard')
+  const [showFullListWhenDeepLinked, setShowFullListWhenDeepLinked] = useState(false)
+  const [grammarQuestions, setGrammarQuestions] = useState<
+    Array<{ target: CurriculumGrammar; options: CurriculumGrammar[] }>
+  >([])
   const [quizIndex, setQuizIndex] = useState(0)
   const [quizSelectedId, setQuizSelectedId] = useState<string | null>(null)
   const [quizScore, setQuizScore] = useState(0)
@@ -173,14 +176,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     enabled: Boolean(selectedBook && selectedLesson),
   })
 
-  const grammars = grammarData?.items || []
+  const grammars = useMemo(() => grammarData?.items ?? [], [grammarData?.items])
   const currentCard = grammars[currentIndex] || null
 
-  const grammarQuestions = useMemo(() => {
-    if (grammars.length < 2) return []
-    const shuffled = [...grammars].sort(() => Math.random() - 0.5).slice(0, Math.min(10, grammars.length))
+  const buildGrammarQuestions = useCallback((items: CurriculumGrammar[]) => {
+    if (items.length < 2) return []
+    const shuffled = [...items].sort(() => Math.random() - 0.5).slice(0, Math.min(10, items.length))
     return shuffled.map((target) => {
-      const distractors = grammars
+      const distractors = items
         .filter(
           (g) => g.id !== target.id && (g.shortMeaning || g.explanation) !== (target.shortMeaning || target.explanation)
         )
@@ -189,17 +192,21 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       const options = [target, ...distractors].sort(() => Math.random() - 0.5)
       return { target, options }
     })
-  }, [grammars, quizSeed])
+  }, [])
 
-  const resetGrammarQuiz = () => {
-    setQuizSeed((s) => s + 1)
+  const resetGrammarQuiz = useCallback(() => {
+    setGrammarQuestions(buildGrammarQuestions(grammars))
     setQuizIndex(0)
     setQuizSelectedId(null)
     setQuizScore(0)
     setQuizCombo(0)
     setQuizCorrectCount(0)
     setQuizFinished(false)
-  }
+  }, [buildGrammarQuestions, grammars])
+
+  useEffect(() => {
+    setGrammarQuestions(buildGrammarQuestions(grammars))
+  }, [buildGrammarQuestions, grammars])
   useEffect(() => {
     const key = `${selectedBook}:${selectedLesson}:${selectedPoint}`
     if (!grammarData || openedPoint.current === key) return
@@ -289,7 +296,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   // Keyboard shortcut listener for in-lesson flashcard
   useEffect(() => {
-    if (!selectedLesson || studyMode !== 'flashcard' || !currentCard) return
+    if (!selectedLesson || stageMode !== 'flashcard' || !currentCard) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return
@@ -318,7 +325,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedLesson, studyMode, currentCard, isFlipped, grammars.length, handleSaveToSrs, playAudio, setKnownGrammars])
+  }, [selectedLesson, stageMode, currentCard, isFlipped, grammars.length, handleSaveToSrs, playAudio, setKnownGrammars])
 
   /** Check if a grammar item is saved — matches both local ID key and server term key */
   const isGrammarSaved = (item: CurriculumGrammar) =>
@@ -565,39 +572,9 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         )}
       </div>
 
-      {/* 3.2 Mode Bar */}
-      <div className="washi-tabs">
-        <button
-          type="button"
-          className={`washi-tab${studyMode === 'flashcard' ? ' is-active' : ''}`}
-          onClick={() => setStudyMode('flashcard')}
-        >
-          <Layers size={16} /> Flashcard Bài Học
-        </button>
-
-        <button
-          type="button"
-          className={`washi-tab${studyMode === 'list' ? ' is-active' : ''}`}
-          onClick={() => setStudyMode('list')}
-        >
-          <BookOpen size={16} /> Danh Sách ({grammars.length})
-        </button>
-
-        <button
-          type="button"
-          className={`washi-tab${studyMode === 'game' ? ' is-active' : ''}`}
-          onClick={() => {
-            setStudyMode('game')
-            resetGrammarQuiz()
-          }}
-        >
-          <Gamepad2 size={16} /> Mini-Game Ngữ Pháp
-        </button>
-      </div>
-
-      {/* GRAMMAR DOJO MINI-GAME */}
-      {studyMode === 'game' && (
-        <section className="dojo-game" style={{ marginBottom: '2.5rem' }} aria-label="Mini-Game Ngữ Pháp">
+      {/* 3.2 TOP STAGE: GRAMMAR FLASHCARD OR DOJO QUIZ */}
+      {stageMode === 'game' ? (
+        <section className="dojo-game" style={{ marginBottom: '1.25rem' }} aria-label="Mini-Game Ngữ Pháp">
           {grammarQuestions.length === 0 ? (
             <div className="dojo-empty">
               <Gamepad2 size={32} aria-hidden="true" />
@@ -752,371 +729,412 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             </div>
           )}
         </section>
-      )}
+      ) : (
+        /* 3.3 LAYER 1: IN-LESSON FLASHCARD FOR GRAMMAR */
+        currentCard && (
+          <div style={{ marginBottom: '1.25rem' }}>
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Lật thẻ ngữ pháp"
+              aria-expanded={isFlipped}
+              className={`bunpo-flashcard washi-manuscript-card${!isFlipped ? ' washi-genko-bg' : ''}`}
+              onKeyDown={(event) => {
+                if (event.target === event.currentTarget && event.key === 'Enter') {
+                  event.preventDefault()
+                  setIsFlipped((f) => !f)
+                }
+              }}
+              onClick={() => setIsFlipped((f) => !f)}
+            >
+              {/* Top Bar */}
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Badge variant="primary">{currentCard.level}</Badge>
 
-      {/* 3.3 LAYER 1: IN-LESSON FLASHCARD FOR GRAMMAR */}
-      {studyMode === 'flashcard' && currentCard && (
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label="Lật thẻ ngữ pháp"
-            aria-expanded={isFlipped}
-            className={`bunpo-flashcard washi-manuscript-card${!isFlipped ? ' washi-genko-bg' : ''}`}
-            onKeyDown={(event) => {
-              if (event.target === event.currentTarget && event.key === 'Enter') {
-                event.preventDefault()
-                setIsFlipped((f) => !f)
-              }
-            }}
-            onClick={() => setIsFlipped((f) => !f)}
-          >
-            {/* Top Bar */}
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Badge variant="primary">{currentCard.level}</Badge>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="washi-audio-btn"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const firstAudio = currentCard.examples?.find((ex) => ex.audio)?.audio
-                    playAudio(firstAudio, currentCard.pattern)
-                  }}
-                  title="Nghe phát âm"
-                >
-                  <Volume2 size={18} />
-                </button>
-                <button
-                  type="button"
-                  className={`washi-srs-btn${isGrammarSaved(currentCard) ? ' is-saved' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    void handleSaveToSrs(currentCard)
-                  }}
-                  title="Lưu vào sổ tay ôn tập"
-                >
-                  {isGrammarSaved(currentCard) ? '✓ Đã vào SRS' : '+ Thêm SRS (C)'}
-                </button>
-              </div>
-            </div>
-
-            {/* Center Content */}
-            <div style={{ margin: 'auto 0', width: '100%' }}>
-              {!isFlipped ? (
-                // FRONT SIDE
-                <div>
-                  <div className="bunpo-flashcard__pattern">{currentCard.pattern}</div>
-                  {currentCard.structure && (
-                    <div className="bunpo-flashcard__structure">✦ Cấu trúc: {currentCard.structure}</div>
-                  )}
-
-                  {currentCard.groups && currentCard.groups.length > 1 && (
-                    <div style={{ marginTop: '0.65rem' }}>
-                      <span className="bunpo-multi-pill">Gồm {currentCard.groups.length} nghĩa & cách dùng</span>
-                    </div>
-                  )}
-
-                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.9rem' }}>
-                    Nhấn [Space] hoặc chạm để lật xem ý nghĩa & 1 ví dụ mỗi nghĩa
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="washi-audio-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const firstAudio = currentCard.examples?.find((ex) => ex.audio)?.audio
+                      playAudio(firstAudio, currentCard.pattern)
+                    }}
+                    title="Nghe phát âm"
+                  >
+                    <Volume2 size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`washi-srs-btn${isGrammarSaved(currentCard) ? ' is-saved' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleSaveToSrs(currentCard)
+                    }}
+                    title="Lưu vào sổ tay ôn tập"
+                  >
+                    {isGrammarSaved(currentCard) ? '✓ Đã vào SRS' : '+ Thêm SRS (C)'}
+                  </button>
                 </div>
-              ) : (
-                // BACK SIDE
-                <div style={{ width: '100%' }}>
-                  <div className="bunpo-flashcard__pattern--back">{currentCard.pattern}</div>
+              </div>
 
-                  {currentCard.groups && currentCard.groups.length > 1 ? (
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.75rem',
-                        maxHeight: '400px',
-                        overflowY: 'auto',
-                        paddingRight: '4px',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.2rem' }}>
-                        <span className="bunpo-multi-pill">
-                          Mẫu ngữ pháp có {currentCard.groups.length} nghĩa & cách dùng
-                        </span>
+              {/* Center Content */}
+              <div style={{ margin: 'auto 0', width: '100%' }}>
+                {!isFlipped ? (
+                  // FRONT SIDE
+                  <div>
+                    <div className="bunpo-flashcard__pattern">{currentCard.pattern}</div>
+                    {currentCard.structure && (
+                      <div className="bunpo-flashcard__structure">✦ Cấu trúc: {currentCard.structure}</div>
+                    )}
+
+                    {currentCard.groups && currentCard.groups.length > 1 && (
+                      <div style={{ marginTop: '0.65rem' }}>
+                        <span className="bunpo-multi-pill">Gồm {currentCard.groups.length} nghĩa & cách dùng</span>
                       </div>
+                    )}
 
-                      {currentCard.groups.map((group, gIdx) => {
-                        const firstEx = group.examples && group.examples[0]
-                        return (
-                          <div key={gIdx} className="bunpo-group-card">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
-                              <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}>
-                                {group.meaning || group.usage || ''}
-                              </span>
-                            </div>
-
-                            {group.structure && (
-                              <div
-                                style={{
-                                  fontFamily: 'var(--font-jp-serif)',
-                                  fontSize: '0.88rem',
-                                  color: 'var(--color-accent-text)',
-                                  fontWeight: 600,
-                                }}
-                              >
-                                ✦ {group.structure}
-                              </div>
-                            )}
-
-                            {group.usage && group.usage !== group.meaning && (
-                              <div
-                                style={{
-                                  fontSize: '0.84rem',
-                                  color: 'var(--color-text-secondary)',
-                                  lineHeight: 1.4,
-                                }}
-                              >
-                                ◎ {group.usage}
-                              </div>
-                            )}
-
-                            {/* Exactly 1 Example per sub-meaning with clean Furigana Ruby & Audio */}
-                            {firstEx && (
-                              <div
-                                className="bunpo-example-box"
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'center',
-                                  gap: '0.75rem',
-                                }}
-                              >
-                                <div style={{ flex: 1 }}>
-                                  <div
-                                    style={{
-                                      fontFamily: 'var(--font-jp)',
-                                      fontSize: '0.98rem',
-                                      color: 'var(--color-text)',
-                                      lineHeight: 1.6,
-                                    }}
-                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp) }}
-                                  />
-                                  {firstEx.vi && (
-                                    <div
-                                      style={{
-                                        color: 'var(--color-text-secondary)',
-                                        fontSize: '0.84rem',
-                                        marginTop: '3px',
-                                      }}
-                                    >
-                                      {firstEx.vi}
-                                    </div>
-                                  )}
-                                </div>
-
-                                <button
-                                  type="button"
-                                  className="washi-audio-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    playAudio(firstEx.audio, firstEx.jp)
-                                  }}
-                                  title="Nghe đọc câu ví dụ"
-                                >
-                                  <Volume2 size={16} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
+                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.9rem' }}>
+                      Nhấn [Space] hoặc chạm để lật xem ý nghĩa & 1 ví dụ mỗi nghĩa
                     </div>
-                  ) : (
-                    // Single Group Case
-                    <div>
+                  </div>
+                ) : (
+                  // BACK SIDE
+                  <div style={{ width: '100%' }}>
+                    <div className="bunpo-flashcard__pattern--back">{currentCard.pattern}</div>
+
+                    {currentCard.groups && currentCard.groups.length > 1 ? (
                       <div
                         style={{
-                          fontSize: '1.25rem',
-                          fontWeight: 700,
-                          color: 'var(--color-success)',
-                          marginTop: '0.5rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem',
+                          maxHeight: '400px',
+                          overflowY: 'auto',
+                          paddingRight: '4px',
+                          textAlign: 'left',
                         }}
                       >
-                        {currentCard.shortMeaning || currentCard.explanation}
-                      </div>
-
-                      {currentCard.structure && (
-                        <div className="bunpo-flashcard__structure" style={{ fontSize: '0.96rem' }}>
-                          ✦ Cấu trúc: {currentCard.structure}
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.2rem' }}>
+                          <span className="bunpo-multi-pill">
+                            Mẫu ngữ pháp có {currentCard.groups.length} nghĩa & cách dùng
+                          </span>
                         </div>
-                      )}
 
-                      {currentCard.explanation && currentCard.explanation !== currentCard.shortMeaning && (
-                        <div
-                          style={{
-                            fontSize: '0.9rem',
-                            color: 'var(--color-text-secondary)',
-                            marginTop: '0.5rem',
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          {currentCard.explanation}
-                        </div>
-                      )}
+                        {currentCard.groups.map((group, gIdx) => {
+                          const firstEx = group.examples && group.examples[0]
+                          return (
+                            <div key={gIdx} className="bunpo-group-card">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
+                                <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}>
+                                  {group.meaning || group.usage || ''}
+                                </span>
+                              </div>
 
-                      {(() => {
-                        const firstEx = currentCard.examples?.[0]
-                        if (!firstEx) return null
-                        return (
-                          <div
-                            className="bunpo-example-box"
-                            style={{
-                              marginTop: '1rem',
-                              textAlign: 'left',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              gap: '0.75rem',
-                            }}
-                          >
-                            <div style={{ flex: 1 }}>
-                              <div
-                                style={{
-                                  fontFamily: 'var(--font-jp)',
-                                  fontSize: '1.02rem',
-                                  color: 'var(--color-text)',
-                                  lineHeight: 1.6,
-                                }}
-                                dangerouslySetInnerHTML={{
-                                  __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
-                                }}
-                              />
-                              {firstEx.vi && (
+                              {group.structure && (
                                 <div
                                   style={{
-                                    color: 'var(--color-text-secondary)',
+                                    fontFamily: 'var(--font-jp-serif)',
                                     fontSize: '0.88rem',
-                                    marginTop: '4px',
+                                    color: 'var(--color-accent-text)',
+                                    fontWeight: 600,
                                   }}
                                 >
-                                  {firstEx.vi}
+                                  ✦ {group.structure}
+                                </div>
+                              )}
+
+                              {group.usage && group.usage !== group.meaning && (
+                                <div
+                                  style={{
+                                    fontSize: '0.84rem',
+                                    color: 'var(--color-text-secondary)',
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  ◎ {group.usage}
+                                </div>
+                              )}
+
+                              {/* Exactly 1 Example per sub-meaning with clean Furigana Ruby & Audio */}
+                              {firstEx && (
+                                <div
+                                  className="bunpo-example-box"
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: '0.75rem',
+                                  }}
+                                >
+                                  <div style={{ flex: 1 }}>
+                                    <div
+                                      style={{
+                                        fontFamily: 'var(--font-jp)',
+                                        fontSize: '0.98rem',
+                                        color: 'var(--color-text)',
+                                        lineHeight: 1.6,
+                                      }}
+                                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp) }}
+                                    />
+                                    {firstEx.vi && (
+                                      <div
+                                        style={{
+                                          color: 'var(--color-text-secondary)',
+                                          fontSize: '0.84rem',
+                                          marginTop: '3px',
+                                        }}
+                                      >
+                                        {firstEx.vi}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    className="washi-audio-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      playAudio(firstEx.audio, firstEx.jp)
+                                    }}
+                                    title="Nghe đọc câu ví dụ"
+                                  >
+                                    <Volume2 size={16} />
+                                  </button>
                                 </div>
                               )}
                             </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      // Single Group Case
+                      <div>
+                        <div
+                          style={{
+                            fontSize: '1.25rem',
+                            fontWeight: 700,
+                            color: 'var(--color-success)',
+                            marginTop: '0.5rem',
+                          }}
+                        >
+                          {currentCard.shortMeaning || currentCard.explanation}
+                        </div>
 
-                            <button
-                              type="button"
-                              className="washi-audio-btn"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                playAudio(firstEx.audio, firstEx.jp)
-                              }}
-                              title="Nghe đọc câu ví dụ"
-                            >
-                              <Volume2 size={16} />
-                            </button>
+                        {currentCard.structure && (
+                          <div className="bunpo-flashcard__structure" style={{ fontSize: '0.96rem' }}>
+                            ✦ Cấu trúc: {currentCard.structure}
                           </div>
-                        )
-                      })()}
-                    </div>
-                  )}
-                </div>
-              )}
+                        )}
+
+                        {currentCard.explanation && currentCard.explanation !== currentCard.shortMeaning && (
+                          <div
+                            style={{
+                              fontSize: '0.9rem',
+                              color: 'var(--color-text-secondary)',
+                              marginTop: '0.5rem',
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            {currentCard.explanation}
+                          </div>
+                        )}
+
+                        {(() => {
+                          const firstEx = currentCard.examples?.[0]
+                          if (!firstEx) return null
+                          return (
+                            <div
+                              className="bunpo-example-box"
+                              style={{
+                                marginTop: '1rem',
+                                textAlign: 'left',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                              }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    fontFamily: 'var(--font-jp)',
+                                    fontSize: '1.02rem',
+                                    color: 'var(--color-text)',
+                                    lineHeight: 1.6,
+                                  }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
+                                  }}
+                                />
+                                {firstEx.vi && (
+                                  <div
+                                    style={{
+                                      color: 'var(--color-text-secondary)',
+                                      fontSize: '0.88rem',
+                                      marginTop: '4px',
+                                    }}
+                                  >
+                                    {firstEx.vi}
+                                  </div>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                className="washi-audio-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  playAudio(firstEx.audio, firstEx.jp)
+                                }}
+                                title="Nghe đọc câu ví dụ"
+                              >
+                                <Volume2 size={16} />
+                              </button>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Bar */}
+              <div className="bunpo-flashcard__footer">
+                <span>Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)</span>
+                <span style={{ fontWeight: 700 }}>
+                  {currentIndex + 1} / {grammars.length}
+                </span>
+              </div>
             </div>
 
-            {/* Bottom Bar */}
-            <div className="bunpo-flashcard__footer">
-              <span>Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)</span>
-              <span style={{ fontWeight: 700 }}>
-                {currentIndex + 1} / {grammars.length}
-              </span>
-            </div>
-          </div>
-
-          {/* Flashcard Buttons */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '1rem',
-              marginTop: '1.25rem',
-            }}
-          >
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={handlePrevCard}
-              disabled={currentIndex === 0}
-              style={{ minWidth: '120px' }}
-            >
-              <ChevronLeft size={18} /> Trước
-            </Button>
-
-            <Button
-              variant="danger"
-              size="lg"
-              onClick={() => handleNextCard()}
-              style={{ minWidth: '130px', fontWeight: 700 }}
-            >
-              Chưa biết (X)
-            </Button>
-
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => {
-                setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
-                handleNextCard()
-              }}
+            {/* Flashcard Buttons */}
+            <div
               style={{
-                minWidth: '130px',
-                fontWeight: 700,
-                background: 'var(--color-accent)',
-                borderColor: 'var(--color-accent)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '1rem',
+                marginTop: '1.25rem',
               }}
             >
-              ✓ Đã biết (Z)
-            </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={handlePrevCard}
+                disabled={currentIndex === 0}
+                style={{ minWidth: '120px' }}
+              >
+                <ChevronLeft size={18} /> Trước
+              </Button>
 
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={handleNextCard}
-              disabled={currentIndex === grammars.length - 1}
-              style={{ minWidth: '120px' }}
-            >
-              Sau <ChevronRight size={18} />
-            </Button>
+              <Button
+                variant="danger"
+                size="lg"
+                onClick={() => handleNextCard()}
+                style={{ minWidth: '130px', fontWeight: 700 }}
+              >
+                Chưa biết (X)
+              </Button>
+
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => {
+                  setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
+                  handleNextCard()
+                }}
+                style={{
+                  minWidth: '130px',
+                  fontWeight: 700,
+                  background: 'var(--color-accent)',
+                  borderColor: 'var(--color-accent)',
+                }}
+              >
+                ✓ Đã biết (Z)
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={handleNextCard}
+                disabled={currentIndex === grammars.length - 1}
+                style={{ minWidth: '120px' }}
+              >
+                Sau <ChevronRight size={18} />
+              </Button>
+            </div>
           </div>
-        </div>
+        )
       )}
 
-      {studyMode === 'list' && (
-        <label className="bunpo-mobile-toc">
-          Chuyển tới mẫu ngữ pháp
-          <select
-            className="ui-select"
-            value={activePointId ?? ''}
-            onChange={(event) => {
-              setActivePointId(event.target.value)
-              document.getElementById(`grammar-point-${event.target.value}`)?.scrollIntoView({ block: 'start' })
-            }}
-          >
-            <option value="">Chọn mẫu trong bài</option>
-            {grammars.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.pattern}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      {studyMode === 'list' && (
+      {/* GAME & MODE DOCK DIRECTLY BELOW GRAMMAR STAGE */}
+      <div className="lesson-game-dock lesson-game-dock--two" role="tablist" aria-label="Chế độ học ngữ pháp">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={stageMode === 'flashcard'}
+          className={`lesson-dock-card${stageMode === 'flashcard' ? ' is-active' : ''}`}
+          onClick={() => setStageMode('flashcard')}
+        >
+          <span className="lesson-dock-card__seal" aria-hidden="true">
+            文
+          </span>
+          <span className="lesson-dock-card__text">
+            <strong>Thẻ Ngữ Pháp</strong>
+            <small>Lật xem nghĩa &amp; ví dụ</small>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={stageMode === 'game'}
+          className={`lesson-dock-card${stageMode === 'game' ? ' is-active' : ''}`}
+          onClick={() => {
+            setStageMode('game')
+            resetGrammarQuiz()
+          }}
+        >
+          <span className="lesson-dock-card__seal" aria-hidden="true">
+            速
+          </span>
+          <span className="lesson-dock-card__text">
+            <strong>Phản Xạ Mẫu Câu</strong>
+            <small>Trắc nghiệm 4 chọn 1</small>
+          </span>
+        </button>
+      </div>
+
+      {selectedPoint && !showFullListWhenDeepLinked && grammars.length > 1 ? (
+        <div className="lesson-vocab-section" style={{ textAlign: 'center' }}>
+          <Button variant="secondary" size="sm" onClick={() => setShowFullListWhenDeepLinked(true)}>
+            <BookOpen size={15} /> Xem toàn bộ danh sách bài học ({grammars.length})
+          </Button>
+        </div>
+      ) : (
         <>
-          {/* 3.4 LAYER 2: SPACIOUS FULL-WIDTH LIST (Danh sách mẫu ngữ pháp trong bài) */}
-          <div>
+          <label className="bunpo-mobile-toc">
+            Chuyển tới mẫu ngữ pháp
+            <select
+              className="ui-select"
+              value={activePointId ?? ''}
+              onChange={(event) => {
+                setActivePointId(event.target.value)
+                document.getElementById(`grammar-point-${event.target.value}`)?.scrollIntoView({ block: 'start' })
+              }}
+            >
+              <option value="">Chọn mẫu trong bài</option>
+              {grammars.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.pattern}
+                </option>
+              ))}
+            </select>
+          </label>
+          <section className="lesson-vocab-section" aria-label="Danh sách mẫu ngữ pháp trong bài">
             <div
               style={{
                 display: 'flex',
@@ -1530,7 +1548,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 </div>
               </aside>
             </div>
-          </div>
+          </section>
         </>
       )}
     </div>

@@ -3,7 +3,7 @@ import { UrlStateProvider } from '../../components/UrlStateProvider'
 // @vitest-environment jsdom
 
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { VocabularyPage } from './VocabularyPage'
@@ -396,19 +396,20 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     // Header & Real Progress: 0 / 2 terms saved (0%)
     expect(await screen.findByText(/0 \/ 2 từ đã lưu \(0%\)/i)).toBeTruthy()
 
-    // Terms table renders terms
-    expect(await screen.findByText('私')).toBeTruthy()
-    expect(screen.getByText('【わたし】')).toBeTruthy()
-    expect(screen.getByText('(TƯ)')).toBeTruthy()
-    expect(screen.getByText('tôi, bản thân')).toBeTruthy()
+    // Terms table renders terms inside Danh sách từ vựng bài học
+    const vocabListSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    expect(await within(vocabListSection).findByText('私')).toBeTruthy()
+    expect(within(vocabListSection).getByText('【わたし】')).toBeTruthy()
+    expect(within(vocabListSection).getByText('(TƯ)')).toBeTruthy()
+    expect(within(vocabListSection).getByText('tôi, bản thân')).toBeTruthy()
 
-    expect(screen.getByText('本')).toBeTruthy()
-    expect(screen.getByText('【ほん】')).toBeTruthy()
-    expect(screen.getByText('(BẢN)')).toBeTruthy()
-    expect(screen.getByText('sách')).toBeTruthy()
+    expect(within(vocabListSection).getByText('本')).toBeTruthy()
+    expect(within(vocabListSection).getByText('【ほん】')).toBeTruthy()
+    expect(within(vocabListSection).getByText('(BẢN)')).toBeTruthy()
+    expect(within(vocabListSection).getByText('sách')).toBeTruthy()
 
     // Add to SRS via list button
-    const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
+    const addBtns = within(vocabListSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
     expect(addBtns.length).toBe(2)
     const firstAddBtn = addBtns[0]
     expect(firstAddBtn).toBeDefined()
@@ -442,17 +443,18 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     const flashcardTab = await screen.findByRole('tab', { name: /Flashcard Bài Học/i })
     fireEvent.click(flashcardTab)
 
-    // Flashcard view displays current word
-    expect(await screen.findByText('私')).toBeTruthy()
+    // Flashcard view displays current word at top by default
+    const flashcardPanel = await screen.findByRole('tabpanel')
+    expect(within(flashcardPanel).getByText('私')).toBeTruthy()
 
     // Flip card
-    const flipArea = screen.getByText(/Nhấn \[Space\] hoặc chạm để lật xem nghĩa/i)
+    const flipArea = within(flashcardPanel).getByText(/Nhấn \[Space\] hoặc chạm để lật xem nghĩa/i)
     fireEvent.click(flipArea)
 
-    expect(screen.getByText('【わたし】')).toBeTruthy()
-    expect(screen.getByText('Hán Việt:')).toBeTruthy()
-    expect(screen.getByText('TƯ')).toBeTruthy()
-    expect(screen.getByText('tôi, bản thân')).toBeTruthy()
+    expect(within(flashcardPanel).getByText('【わたし】')).toBeTruthy()
+    expect(within(flashcardPanel).getByText('Hán Việt:')).toBeTruthy()
+    expect(within(flashcardPanel).getByText('TƯ')).toBeTruthy()
+    expect(within(flashcardPanel).getByText('tôi, bản thân')).toBeTruthy()
 
     // Add to SRS via flashcard button
     const srsBtn = screen.getByTitle('Lưu vào SRS Flashcard (Phím C)')
@@ -482,23 +484,24 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByText('私')
+    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
     const unitSearchInput = screen.getByPlaceholderText(/Tìm từ, cách đọc, hán việt, ý nghĩa/i)
 
-    // 1. Search by reading 'ほん' -> only '本' appears
+    // 1. Search by reading 'ほん' -> only '本' appears in list
     fireEvent.change(unitSearchInput, { target: { value: 'ほん' } })
-    expect(await screen.findByText('本')).toBeTruthy()
-    await waitFor(() => expect(screen.queryByText('私')).toBeNull())
+    expect(await within(vocabSection).findByText('本')).toBeTruthy()
+    await waitFor(() => expect(within(vocabSection).queryByText('私')).toBeNull())
 
-    // 2. Search by Han-Viet 'TƯ' -> only '私' appears
+    // 2. Search by Han-Viet 'TƯ' -> only '私' appears in list
     fireEvent.change(unitSearchInput, { target: { value: 'TƯ' } })
-    expect(await screen.findByText('私')).toBeTruthy()
-    await waitFor(() => expect(screen.queryByText('本')).toBeNull())
+    expect(await within(vocabSection).findByText('私')).toBeTruthy()
+    await waitFor(() => expect(within(vocabSection).queryByText('本')).toBeNull())
 
-    // 3. Search by meaning 'sách' -> only '本' appears
+    // 3. Search by meaning 'sách' -> only '本' appears in list
     fireEvent.change(unitSearchInput, { target: { value: 'sách' } })
-    expect(await screen.findByText('本')).toBeTruthy()
-    await waitFor(() => expect(screen.queryByText('私')).toBeNull())
+    expect(await within(vocabSection).findByText('本')).toBeTruthy()
+    await waitFor(() => expect(within(vocabSection).queryByText('私')).toBeNull())
 
     // 4. Search unmatched keyword -> empty state
     fireEvent.change(unitSearchInput, { target: { value: 'xyz123' } })
@@ -537,7 +540,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByText('私')
+    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
 
     // Click "Chi tiết từ điển" on first row
     const dictBtns = screen.getAllByRole('button', { name: /Chi tiết từ điển/i })
@@ -565,7 +568,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByText('私')
+    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
 
     const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtn = addBtns[0]
@@ -587,7 +590,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByText('私')
+    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
 
     const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtnFail = addBtns[0]
@@ -610,9 +613,9 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    // Switch to flashcard mode
-    fireEvent.click(await screen.findByRole('tab', { name: /Flashcard Bài Học/i }))
-    expect(await screen.findByText('私')).toBeTruthy()
+    // Flashcard is already visible at top
+    const flashcardPanel = await screen.findByRole('tabpanel')
+    expect(within(flashcardPanel).getByText('私')).toBeTruthy()
 
     // Focus into search input
     const searchInput = screen.getByPlaceholderText(/Tìm từ, cách đọc, hán việt, ý nghĩa/i)
@@ -622,7 +625,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.keyDown(searchInput, { code: 'Space', key: ' ' })
 
     // Card did NOT flip because focus is in INPUT
-    expect(screen.queryByText('【わたし】')).toBeNull()
+    expect(within(flashcardPanel).queryByText('【わたし】')).toBeNull()
   })
 
   it('handles dataset with >100 terms (121 terms): page 6 renders term #101+, search finds term past #100, denominator is 121', async () => {
@@ -710,43 +713,45 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     // 1. Progress bar denominator is 121
     expect(await screen.findByText(/0 \/ 121 từ đã lưu \(0%\)/i)).toBeTruthy()
 
-    // 2. Page 1 displays items 1-20
-    expect(await screen.findByText('単語_1')).toBeTruthy()
+    // 2. Page 1 displays items 1-20 in the list
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    expect(await within(vocabSection).findByText('単語_1')).toBeTruthy()
     expect(screen.getByText('Trang 1 / 7')).toBeTruthy()
     expect(screen.getByText(/Hiển thị 1 – 20 trên tổng số 121 từ/i)).toBeTruthy()
 
     // 3. Navigate to Page 6 (terms #101 to #120)
     for (let p = 1; p < 6; p++) {
-      const nextBtn = screen.getByRole('button', { name: /Sau/i })
+      const nextBtn = within(vocabSection).getByRole('button', { name: /Sau/i })
       fireEvent.click(nextBtn)
       await screen.findByText(`Trang ${p + 1} / 7`)
     }
 
     expect(await screen.findByText('Trang 6 / 7')).toBeTruthy()
     expect(screen.getByText(/Hiển thị 101 – 120 trên tổng số 121 từ/i)).toBeTruthy()
-    expect(screen.getByText('単語_101')).toBeTruthy()
-    expect(screen.getByText('単語_120')).toBeTruthy()
-    expect(screen.queryByText('単語_1')).toBeNull()
+    expect(within(vocabSection).getByText('単語_101')).toBeTruthy()
+    expect(within(vocabSection).getByText('単語_120')).toBeTruthy()
+    expect(within(vocabSection).queryByText('単語_1')).toBeNull()
 
     // 4. In-unit search finds terms past #100 (e.g. term #105 "KỲ BÍ") and resets page to 1
     const searchInput = screen.getByPlaceholderText(/Tìm từ, cách đọc, hán việt, ý nghĩa/i)
     fireEvent.change(searchInput, { target: { value: 'KỲ BÍ' } })
 
-    expect(await screen.findByText('単語_105')).toBeTruthy()
-    expect(screen.getByText('【たんご_105】')).toBeTruthy()
-    expect(screen.getByText('(KỲ BÍ)')).toBeTruthy()
-    expect(screen.getByText('Nghĩa của từ thứ 105')).toBeTruthy()
+    expect(await within(vocabSection).findByText('単語_105')).toBeTruthy()
+    expect(within(vocabSection).getByText('【たんご_105】')).toBeTruthy()
+    expect(within(vocabSection).getByText('(KỲ BÍ)')).toBeTruthy()
+    expect(within(vocabSection).getByText('Nghĩa của từ thứ 105')).toBeTruthy()
     expect(screen.getByText('Danh Sách (1)')).toBeTruthy()
 
-    // 5. In Flashcard mode: bottom counter shows total 121
+    // 5. In Flashcard stage: bottom counter shows total 121
     fireEvent.change(searchInput, { target: { value: '' } })
-    await screen.findByText('単語_1')
+    await within(vocabSection).findByText('単語_1')
 
     const flashcardTab = screen.getByRole('tab', { name: /Flashcard Bài Học/i })
     fireEvent.click(flashcardTab)
 
-    expect(await screen.findByText('単語_1')).toBeTruthy()
-    expect(screen.getByText(/Từ 1 \/ 121 \(Trang 1 \/ 7\)/i)).toBeTruthy()
+    const flashcardPanel = await screen.findByRole('tabpanel')
+    expect(within(flashcardPanel).getByText('単語_1')).toBeTruthy()
+    expect(within(flashcardPanel).getByText(/Từ 1 \/ 121 \(Trang 1 \/ 7\)/i)).toBeTruthy()
   })
 
   it('anonymous visitor never invokes fetchSavedTerms or addCard and sees login alert', async () => {
@@ -760,7 +765,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByText('私')
+    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
 
     const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtnAnon = addBtns[0]
@@ -778,7 +783,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByText('私')
+    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
 
     const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtnSave = addBtns[0]
@@ -930,28 +935,28 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     // Now in Flashcard mode, Context B shows 'Đã lưu trong SRS Flashcard'
     expect(screen.getByTitle('Đã lưu trong SRS Flashcard')).toBeTruthy()
 
-    // Switch back to Word List
-    const listTab = screen.getByRole('tab', { name: /Danh Sách/i })
-    fireEvent.click(listTab)
-
-    // In Word List, Context B now shows 'Đã lưu' and progress is 100%
-    expect(await screen.findByRole('button', { name: /Đã lưu/i })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /\+ Thêm SRS/i })).toBeNull()
+    // In Word List directly below, Context B now shows 'Đã lưu' and progress is 100%
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    expect(await within(vocabSection).findByRole('button', { name: /Đã lưu/i })).toBeTruthy()
+    expect(within(vocabSection).queryByRole('button', { name: /\+ Thêm SRS/i })).toBeNull()
     expect(screen.getByText(/1 \/ 1 từ đã lưu \(100%\)/i)).toBeTruthy()
   })
 
-  it('switches to Mini-Game tab, renders Speed Quiz and Karuta Match Board', async () => {
+  it('switches top stage via Game Dock between Flashcard, Speed Quiz, Karuta, and Listening while keeping list below', async () => {
     renderWithClient(<VocabularyPage />)
 
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
-    await screen.findByText('私')
 
-    const gameTab = screen.getByRole('tab', { name: /Mini-Game/i })
-    fireEvent.click(gameTab)
+    const vocabSection = await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    expect(await within(vocabSection).findByText('私')).toBeTruthy()
 
-    // Speed Quiz should render
+    // Switch top stage to Phản Xạ Nghĩa via Game Dock
+    fireEvent.click(screen.getByRole('tab', { name: /Phản Xạ Nghĩa/i }))
     expect(await screen.findByText('CHỌN NGHĨA ĐÚNG')).toBeTruthy()
+    // Vocabulary list remains visible below the dock
+    expect(within(vocabSection).getByText('私')).toBeTruthy()
+
     const optionButtons = screen.getAllByRole('button', { name: /^[12]\s*(tôi, bản thân|sách)$/i })
     expect(optionButtons.length).toBe(2)
 
@@ -962,10 +967,14 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await screen.findByRole('status')).toBeTruthy()
     expect(screen.getByRole('button', { name: /Câu tiếp theo/i })).toBeTruthy()
 
-    // Switch to Karuta Match Board
-    fireEvent.click(screen.getByRole('button', { name: /Ghép Thẻ Karuta/i }))
-    expect(await screen.findByRole('group', { name: 'Bảng ghép thẻ Karuta' })).toBeTruthy()
-    expect(screen.getByText('私')).toBeTruthy()
-    expect(screen.getByText('sách')).toBeTruthy()
+    // Switch to Ghép Thẻ Karuta via Game Dock
+    fireEvent.click(screen.getByRole('tab', { name: /Ghép Thẻ Karuta/i }))
+    const karutaBoard = await screen.findByRole('group', { name: 'Bảng ghép thẻ Karuta' })
+    expect(within(karutaBoard).getByText('私')).toBeTruthy()
+    expect(within(karutaBoard).getByText('sách')).toBeTruthy()
+
+    // Switch to Luyện Nghe via Game Dock
+    fireEvent.click(screen.getByRole('tab', { name: /Luyện Nghe/i }))
+    expect(await screen.findByText('NGHE ÂM CHỌN NGHĨA')).toBeTruthy()
   })
 })
