@@ -2,7 +2,7 @@ import { usePersistentState } from '../../lib/usePersistentState'
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -11,9 +11,12 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Flame,
+  Gamepad2,
   GraduationCap,
   Layers,
   ListTree,
+  RotateCcw,
   Search,
   Volume2,
 } from 'lucide-react'
@@ -79,7 +82,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [selectedLesson, setSelectedLesson] = useUrlState<string | null>('lesson', null)
   const [selectedPoint] = useUrlState<string | null>('point', null)
   const openedPoint = useRef<string | null>(null)
-  const [studyMode, setStudyMode] = useState<'flashcard' | 'list'>('flashcard')
+  const [studyMode, setStudyMode] = useState<'flashcard' | 'list' | 'game'>('flashcard')
+  const [quizSeed, setQuizSeed] = useState(0)
+  const [quizIndex, setQuizIndex] = useState(0)
+  const [quizSelectedId, setQuizSelectedId] = useState<string | null>(null)
+  const [quizScore, setQuizScore] = useState(0)
+  const [quizCombo, setQuizCombo] = useState(0)
+  const [quizCorrectCount, setQuizCorrectCount] = useState(0)
+  const [quizFinished, setQuizFinished] = useState(false)
 
   // In-Lesson Flashcard state
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -165,6 +175,31 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   const grammars = grammarData?.items || []
   const currentCard = grammars[currentIndex] || null
+
+  const grammarQuestions = useMemo(() => {
+    if (grammars.length < 2) return []
+    const shuffled = [...grammars].sort(() => Math.random() - 0.5).slice(0, Math.min(10, grammars.length))
+    return shuffled.map((target) => {
+      const distractors = grammars
+        .filter(
+          (g) => g.id !== target.id && (g.shortMeaning || g.explanation) !== (target.shortMeaning || target.explanation)
+        )
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+      const options = [target, ...distractors].sort(() => Math.random() - 0.5)
+      return { target, options }
+    })
+  }, [grammars, quizSeed])
+
+  const resetGrammarQuiz = () => {
+    setQuizSeed((s) => s + 1)
+    setQuizIndex(0)
+    setQuizSelectedId(null)
+    setQuizScore(0)
+    setQuizCombo(0)
+    setQuizCorrectCount(0)
+    setQuizFinished(false)
+  }
   useEffect(() => {
     const key = `${selectedBook}:${selectedLesson}:${selectedPoint}`
     if (!grammarData || openedPoint.current === key) return
@@ -393,15 +428,39 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </Button>
         </div>
 
-        <div style={{ marginBottom: '1.75rem', paddingBottom: '1rem', borderBottom: '1px solid var(--color-border)' }}>
-          <span className="washi-masthead__eyebrow" style={{ color: currentBookInfo?.color }}>
-            {currentBookInfo?.subtitle}
-          </span>
-          <h1 className="bunpo-book-title">{currentBookInfo?.title}</h1>
-          <p style={{ color: 'var(--color-text-secondary)', margin: '0.4rem 0 0' }}>
-            {lessonsList?.length || 0} bài học · Chọn một bài học để bắt đầu ôn tập ngữ pháp hoặc làm Flashcard.
-          </p>
-        </div>
+        <header className="bunpo-book-banner">
+          <div className="bunpo-book-banner__left">
+            <span className="bunpo-book-banner__hanko" aria-hidden="true">
+              文
+            </span>
+            <div>
+              <span className="washi-masthead__eyebrow" style={{ color: currentBookInfo?.color }}>
+                {currentBookInfo?.subtitle}
+              </span>
+              <h1 className="bunpo-book-title">{currentBookInfo?.title}</h1>
+              <p style={{ color: 'var(--color-text-secondary)', margin: '0.35rem 0 0' }}>
+                {lessonsList?.length || 0} bài học · Chọn một bài học để bắt đầu ôn tập ngữ pháp, Flashcard hoặc
+                Mini-Game.
+              </p>
+            </div>
+          </div>
+          {lessonsList?.[0] && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                const firstLesson = lessonsList[0]
+                if (!firstLesson) return
+                setSelectedLesson(firstLesson.lesson_id)
+                setCurrentIndex(0)
+                setIsFlipped(false)
+                resetGrammarQuiz()
+              }}
+            >
+              Bắt đầu Bài 1 →
+            </Button>
+          )}
+        </header>
 
         {/* Lesson Cards Grid */}
         <div
@@ -418,7 +477,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               action={<Button onClick={() => void refetchLessons()}>Thử tải lại</Button>}
             />
           )}
-          {lessonsList?.map((lesson) => (
+          {lessonsList?.map((lesson, idx) => (
             <div
               key={lesson.lesson_id}
               className="bunpo-lesson-card"
@@ -434,11 +493,17 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 setSelectedLesson(lesson.lesson_id)
                 setCurrentIndex(0)
                 setIsFlipped(false)
+                resetGrammarQuiz()
               }}
             >
-              <div>
-                <div className="bunpo-lesson-card__eyebrow">BÀI HỌC</div>
-                <h4 className="bunpo-lesson-card__title">{lesson.lesson_title}</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
+                <span className="curriculum-unit-card__seal" aria-hidden="true">
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="bunpo-lesson-card__eyebrow">BÀI HỌC {idx + 1}</div>
+                  <h4 className="bunpo-lesson-card__title">{lesson.lesson_title}</h4>
+                </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
@@ -517,7 +582,177 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         >
           <BookOpen size={16} /> Danh Sách ({grammars.length})
         </button>
+
+        <button
+          type="button"
+          className={`washi-tab${studyMode === 'game' ? ' is-active' : ''}`}
+          onClick={() => {
+            setStudyMode('game')
+            resetGrammarQuiz()
+          }}
+        >
+          <Gamepad2 size={16} /> Mini-Game Ngữ Pháp
+        </button>
       </div>
+
+      {/* GRAMMAR DOJO MINI-GAME */}
+      {studyMode === 'game' && (
+        <section className="dojo-game" style={{ marginBottom: '2.5rem' }} aria-label="Mini-Game Ngữ Pháp">
+          {grammarQuestions.length === 0 ? (
+            <div className="dojo-empty">
+              <Gamepad2 size={32} aria-hidden="true" />
+              <h3>Cần ít nhất 2 mẫu ngữ pháp để luyện tập</h3>
+              <p>Hãy chọn bài học khác có nhiều mẫu câu hơn để mở khóa Mini-Game.</p>
+            </div>
+          ) : !quizFinished && grammarQuestions[quizIndex] ? (
+            (() => {
+              const currentQ = grammarQuestions[quizIndex]
+              if (!currentQ) return null
+              return (
+                <div className="dojo-quiz-stage">
+                  <header className="dojo-hud">
+                    <div className="dojo-hud__modes">
+                      <span className="dojo-mode-btn is-active">
+                        <Gamepad2 size={14} aria-hidden="true" />
+                        <span>Phản Xạ Mẫu Câu</span>
+                      </span>
+                    </div>
+                    <div className="dojo-hud__stats">
+                      <span className="dojo-stat-pill">
+                        Điểm <strong>{quizScore}</strong>
+                      </span>
+                      <span className={`dojo-stat-pill${quizCombo > 1 ? ' is-hot' : ''}`}>
+                        <Flame size={13} aria-hidden="true" />
+                        <span>x{quizCombo}</span>
+                      </span>
+                      <span className="dojo-stat-pill">
+                        {quizIndex + 1} / {grammarQuestions.length}
+                      </span>
+                      <button type="button" className="dojo-reset-btn" onClick={resetGrammarQuiz} title="Chơi lại">
+                        <RotateCcw size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </header>
+
+                  <div className="dojo-quiz-card">
+                    <div className="dojo-quiz-card__eyebrow">
+                      <span>CHỌN Ý NGHĨA CỦA MẪU NGỮ PHÁP</span>
+                      {currentQ.target.level && <Badge variant="primary">{currentQ.target.level}</Badge>}
+                    </div>
+                    <div
+                      className="dojo-quiz-card__prompt"
+                      style={{ fontSize: 'clamp(1.6rem, 3vw, 2.35rem)' }}
+                      lang="ja"
+                    >
+                      <span>{currentQ.target.pattern}</span>
+                    </div>
+                    {currentQ.target.structure && (
+                      <div className="dojo-quiz-card__reveal">
+                        <span>✦ {currentQ.target.structure}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="dojo-options-grid">
+                    {currentQ.options.map((opt, idx) => {
+                      const isSelected = quizSelectedId === opt.id
+                      const isTarget = opt.id === currentQ.target.id
+                      let stateClass = ''
+                      if (quizSelectedId !== null) {
+                        if (isTarget) stateClass = ' is-correct'
+                        else if (isSelected) stateClass = ' is-wrong'
+                        else stateClass = ' is-dim'
+                      }
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          disabled={quizSelectedId !== null}
+                          className={`dojo-option-btn${stateClass}`}
+                          onClick={() => {
+                            setQuizSelectedId(opt.id)
+                            if (opt.id === currentQ.target.id) {
+                              const nextCombo = quizCombo + 1
+                              setQuizCombo(nextCombo)
+                              setQuizCorrectCount((c) => c + 1)
+                              setQuizScore((s) => s + 100 + Math.min(nextCombo - 1, 5) * 20)
+                            } else {
+                              setQuizCombo(0)
+                            }
+                          }}
+                        >
+                          <span className="dojo-option-btn__key">{idx + 1}</span>
+                          <span className="dojo-option-btn__text">{opt.shortMeaning || opt.explanation}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {quizSelectedId !== null && (
+                    <div className="dojo-feedback-bar" role="status">
+                      <div className="dojo-feedback-bar__info">
+                        <strong>
+                          {quizSelectedId === currentQ.target.id
+                            ? '✓ Chính xác!'
+                            : `✕ Đáp án đúng: ${currentQ.target.shortMeaning || currentQ.target.explanation}`}
+                        </strong>
+                        {currentQ.target.examples?.[0] && (
+                          <p>
+                            <span lang="ja">{currentQ.target.examples[0].jp}</span>
+                            {currentQ.target.examples[0].vi ? ` — ${currentQ.target.examples[0].vi}` : ''}
+                          </p>
+                        )}
+                      </div>
+                      <div className="dojo-feedback-bar__actions">
+                        <button
+                          type="button"
+                          className={`dojo-srs-chip${isGrammarSaved(currentQ.target) ? ' is-saved' : ''}`}
+                          onClick={() => void handleSaveToSrs(currentQ.target)}
+                        >
+                          {isGrammarSaved(currentQ.target) ? <Check size={14} /> : <BookmarkPlus size={14} />}
+                          <span>{isGrammarSaved(currentQ.target) ? 'Đã lưu SRS' : '+ Lưu SRS'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="dojo-next-btn"
+                          onClick={() => {
+                            if (quizIndex + 1 >= grammarQuestions.length) {
+                              setQuizFinished(true)
+                            } else {
+                              setQuizIndex((i) => i + 1)
+                              setQuizSelectedId(null)
+                            }
+                          }}
+                        >
+                          {quizIndex + 1 >= grammarQuestions.length ? 'Xem tổng kết →' : 'Câu tiếp theo →'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()
+          ) : (
+            <div className="dojo-summary">
+              <div className="dojo-summary__seal" aria-hidden="true">
+                文
+              </div>
+              <h3>Hoàn thành luyện tập ngữ pháp</h3>
+              <p className="dojo-summary__subtitle">
+                Bạn đạt{' '}
+                <strong>
+                  {quizCorrectCount} / {grammarQuestions.length}
+                </strong>{' '}
+                câu đúng · Tổng điểm <strong>{quizScore}</strong>
+              </p>
+              <button type="button" className="dojo-next-btn" onClick={resetGrammarQuiz}>
+                <RotateCcw size={15} aria-hidden="true" />
+                <span>Chơi ván mới</span>
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 3.3 LAYER 1: IN-LESSON FLASHCARD FOR GRAMMAR */}
       {studyMode === 'flashcard' && currentCard && (

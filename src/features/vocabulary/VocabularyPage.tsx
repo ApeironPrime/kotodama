@@ -11,9 +11,11 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Gamepad2,
   Info,
   Layers,
   Search,
+  Shuffle,
   Volume2,
   Sparkles,
   X,
@@ -36,6 +38,7 @@ import {
 import { WatojiBookCover } from './WatojiBookCover'
 import { HorizontalBookshelf } from './HorizontalBookshelf'
 import { KaikaShokoModal } from './KaikaShokoModal'
+import { LessonMiniGame } from './LessonMiniGame'
 import { WashiGoldDustCanvas } from './WashiGoldDustCanvas'
 
 const FILTER_TABS = [
@@ -74,8 +77,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     items: Array<{ course: CurriculumCourseCard; meta: CuratedCourseMetadata }>
   } | null>(null)
 
-  // In-Unit study mode: list (default) or flashcard
-  const [studyMode, setStudyMode] = useState<'flashcard' | 'list'>('list')
+  // In-Unit study mode: list (default), flashcard, or mini-game
+  const [studyMode, setStudyMode] = useState<'flashcard' | 'list' | 'game'>('list')
+  const [isShuffled, setIsShuffled] = useState(false)
+  const [shuffledOrder, setShuffledOrder] = useState<number[]>([])
   const [unitSearchQuery, setUnitSearchQuery] = useState('')
   const debouncedUnitSearchQuery = useDebouncedValue(unitSearchQuery)
   const [unitPage, setUnitPage] = useState(1)
@@ -85,7 +90,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const { user } = useAuth()
-  const [, setKnownWords] = usePersistentState<string[]>(
+  const [knownWords, setKnownWords] = usePersistentState<string[]>(
     `kotodama.known:${user?.id ?? 'guest'}:${selectedCourseCode}:${selectedUnitKey}`,
     []
   )
@@ -331,7 +336,34 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     }
   }, [selectedDictWord, dictWordData, activeDictCurriculumWord])
 
-  const currentCard = words[currentIndex] || null
+  const flashcardDeck = useMemo(() => {
+    if (!isShuffled || shuffledOrder.length !== words.length) return words
+    return shuffledOrder.map((idx) => words[idx]).filter((w): w is CurriculumWord => Boolean(w))
+  }, [isShuffled, shuffledOrder, words])
+
+  const toggleShuffleDeck = useCallback(() => {
+    setIsFlipped(false)
+    setCurrentIndex(0)
+    if (isShuffled) {
+      setIsShuffled(false)
+      setShuffledOrder([])
+      return
+    }
+    const indices = words.map((_, idx) => idx)
+    for (let i = indices.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const a = indices[i]
+      const b = indices[j]
+      if (a !== undefined && b !== undefined) {
+        indices[i] = b
+        indices[j] = a
+      }
+    }
+    setShuffledOrder(indices)
+    setIsShuffled(true)
+  }, [isShuffled, words])
+
+  const currentCard = flashcardDeck[currentIndex] || words[currentIndex] || null
   const isCurrentCardSaved = isCurriculumTermSaved(currentCard)
 
   const playAudio = (url?: string, fallbackText?: string) => {
@@ -515,21 +547,38 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       <div className="curriculum-container">
         {/* Washi Canvas Frame */}
         <div className="curriculum-paper-grid">
+          <div className="curriculum-paper-grid__mist" aria-hidden="true" />
           {/* Creative Engineering: Interactive Kyoto Gold Dust Shimmer Canvas */}
           <WashiGoldDustCanvas />
 
           {/* Hero Header */}
           <header className="curriculum-hero">
-            <div className="curriculum-hero__eyebrow">
-              <Sparkles size={14} aria-hidden="true" />
-              THƯ VIỆN TUYỂN CHỌN KOTODAMA • 文庫
+            <div className="curriculum-hero__layout">
+              <div className="curriculum-hero__main">
+                <div className="curriculum-hero__eyebrow">
+                  <span className="curriculum-hero__hanko" aria-hidden="true">
+                    庫
+                  </span>
+                  <Sparkles size={14} aria-hidden="true" />
+                  <span>THƯ VIỆN TUYỂN CHỌN KOTODAMA • 文庫</span>
+                </div>
+                <h1 className="curriculum-hero__title">Học bản chất – không học vẹt</h1>
+                <p className="curriculum-hero__desc">
+                  Khám phá các bộ giáo trình từ vựng theo chuẩn JLPT và khung CEFR/SE. Không chạy theo số lượng cơ học —
+                  mỗi bộ giáo trình đại diện cho một phương pháp sư phạm riêng biệt: từ xây dựng nền móng cốt lõi, phản
+                  xạ ngữ cảnh, đến bứt phá điểm thi theo tuần và thuật ngữ chuyên ngành.
+                </p>
+              </div>
+              <aside className="curriculum-hero__aside" aria-hidden="true">
+                <span className="curriculum-hero__jp" lang="ja">
+                  読書百遍・意自ずから通ず
+                </span>
+                <div className="curriculum-hero__pills">
+                  <span>Chuẩn JLPT N5–N1</span>
+                  <span>Flashcard &amp; Karuta</span>
+                </div>
+              </aside>
             </div>
-            <h1 className="curriculum-hero__title">Học bản chất – không học vẹt</h1>
-            <p className="curriculum-hero__desc">
-              Khám phá các bộ giáo trình từ vựng theo chuẩn JLPT và khung CEFR/SE. Không chạy theo số lượng cơ học — mỗi
-              bộ giáo trình đại diện cho một phương pháp sư phạm riêng biệt: từ xây dựng nền móng cốt lõi, phản xạ ngữ
-              cảnh, đến bứt phá điểm thi theo tuần và thuật ngữ chuyên ngành.
-            </p>
           </header>
 
           {/* Search, Level Filters & Hanko SRS Toolbar */}
@@ -844,46 +893,82 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
           {!isCourseLoading && !isCourseError && course && (
             <>
-              <header className="curriculum-unit-view__header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-                  <span className="curriculum-level-badge" data-level={course.level}>
-                    {course.level}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      color: 'var(--color-text-muted)',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {course.provider_source}
-                  </span>
-                </div>
-                <h1
-                  style={{
-                    margin: '0 0 0.5rem 0',
-                    fontFamily: 'var(--font-display), var(--font-jp-serif)',
-                    fontSize: '1.9rem',
-                    fontWeight: 600,
-                    color: 'var(--color-text)',
-                  }}
-                >
-                  {course.title}
-                </h1>
-                <p style={{ margin: '0 0 1rem 0', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
-                  {course.description ||
-                    'Chọn một bài học dưới đây để bắt đầu học Flashcard hoặc xem danh sách từ vựng chi tiết.'}
-                </p>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <span className="curriculum-stat-pill">
-                    <Layers size={13} aria-hidden="true" /> {course.unit_count} bài học
-                  </span>
-                  <span className="curriculum-stat-pill">
-                    <BookOpen size={13} aria-hidden="true" /> {course.term_count} từ vựng
-                  </span>
-                </div>
-              </header>
+              {(() => {
+                const courseMeta = curateCatalogCourses([course])[0]?.meta
+                const firstUnit = units[0]
+                return (
+                  <header className="curriculum-book-banner">
+                    <div className="curriculum-book-banner__mist" aria-hidden="true" />
+                    {courseMeta && (
+                      <div className="curriculum-book-banner__cover">
+                        <WatojiBookCover
+                          coverSrc={courseMeta.coverSrc}
+                          bookTitle={course.title}
+                          size="featured"
+                          kanjiTitle={courseMeta.kanjiTitle}
+                          subtitle={courseMeta.publisher}
+                          volumeTag={courseMeta.volumeTag}
+                          level={course.level}
+                          palette={courseMeta.palette}
+                          pattern={courseMeta.pattern}
+                          sealChar={courseMeta.sealChar}
+                        />
+                      </div>
+                    )}
+                    <div className="curriculum-book-banner__body">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                        <span className="curriculum-level-badge" data-level={course.level}>
+                          {course.level}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            color: 'var(--color-text-muted)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                          }}
+                        >
+                          {courseMeta?.publisher || course.provider_source}
+                        </span>
+                      </div>
+                      <h1 className="curriculum-book-banner__title">{course.title}</h1>
+                      <p className="curriculum-book-banner__desc">
+                        {course.description ||
+                          'Chọn một bài học dưới đây để bắt đầu học Flashcard, luyện phản xạ Mini-Game hoặc xem danh sách từ vựng chi tiết.'}
+                      </p>
+                      <div className="curriculum-book-banner__footer">
+                        <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+                          <span className="curriculum-stat-pill">
+                            <Layers size={13} aria-hidden="true" /> {course.unit_count} bài học
+                          </span>
+                          <span className="curriculum-stat-pill">
+                            <BookOpen size={13} aria-hidden="true" /> {course.term_count} từ vựng
+                          </span>
+                        </div>
+                        {firstUnit && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUnitKey(firstUnit.unit_key)
+                              setCurrentIndex(0)
+                              setIsFlipped(false)
+                              setUnitSearchQuery('')
+                              setUnitPage(1)
+                              setSelectedDictWord(null)
+                              setAuthNotice(null)
+                              setSrsError(null)
+                            }}
+                          >
+                            Bắt đầu Bài {firstUnit.ordinal} →
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </header>
+                )
+              })()}
 
               <div className="curriculum-unit-grid" role="list">
                 {units.map((unit) => (
@@ -917,10 +1002,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       }
                     }}
                   >
-                    <div>
-                      <div className="curriculum-unit-card__ordinal">BÀI {unit.ordinal}</div>
-                      <h4 className="curriculum-unit-card__title">{unit.title}</h4>
-                      {unit.topic && <div className="curriculum-unit-card__topic">{unit.topic}</div>}
+                    <div className="curriculum-unit-card__left">
+                      <span className="curriculum-unit-card__seal" aria-hidden="true">
+                        {String(unit.ordinal).padStart(2, '0')}
+                      </span>
+                      <div>
+                        <div className="curriculum-unit-card__ordinal">BÀI {unit.ordinal}</div>
+                        <h4 className="curriculum-unit-card__title">{unit.title}</h4>
+                        {unit.topic && <div className="curriculum-unit-card__topic">{unit.topic}</div>}
+                      </div>
                     </div>
 
                     <div className="curriculum-unit-card__meta">
@@ -943,7 +1033,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const course = courseDetailData?.course
 
   return (
-    <div className="washi-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
+    <div className="washi-page curriculum-study-shell">
       {/* 3.1 Top Navigation Bar */}
       <div
         style={{
@@ -968,21 +1058,18 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
       {/* 3.2 Unit Header & Real Progress Bar */}
       <header className="curriculum-study-header">
-        <div>
-          <h2
-            style={{
-              margin: '0 0 0.25rem 0',
-              fontFamily: 'var(--font-display), var(--font-jp-serif)',
-              fontSize: '1.45rem',
-              fontWeight: 600,
-              color: 'var(--color-text)',
-            }}
-          >
-            {course?.title} - {currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}
-          </h2>
-          {currentUnitInfo?.topic && (
-            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Chủ đề: {currentUnitInfo.topic}</div>
-          )}
+        <div className="curriculum-study-header__identity">
+          <span className="curriculum-study-header__seal" aria-hidden="true" lang="ja">
+            第{currentUnitInfo?.ordinal || 1}課
+          </span>
+          <div>
+            <h2>
+              {course?.title} - {currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}
+            </h2>
+            {currentUnitInfo?.topic && (
+              <div className="curriculum-study-header__topic">Chủ đề: {currentUnitInfo.topic}</div>
+            )}
+          </div>
         </div>
 
         <div
@@ -1103,6 +1190,18 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             <Layers size={16} aria-hidden="true" />
             Flashcard Bài Học
           </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-study-game"
+            aria-controls="panel-study-game"
+            aria-selected={studyMode === 'game'}
+            className={`curriculum-mode-tab${studyMode === 'game' ? ' curriculum-mode-tab--active' : ''}`}
+            onClick={() => setStudyMode('game')}
+          >
+            <Gamepad2 size={16} aria-hidden="true" />
+            Mini-Game
+          </button>
         </div>
       </div>
 
@@ -1182,6 +1281,11 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           <div style={{ fontSize: '0.92rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                             {item.meaning}
                           </div>
+                          {item.examples?.[0]?.jp && (
+                            <div className="curriculum-term-row__example" lang="ja">
+                              「{item.examples[0].jp}」{item.examples[0].vi ? ` — ${item.examples[0].vi}` : ''}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1277,13 +1381,38 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           aria-labelledby="tab-study-flashcard"
           style={{ marginBottom: '2.5rem' }}
         >
+          {/* Flashcard Session HUD */}
+          <div className="curriculum-flashcard-hud">
+            <div className="curriculum-flashcard-hud__left">
+              <span className="curriculum-flashcard-hud__pill">
+                Đã thuộc: <strong>{knownWords.length}</strong>
+              </span>
+              <button
+                type="button"
+                className={`curriculum-flashcard-hud__shuffle${isShuffled ? ' is-active' : ''}`}
+                onClick={toggleShuffleDeck}
+                aria-pressed={isShuffled}
+              >
+                <Shuffle size={13} aria-hidden="true" />
+                <span>{isShuffled ? 'Đang xáo trộn' : 'Xáo trộn'}</span>
+              </button>
+            </div>
+            <div className="curriculum-flashcard-hud__track" aria-hidden="true">
+              <span
+                style={{
+                  width: `${Math.round(((currentIndex + 1) / Math.max(1, flashcardDeck.length)) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+
           {/* Card Frame */}
           <div
             role="button"
             tabIndex={0}
             aria-pressed={isFlipped}
             aria-label={`Thẻ ghi nhớ ${currentCard.word}`}
-            className="curriculum-flashcard"
+            className={`curriculum-flashcard${isFlipped ? ' is-flipped' : ''}`}
             onClick={() => setIsFlipped((f) => !f)}
             onKeyDown={(e) => {
               if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
@@ -1359,7 +1488,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             </div>
 
             {/* Middle Main Display */}
-            <div style={{ margin: 'auto 0' }}>
+            <div style={{ margin: 'auto 0', width: '100%' }}>
               {cardContentMode === 'word' ? (
                 <>
                   <div className="curriculum-flashcard__word">{currentCard.word}</div>
@@ -1374,11 +1503,17 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         </div>
                       )}
                       <div className="curriculum-flashcard__meaning">{currentCard.meaning}</div>
+                      {currentCard.examples?.[0] && (
+                        <div className="curriculum-flashcard__example-plate">
+                          <div lang="ja">{currentCard.examples[0].jp}</div>
+                          {currentCard.examples[0].vi && <small>{currentCard.examples[0].vi}</small>}
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
               ) : (
-                <div style={{ maxWidth: '650px' }}>
+                <div style={{ maxWidth: '650px', margin: '0 auto' }}>
                   <div className="curriculum-flashcard__example-jp">
                     {currentCard.examples?.[0]?.jp || 'Không có câu ví dụ'}
                   </div>
@@ -1394,7 +1529,16 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             </div>
 
             {/* Bottom Counter Bar */}
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '0.75rem',
+                flexWrap: 'wrap',
+              }}
+            >
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                 Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {unitTotalTerms || words.length} (Trang {unitPage}{' '}
                 / {totalPages})
@@ -1406,7 +1550,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </div>
 
           {/* Navigation Controls under card */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1.25rem' }}>
+          <div className="curriculum-flashcard-controls">
             <Button
               variant="secondary"
               size="md"
@@ -1416,7 +1560,25 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               <ChevronLeft size={18} /> Từ trước
             </Button>
             <Button
+              variant="danger"
+              size="md"
+              onClick={() => handleNextCard()}
+              disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
+            >
+              Chưa thuộc (X)
+            </Button>
+            <Button
               variant="primary"
+              size="md"
+              onClick={() => {
+                setKnownWords((prev) => [...new Set([...prev, currentCard.termId || String(currentCard.id)])])
+                handleNextCard()
+              }}
+            >
+              <Check size={16} aria-hidden="true" /> Đã thuộc (Z)
+            </Button>
+            <Button
+              variant="secondary"
               size="md"
               onClick={handleNextCard}
               disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
@@ -1424,6 +1586,18 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               Tiếp theo <ChevronRight size={18} />
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* 3.5b LAYER 3: IN-LESSON DOJO MINI-GAME */}
+      {studyMode === 'game' && (
+        <div id="panel-study-game" role="tabpanel" aria-labelledby="tab-study-game" style={{ marginBottom: '2.5rem' }}>
+          <LessonMiniGame
+            words={words}
+            isTermSaved={isCurriculumTermSaved}
+            onSaveToSrs={handleSaveWordToSrs}
+            onSpeak={(text, url) => playAudio(url, text)}
+          />
         </div>
       )}
 

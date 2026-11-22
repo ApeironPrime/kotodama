@@ -6,16 +6,53 @@
   padding: var(--space-4) var(--page-gutter);
 }
 
-/* Washi Paper Canvas (Calm & Natural texture, no graph notebook lines) */
+/* Washi Paper Canvas (Calm & Natural texture, double-hairline exhibition frame) */
 .curriculum-paper-grid {
   position: relative;
   overflow: hidden;
-  background-color: var(--color-bg-canvas, #faf8f3);
-  border-radius: var(--radius-2xl, 16px);
-  border: 1px solid var(--color-border-subtle, rgba(215, 205, 190, 0.45));
-  padding: var(--space-8) var(--space-8);
+  background-color: var(--color-surface);
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
   margin-bottom: var(--space-8);
-  box-shadow: 0 4px 24px -6px rgba(44, 38, 35, 0.04);
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-text) 3%, transparent),
+    0 18px 42px -22px color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.curriculum-paper-grid::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.curriculum-paper-grid > * {
+  position: relative;
+  z-index: 1;
+}
+
+.curriculum-paper-grid__mist {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 54%;
+  height: 22rem;
+  background: url('/assets/journey-02-immersion.jpg') center right / cover no-repeat;
+  opacity: 0.085;
+  filter: saturate(0.55) contrast(1.05);
+  mask-image: radial-gradient(ellipse 85% 90% at 88% 24%, black 12%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 90% at 88% 24%, black 12%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme='dark'] .curriculum-paper-grid__mist {
+  opacity: 0.11;
+  filter: invert(0.88) hue-rotate(180deg) saturate(0.35);
 }
 
 .washi-gold-dust-canvas {
@@ -40,8 +77,82 @@
   position: relative;
   z-index: 1;
   margin-bottom: var(--space-6);
-  border-bottom: 1px solid var(--color-border-subtle, rgba(215, 205, 190, 0.35));
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--space-6);
+}
+
+.curriculum-hero__layout {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.curriculum-hero__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.curriculum-hero__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 4px;
+  background: var(--color-accent);
+  color: #ffffff;
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.85rem;
+  font-weight: 800;
+  transform: rotate(-3deg);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+.curriculum-hero__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.curriculum-hero__jp {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.84rem;
+  letter-spacing: 0.2em;
+  color: var(--color-text-muted);
+}
+
+.curriculum-hero__pills {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.curriculum-hero__pills span {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 65%, var(--color-surface));
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 900px) {
+  .curriculum-hero__layout {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .curriculum-hero__aside {
+    align-items: flex-start;
+    text-align: left;
+  }
 }
 
 .curriculum-hero__eyebrow {
@@ -1575,24 +1686,172 @@
   }
 }
 
+/* View 2: Book Folio Banner & Chapter Slips */
+.curriculum-book-banner,
+.bunpo-book-banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.65rem 1.85rem;
+  margin-bottom: 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 50%, var(--color-surface));
+}
+
+.bunpo-book-banner {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.bunpo-book-banner__left {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.bunpo-book-banner__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.85rem;
+  height: 2.85rem;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: #ffffff;
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  transform: rotate(-3deg);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+.curriculum-book-banner__mist {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 48%;
+  height: 100%;
+  background: url('/assets/journey-02-immersion.jpg') center right / cover no-repeat;
+  opacity: 0.08;
+  filter: saturate(0.55) contrast(1.05);
+  mask-image: radial-gradient(ellipse 85% 90% at 88% 35%, black 12%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 90% at 88% 35%, black 12%, transparent 72%);
+  pointer-events: none;
+}
+
+[data-theme='dark'] .curriculum-book-banner__mist {
+  opacity: 0.11;
+  filter: invert(0.88) hue-rotate(180deg) saturate(0.35);
+}
+
+.curriculum-book-banner__cover {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.curriculum-book-banner__body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+
+.curriculum-book-banner__title {
+  margin: 0 0 0.45rem 0;
+  font-family: var(--font-display), var(--font-jp-serif), serif;
+  font-size: clamp(1.55rem, 2.6vw, 2.1rem);
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.curriculum-book-banner__desc {
+  margin: 0 0 1.1rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.94rem;
+  line-height: 1.55;
+  max-width: 62ch;
+}
+
+.curriculum-book-banner__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .curriculum-book-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.25rem;
+  }
+}
+
 .curriculum-unit-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
-  background: var(--color-bg-elevated);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: 2px 2.5px 0px var(--color-border-strong);
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-text) 4%, transparent);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
   outline: none;
 }
 
 .curriculum-unit-card:hover {
   transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-accent) 48%, var(--color-border));
+  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.curriculum-unit-card__left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.curriculum-unit-card__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: var(--color-text-secondary);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.curriculum-unit-card:hover .curriculum-unit-card__seal,
+.bunpo-lesson-card:hover .curriculum-unit-card__seal {
+  background: var(--color-accent-subtle);
   border-color: var(--color-accent);
-  box-shadow: 3px 4px 0px var(--color-border-strong);
+  color: var(--color-accent-text);
 }
 
 .curriculum-unit-card:focus-visible {
@@ -1630,14 +1889,58 @@
 
 /* ─── Task T06: Unit Learning, Toolbar, Progress, & Dictionary Modal ──────── */
 
+.curriculum-study-shell {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: var(--space-4) var(--page-gutter) var(--space-16);
+}
+
 /* Study Header & Progress Bar */
 .curriculum-study-header {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   margin-bottom: var(--space-6);
-  padding-bottom: var(--space-4);
-  border-bottom: 1.5px dashed var(--color-border);
+  padding: 1.25rem 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.curriculum-study-header__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.curriculum-study-header__identity h2 {
+  margin: 0 0 0.2rem 0;
+  font-family: var(--font-display), var(--font-jp-serif), serif;
+  font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.curriculum-study-header__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.7rem;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 6px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.85rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.curriculum-study-header__topic {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 @media (min-width: 768px) {
@@ -1781,24 +2084,36 @@
   background: var(--color-bg-hover);
 }
 
+.curriculum-term-row__example {
+  margin-top: 0.3rem;
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
 .curriculum-dict-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  color: var(--color-info);
-  background: transparent;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0.25rem 0.5rem;
+  border-radius: 7px;
+  padding: 0.35rem 0.65rem;
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
 }
 
 .curriculum-dict-btn:hover {
-  border-color: var(--color-info);
-  background: rgb(77 139 255 / 8%);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
 }
 
 /* In-Unit Pagination */
@@ -1843,15 +2158,15 @@
 
 .curriculum-modal-dialog {
   position: relative;
-  background: var(--color-bg-elevated);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  box-shadow: 4px 6px 0px var(--color-border-strong);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: 0 24px 48px -18px color-mix(in srgb, var(--color-text) 28%, transparent);
   width: 100%;
-  max-width: 780px;
-  max-height: 85vh;
+  max-width: 820px;
+  max-height: 86vh;
   overflow-y: auto;
-  padding: var(--space-6);
+  padding: clamp(1.35rem, 3vw, 2rem);
   color: var(--color-text);
 }
 
@@ -1956,10 +2271,78 @@
 }
 
 /* --------------------------------------------------------------------------
-   Curriculum Flashcard Surface (Light & Dark Tokenized)
+   Curriculum Flashcard Studio (Stacked Washi Deck + HUD + Controls)
    -------------------------------------------------------------------------- */
+.curriculum-flashcard-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.curriculum-flashcard-hud__left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.curriculum-flashcard-hud__pill {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  padding: 0.28rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.curriculum-flashcard-hud__shuffle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.curriculum-flashcard-hud__shuffle:hover,
+.curriculum-flashcard-hud__shuffle.is-active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+
+.curriculum-flashcard-hud__track {
+  flex: 1;
+  min-width: 140px;
+  max-width: 240px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.curriculum-flashcard-hud__track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width 0.24s ease;
+}
+
 .curriculum-flashcard {
-  min-height: 340px;
+  min-height: 360px;
   background-color: var(--color-surface);
   background-image:
     linear-gradient(
@@ -1976,8 +2359,8 @@
     );
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  padding: 2.25rem 2rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -1985,15 +2368,54 @@
   align-items: center;
   text-align: center;
   box-shadow:
-    var(--shadow-md),
-    inset 0 0 0 4px var(--color-bg-canvas),
-    inset 0 0 0 5px color-mix(in srgb, var(--color-border) 60%, transparent);
+    0 2px 6px color-mix(in srgb, var(--color-text) 4%, transparent),
+    0 8px 0 -3px var(--color-bg-subtle),
+    0 9px 0 -3px var(--color-border),
+    0 18px 36px -18px color-mix(in srgb, var(--color-text) 14%, transparent),
+    inset 0 0 0 6px var(--color-surface),
+    inset 0 0 0 7px color-mix(in srgb, var(--color-border) 55%, transparent);
   position: relative;
   user-select: none;
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
+}
+
+.curriculum-flashcard.is-flipped {
+  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-border));
+}
+
+.curriculum-flashcard__example-plate {
+  margin: 1rem auto 0;
+  max-width: 34rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--color-bg-subtle) 65%, var(--color-surface));
+  text-align: left;
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.96rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.curriculum-flashcard__example-plate small {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+}
+
+.curriculum-flashcard-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
 }
 
 .curriculum-flashcard:hover,
@@ -2094,4 +2516,517 @@
   margin-top: 1rem;
   line-height: 1.5;
   animation: fadeIn 0.2s ease;
+}
+
+/* --------------------------------------------------------------------------
+   WASHI DOJO MINI-GAMES (SPEED QUIZ & KARUTA MATCH BOARD)
+   -------------------------------------------------------------------------- */
+.dojo-game {
+  padding: clamp(1.25rem, 2.5vw, 1.85rem);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-text) 3%, transparent),
+    0 16px 36px -20px color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.dojo-empty {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--color-text-secondary);
+}
+
+.dojo-empty h3 {
+  margin: 0.75rem 0 0.4rem;
+  color: var(--color-text);
+}
+
+.dojo-empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.dojo-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding-bottom: 1rem;
+  margin-bottom: 1.35rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dojo-hud__modes {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.dojo-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.dojo-mode-btn.is-active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+
+.dojo-hud__stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dojo-audio-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dojo-audio-toggle.is-active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+
+.dojo-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.76rem;
+  color: var(--color-text-secondary);
+}
+
+.dojo-stat-pill.is-hot {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+
+.dojo-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.dojo-reset-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.dojo-quiz-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dojo-quiz-card {
+  padding: 1.75rem 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 35%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    color-mix(in srgb, var(--color-bg-subtle) 55%, var(--color-surface));
+  text-align: center;
+}
+
+.dojo-quiz-card__eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  margin-bottom: 1.15rem;
+}
+
+.dojo-speak-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-accent-text);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dojo-quiz-card__prompt {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: clamp(2.4rem, 4.5vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.dojo-quiz-card__masked {
+  color: var(--color-text-muted);
+  letter-spacing: 0.15em;
+}
+
+.dojo-quiz-card__reveal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+  font-size: 0.92rem;
+  color: var(--color-accent-text);
+}
+
+.dojo-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .dojo-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dojo-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  font-size: 0.96rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.dojo-option-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent-subtle) 35%, var(--color-surface));
+  transform: translateY(-1px);
+}
+
+.dojo-option-btn__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-subtle);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.dojo-option-btn.is-correct {
+  border-color: var(--color-success, #2b7a4b);
+  background: color-mix(in srgb, var(--color-success, #2b7a4b) 12%, var(--color-surface));
+}
+
+.dojo-option-btn.is-wrong {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.dojo-option-btn.is-dim {
+  opacity: 0.55;
+}
+
+.dojo-feedback-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 12px 12px 0;
+  background: color-mix(in srgb, var(--color-bg-subtle) 60%, var(--color-surface));
+}
+
+.dojo-feedback-bar__info p {
+  margin: 0.25rem 0 0;
+  font-size: 0.86rem;
+  color: var(--color-text-secondary);
+}
+
+.dojo-feedback-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.dojo-srs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dojo-srs-chip.is-saved {
+  border-color: var(--color-success, #2b7a4b);
+  color: var(--color-success, #2b7a4b);
+}
+
+.dojo-next-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.15rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+/* Karuta Grid */
+.dojo-karuta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .dojo-karuta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .dojo-karuta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dojo-karuta-card {
+  position: relative;
+  min-height: 6.2rem;
+  padding: 0.9rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 40%, var(--color-surface));
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.dojo-karuta-card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-accent) 50%, var(--color-border));
+  transform: translateY(-2px);
+}
+
+.dojo-karuta-card.is-selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+.dojo-karuta-card.is-matched {
+  border-color: var(--color-success, #2b7a4b);
+  background: color-mix(in srgb, var(--color-success, #2b7a4b) 10%, var(--color-surface));
+  opacity: 0.72;
+  cursor: default;
+}
+
+.dojo-karuta-card.is-mismatch {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-surface));
+}
+
+.dojo-karuta-card__seal {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.45rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-accent);
+  border-radius: 3px;
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, serif);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.dojo-karuta-card--jp .dojo-karuta-card__primary {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.dojo-karuta-card--vi .dojo-karuta-card__primary {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.dojo-karuta-card__secondary {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.dojo-summary {
+  text-align: center;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.dojo-summary__seal {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 8px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, serif);
+  font-size: 1.35rem;
+  font-weight: 800;
+  transform: rotate(-3deg);
+}
+
+.dojo-summary h3 {
+  margin: 0;
+  font-family: var(--font-display), var(--font-serif), serif;
+  font-size: 1.5rem;
+}
+
+.dojo-summary__subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.dojo-summary__missed {
+  width: min(100%, 38rem);
+  text-align: left;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg-subtle);
+}
+
+.dojo-summary__missed h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.dojo-summary__missed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dojo-summary__missed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.dojo-summary__missed-row p {
+  margin: 0.15rem 0 0;
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curriculum-flashcard,
+  .curriculum-flashcard-hud__track > span,
+  .dojo-mode-btn,
+  .dojo-option-btn,
+  .dojo-karuta-card {
+    transition: none !important;
+    transform: none !important;
+  }
 }

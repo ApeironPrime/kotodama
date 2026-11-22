@@ -939,4 +939,33 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(screen.queryByRole('button', { name: /\+ Thêm SRS/i })).toBeNull()
     expect(screen.getByText(/1 \/ 1 từ đã lưu \(100%\)/i)).toBeTruthy()
   })
+
+  it('switches to Mini-Game tab, renders Speed Quiz and Karuta Match Board', async () => {
+    renderWithClient(<VocabularyPage />)
+
+    fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
+    fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
+    await screen.findByText('私')
+
+    const gameTab = screen.getByRole('tab', { name: /Mini-Game/i })
+    fireEvent.click(gameTab)
+
+    // Speed Quiz should render
+    expect(await screen.findByText('CHỌN NGHĨA ĐÚNG')).toBeTruthy()
+    const optionButtons = screen.getAllByRole('button', { name: /tôi, bản thân|sách/i })
+    expect(optionButtons.length).toBe(2)
+
+    const firstOpt = optionButtons[0]
+    expect(firstOpt).toBeDefined()
+    if (firstOpt) fireEvent.click(firstOpt)
+
+    expect(await screen.findByRole('status')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Câu tiếp theo/i })).toBeTruthy()
+
+    // Switch to Karuta Match Board
+    fireEvent.click(screen.getByRole('button', { name: /Ghép Thẻ Karuta/i }))
+    expect(await screen.findByRole('group', { name: 'Bảng ghép thẻ Karuta' })).toBeTruthy()
+    expect(screen.getByText('私')).toBeTruthy()
+    expect(screen.getByText('sách')).toBeTruthy()
+  })
 })
