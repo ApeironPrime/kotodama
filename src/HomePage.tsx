@@ -8,7 +8,6 @@ import 'lenis/dist/lenis.css'
 import { LEARNING_LANGUAGES, LEARNING_LEVELS, useLearningPlan } from './features/learning/learningPlan'
 import type { Page } from './types/app'
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
   GraduationCap,
@@ -19,7 +18,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react'
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 const HERO_VIDEO = '/assets/kotodama-ink-journey.mp4'
 const HERO_POSTER = '/assets/ink-journey-poster.jpg'
@@ -122,7 +121,6 @@ export default function HomePage({
   const [plan] = useLearningPlan()
   const homeRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLElement>(null)
-  const galleryRef = useRef<HTMLDivElement>(null)
   const sound = useInkSound()
   const [activeJourneyStep, setActiveJourneyStep] = useState<0 | 1 | 2>(0)
   const [desktopArtwork, setDesktopArtwork] = useState(() => window.matchMedia?.('(min-width: 601px)').matches ?? true)
@@ -139,10 +137,6 @@ export default function HomePage({
   const language = visiblePlan ? LEARNING_LANGUAGES[visiblePlan.language] : null
   const ctaPage: Page = isAuthenticated ? (visiblePlan ? 'vocabulary' : 'onboarding') : 'login'
   const firstName = userName?.trim().split(/\s+/).at(-1)
-
-  useLayoutEffect(() => {
-    if (galleryRef.current) galleryRef.current.scrollLeft = 0
-  }, [])
 
   useEffect(() => {
     const home = homeRef.current
@@ -433,105 +427,141 @@ export default function HomePage({
         </section>
 
         <section className="showcase-section showcase-section--tools">
-          <header className="showcase-gallery-heading" data-reveal>
-            <div>
-              <p className="showcase-section__ordinal" aria-hidden="true">
-                03 / 探索
-              </p>
-              <h2>Năm lối vào, một hành trình.</h2>
-              <p>Đi theo điều khiến bạn tò mò hôm nay.</p>
-            </div>
-            <div className="showcase-gallery-controls">
-              <button
-                type="button"
-                aria-label="Xem tính năng trước"
-                onClick={() => galleryRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}
-              >
-                <ArrowLeft aria-hidden="true" size={20} />
-              </button>
-              <button
-                type="button"
-                aria-label="Xem tính năng tiếp theo"
-                onClick={() => galleryRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}
-              >
-                <ArrowRight aria-hidden="true" size={20} />
-              </button>
-            </div>
-          </header>
-          <div className="showcase-tool-grid" ref={galleryRef} data-reveal>
+          <SectionHeader
+            ordinal="03  /  探索"
+            title="Năm lối vào, một hành trình."
+            description="Đi theo điều khiến bạn tò mò hôm nay."
+            action="Mở Từ điển"
+            onClick={() => setPage('dictionary')}
+          />
+          <div className="showcase-tool-grid" data-reveal>
             <FeatureCard
+              featured
               decorativeGlyph="書"
+              jpSubtitle="漢字・筆順"
               icon={Sparkles}
               number="01"
               title="Kho Hán Tự (Kanji)"
               description="2500+ Chữ Hán phân loại N5→N1 với Âm Hán-Việt, câu chuyện chiết tự và luyện viết nét."
+              highlights={['2.500+ Hán tự', 'Chiết tự & Nét vẽ']}
               action="Học Hán Tự"
               onClick={() => setPage('kanji')}
             />
             <FeatureCard
+              featured
               decorativeGlyph="文"
+              jpSubtitle="文法体系"
               icon={BookOpen}
               number="02"
               title="Kho Ngữ Pháp (Bunpo)"
               description="Mẫu câu và cấu trúc N5→N1 chuẩn giáo trình Minna no Nihongo & Somatome."
+              highlights={['N5 → N1', 'Shinkanzen & Mimikara']}
               action="Xem ngữ pháp"
               onClick={() => setPage('bunpo')}
             />
             <FeatureCard
               decorativeGlyph="試"
+              jpSubtitle="模擬試験"
               icon={GraduationCap}
               number="03"
               title="Luyện Thi JLPT"
               description="Ngân hàng đề thi trắc nghiệm bấm giờ, chấm điểm và xem giải thích chi tiết."
+              highlights={['Đề bấm giờ', 'Giải thích chi tiết']}
               action="Luyện thi ngay"
               onClick={() => setPage('jlpt')}
             />
             <FeatureCard
               decorativeGlyph="映"
+              jpSubtitle="映像学習"
               icon={Video}
               number="04"
               title="Học qua Video AI"
               description="Học trực tiếp từ video với phụ đề Furigana tương tác và luyện Shadowing ASR."
+              highlights={['Furigana trực tiếp', 'Shadowing ASR']}
               action="Mở Video AI"
               onClick={() => setPage('video')}
             />
             <FeatureCard
               decorativeGlyph="辞"
+              jpSubtitle="辞書・復習"
               icon={Zap}
               number="05"
               title="Tra Từ Điển & SRS"
               description="Tra cứu từ vựng sâu, lưu thẻ nhớ và ôn tập lặp lại ngắt quãng thông minh."
+              highlights={['Tra từ sâu', 'Lặp lại ngắt quãng']}
               action="Tra từ ngay"
-              onClick={() => setPage('vocabulary')}
+              onClick={() => setPage('dictionary')}
             />
           </div>
         </section>
 
         <footer className="showcase-colophon" data-reveal>
-          <div className="showcase-colophon__rule" aria-hidden="true">
-            <span />
-            <i />
-            <span />
-          </div>
-          <span className="showcase-colophon__seal" aria-hidden="true">
-            言霊
+          <img
+            src="/assets/journey-01-destination.jpg"
+            alt=""
+            aria-hidden="true"
+            className="showcase-colophon__backdrop"
+            loading="lazy"
+          />
+          <span className="showcase-colophon__side showcase-colophon__side--left" aria-hidden="true">
+            一筆から、世界へ
           </span>
-          <p className="showcase-colophon__jp" lang="ja">
-            言葉には、魂が宿る。
-          </p>
-          <h2 className="showcase-colophon__title">Trong mỗi ngôn từ đều ẩn chứa một tâm hồn.</h2>
-          <div className="showcase-colophon__actions">
-            <Button size="lg" onClick={() => setPage(ctaPage)}>
-              {isAuthenticated ? 'Tiếp tục hành trình' : 'Mở trang đầu tiên'}{' '}
-              <ArrowRight aria-hidden="true" size={16} />
-            </Button>
-            <Button variant="secondary" size="lg" onClick={() => setPage('dictionary')}>
-              Tra từ điển ngay
-            </Button>
+          <span className="showcase-colophon__side showcase-colophon__side--right" aria-hidden="true">
+            言葉に、心を込めて
+          </span>
+
+          <div className="showcase-colophon__inner">
+            <div className="showcase-colophon__rule" aria-hidden="true">
+              <span />
+              <i />
+              <span />
+            </div>
+            <span className="showcase-colophon__seal" aria-hidden="true">
+              言霊
+            </span>
+            <p className="showcase-colophon__jp" lang="ja">
+              言葉には、魂が宿る。
+            </p>
+            <h2 className="showcase-colophon__title">Trong mỗi ngôn từ đều ẩn chứa một tâm hồn.</h2>
+            <p className="showcase-colophon__desc">
+              Mở một trang giấy mới hôm nay — từ nét Kanji đầu tiên đến những thước phim không cần phụ đề.
+            </p>
+            <div className="showcase-colophon__actions">
+              <Button size="lg" onClick={() => setPage(ctaPage)}>
+                {isAuthenticated ? 'Tiếp tục hành trình' : 'Mở trang đầu tiên'}{' '}
+                <ArrowRight aria-hidden="true" size={16} />
+              </Button>
+              <Button variant="secondary" size="lg" onClick={() => setPage('dictionary')}>
+                Tra từ điển ngay
+              </Button>
+            </div>
           </div>
-          <p className="showcase-colophon__edition" aria-hidden="true">
-            KOTODAMA · 現代和紙版 · WORDS WITH SOUL
-          </p>
+
+          <div className="showcase-colophon__bar">
+            <span className="showcase-colophon__brand" aria-hidden="true">
+              KOTODAMA · 言霊
+            </span>
+            <nav className="showcase-colophon__nav" aria-label="Điều hướng nhanh cuối trang">
+              <button type="button" onClick={() => setPage('dictionary')}>
+                Từ điển
+              </button>
+              <button type="button" onClick={() => setPage('review')}>
+                Ôn tập SRS
+              </button>
+              <button type="button" onClick={() => setPage('jlpt')}>
+                Thi JLPT
+              </button>
+              <button type="button" onClick={() => setPage('anime')}>
+                Kho Anime
+              </button>
+              <button type="button" onClick={() => setPage('video')}>
+                Video AI
+              </button>
+            </nav>
+            <span className="showcase-colophon__edition" aria-hidden="true">
+              現代和紙版 · WORDS WITH SOUL
+            </span>
+          </div>
         </footer>
       </div>
     </div>
@@ -588,35 +618,54 @@ function ArtworkVideo({ mobile }: { mobile: boolean }) {
 }
 
 function FeatureCard({
+  featured,
   decorativeGlyph,
+  jpSubtitle,
   icon: Icon,
   number,
   title,
   description,
+  highlights,
   action,
   onClick,
 }: {
+  featured?: boolean
   decorativeGlyph: string
+  jpSubtitle: string
   icon: LucideIcon
   number: string
   title: string
   description: string
+  highlights: string[]
   action: string
   onClick: () => void
 }) {
   return (
-    <article className="showcase-tool" onPointerEnter={() => sumiAudio.playSuikinkutsu()}>
+    <article
+      className={`showcase-tool${featured ? ' is-featured' : ''}`}
+      onPointerEnter={() => sumiAudio.playSuikinkutsu()}
+    >
       <span className="showcase-tool__glyph" aria-hidden="true">
         {decorativeGlyph}
       </span>
       <div className="showcase-tool__top">
-        <span className="showcase-tool__number">{number} / 05</span>
+        <div>
+          <span className="showcase-tool__number">{number} / 05</span>
+          <span className="showcase-tool__jp" aria-hidden="true">
+            {jpSubtitle}
+          </span>
+        </div>
         <span className="showcase-tool__icon">
-          <Icon aria-hidden="true" size={22} strokeWidth={1.5} />
+          <Icon aria-hidden="true" size={20} strokeWidth={1.6} />
         </span>
       </div>
       <h3>{title}</h3>
       <p>{description}</p>
+      <ul className="showcase-tool__highlights" aria-hidden="true">
+        {highlights.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
       <Button variant="ghost" size="sm" onClick={onClick}>
         {action} <ArrowRight aria-hidden="true" size={15} />
       </Button>
@@ -641,7 +690,7 @@ function SectionHeader({
   const hankoRef = useRef<HTMLDivElement>(null)
   const bleedRef = useRef<HTMLDivElement>(null)
 
-  const sealGlyph = ordinal.includes('01') ? '道' : ordinal.includes('02') ? '書' : '具'
+  const sealGlyph = ordinal.includes('01') ? '道' : ordinal.includes('02') ? '書' : '門'
 
   useEffect(() => {
     const header = headerRef.current
