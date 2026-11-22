@@ -19,11 +19,26 @@
   min-height: calc(100vh - 4rem);
   padding: var(--space-8) var(--page-gutter) var(--space-20);
   background:
-    radial-gradient(ellipse 75% 35% at 50% 0%, rgb(184 46 46 / 2.8%), transparent 60%),
-    radial-gradient(circle at 92% 12%, rgb(198 180 151 / 14%), transparent 35%),
-    radial-gradient(circle at 8% 68%, rgb(139 125 104 / 8%), transparent 38%), var(--color-bg-canvas);
+    radial-gradient(
+      ellipse 75% 35% at 50% 0%,
+      color-mix(in srgb, var(--color-accent) 3.5%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--color-bg-subtle) 65%, transparent), transparent 35%),
+    radial-gradient(circle at 8% 68%, color-mix(in srgb, var(--color-accent) 2.5%, transparent), transparent 38%),
+    var(--color-bg-canvas);
   color: var(--color-text);
   font-family: var(--font-sans);
+}
+
+[data-theme='dark'] .dictionary-page {
+  background:
+    radial-gradient(
+      ellipse 75% 35% at 50% 0%,
+      color-mix(in srgb, var(--color-accent) 6%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(circle at 92% 12%, rgb(255 255 255 / 2.5%), transparent 35%), var(--color-bg-canvas);
 }
 
 /* Purge neon blur circles */

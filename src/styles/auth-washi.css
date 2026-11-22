@@ -5,8 +5,14 @@
   padding: 2rem clamp(1.25rem, 5vw, 5rem) 3rem;
   color: var(--color-text);
   background:
-    radial-gradient(ellipse at 7% 30%, rgb(204 184 146 / 13%), transparent 55%),
-    radial-gradient(ellipse at 95% 85%, rgb(204 184 146 / 9%), transparent 50%), var(--color-bg-canvas);
+    radial-gradient(ellipse at 7% 30%, color-mix(in srgb, var(--color-bg-subtle) 65%, transparent), transparent 55%),
+    radial-gradient(ellipse at 95% 85%, color-mix(in srgb, var(--color-accent) 3.5%, transparent), transparent 50%),
+    var(--color-bg-canvas);
+}
+
+[data-theme='dark'] .auth-washi__art > img:first-child {
+  mix-blend-mode: normal;
+  opacity: 0.72;
 }
 
 .auth-washi::before {
@@ -35,8 +41,8 @@
   display: grid;
   grid-template-columns: 1.08fr 1fr;
   margin-top: 1.25rem;
-  border-top: 1px solid rgb(77 64 49 / 20%);
-  border-bottom: 1px solid rgb(77 64 49 / 20%);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .auth-washi__story {
@@ -45,7 +51,7 @@
   flex-direction: column;
   min-width: 0;
   padding: 1.5rem 2.75rem 1.5rem 0;
-  border-right: 1px solid rgb(77 64 49 / 20%);
+  border-right: 1px solid var(--color-border);
 }
 
 .auth-washi__edition,
@@ -84,7 +90,7 @@
   top: 12%;
   right: 12%;
   writing-mode: vertical-rl;
-  color: #302d26;
+  color: var(--color-text);
   font-family: var(--font-jp-serif);
   font-size: clamp(2rem, 3.1vw, 3rem);
   letter-spacing: 0.28em;

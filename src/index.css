@@ -1139,9 +1139,7 @@ html[data-background-tone='light'][data-accent='white'] .showcase-kicker i {
   box-shadow: 0 0 1rem rgb(28 27 32 / 28%);
 }
 
-html[data-background-tone='light'] .showcase-active,
-html[data-background-tone='light'] .video-import-showcase__panel,
-html[data-background-tone='light'] .video-import-showcase__dropzone {
+html[data-background-tone='light'] .showcase-active {
   border-color: var(--color-border-strong);
   background: linear-gradient(145deg, var(--color-bg-elevated), var(--color-bg-surface));
   box-shadow:
@@ -1223,9 +1221,7 @@ html[data-background-tone='light'][data-accent='white'] .ui-button--primary {
    background-tone data attribute; until then these showcase surfaces need the
    same light treatment instead of their legacy dark gradients. */
 html:not([data-background-tone]) .courses-empty .ui-empty-state,
-html:not([data-background-tone]) .showcase-active,
-html:not([data-background-tone]) .video-import-showcase__panel,
-html:not([data-background-tone]) .video-import-showcase__dropzone {
+html:not([data-background-tone]) .showcase-active {
   border-color: var(--color-border-strong);
   background: linear-gradient(145deg, var(--color-bg-elevated), var(--color-bg-surface));
   box-shadow:

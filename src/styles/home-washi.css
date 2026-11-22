@@ -196,10 +196,10 @@ html .showcase-home.showcase-home {
 }
 
 .app-shell .nav-bar--home {
-  --nav-sumi: #292723;
-  --nav-vermilion: #ae382f;
-  background: linear-gradient(180deg, rgb(250 247 239 / 97%), rgb(246 240 229 / 94%));
-  border-bottom: 1px solid rgb(82 67 49 / 18%);
+  --nav-sumi: var(--color-text);
+  --nav-vermilion: var(--color-accent);
+  background: color-mix(in srgb, var(--color-bg-canvas) 95%, var(--color-bg-subtle));
+  border-bottom: 1px solid var(--color-border);
   box-shadow: none;
   backdrop-filter: blur(18px);
 }
@@ -391,7 +391,8 @@ html .showcase-home.showcase-home {
         rgb(174 56 47 / 12%) 11deg 11.5deg,
         transparent 11.5deg 22deg
       ),
-      radial-gradient(ellipse at 50% 100%, rgb(174 56 47 / 9%), transparent 68%), rgb(249 245 235 / 75%);
+      radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 68%),
+      color-mix(in srgb, var(--color-bg-surface) 88%, transparent);
     box-shadow: 0 -0.35rem 1.5rem rgb(101 70 47 / 4%);
     content: '';
     pointer-events: none;

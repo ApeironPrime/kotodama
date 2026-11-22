@@ -19,8 +19,9 @@
       color-mix(in srgb, var(--color-accent) 4%, transparent),
       transparent 62%
     ),
-    radial-gradient(circle at 92% 10%, rgb(198 180 151 / 12%), transparent 34%),
-    radial-gradient(circle at 6% 72%, rgb(139 125 104 / 7%), transparent 36%), var(--color-bg-canvas);
+    radial-gradient(circle at 92% 10%, color-mix(in srgb, var(--color-bg-subtle) 65%, transparent), transparent 38%),
+    radial-gradient(circle at 6% 72%, color-mix(in srgb, var(--color-accent) 3%, transparent), transparent 36%),
+    var(--color-bg-canvas);
 }
 
 [data-theme='dark'] .app-shell:has(.washi-page) {
