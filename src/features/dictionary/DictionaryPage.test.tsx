@@ -336,4 +336,34 @@ describe('DictionaryPage Feature Suite', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(screen.queryByLabelText('Sổ tay học và lịch sử tra cứu')).toBeNull()
   })
+
+  it('shows matched Kanji in the all tab even when word search returns empty', async () => {
+    vi.mocked(requestApi).mockResolvedValue({ results: [] })
+    vi.mocked(srsApi.fetchCurriculumGrammar).mockResolvedValue({ items: [], total: 0, totalPages: 0 })
+    vi.mocked(nhaikanjiApi.fetchKanjiList).mockResolvedValue({
+      items: [
+        {
+          ...sampleNhaiKanjiDetail.summary,
+          kanji: '議',
+          hanzi: 'NGHỊ',
+          meaning_vi: 'bàn bạc, thảo luận',
+          jlpt_level: 'N3',
+          stroke_count: 20,
+          onyomi: 'ギ',
+          kunyomi: '',
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 6,
+      totalPages: 1,
+    })
+
+    renderWithClient(<DictionaryPage inputRef={{ current: null }} />, '/tra-tu?tab=all&q=議')
+
+    expect(await screen.findByText('Chữ Hán liên quan (1)')).toBeTruthy()
+    expect(screen.getByText('議')).toBeTruthy()
+    expect(screen.getByText('NGHỊ')).toBeTruthy()
+    expect(screen.queryByText('Không tìm thấy kết quả cho “議”')).toBeNull()
+  })
 })
