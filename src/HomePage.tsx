@@ -82,7 +82,7 @@ const COURSE_PREVIEWS = [
     chapter: 3,
     total: 12,
     scene: 'mountain',
-    cover: '/assets/artbook-first-stroke.svg',
+    cover: '/assets/artbook-01-first-stroke.jpg',
   },
   {
     number: '02',
@@ -94,7 +94,7 @@ const COURSE_PREVIEWS = [
     chapter: 7,
     total: 16,
     scene: 'bridge',
-    cover: '/assets/artbook-everyday.svg',
+    cover: '/assets/artbook-02-everyday.jpg',
   },
   {
     number: '03',
@@ -106,7 +106,7 @@ const COURSE_PREVIEWS = [
     chapter: 2,
     total: 18,
     scene: 'temple',
-    cover: '/assets/artbook-between-lines.svg',
+    cover: '/assets/artbook-03-between-lines.jpg',
   },
 ] as const
 
@@ -407,6 +407,7 @@ export default function HomePage({
               >
                 <div className="showcase-course-plate__cover">
                   <img src={course.cover} alt="" loading="lazy" />
+                  <span className="showcase-course-plate__spine" aria-hidden="true" />
                   <span className="showcase-course-plate__number">VOL. {course.number}</span>
                   <span className="showcase-course-plate__japanese" aria-hidden="true">
                     {course.japanese}
@@ -419,16 +420,12 @@ export default function HomePage({
                   <span className="showcase-course-plate__level">{course.level}</span>
                   <h3>{course.title}</h3>
                   <p>{course.description}</p>
-                  <p className="showcase-course-plate__progress-copy">
-                    <span>{course.total} chương học</span>
-                    <span>{course.japanese}</span>
-                  </p>
-                  <div className="showcase-course-plate__progress" aria-hidden="true">
-                    <span className="showcase-course-plate__brush" />
+                  <div className="showcase-course-plate__footer">
+                    <span className="showcase-course-plate__chapters">{course.total} chương học</span>
+                    <Button variant="ghost" size="sm" onClick={() => setPage('vocabulary')}>
+                      Khám phá tủ sách <ArrowRight aria-hidden="true" size={14} />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setPage('vocabulary')}>
-                    Khám phá tủ sách <ArrowRight aria-hidden="true" size={14} />
-                  </Button>
                 </div>
               </article>
             ))}

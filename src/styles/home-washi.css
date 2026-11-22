@@ -1139,6 +1139,8 @@ html .showcase-home .showcase-streak {
 .showcase-home .showcase-section__header h2 {
   font-size: clamp(3rem, 4.5vw, 4.8rem);
   line-height: 1.08;
+  letter-spacing: -0.018em;
+  word-spacing: 0.04em;
 }
 .showcase-home .showcase-section__header p {
   max-width: 34rem;
@@ -1605,26 +1607,48 @@ html .showcase-home .showcase-tool:first-child {
   }
 }
 
-/* Course previews are illustrated plates with small editorial captions. */
+/* Course previews are handcrafted Wasobon artbook plates. */
 .showcase-course-gallery {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(1.2rem, 2.5vw, 2.7rem);
-  margin-top: clamp(2.5rem, 4vw, 4rem);
+  gap: clamp(1.2rem, 2.5vw, 2.35rem);
+  margin-top: 1.25rem;
 }
 .showcase-course-plate {
   min-width: 0;
-  transition: transform 650ms cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--home-rule);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  overflow: hidden;
+  box-shadow: 0 12px 30px -22px rgb(28 27 32 / 18%);
+  transition:
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 260ms ease,
+    box-shadow 360ms ease;
+}
+.showcase-course-plate:is(:hover, :focus-within) {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--home-vermilion) 45%, transparent);
+  box-shadow: 0 22px 42px -24px rgb(28 27 32 / 28%);
 }
 .showcase-course-plate__cover {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 4 / 4.8;
+  aspect-ratio: 3 / 4;
   background: var(--home-paper-deep);
-  border: 1px solid var(--home-rule);
-  box-shadow:
-    inset 12px 0 18px -10px rgb(0 0 0 / 32%),
-    0 14px 32px -18px rgb(28 27 32 / 24%);
+}
+.showcase-course-plate__spine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1.1rem;
+  z-index: 2;
+  border-right: 1px solid rgb(255 255 255 / 22%);
+  background:
+    repeating-linear-gradient(180deg, transparent 0 19%, rgb(255 248 235 / 38%) 19% 21%, transparent 21% 25%),
+    linear-gradient(90deg, rgb(18 16 14 / 32%), rgb(18 16 14 / 8%) 65%, transparent);
+  pointer-events: none;
 }
 .showcase-course-plate__cover::before {
   position: absolute;
@@ -1639,7 +1663,7 @@ html .showcase-home .showcase-tool:first-child {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgb(35 31 25 / 30%), transparent 24%, transparent 65%, rgb(35 31 25 / 23%));
+  background: linear-gradient(180deg, rgb(25 21 17 / 22%), transparent 22%, transparent 72%, rgb(25 21 17 / 20%));
   content: '';
   pointer-events: none;
 }
@@ -1648,23 +1672,16 @@ html .showcase-home .showcase-tool:first-child {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(0.68) sepia(0.08);
+  object-position: center;
   transition:
     transform 700ms cubic-bezier(0.16, 1, 0.3, 1),
     filter 700ms ease;
 }
-.showcase-course-plate--mountain .showcase-course-plate__cover img {
-  object-position: 15% 50%;
-}
-.showcase-course-plate--bridge .showcase-course-plate__cover img {
-  object-position: 50% 50%;
-}
-.showcase-course-plate--temple .showcase-course-plate__cover img {
-  object-position: 90% 50%;
+[data-theme='dark'] .showcase-course-plate__cover img {
+  filter: brightness(0.9) contrast(1.04);
 }
 .showcase-course-plate:is(:hover, :focus-within) .showcase-course-plate__cover img {
-  transform: scale(1.025);
-  filter: saturate(0.9) sepia(0.03);
+  transform: scale(1.03);
 }
 .showcase-course-plate:is(:hover, :focus-within) .showcase-course-plate__cover::before {
   transform: translateX(125%);
@@ -1678,28 +1695,32 @@ html .showcase-home .showcase-tool:first-child {
   text-shadow: 0 1px 8px rgb(26 20 15 / 34%);
 }
 .showcase-course-plate__number {
-  top: 1.3rem;
-  left: 1.3rem;
+  top: 1.1rem;
+  left: 1.65rem;
+  padding: 0.24rem 0.58rem;
+  border-radius: 0.2rem;
+  background: rgb(22 20 18 / 50%);
+  backdrop-filter: blur(5px);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   letter-spacing: 0.16em;
 }
 .showcase-course-plate__japanese {
-  top: 1.25rem;
+  top: 1.1rem;
   right: 1rem;
   padding: 0.45rem 0.28rem;
   border-radius: 0.15rem;
-  background: rgb(22 20 18 / 28%);
+  background: rgb(22 20 18 / 38%);
   backdrop-filter: blur(4px);
   font-family: var(--font-jp-serif);
-  font-size: clamp(0.96rem, 1.4vw, 1.28rem);
+  font-size: clamp(0.96rem, 1.4vw, 1.24rem);
   letter-spacing: 0.18em;
   writing-mode: vertical-rl;
 }
 .showcase-course-plate__seal {
   position: absolute;
-  left: 1.25rem;
-  bottom: 1.25rem;
+  left: 1.65rem;
+  bottom: 1.1rem;
   z-index: 2;
   display: grid;
   place-items: center;
@@ -1707,13 +1728,13 @@ html .showcase-home .showcase-tool:first-child {
   height: 2rem;
   border: 1px solid rgb(255 246 231 / 55%);
   border-radius: 0.18rem;
-  background: color-mix(in srgb, #a9382f 88%, transparent);
+  background: color-mix(in srgb, #a9382f 90%, transparent);
   color: #fff9ec;
   font-family: var(--font-jp-serif);
   font-size: 0.92rem;
   font-weight: 600;
   transform: rotate(-5deg);
-  opacity: 0.9;
+  opacity: 0.92;
   transition:
     transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 220ms ease;
@@ -1724,7 +1745,10 @@ html .showcase-home .showcase-tool:first-child {
 }
 .showcase-course-plate__caption {
   position: relative;
-  padding-top: 1.55rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.35rem 1.4rem 1.25rem;
   border-top: 1px solid var(--home-rule);
 }
 .showcase-course-plate__caption::before {
@@ -1751,19 +1775,40 @@ html .showcase-home .showcase-tool:first-child {
   text-transform: uppercase;
 }
 .showcase-course-plate__caption h3 {
-  margin: 0.45rem 0 0.3rem;
+  margin: 0.45rem 0 0.35rem;
   color: var(--home-ink);
   font-family: var(--font-display);
-  font-size: clamp(1.6rem, 2.15vw, 2.2rem);
+  font-size: clamp(1.45rem, 1.9vw, 1.95rem);
   font-weight: 600;
   line-height: 1.2;
 }
 .showcase-course-plate__caption > p {
-  min-height: 3.3rem;
-  margin: 0 0 1.4rem;
+  min-height: 2.75rem;
+  margin: 0 0 1.15rem;
   color: var(--home-ink-soft);
   font-size: 0.9rem;
   line-height: 1.65;
+}
+.showcase-course-plate__footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--home-rule);
+}
+.showcase-course-plate__chapters {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--home-ink-muted);
+}
+.showcase-course-plate .ui-button svg {
+  transition: transform 200ms ease;
+}
+.showcase-course-plate:is(:hover, :focus-within) .ui-button svg {
+  transform: translateX(3px);
 }
 .showcase-course-plate__progress-copy {
   display: flex;
@@ -2564,33 +2609,37 @@ html.lenis:has(.showcase-home) {
 .showcase-course-gallery__sound button {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.35rem 0;
-  border: 0;
-  border-bottom: 1px solid rgb(174 56 47 / 35%);
-  color: #8f483b;
-  background: transparent;
+  gap: 0.45rem;
+  padding: 0.36rem 0.9rem;
+  border: 1px solid var(--home-rule);
+  border-radius: 999px;
+  color: var(--home-ink-soft);
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
   cursor: pointer;
-  font-family: var(--font-jp);
+  font-family: var(--font-sans);
   font-size: 0.76rem;
-  letter-spacing: 0.07em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition:
+    border-color 200ms ease,
+    color 200ms ease,
+    background 200ms ease;
+}
+.showcase-course-gallery__sound button:hover {
+  border-color: color-mix(in srgb, var(--home-vermilion) 45%, transparent);
+  color: var(--color-accent-text);
 }
 .showcase-course-gallery__sound button[aria-pressed='true'] {
-  color: #ae382f;
-  border-bottom-color: #ae382f;
+  color: var(--color-accent-text);
+  border-color: color-mix(in srgb, var(--home-vermilion) 55%, transparent);
+  background: color-mix(in srgb, var(--home-vermilion) 8%, var(--color-surface));
 }
 .showcase-course-gallery__sound button:focus-visible {
-  outline: 2px solid #ae382f;
-  outline-offset: 4px;
+  outline: 2px solid var(--home-vermilion);
+  outline-offset: 3px;
 }
 .showcase-home .showcase-course-gallery {
   margin-top: 1.2rem;
-}
-.showcase-course-plate__cover img {
-  filter: saturate(0.83) sepia(0.025);
-}
-.showcase-course-plate:hover .showcase-course-plate__cover img {
-  filter: saturate(1) sepia(0);
 }
 
 @media (prefers-reduced-motion: no-preference) {
