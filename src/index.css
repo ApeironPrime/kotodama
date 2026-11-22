@@ -1161,16 +1161,6 @@ html[data-background-tone='light'] .video-import-showcase__dropzone {
   color: var(--color-text);
 }
 
-html[data-background-tone='light'] .video-import-showcase__tabs {
-  border-color: var(--color-border);
-  background: var(--color-bg-subtle);
-}
-
-html[data-background-tone='light'] .video-import-showcase__tabs button.is-active {
-  background: var(--color-bg-elevated);
-  box-shadow: 0 0.15rem 0.45rem rgb(28 27 32 / 10%);
-}
-
 html[data-background-tone='light'] .video-import-showcase__url-row {
   border-color: var(--color-border-strong);
   background: var(--color-bg-subtle);
@@ -1268,16 +1258,6 @@ html:not([data-background-tone]) .showcase-active__head strong,
 html:not([data-background-tone]) .showcase-active__code,
 html:not([data-background-tone]) .video-import-showcase__dropzone {
   color: var(--color-text);
-}
-
-html:not([data-background-tone]) .video-import-showcase__tabs {
-  border-color: var(--color-border);
-  background: var(--color-bg-subtle);
-}
-
-html:not([data-background-tone]) .video-import-showcase__tabs button.is-active {
-  background: var(--color-bg-elevated);
-  box-shadow: 0 0.15rem 0.45rem rgb(28 27 32 / 10%);
 }
 
 html:not([data-background-tone]) .video-import-showcase__url-row {
@@ -5600,7 +5580,7 @@ input::placeholder {
   min-height: calc(100vh - 4rem);
   margin: 0 auto;
   padding: clamp(2.25rem, 4vw, 3.75rem) 1.5rem 5rem;
-  overflow: hidden;
+  overflow: visible;
 }
 .video-import-orb {
   display: none;
