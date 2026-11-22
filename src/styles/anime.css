@@ -214,9 +214,10 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background: var(--anime-cinematic-card);
-  border: 1px solid var(--anime-cinematic-border);
-  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--neutral-900) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--neutral-800);
+  border-radius: 0.6rem;
   box-shadow: var(--shadow-sm);
 }
 
@@ -621,10 +622,10 @@
 
 .anime-card:hover {
   transform: translateY(-2px);
-  border-color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--rose-500) 48%, transparent);
   box-shadow:
-    0 0 0 1px var(--color-accent-subtle),
-    var(--shadow-md);
+    0 0 0 1px color-mix(in srgb, var(--rose-500) 20%, transparent),
+    0 14px 30px -12px rgb(0 0 0 / 55%);
 }
 
 .anime-card.is-selected {

@@ -577,87 +577,28 @@ export default function ReviewPage({ onDictionary }: { onDictionary?: (query?: s
                 }}
               >
                 {/* Header: Status badge & JLPT level */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '0.5rem',
-                  }}
-                >
+                <div className="srs-card-head">
                   <span className={`srs-stage-pill srs-stage-pill--${stageMod}`}>{badgeLabel}</span>
-                  {card.jlptLevel && (
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                      {card.jlptLevel}
-                    </span>
-                  )}
+                  {card.jlptLevel && <span className="srs-card-level">{card.jlptLevel}</span>}
                 </div>
 
                 {/* Main term & reading */}
-                <div style={{ margin: '0.4rem 0', flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: card.type === 'kanji' ? '2.4rem' : '1.35rem',
-                      fontFamily: 'var(--font-jp)',
-                      fontWeight: 800,
-                      color: 'var(--color-text)',
-                      lineHeight: 1.2,
-                    }}
-                  >
+                <div className="srs-card-body">
+                  <div className={`srs-card-term${card.type === 'kanji' ? ' srs-card-term--kanji' : ''}`}>
                     {card.term}
                   </div>
-                  {card.reading && card.reading !== card.term && (
-                    <div
-                      style={{
-                        fontSize: '0.85rem',
-                        fontFamily: 'var(--font-jp)',
-                        color: 'var(--color-text-muted)',
-                        marginTop: '2px',
-                      }}
-                    >
-                      {card.reading}
-                    </div>
-                  )}
-                  <div
-                    style={{
-                      fontSize: '0.85rem',
-                      color: 'var(--color-text-secondary)',
-                      marginTop: '4px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {card.meaning}
-                  </div>
+                  {card.reading && card.reading !== card.term && <div className="srs-card-reading">{card.reading}</div>}
+                  <div className="srs-card-meaning">{card.meaning}</div>
                 </div>
 
                 {/* Footer: Progress bar with % text */}
                 <div className="srs-card-footer" style={{ display: 'block', marginTop: '0.75rem' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '4px',
-                      fontSize: '0.72rem',
-                    }}
-                  >
+                  <div className="srs-card-mastery-meta">
                     <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>THÀNH THẠO</span>
                     <span style={{ color: badgeColor, fontWeight: 800 }}>{mastery}%</span>
                   </div>
-                  <div
-                    style={{
-                      height: '4px',
-                      width: '100%',
-                      background: 'var(--color-bg-subtle)',
-                      borderRadius: '2px',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{ height: '100%', width: `${mastery}%`, background: badgeColor, borderRadius: '2px' }}
-                    />
+                  <div className="srs-card-mastery-track">
+                    <div className="srs-card-mastery-fill" style={{ width: `${mastery}%`, background: badgeColor }} />
                   </div>
                 </div>
               </div>

@@ -811,7 +811,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     const units = courseDetailData?.units || []
 
     return (
-      <div className="curriculum-container">
+      <div className="curriculum-container washi-page">
         <div className="curriculum-paper-grid">
           <button
             type="button"
@@ -860,7 +860,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     {course.provider_source}
                   </span>
                 </div>
-                <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                <h1
+                  style={{
+                    margin: '0 0 0.5rem 0',
+                    fontFamily: 'var(--font-display), var(--font-jp-serif)',
+                    fontSize: '1.9rem',
+                    fontWeight: 600,
+                    color: 'var(--color-text)',
+                  }}
+                >
                   {course.title}
                 </h1>
                 <p style={{ margin: '0 0 1rem 0', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
@@ -935,7 +943,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const course = courseDetailData?.course
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
+    <div className="washi-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
       {/* 3.1 Top Navigation Bar */}
       <div
         style={{
@@ -961,7 +969,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       {/* 3.2 Unit Header & Real Progress Bar */}
       <header className="curriculum-study-header">
         <div>
-          <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>
+          <h2
+            style={{
+              margin: '0 0 0.25rem 0',
+              fontFamily: 'var(--font-display), var(--font-jp-serif)',
+              fontSize: '1.45rem',
+              fontWeight: 600,
+              color: 'var(--color-text)',
+            }}
+          >
             {course?.title} - {currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}
           </h2>
           {currentUnitInfo?.topic && (
@@ -1018,7 +1034,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       {srsError && (
         <div
           className="curriculum-auth-banner"
-          style={{ background: 'rgb(239 68 68 / 12%)', borderColor: 'rgb(239 68 68 / 35%)' }}
+          style={{
+            background: 'var(--color-danger-subtle)',
+            borderColor: 'var(--color-danger-border)',
+          }}
           role="alert"
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

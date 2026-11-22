@@ -576,24 +576,41 @@
 }
 
 .jlpt-exam-card {
+  position: relative;
+  overflow: hidden;
   min-height: 15.75rem;
   padding: var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-surface);
-  box-shadow: var(--shadow-xs);
+  border-radius: 0.45rem;
+  background: var(--color-surface);
+  box-shadow: 0 2px 14px -8px rgb(28 27 32 / 8%);
   transition:
     transform var(--duration-normal) var(--ease-standard),
     box-shadow var(--duration-normal) var(--ease-standard),
     border-color var(--duration-normal) var(--ease-standard);
 }
+.jlpt-exam-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.24s var(--ease-out);
+}
 .jlpt-exam-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--color-accent);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--color-accent-border);
+  box-shadow: 0 12px 26px -14px rgb(28 27 32 / 16%);
+}
+.jlpt-exam-card:hover::before {
+  transform: scaleX(1);
 }
 .jlpt-exam-card--full {
   border-color: var(--color-accent);
@@ -719,18 +736,23 @@
 .jlpt-paper-picker__heading {
   padding: var(--space-6);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-surface);
+  border-top: 2px solid color-mix(in srgb, var(--color-accent) 48%, var(--color-border));
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  box-shadow: 0 2px 14px -8px rgb(28 27 32 / 8%);
 }
 .jlpt-paper-picker__heading > span {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font: 700 var(--font-size-xs) var(--font-mono);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .jlpt-paper-picker__heading h2 {
   margin: var(--space-2) 0;
   color: var(--color-text);
-  font: 700 clamp(1.5rem, 3vw, 2.25rem) / 1.15 var(--font-display);
+  font:
+    600 clamp(1.5rem, 3vw, 2.25rem) / 1.15 var(--font-display),
+    var(--font-jp-serif);
 }
 .jlpt-paper-picker__heading p {
   max-width: 44rem;
@@ -886,7 +908,7 @@
 .jlpt-level-row {
   --jlpt-level-tone: #ae382f;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-4);
   width: 100%;
@@ -905,6 +927,21 @@
 .jlpt-level-row:hover {
   padding-left: calc(var(--space-4) + 0.5rem);
   background: var(--color-accent-subtle);
+}
+.jlpt-level-row__jp {
+  font-family: var(--font-jp-serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease;
+  user-select: none;
+}
+.jlpt-level-row:hover .jlpt-level-row__jp {
+  opacity: 0.95;
+  color: var(--color-accent-text);
 }
 .jlpt-level-row:focus-visible,
 .jlpt-session-card:focus-visible {
@@ -962,15 +999,16 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-subtle);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
   color: var(--color-text-secondary);
 }
 .jlpt-ai-notice > svg {
   flex: 0 0 auto;
-  color: var(--color-info);
+  color: var(--color-accent-text);
 }
 .jlpt-ai-notice > div {
   flex: 1;
@@ -1012,25 +1050,28 @@
 .jlpt-paper-filters {
   display: grid;
   gap: var(--space-4);
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-surface);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  box-shadow: 0 2px 14px -8px rgb(28 27 32 / 8%);
 }
 .jlpt-search {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 3rem;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  min-height: 2.85rem;
+  padding: 0 0.25rem;
+  border: 0;
+  border-bottom: 1.5px solid var(--color-border-strong);
+  border-radius: 0;
   color: var(--color-text-muted);
-  background: var(--color-bg-elevated);
+  background: transparent;
+  transition: border-color 0.2s ease;
 }
 .jlpt-search:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+  border-bottom-color: var(--color-accent);
+  box-shadow: none;
 }
 .jlpt-search .ui-input {
   min-width: 0;
@@ -1045,18 +1086,18 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 .jlpt-year-select {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 2.55rem;
+  min-height: 2.4rem;
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 0.35rem;
   color: var(--color-text-secondary);
-  background: var(--color-bg-elevated);
+  background: var(--color-bg-subtle);
 }
 .jlpt-year-select select {
   border: 0;
@@ -1070,42 +1111,56 @@
   display: inline-flex;
   overflow-x: auto;
   max-width: 100%;
-  padding: 0.2rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-elevated);
+  padding: 0;
+  gap: 1.1rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
 }
 .jlpt-status-tabs button {
   flex: 0 0 auto;
-  padding: 0.47rem 0.7rem;
+  padding: 0.5rem 0.15rem;
+  margin-bottom: -1px;
   border: 0;
-  border-radius: calc(var(--radius-md) - 0.15rem);
-  color: var(--color-text-secondary);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--color-text-muted);
   background: transparent;
   font: 700 var(--font-size-sm) var(--font-sans);
   cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 .jlpt-status-tabs button:hover {
-  color: var(--color-accent);
+  color: var(--color-text);
 }
 .jlpt-status-tabs button.is-active {
-  color: var(--color-text-inverse);
-  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border-bottom-color: var(--color-accent);
+  background: transparent;
 }
 .jlpt-year-group {
   display: grid;
   gap: var(--space-3);
 }
 .jlpt-year-group > h2 {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 0.75rem;
   margin: var(--space-3) 0 0;
   color: var(--color-text);
-  font: 800 var(--font-size-lg) var(--font-display);
+  font: 600 var(--font-size-lg) var(--font-display);
+}
+.jlpt-year-group > h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
 }
 .jlpt-year-group > h2 svg {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 .jlpt-paper-grid {
   display: grid;
@@ -1113,6 +1168,8 @@
   gap: var(--space-4);
 }
 .jlpt-session-card {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1120,21 +1177,36 @@
   min-height: 8.4rem;
   padding: var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-surface);
+  border-radius: 0.45rem;
+  background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
   cursor: pointer;
-  box-shadow: var(--shadow-xs);
+  box-shadow: 0 2px 14px -8px rgb(28 27 32 / 8%);
   transition:
     transform var(--duration-normal) var(--ease-standard),
     border-color var(--duration-normal) var(--ease-standard),
     box-shadow var(--duration-normal) var(--ease-standard);
 }
+.jlpt-session-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.24s var(--ease-out);
+}
 .jlpt-session-card:hover {
   transform: translateY(-2px);
-  border-color: var(--color-accent);
-  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent-border);
+  box-shadow: 0 12px 26px -14px rgb(28 27 32 / 16%);
+}
+.jlpt-session-card:hover::before {
+  transform: scaleX(1);
 }
 .jlpt-session-card__badge {
   display: grid;
@@ -1142,11 +1214,15 @@
   min-width: 3.65rem;
   aspect-ratio: 1;
   padding: var(--space-2);
-  border-radius: var(--radius-md);
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  border: 1.5px solid var(--color-accent);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--color-accent) 9%, transparent);
+  color: var(--color-accent-text);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 18%, transparent);
   text-align: center;
-  font: 850 var(--font-size-sm) / 1.15 var(--font-sans);
+  font:
+    700 var(--font-size-sm) / 1.15 var(--font-display),
+    var(--font-jp-serif);
 }
 .jlpt-session-card__body {
   display: grid;
@@ -1920,4 +1996,310 @@
   font-size: 0.84rem;
   font-weight: 700;
   color: var(--color-accent-text);
+}
+
+/* ==========================================================================
+   BUNPO INNER VIEWS (Lessons Grid, Flashcard Stage, Grammar List & TOC)
+   ========================================================================== */
+
+.bunpo-view-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: 1rem;
+}
+
+.bunpo-book-title {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display), var(--font-jp-serif);
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.bunpo-lesson-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  cursor: pointer;
+  box-shadow: 0 2px 12px -8px rgb(28 27 32 / 8%);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.bunpo-lesson-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.22s var(--ease-out);
+}
+
+.bunpo-lesson-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent-border);
+  box-shadow: 0 10px 24px -12px rgb(28 27 32 / 14%);
+}
+
+.bunpo-lesson-card:hover::before {
+  transform: scaleX(1);
+}
+
+.bunpo-lesson-card__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.bunpo-lesson-card__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display), var(--font-jp-serif);
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.bunpo-flashcard {
+  min-height: 360px;
+  padding: 2.25rem 2rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  user-select: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.bunpo-flashcard__pattern {
+  font-family: var(--font-jp-serif);
+  font-size: clamp(2.1rem, 4vw, 2.85rem);
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.bunpo-flashcard__pattern--back {
+  font-family: var(--font-jp-serif);
+  font-size: 1.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 0.6rem;
+}
+
+.bunpo-flashcard__structure {
+  margin-top: 0.75rem;
+  font-family: var(--font-jp-serif);
+  color: var(--color-accent-text);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.bunpo-flashcard__footer {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.85rem;
+  margin-top: 1.25rem;
+}
+
+.bunpo-multi-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.14));
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.32));
+}
+
+.bunpo-group-card {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  padding: 0.9rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  text-align: left;
+}
+
+.bunpo-group-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+
+.bunpo-meaning-box {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-border));
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0.35rem;
+  padding: 0.65rem 1rem;
+}
+
+.bunpo-structure-box {
+  font-family: var(--font-jp-serif);
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--color-accent-text);
+  margin-top: 0.25rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  padding: 0.45rem 0.8rem;
+  border-radius: 0.35rem;
+}
+
+.bunpo-example-box {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 2px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  border-radius: 0.35rem;
+  padding: 0.65rem 0.9rem;
+}
+
+.bunpo-note-box {
+  font-size: 0.86rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  background: var(--color-danger-subtle, rgba(239, 68, 68, 0.06));
+  border: 1px solid var(--color-danger-border, rgba(239, 68, 68, 0.2));
+  border-radius: 0.35rem;
+  padding: 0.65rem 0.9rem;
+  white-space: pre-line;
+}
+
+.bunpo-point-card {
+  scroll-margin-top: 85px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  box-shadow: 0 2px 12px -8px rgb(28 27 32 / 8%);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.bunpo-point-card.is-selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+.bunpo-point-card__pattern {
+  margin: 0;
+  font-family: var(--font-jp-serif);
+  font-size: 1.65rem;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.bunpo-search-input {
+  width: 100%;
+  height: 2.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.35rem;
+  padding-left: 2rem;
+  padding-right: 0.75rem;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.bunpo-search-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.bunpo-toc {
+  position: sticky;
+  top: 80px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 2px solid color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  border-radius: 0.45rem;
+  padding: 1rem;
+  box-shadow: 0 2px 14px -8px rgb(28 27 32 / 8%);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.bunpo-toc__count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+}
+
+.bunpo-toc__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 500;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.bunpo-toc__item:hover {
+  background: var(--color-bg-subtle);
+}
+
+.bunpo-toc__item.is-active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-weight: 700;
 }

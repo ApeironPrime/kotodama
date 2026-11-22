@@ -151,8 +151,14 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
         aria-label="Ôn tập thẻ"
         style={{ zIndex: 9999 }}
       >
-        <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
-          <Check size={48} color="var(--color-success)" style={{ margin: '0 auto 1rem auto' }} />
+        <div
+          className="modal-content srs-modal-shell washi-manuscript-card"
+          style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}
+        >
+          <span className="washi-hanko" style={{ margin: '0 auto 0.85rem' }} aria-hidden="true">
+            完
+          </span>
+          <Check size={40} color="var(--color-success)" style={{ margin: '0 auto 0.75rem auto' }} />
           <h2>Hoàn thành phiên ôn tập!</h2>
           <p style={{ color: 'var(--color-text-secondary)', margin: '1rem 0' }}>
             Bạn đã hoàn thành toàn bộ {completedCount} thẻ ôn tập.
@@ -179,7 +185,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
       aria-label="Ôn tập thẻ"
     >
       <div
-        className="srs-modal-shell"
+        className="srs-modal-shell washi-manuscript-card"
         style={{
           maxWidth: '720px',
           padding: 0,
@@ -352,24 +358,14 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button
                   type="button"
+                  className="washi-audio-btn"
                   onClick={(e) => {
                     e.stopPropagation()
                     speakJapanese(currentCard.term || currentCard.reading || '')
                   }}
-                  style={{
-                    background: 'rgba(59, 130, 246, 0.15)',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    color: 'var(--color-accent-text)',
-                    borderRadius: '50%',
-                    padding: '10px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
                   title="Nghe phát âm"
                 >
-                  <Volume2 size={20} />
+                  <Volume2 size={18} />
                 </button>
               </div>
 
@@ -433,17 +429,10 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                 </div>
                 <button
                   type="button"
+                  className="washi-audio-btn"
                   onClick={(e) => {
                     e.stopPropagation()
                     speakJapanese(currentCard.term || currentCard.reading || '')
-                  }}
-                  style={{
-                    background: 'rgba(59, 130, 246, 0.15)',
-                    border: 'none',
-                    color: 'var(--color-accent-text)',
-                    borderRadius: '50%',
-                    padding: '8px',
-                    cursor: 'pointer',
                   }}
                   title="Nghe phát âm từ"
                 >
@@ -572,6 +561,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
 
                             <button
                               type="button"
+                              className="washi-audio-btn"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 if (firstEx.audio) {
@@ -580,15 +570,6 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                                 } else {
                                   speakJapanese(firstEx.jp)
                                 }
-                              }}
-                              style={{
-                                background: 'rgba(59, 130, 246, 0.15)',
-                                border: 'none',
-                                color: 'var(--color-accent-text)',
-                                borderRadius: '50%',
-                                padding: '6px',
-                                cursor: 'pointer',
-                                flexShrink: 0,
                               }}
                               title="Nghe phát âm ví dụ"
                             >
@@ -744,6 +725,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
 
                           <button
                             type="button"
+                            className="washi-audio-btn"
                             onClick={(e) => {
                               e.stopPropagation()
                               if (ex.audio) {
@@ -752,15 +734,6 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                               } else {
                                 speakJapanese(ex.jp)
                               }
-                            }}
-                            style={{
-                              background: 'rgba(59, 130, 246, 0.15)',
-                              border: 'none',
-                              color: 'var(--color-accent-text)',
-                              borderRadius: '50%',
-                              padding: '6px',
-                              cursor: 'pointer',
-                              flexShrink: 0,
                             }}
                             title="Nghe phát âm ví dụ"
                           >
@@ -873,8 +846,8 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
                   minWidth: '70px',
                   padding: '8px 10px',
                   borderRadius: '8px',
-                  border: '1px solid var(--color-accent)',
-                  background: 'rgba(59, 130, 246, 0.15)',
+                  border: '1px solid var(--color-accent-border)',
+                  background: 'var(--color-accent-subtle)',
                   color: 'var(--color-accent-text)',
                   fontWeight: 700,
                   fontSize: '0.85rem',

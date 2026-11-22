@@ -37,6 +37,14 @@ const LEVELS: LevelMeta[] = [
   { id: 'N5', title: 'Đề mô phỏng N5', description: 'Trình độ cơ bản', tone: 'n5' },
 ]
 
+const JLPT_RANK_KANJI: Record<string, string> = {
+  N5: '五級',
+  N4: '四級',
+  N3: '三級',
+  N2: '二級',
+  N1: '一級',
+}
+
 function getSessionMeta(session: JlptExamSummary['session']) {
   const raw = String(session ?? '').trim()
   if (raw === '1' || raw === '01' || raw === '7' || raw === '07') return { label: 'Kỳ 1', month: '07' }
@@ -194,6 +202,9 @@ export function JlptPage() {
                 <strong>{level.title}</strong>
                 <small>{level.description}</small>
                 <em>Xem các kỳ đề</em>
+              </span>
+              <span className="jlpt-level-row__jp" aria-hidden="true">
+                {JLPT_RANK_KANJI[level.id]}
               </span>
               <ChevronRight aria-hidden="true" />
             </button>

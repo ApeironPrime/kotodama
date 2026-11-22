@@ -42,7 +42,12 @@ export default function LocalProfilePage({ onNavigate }: { onNavigate: (page: Pa
             <Stat value={stats.data.streak ?? '—'} label="Chuỗi ngày ôn tập" tone="accent" />
           </div>
           <Card padding="lg" className="washi-paper-panel">
-            <h2>Ôn tập hôm nay</h2>
+            <div className="profile-panel-head">
+              <h2>Ôn tập hôm nay</h2>
+              <span className="profile-panel-head__jp" aria-hidden="true">
+                今日の復習
+              </span>
+            </div>
             <p>
               {stats.data.dueTodayCount > 0
                 ? `Bạn có ${stats.data.dueTodayCount} thẻ đến hạn.`
@@ -51,7 +56,12 @@ export default function LocalProfilePage({ onNavigate }: { onNavigate: (page: Pa
             <Button onClick={() => onNavigate('review')}>Mở thẻ ôn tập</Button>
           </Card>
           <Card padding="lg" className="washi-paper-panel">
-            <h2>Hoạt động gần đây</h2>
+            <div className="profile-panel-head">
+              <h2>Hoạt động gần đây</h2>
+              <span className="profile-panel-head__jp" aria-hidden="true">
+                最近の記録
+              </span>
+            </div>
             {activity.length ? (
               <ul className="profile-activity-ledger">
                 {activity.slice(0, 14).map((day) => (
@@ -74,19 +84,26 @@ export default function LocalProfilePage({ onNavigate }: { onNavigate: (page: Pa
         </>
       )}
       <Card padding="lg" className="washi-paper-panel">
-        <h2>Tài khoản của bạn</h2>
+        <div className="profile-panel-head">
+          <h2>Tài khoản của bạn</h2>
+          <span className="profile-panel-head__jp" aria-hidden="true">
+            アカウント
+          </span>
+        </div>
         <p>{user?.email}</p>
-        {user && !user.emailVerified && (
-          <Button variant="secondary" onClick={() => onNavigate('verifyEmail')}>
-            Xác minh email
+        <div className="profile-actions-row">
+          {user && !user.emailVerified && (
+            <Button variant="secondary" onClick={() => onNavigate('verifyEmail')}>
+              Xác minh email
+            </Button>
+          )}
+          <Button variant="secondary" onClick={() => onNavigate('security')}>
+            Bảo mật tài khoản
           </Button>
-        )}{' '}
-        <Button variant="secondary" onClick={() => onNavigate('security')}>
-          Bảo mật tài khoản
-        </Button>{' '}
-        <Button variant="secondary" onClick={() => onNavigate('onboarding')}>
-          Điều chỉnh lộ trình
-        </Button>
+          <Button variant="secondary" onClick={() => onNavigate('onboarding')}>
+            Điều chỉnh lộ trình
+          </Button>
+        </div>
       </Card>
     </PageShell>
   )

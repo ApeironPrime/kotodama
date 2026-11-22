@@ -302,7 +302,7 @@ export default function VideoStudyPlayer({
   }
 
   return (
-    <PageShell width="wide" className="video-study-page">
+    <PageShell width="wide" className="video-study-page washi-page">
       <header className="video-study-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
           <Button
@@ -315,14 +315,15 @@ export default function VideoStudyPlayer({
           </Button>
           <h1
             style={{
-              fontSize: '1rem',
-              fontWeight: 700,
+              fontFamily: 'var(--font-display), var(--font-jp-serif)',
+              fontSize: '1.08rem',
+              fontWeight: 600,
               margin: 0,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               maxWidth: '38vw',
-              color: 'var(--color-text, #0f172a)',
+              color: 'var(--color-text)',
             }}
             title={video.title}
           >
@@ -330,94 +331,48 @@ export default function VideoStudyPlayer({
           </h1>
         </div>
 
-        {/* Mode Switcher Bar (Corodomo-Style Single Line) */}
-        <div
-          style={{
-            display: 'inline-flex',
-            gap: '0.35rem',
-            background: 'var(--color-bg-subtle, #f1f5f9)',
-            padding: '3px',
-            borderRadius: '10px',
-            border: '1px solid var(--color-border, #e2e8f0)',
-            flexShrink: 0,
-          }}
-        >
-          <Button
-            variant={activeMode === 'study' ? 'primary' : 'ghost'}
-            size="sm"
+        {/* Mode Switcher Bar */}
+        <div className="video-study-mode-tabs" role="tablist" aria-label="Chế độ học video">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeMode === 'study'}
+            className={`video-study-mode-tab${activeMode === 'study' ? ' is-active' : ''}`}
             onClick={() => setActiveMode('study')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              padding: '3px 10px',
-              height: '28px',
-              background: activeMode === 'study' ? 'var(--color-accent)' : undefined,
-              color: activeMode === 'study' ? 'var(--color-text-inverse)' : undefined,
-            }}
           >
             <Captions size={14} /> Học Phụ đề
-          </Button>
-          <Button
-            variant={activeMode === 'shadowing' ? 'primary' : 'ghost'}
-            size="sm"
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeMode === 'shadowing'}
+            className={`video-study-mode-tab${activeMode === 'shadowing' ? ' is-active' : ''}`}
             onClick={() => setActiveMode('shadowing')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              padding: '3px 10px',
-              height: '28px',
-              background: activeMode === 'shadowing' ? 'var(--color-accent)' : undefined,
-              color: activeMode === 'shadowing' ? 'var(--color-text-inverse)' : undefined,
-            }}
           >
             <Mic size={14} /> Shadowing
-          </Button>
-          <Button
-            variant={activeMode === 'listening' ? 'primary' : 'ghost'}
-            size="sm"
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeMode === 'listening'}
+            className={`video-study-mode-tab${activeMode === 'listening' ? ' is-active' : ''}`}
             onClick={() => {
               setActiveMode(activeMode === 'listening' ? 'study' : 'listening')
               setListeningHint(false)
               setSidebarTab('notes')
             }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              padding: '3px 10px',
-              height: '28px',
-              background: activeMode === 'listening' ? 'var(--color-accent)' : undefined,
-              color: activeMode === 'listening' ? 'var(--color-text-inverse)' : undefined,
-            }}
           >
             <Ear size={14} /> Luyện nghe
-          </Button>
-          <Button
-            variant={activeMode === 'summary' ? 'primary' : 'ghost'}
-            size="sm"
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeMode === 'summary'}
+            className={`video-study-mode-tab${activeMode === 'summary' ? ' is-active' : ''}`}
             onClick={() => setActiveMode(activeMode === 'summary' ? 'study' : 'summary')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              padding: '3px 10px',
-              height: '28px',
-              background: activeMode === 'summary' ? 'var(--color-accent)' : undefined,
-              color: activeMode === 'summary' ? 'var(--color-text-inverse)' : undefined,
-            }}
           >
             <FileText size={14} /> Tóm tắt
-          </Button>
+          </button>
         </div>
       </header>
 

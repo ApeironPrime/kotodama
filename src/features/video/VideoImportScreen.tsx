@@ -115,7 +115,7 @@ export default function VideoImportScreen({ onImport }: { onImport: (video: Medi
       </div>
 
       {tab === 'url' ? (
-        <div className="video-import-showcase__panel">
+        <div className="video-import-showcase__panel washi-manuscript-card">
           <label htmlFor="video-url" className="video-import-showcase__label">
             Đường dẫn video
           </label>

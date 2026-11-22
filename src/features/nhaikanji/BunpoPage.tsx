@@ -386,28 +386,24 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // =========================================================================
   if (selectedBook && selectedLesson === null) {
     return (
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.25rem 1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+      <div className="washi-page bunpo-view-shell">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
           <Button variant="ghost" size="sm" onClick={() => setSelectedBook(null)}>
             <ArrowLeft size={16} /> Quay lại danh sách sách
           </Button>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <span
-            style={{ fontSize: '0.85rem', fontWeight: 700, color: currentBookInfo?.color, textTransform: 'uppercase' }}
-          >
+        <div style={{ marginBottom: '1.75rem', paddingBottom: '1rem', borderBottom: '1px solid var(--color-border)' }}>
+          <span className="washi-masthead__eyebrow" style={{ color: currentBookInfo?.color }}>
             {currentBookInfo?.subtitle}
           </span>
-          <h1 style={{ margin: '4px 0 0 0', fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)' }}>
-            {currentBookInfo?.title}
-          </h1>
-          <p style={{ color: 'var(--color-text-secondary)', margin: '6px 0 0 0' }}>
+          <h1 className="bunpo-book-title">{currentBookInfo?.title}</h1>
+          <p style={{ color: 'var(--color-text-secondary)', margin: '0.4rem 0 0' }}>
             {lessonsList?.length || 0} bài học · Chọn một bài học để bắt đầu ôn tập ngữ pháp hoặc làm Flashcard.
           </p>
         </div>
 
-        {/* Lesson Cards Grid (media_1788263395027.png) */}
+        {/* Lesson Cards Grid */}
         <div
           style={{
             display: 'grid',
@@ -425,6 +421,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           {lessonsList?.map((lesson) => (
             <div
               key={lesson.lesson_id}
+              className="bunpo-lesson-card"
               role="button"
               tabIndex={0}
               onKeyDown={(event) => {
@@ -438,46 +435,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 setCurrentIndex(0)
                 setIsFlipped(false)
               }}
-              style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '12px',
-                padding: '1.25rem 1.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = currentBookInfo?.color || 'var(--color-accent)'
-                e.currentTarget.style.transform = 'translateY(-2px)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-border)'
-                e.currentTarget.style.transform = 'none'
-              }}
             >
               <div>
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text-muted)',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  BÀI HỌC
-                </div>
-                <h4 style={{ margin: '2px 0 0 0', fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                  {lesson.lesson_title}
-                </h4>
+                <div className="bunpo-lesson-card__eyebrow">BÀI HỌC</div>
+                <h4 className="bunpo-lesson-card__title">{lesson.lesson_title}</h4>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                  {lesson.count} mẫu
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
+                <span className="srs-card-level">{lesson.count} mẫu</span>
                 <ChevronRight size={18} style={{ color: 'var(--color-text-muted)' }} />
               </div>
             </div>
@@ -493,7 +458,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const currentLessonInfo = lessonsList?.find((l) => l.lesson_id === selectedLesson)
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
+    <div className="washi-page bunpo-view-shell">
       {saveError && (
         <p role="alert" className="ui-error-text">
           {saveError}
@@ -515,7 +480,15 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         </Button>
 
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>
+          <h2
+            style={{
+              margin: 0,
+              fontFamily: 'var(--font-display), var(--font-jp-serif)',
+              fontSize: '1.35rem',
+              fontWeight: 600,
+              color: 'var(--color-text)',
+            }}
+          >
             {currentBookInfo?.subtitle} - {currentLessonInfo?.lesson_title}
           </h2>
         </div>
@@ -528,58 +501,19 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       </div>
 
       {/* 3.2 Mode Bar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.6rem',
-          background: 'var(--color-bg-subtle)',
-          border: '1px solid var(--color-border)',
-          padding: '6px',
-          borderRadius: '10px',
-          marginBottom: '1.5rem',
-          maxWidth: '400px',
-        }}
-      >
+      <div className="washi-tabs">
         <button
           type="button"
+          className={`washi-tab${studyMode === 'flashcard' ? ' is-active' : ''}`}
           onClick={() => setStudyMode('flashcard')}
-          style={{
-            flex: 1,
-            padding: '8px 14px',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.88rem',
-            background: studyMode === 'flashcard' ? 'var(--color-accent)' : 'transparent',
-            color: studyMode === 'flashcard' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-          }}
         >
           <Layers size={16} /> Flashcard Bài Học
         </button>
 
         <button
           type="button"
+          className={`washi-tab${studyMode === 'list' ? ' is-active' : ''}`}
           onClick={() => setStudyMode('list')}
-          style={{
-            flex: 1,
-            padding: '8px 14px',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.88rem',
-            background: studyMode === 'list' ? 'var(--color-accent)' : 'transparent',
-            color: studyMode === 'list' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-          }}
         >
           <BookOpen size={16} /> Danh Sách ({grammars.length})
         </button>
@@ -593,6 +527,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             tabIndex={0}
             aria-label="Lật thẻ ngữ pháp"
             aria-expanded={isFlipped}
+            className={`bunpo-flashcard washi-manuscript-card${!isFlipped ? ' washi-genko-bg' : ''}`}
             onKeyDown={(event) => {
               if (event.target === event.currentTarget && event.key === 'Enter') {
                 event.preventDefault()
@@ -600,45 +535,19 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               }
             }}
             onClick={() => setIsFlipped((f) => !f)}
-            style={{
-              minHeight: '340px',
-              background: 'var(--color-bg-surface)',
-              border: '1px solid var(--color-border-strong)',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              textAlign: 'center',
-              boxShadow: 'var(--shadow-lg)',
-              position: 'relative',
-              userSelect: 'none',
-              transition: 'all 0.2s ease',
-            }}
           >
             {/* Top Bar */}
             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Badge variant="primary" className="text-xs font-bold">
-                {currentCard.level}
-              </Badge>
+              <Badge variant="primary">{currentCard.level}</Badge>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
                   type="button"
+                  className="washi-audio-btn"
                   onClick={(e) => {
                     e.stopPropagation()
                     const firstAudio = currentCard.examples?.find((ex) => ex.audio)?.audio
                     playAudio(firstAudio, currentCard.pattern)
-                  }}
-                  style={{
-                    background: 'rgba(132, 204, 22, 0.2)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    padding: '8px',
-                    color: 'var(--color-accent-text)',
-                    cursor: 'pointer',
                   }}
                   title="Nghe phát âm"
                 >
@@ -646,19 +555,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 </button>
                 <button
                   type="button"
+                  className={`washi-srs-btn${isGrammarSaved(currentCard) ? ' is-saved' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation()
                     void handleSaveToSrs(currentCard)
-                  }}
-                  style={{
-                    background: isGrammarSaved(currentCard) ? 'var(--color-accent-subtle)' : 'var(--color-bg-selected)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '6px 10px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text)',
-                    cursor: 'pointer',
                   }}
                   title="Lưu vào sổ tay ôn tập"
                 >
@@ -672,66 +572,25 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               {!isFlipped ? (
                 // FRONT SIDE
                 <div>
-                  <div
-                    style={{
-                      fontSize: '2.5rem',
-                      fontFamily: 'var(--font-jp)',
-                      fontWeight: 800,
-                      color: 'var(--color-text)',
-                    }}
-                  >
-                    {currentCard.pattern}
-                  </div>
+                  <div className="bunpo-flashcard__pattern">{currentCard.pattern}</div>
                   {currentCard.structure && (
-                    <div
-                      style={{
-                        marginTop: '0.75rem',
-                        fontFamily: 'var(--font-jp)',
-                        color: 'var(--color-accent-text)',
-                        fontSize: '1.05rem',
-                        fontWeight: 600,
-                      }}
-                    >
-                      ✦ Cấu trúc: {currentCard.structure}
-                    </div>
+                    <div className="bunpo-flashcard__structure">✦ Cấu trúc: {currentCard.structure}</div>
                   )}
 
                   {currentCard.groups && currentCard.groups.length > 1 && (
-                    <div style={{ marginTop: '0.6rem' }}>
-                      <span
-                        style={{
-                          fontSize: '0.8rem',
-                          fontWeight: 800,
-                          padding: '3px 10px',
-                          borderRadius: '999px',
-                          background: 'rgba(245, 158, 11, 0.15)',
-                          color: 'var(--color-warning)',
-                          border: '1px solid rgba(245, 158, 11, 0.3)',
-                        }}
-                      >
-                        Gồm {currentCard.groups.length} nghĩa & cách dùng
-                      </span>
+                    <div style={{ marginTop: '0.65rem' }}>
+                      <span className="bunpo-multi-pill">Gồm {currentCard.groups.length} nghĩa & cách dùng</span>
                     </div>
                   )}
 
-                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.85rem' }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.9rem' }}>
                     Nhấn [Space] hoặc chạm để lật xem ý nghĩa & 1 ví dụ mỗi nghĩa
                   </div>
                 </div>
               ) : (
                 // BACK SIDE
                 <div style={{ width: '100%' }}>
-                  <div
-                    style={{
-                      fontSize: '1.8rem',
-                      fontFamily: 'var(--font-jp)',
-                      fontWeight: 800,
-                      color: 'var(--color-text)',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    {currentCard.pattern}
-                  </div>
+                  <div className="bunpo-flashcard__pattern--back">{currentCard.pattern}</div>
 
                   {currentCard.groups && currentCard.groups.length > 1 ? (
                     <div
@@ -745,26 +604,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         textAlign: 'left',
                       }}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          justifyContent: 'center',
-                          marginBottom: '0.2rem',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '0.78rem',
-                            fontWeight: 800,
-                            padding: '2px 10px',
-                            borderRadius: '999px',
-                            background: 'rgba(245, 158, 11, 0.2)',
-                            color: 'var(--color-warning)',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                          }}
-                        >
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.2rem' }}>
+                        <span className="bunpo-multi-pill">
                           Mẫu ngữ pháp có {currentCard.groups.length} nghĩa & cách dùng
                         </span>
                       </div>
@@ -772,28 +613,9 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       {currentCard.groups.map((group, gIdx) => {
                         const firstEx = group.examples && group.examples[0]
                         return (
-                          <div
-                            key={gIdx}
-                            style={{
-                              background: 'rgba(255, 255, 255, 0.04)',
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
-                              borderRadius: '12px',
-                              padding: '0.85rem 1rem',
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
-                              <span
-                                style={{
-                                  fontSize: '0.75rem',
-                                  fontWeight: 800,
-                                  background: 'var(--color-accent)',
-                                  color: 'var(--color-text-inverse)',
-                                  borderRadius: '999px',
-                                  padding: '1px 8px',
-                                }}
-                              >
-                                Nghĩa {group.group_no || gIdx + 1}
-                              </span>
+                          <div key={gIdx} className="bunpo-group-card">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
                               <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}>
                                 {group.meaning || group.usage || ''}
                               </span>
@@ -802,11 +624,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             {group.structure && (
                               <div
                                 style={{
-                                  fontFamily: 'var(--font-jp)',
-                                  fontSize: '0.86rem',
+                                  fontFamily: 'var(--font-jp-serif)',
+                                  fontSize: '0.88rem',
                                   color: 'var(--color-accent-text)',
                                   fontWeight: 600,
-                                  margin: '3px 0',
                                 }}
                               >
                                 ✦ {group.structure}
@@ -816,10 +637,9 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             {group.usage && group.usage !== group.meaning && (
                               <div
                                 style={{
-                                  fontSize: '0.82rem',
+                                  fontSize: '0.84rem',
                                   color: 'var(--color-text-secondary)',
-                                  margin: '3px 0 6px 0',
-                                  lineHeight: 1.35,
+                                  lineHeight: 1.4,
                                 }}
                               >
                                 ◎ {group.usage}
@@ -829,12 +649,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             {/* Exactly 1 Example per sub-meaning with clean Furigana Ruby & Audio */}
                             {firstEx && (
                               <div
+                                className="bunpo-example-box"
                                 style={{
-                                  marginTop: '0.5rem',
-                                  padding: '0.65rem 0.85rem',
-                                  background: 'rgba(0, 0, 0, 0.25)',
-                                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                                  borderRadius: '8px',
                                   display: 'flex',
                                   justifyContent: 'space-between',
                                   alignItems: 'center',
@@ -866,18 +682,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                                 <button
                                   type="button"
+                                  className="washi-audio-btn"
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     playAudio(firstEx.audio, firstEx.jp)
-                                  }}
-                                  style={{
-                                    background: 'rgba(59, 130, 246, 0.15)',
-                                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                                    color: 'var(--color-accent-text)',
-                                    borderRadius: '50%',
-                                    padding: '7px',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
                                   }}
                                   title="Nghe đọc câu ví dụ"
                                 >
@@ -895,7 +703,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       <div
                         style={{
                           fontSize: '1.25rem',
-                          fontWeight: 800,
+                          fontWeight: 700,
                           color: 'var(--color-success)',
                           marginTop: '0.5rem',
                         }}
@@ -904,15 +712,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       </div>
 
                       {currentCard.structure && (
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-jp)',
-                            color: 'var(--color-accent-text)',
-                            fontSize: '0.95rem',
-                            fontWeight: 600,
-                            marginTop: '0.5rem',
-                          }}
-                        >
+                        <div className="bunpo-flashcard__structure" style={{ fontSize: '0.96rem' }}>
                           ✦ Cấu trúc: {currentCard.structure}
                         </div>
                       )}
@@ -923,7 +723,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             fontSize: '0.9rem',
                             color: 'var(--color-text-secondary)',
                             marginTop: '0.5rem',
-                            lineHeight: 1.4,
+                            lineHeight: 1.45,
                           }}
                         >
                           {currentCard.explanation}
@@ -935,12 +735,9 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         if (!firstEx) return null
                         return (
                           <div
+                            className="bunpo-example-box"
                             style={{
                               marginTop: '1rem',
-                              padding: '0.85rem 1rem',
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
-                              borderRadius: '10px',
                               textAlign: 'left',
                               display: 'flex',
                               justifyContent: 'space-between',
@@ -975,18 +772,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                             <button
                               type="button"
+                              className="washi-audio-btn"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 playAudio(firstEx.audio, firstEx.jp)
-                              }}
-                              style={{
-                                background: 'rgba(59, 130, 246, 0.15)',
-                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                color: 'var(--color-accent-text)',
-                                borderRadius: '50%',
-                                padding: '8px',
-                                cursor: 'pointer',
-                                flexShrink: 0,
                               }}
                               title="Nghe đọc câu ví dụ"
                             >
@@ -1002,20 +791,9 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             </div>
 
             {/* Bottom Bar */}
-            <div
-              style={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '0.78rem',
-                color: 'var(--color-text-secondary)',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                paddingTop: '0.75rem',
-              }}
-            >
+            <div className="bunpo-flashcard__footer">
               <span>Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)</span>
-              <span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+              <span style={{ fontWeight: 700 }}>
                 {currentIndex + 1} / {grammars.length}
               </span>
             </div>
@@ -1114,7 +892,15 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 marginBottom: '1rem',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text)' }}>
+              <h3
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-display), var(--font-jp-serif)',
+                  fontSize: '1.3rem',
+                  fontWeight: 600,
+                  color: 'var(--color-text)',
+                }}
+              >
                 Danh sách mẫu ngữ pháp trong bài ({grammars.length})
               </h3>
 
@@ -1125,19 +911,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 />
                 <input
                   type="text"
+                  className="bunpo-search-input"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Lọc mẫu câu trong bài..."
-                  style={{
-                    width: '100%',
-                    height: '34px',
-                    background: 'var(--color-bg, #0f172a)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    paddingLeft: '2rem',
-                    color: 'var(--color-text)',
-                    fontSize: '0.85rem',
-                  }}
                 />
               </div>
             </div>
@@ -1163,60 +940,37 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     <div
                       id={`grammar-point-${item.id}`}
                       key={item.id}
-                      style={{
-                        scrollMarginTop: '85px',
-                        background: 'var(--color-surface)',
-                        border: isSelected ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
-                        borderRadius: '14px',
-                        padding: '1.5rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.85rem',
-                        boxShadow: isSelected
-                          ? '0 4px 20px rgba(236, 72, 153, 0.15)'
-                          : '0 2px 10px rgba(0, 0, 0, 0.04)',
-                        transition: 'border 0.2s ease, box-shadow 0.2s ease',
-                      }}
+                      className={`bunpo-point-card${isSelected ? ' is-selected' : ''}`}
                     >
                       {/* Header: Pattern & Level & SRS Button */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          gap: '0.75rem',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-                          <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
-                            {index + 1}.
-                          </span>
-                          <h3
+                          <span
                             style={{
-                              margin: 0,
-                              fontSize: '1.6rem',
-                              fontFamily: 'var(--font-jp)',
-                              fontWeight: 800,
-                              color: 'var(--color-text)',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.85rem',
+                              color: 'var(--color-text-muted)',
+                              fontWeight: 700,
                             }}
                           >
-                            {item.pattern}
-                          </h3>
+                            {index + 1}.
+                          </span>
+                          <h3 className="bunpo-point-card__pattern">{item.pattern}</h3>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <Badge variant="primary" className="text-xs font-bold">
-                            {item.level}
-                          </Badge>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                          <Badge variant="primary">{item.level}</Badge>
                           <button
                             type="button"
+                            className={`washi-srs-btn${isSaved ? ' is-saved' : ''}`}
                             onClick={() => handleSaveToSrs(item)}
-                            style={{
-                              background: isSaved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid var(--color-border)',
-                              color: isSaved ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
-                              borderRadius: '6px',
-                              padding: '4px 10px',
-                              fontSize: '0.78rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
                           >
                             {isSaved ? (
                               <>
@@ -1233,73 +987,33 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                       {/* Multi-Group Rendering if multiple usages */}
                       {hasMultipleGroups && item.groups ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span
-                              style={{
-                                fontSize: '0.78rem',
-                                fontWeight: 800,
-                                padding: '2px 10px',
-                                borderRadius: '999px',
-                                background: 'rgba(245, 158, 11, 0.15)',
-                                color: 'var(--color-warning)',
-                                border: '1px solid rgba(245, 158, 11, 0.3)',
-                              }}
-                            >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                          <div>
+                            <span className="bunpo-multi-pill">
                               Bao gồm {item.groups.length} nhóm nghĩa & cách dùng:
                             </span>
                           </div>
 
                           {item.groups.map((group, gIdx) => (
-                            <div
-                              key={gIdx}
-                              style={{
-                                background: 'rgba(255, 255, 255, 0.02)',
-                                border: '1px solid var(--color-border)',
-                                borderRadius: '10px',
-                                padding: '1rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.6rem',
-                              }}
-                            >
+                            <div key={gIdx} className="bunpo-group-card">
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span
-                                  style={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: 800,
-                                    background: 'var(--color-accent)',
-                                    color: 'var(--color-text)',
-                                    borderRadius: '999px',
-                                    padding: '2px 8px',
-                                  }}
-                                >
-                                  Nghĩa {group.group_no || gIdx + 1}
-                                </span>
-                                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
+                                <span style={{ fontSize: '1.02rem', fontWeight: 700, color: 'var(--color-text)' }}>
                                   {group.meaning || group.usage || ''}
                                 </span>
                               </div>
 
                               {group.structure && (
-                                <div
-                                  style={{
-                                    fontFamily: 'var(--font-jp)',
-                                    fontSize: '0.92rem',
-                                    fontWeight: 600,
-                                    color: 'var(--color-accent-text)',
-                                    background: 'rgba(59, 130, 246, 0.06)',
-                                    padding: '0.4rem 0.75rem',
-                                    borderRadius: '6px',
-                                  }}
-                                >
-                                  ✦ Cấu trúc: {group.structure}
-                                </div>
+                                <div className="bunpo-structure-box">✦ Cấu trúc: {group.structure}</div>
                               )}
 
                               {group.usage && group.usage !== group.meaning && (
                                 <div
-                                  style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}
+                                  style={{
+                                    fontSize: '0.88rem',
+                                    color: 'var(--color-text-secondary)',
+                                    lineHeight: 1.45,
+                                  }}
                                 >
                                   ◎ Giải thích: {group.usage}
                                 </div>
@@ -1316,32 +1030,31 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   }}
                                 >
                                   <div
-                                    style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}
+                                    style={{
+                                      fontFamily: 'var(--font-mono)',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      color: 'var(--color-text-muted)',
+                                      letterSpacing: '0.06em',
+                                    }}
                                   >
                                     VÍ DỤ (Nghĩa {group.group_no || gIdx + 1}):
                                   </div>
                                   {group.examples.map((ex, exIdx) => (
-                                    <div
-                                      key={exIdx}
-                                      style={{
-                                        background: 'var(--color-bg, #0f172a)',
-                                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                                        borderRadius: '8px',
-                                        padding: '0.65rem 0.9rem',
-                                      }}
-                                    >
+                                    <div key={exIdx} className="bunpo-example-box">
                                       <div
                                         style={{
                                           display: 'flex',
                                           justifyContent: 'space-between',
                                           alignItems: 'center',
+                                          gap: '0.75rem',
                                         }}
                                       >
                                         <div
                                           style={{
                                             fontFamily: 'var(--font-jp)',
                                             fontSize: '1rem',
-                                            fontWeight: 600,
+                                            fontWeight: 500,
                                             color: 'var(--color-text)',
                                             lineHeight: 1.6,
                                           }}
@@ -1349,20 +1062,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                         />
                                         <button
                                           type="button"
+                                          className={`washi-audio-btn${playingAudioUrl === ex.audio ? ' is-playing' : ''}`}
                                           onClick={() => playAudio(ex.audio, ex.jp)}
-                                          style={{
-                                            background:
-                                              playingAudioUrl === ex.audio
-                                                ? 'var(--color-accent)'
-                                                : 'rgba(59, 130, 246, 0.12)',
-                                            border: 'none',
-                                            color:
-                                              playingAudioUrl === ex.audio ? '#ffffff' : 'var(--color-accent-text)',
-                                            borderRadius: '50%',
-                                            padding: '6px',
-                                            cursor: 'pointer',
-                                            flexShrink: 0,
-                                          }}
                                           title="Nghe phát âm"
                                         >
                                           <Volume2 size={15} />
@@ -1390,18 +1091,13 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         /* Single Meaning Rendering */
                         <>
                           {/* Meaning */}
-                          <div
-                            style={{
-                              background: 'rgba(236, 72, 153, 0.08)',
-                              border: '1px solid rgba(236, 72, 153, 0.2)',
-                              borderRadius: '8px',
-                              padding: '0.65rem 1rem',
-                            }}
-                          >
+                          <div className="bunpo-meaning-box">
                             <div
                               style={{
-                                fontSize: '0.75rem',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '0.72rem',
                                 fontWeight: 700,
+                                letterSpacing: '0.06em',
                                 color: 'var(--color-accent-text)',
                                 textTransform: 'uppercase',
                               }}
@@ -1425,28 +1121,17 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             <div>
                               <div
                                 style={{
-                                  fontSize: '0.75rem',
+                                  fontFamily: 'var(--font-mono)',
+                                  fontSize: '0.72rem',
                                   fontWeight: 700,
+                                  letterSpacing: '0.06em',
                                   color: 'var(--color-text-muted)',
                                   textTransform: 'uppercase',
                                 }}
                               >
                                 CẤU TRÚC:
                               </div>
-                              <div
-                                style={{
-                                  fontFamily: 'var(--font-jp)',
-                                  fontSize: '0.95rem',
-                                  fontWeight: 600,
-                                  color: 'var(--color-accent-text)',
-                                  marginTop: '3px',
-                                  background: 'rgba(59, 130, 246, 0.06)',
-                                  padding: '0.5rem 0.8rem',
-                                  borderRadius: '6px',
-                                }}
-                              >
-                                {item.structure}
-                              </div>
+                              <div className="bunpo-structure-box">{item.structure}</div>
                             </div>
                           )}
 
@@ -1457,8 +1142,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             >
                               <div
                                 style={{
-                                  fontSize: '0.75rem',
+                                  fontFamily: 'var(--font-mono)',
+                                  fontSize: '0.72rem',
                                   fontWeight: 700,
+                                  letterSpacing: '0.06em',
                                   color: 'var(--color-text-muted)',
                                   textTransform: 'uppercase',
                                 }}
@@ -1466,23 +1153,20 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 VÍ DỤ MẪU ({item.examples.length}):
                               </div>
                               {item.examples.map((ex, exIdx) => (
-                                <div
-                                  key={exIdx}
-                                  style={{
-                                    background: 'rgba(255, 255, 255, 0.02)',
-                                    border: '1px solid rgba(255, 255, 255, 0.06)',
-                                    borderRadius: '8px',
-                                    padding: '0.65rem 0.9rem',
-                                  }}
-                                >
+                                <div key={exIdx} className="bunpo-example-box">
                                   <div
-                                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      gap: '0.75rem',
+                                    }}
                                   >
                                     <div
                                       style={{
                                         fontFamily: 'var(--font-jp)',
                                         fontSize: '1rem',
-                                        fontWeight: 600,
+                                        fontWeight: 500,
                                         color: 'var(--color-text)',
                                         lineHeight: 1.6,
                                       }}
@@ -1490,19 +1174,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                     />
                                     <button
                                       type="button"
+                                      className={`washi-audio-btn${playingAudioUrl === ex.audio ? ' is-playing' : ''}`}
                                       onClick={() => playAudio(ex.audio, ex.jp)}
-                                      style={{
-                                        background:
-                                          playingAudioUrl === ex.audio
-                                            ? 'var(--color-accent)'
-                                            : 'rgba(59, 130, 246, 0.12)',
-                                        border: 'none',
-                                        color: playingAudioUrl === ex.audio ? '#ffffff' : 'var(--color-accent-text)',
-                                        borderRadius: '50%',
-                                        padding: '6px',
-                                        cursor: 'pointer',
-                                        flexShrink: 0,
-                                      }}
                                       title="Nghe phát âm"
                                     >
                                       <Volume2 size={15} />
@@ -1528,19 +1201,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                       {/* Notes / Usage */}
                       {item.notes && (
-                        <div
-                          style={{
-                            fontSize: '0.86rem',
-                            color: 'var(--color-text-secondary)',
-                            lineHeight: 1.45,
-                            background: 'rgba(239, 68, 68, 0.05)',
-                            border: '1px solid rgba(239, 68, 68, 0.15)',
-                            borderRadius: '8px',
-                            padding: '0.6rem 0.85rem',
-                            whiteSpace: 'pre-line',
-                          }}
-                        >
-                          <b style={{ color: '#f87171' }}>⚠ Chú ý / Lưu ý:</b>
+                        <div className="bunpo-note-box">
+                          <b style={{ color: 'var(--color-danger-text)' }}>⚠ Chú ý / Lưu ý:</b>
                           <div style={{ marginTop: '2px' }}>{item.notes}</div>
                         </div>
                       )}
@@ -1550,22 +1212,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               </div>
 
               {/* Column 2: Sticky Table of Contents (Mục lục bài học) */}
-              <aside
-                style={{
-                  position: 'sticky',
-                  top: '80px',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '14px',
-                  padding: '1rem',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-                  maxHeight: 'calc(100vh - 100px)',
-                  overflowY: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.6rem',
-                }}
-              >
+              <aside className="bunpo-toc">
                 <div
                   style={{
                     display: 'flex',
@@ -1577,22 +1224,11 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ListTree size={16} style={{ color: 'var(--color-accent-text)' }} />
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text)' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-text)' }}>
                       Mục Lục Bài
                     </span>
                   </div>
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      color: 'var(--color-text-muted)',
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      padding: '2px 8px',
-                      borderRadius: '999px',
-                    }}
-                  >
-                    {grammars.length} mẫu
-                  </span>
+                  <span className="bunpo-toc__count">{grammars.length} mẫu</span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -1603,34 +1239,13 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       <button
                         key={item.id}
                         type="button"
+                        className={`bunpo-toc__item${isItemActive ? ' is-active' : ''}`}
                         onClick={() => {
                           setActivePointId(item.id)
                           const el = document.getElementById(`grammar-point-${item.id}`)
                           if (el) {
                             el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                           }
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '6px 8px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: isItemActive ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
-                          color: isItemActive ? 'var(--color-accent-text)' : 'var(--color-text)',
-                          cursor: 'pointer',
-                          fontSize: '0.82rem',
-                          fontWeight: isItemActive ? 700 : 500,
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isItemActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isItemActive) e.currentTarget.style.background = 'transparent'
                         }}
                         title={item.shortMeaning || item.pattern}
                       >
@@ -1646,18 +1261,19 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         >
                           <span
                             style={{
-                              fontSize: '0.75rem',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.72rem',
                               color: isItemActive ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
                               fontWeight: 700,
-                              minWidth: '16px',
+                              minWidth: '18px',
                             }}
                           >
                             {idx + 1}.
                           </span>
                           <span
                             style={{
-                              fontFamily: 'var(--font-jp)',
-                              fontWeight: 700,
+                              fontFamily: 'var(--font-jp-serif)',
+                              fontWeight: 600,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                             }}
