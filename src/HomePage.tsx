@@ -31,6 +31,7 @@ const COURSE_PREVIEWS = [
     number: '01',
     title: 'Nét chữ đầu tiên',
     japanese: 'はじめの一筆',
+    seal: '初',
     level: 'N5 · Nhập môn',
     description: 'Từ âm thanh đầu tiên đến những lời chào thân thuộc.',
     chapter: 3,
@@ -42,6 +43,7 @@ const COURSE_PREVIEWS = [
     number: '02',
     title: 'Chuyện thường ngày',
     japanese: '日々のことば',
+    seal: '日',
     level: 'N4 · Hội thoại',
     description: 'Để mỗi cuộc gặp gỡ trở thành một dịp dùng tiếng Nhật.',
     chapter: 7,
@@ -53,6 +55,7 @@ const COURSE_PREVIEWS = [
     number: '03',
     title: 'Đọc giữa những dòng',
     japanese: '読むたびに',
+    seal: '読',
     level: 'N3 · Đọc hiểu',
     description: 'Đi sâu hơn vào câu chữ, sắc thái và câu chuyện.',
     chapter: 2,
@@ -207,6 +210,13 @@ export default function HomePage({
                 <Video aria-hidden="true" size={17} /> Khám phá Video AI
               </Button>
             </div>
+            <p className="showcase-hero__pillars" aria-label="Điểm nổi bật">
+              <span>2.500+ Hán tự</span>
+              <i aria-hidden="true" />
+              <span>Đề thi JLPT N5–N1</span>
+              <i aria-hidden="true" />
+              <span>Video AI Shadowing</span>
+            </p>
           </div>
         </div>
         <a className="showcase-hero__scroll" href="#story">
@@ -214,7 +224,7 @@ export default function HomePage({
           Cuộn để khám phá
         </a>
         <span className="showcase-hero__folio" aria-hidden="true">
-          第一章 <b>—</b> 01 / 03
+          第一章 <b>—</b> 言霊の旅
         </span>
       </section>
 
@@ -245,25 +255,38 @@ export default function HomePage({
             </div>
             <ol className="showcase-journey__steps">
               <li data-reveal>
-                <span>一 / 01</span>
-                <div>
-                  <h3>Chọn đích đến</h3>
-                  <p>Đặt mục tiêu và nhịp học vừa với cuộc sống của bạn.</p>
-                </div>
+                <button
+                  type="button"
+                  className="showcase-journey__step-btn"
+                  onClick={() => setPage(isAuthenticated ? 'onboarding' : 'login')}
+                >
+                  <span>一 / 01</span>
+                  <div>
+                    <h3>Chọn đích đến</h3>
+                    <p>Đặt mục tiêu và nhịp học vừa với cuộc sống của bạn.</p>
+                  </div>
+                  <ArrowRight size={16} className="showcase-journey__step-arrow" aria-hidden="true" />
+                </button>
               </li>
               <li data-reveal>
-                <span>二 / 02</span>
-                <div>
-                  <h3>Học trong ngữ cảnh</h3>
-                  <p>Gặp từ mới qua câu chuyện, hình ảnh và video thực tế.</p>
-                </div>
+                <button type="button" className="showcase-journey__step-btn" onClick={() => setPage('video')}>
+                  <span>二 / 02</span>
+                  <div>
+                    <h3>Học trong ngữ cảnh</h3>
+                    <p>Gặp từ mới qua câu chuyện, hình ảnh và video thực tế.</p>
+                  </div>
+                  <ArrowRight size={16} className="showcase-journey__step-arrow" aria-hidden="true" />
+                </button>
               </li>
               <li data-reveal>
-                <span>三 / 03</span>
-                <div>
-                  <h3>Ghi nhớ theo nhịp</h3>
-                  <p>Trở lại đúng lúc với những điều bạn muốn nhớ lâu.</p>
-                </div>
+                <button type="button" className="showcase-journey__step-btn" onClick={() => setPage('review')}>
+                  <span>三 / 03</span>
+                  <div>
+                    <h3>Ghi nhớ theo nhịp</h3>
+                    <p>Trở lại đúng lúc với những điều bạn muốn nhớ lâu.</p>
+                  </div>
+                  <ArrowRight size={16} className="showcase-journey__step-arrow" aria-hidden="true" />
+                </button>
               </li>
             </ol>
           </div>
@@ -312,14 +335,23 @@ export default function HomePage({
                   <span className="showcase-course-plate__japanese" aria-hidden="true">
                     {course.japanese}
                   </span>
+                  <span className="showcase-course-plate__seal" aria-hidden="true">
+                    {course.seal}
+                  </span>
                 </div>
                 <div className="showcase-course-plate__caption">
                   <span className="showcase-course-plate__level">{course.level}</span>
                   <h3>{course.title}</h3>
                   <p>{course.description}</p>
-                  <p className="showcase-course-plate__progress-copy">Lộ trình tham khảo · Đang chuẩn bị</p>
+                  <p className="showcase-course-plate__progress-copy">
+                    <span>{course.total} chương học</span>
+                    <span>{course.japanese}</span>
+                  </p>
+                  <div className="showcase-course-plate__progress" aria-hidden="true">
+                    <span className="showcase-course-plate__brush" />
+                  </div>
                   <Button variant="ghost" size="sm" onClick={() => setPage('vocabulary')}>
-                    Khám phá tủ sách
+                    Khám phá tủ sách <ArrowRight aria-hidden="true" size={14} />
                   </Button>
                 </div>
               </article>
@@ -401,6 +433,33 @@ export default function HomePage({
             />
           </div>
         </section>
+
+        <footer className="showcase-colophon" data-reveal>
+          <div className="showcase-colophon__rule" aria-hidden="true">
+            <span />
+            <i />
+            <span />
+          </div>
+          <span className="showcase-colophon__seal" aria-hidden="true">
+            言霊
+          </span>
+          <p className="showcase-colophon__jp" lang="ja">
+            言葉には、魂が宿る。
+          </p>
+          <h2 className="showcase-colophon__title">Trong mỗi ngôn từ đều ẩn chứa một tâm hồn.</h2>
+          <div className="showcase-colophon__actions">
+            <Button size="lg" onClick={() => setPage(ctaPage)}>
+              {isAuthenticated ? 'Tiếp tục hành trình' : 'Mở trang đầu tiên'}{' '}
+              <ArrowRight aria-hidden="true" size={16} />
+            </Button>
+            <Button variant="secondary" size="lg" onClick={() => setPage('dictionary')}>
+              Tra từ điển ngay
+            </Button>
+          </div>
+          <p className="showcase-colophon__edition" aria-hidden="true">
+            KOTODAMA · 現代和紙版 · WORDS WITH SOUL
+          </p>
+        </footer>
       </div>
     </div>
   )

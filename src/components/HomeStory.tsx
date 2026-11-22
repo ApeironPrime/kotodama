@@ -62,9 +62,14 @@ export default function HomeStory() {
       if (firstPoints.length && secondPoints.length) canvas.parentElement?.classList.add('is-canvas-ready')
     }
 
+    const isDarkTheme = () => document.documentElement.dataset['theme'] === 'dark'
+
     const renderGlyph = (value: number) => {
       if (!canvas || !context || !firstPoints.length || !secondPoints.length) return
       context.clearRect(0, 0, 400, 400)
+      const dark = isDarkTheme()
+      const inkRgb = dark ? '246, 238, 224' : '39, 36, 31'
+      const glyphAlpha = dark ? 0.11 : 0.075
       const progress = smoothstep(0, 1, value)
       const dissolve = Math.sin(Math.PI * progress)
       const scatter = dissolve * 23
@@ -75,15 +80,15 @@ export default function HomeStory() {
 
       // Clean cross-dissolve: Only draw active glyph or particles, never stacked
       if (progress < 0.25) {
-        context.fillStyle = `rgba(39, 36, 31, ${0.075 * (1 - progress * 4)})`
+        context.fillStyle = `rgba(${inkRgb}, ${glyphAlpha * (1 - progress * 4)})`
         context.fillText('言', 200, 211)
       } else if (progress > 0.75) {
-        context.fillStyle = `rgba(39, 36, 31, ${0.075 * ((progress - 0.75) * 4)})`
+        context.fillStyle = `rgba(${inkRgb}, ${glyphAlpha * ((progress - 0.75) * 4)})`
         context.fillText('道', 200, 211)
       }
 
       // Particle dissolution transition
-      context.fillStyle = `rgba(39, 36, 31, ${0.025 + dissolve * 0.1})`
+      context.fillStyle = `rgba(${inkRgb}, ${(dark ? 0.04 : 0.025) + dissolve * (dark ? 0.14 : 0.1)})`
       for (let i = 0; i < count; i += 1) {
         const start = firstPoints[Math.floor((i / count) * firstPoints.length)] ?? [200, 200]
         const end = secondPoints[Math.floor((i / count) * secondPoints.length)] ?? [200, 200]
@@ -120,7 +125,10 @@ export default function HomeStory() {
       story.style.setProperty('--story-glyph-first', String((1 - smoothstep(0.32, 0.72, progress)) * 0.09))
       story.style.setProperty('--story-glyph-second', String(smoothstep(0.32, 0.72, progress) * 0.09))
       story.style.setProperty('--story-line', `${Math.round(progress * 100)}%`)
+      story.style.setProperty('--story-progress', progress.toFixed(3))
       story.style.setProperty('--story-translate', `${Math.round(progress * -50)}px`)
+      const activeVerse = progress < 0.35 ? '0' : progress < 0.74 ? '1' : '2'
+      story.dataset['activeVerse'] = activeVerse
 
       verseElements.forEach((el, idx) => {
         if (!el) return
@@ -162,10 +170,13 @@ export default function HomeStory() {
       requestUpdate()
     }
     window.addEventListener('resize', onResize)
+    const themeObserver = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => requestUpdate())
+    themeObserver?.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 
     return () => {
       window.removeEventListener('scroll', requestUpdate)
       window.removeEventListener('resize', onResize)
+      themeObserver?.disconnect()
       if (frame) window.cancelAnimationFrame(frame)
     }
   }, [])
@@ -173,7 +184,14 @@ export default function HomeStory() {
   return (
     <section id="story" className="showcase-story" ref={storyRef} aria-label="Từ một nét mực đến một hành trình">
       <div className="showcase-story__stage">
-        <div className="showcase-story__circle" aria-hidden="true" />
+        <div className="showcase-story__circle" aria-hidden="true">
+          <svg className="showcase-story__enso" viewBox="0 0 220 220" fill="none">
+            <path
+              d="M 118 22 C 168 25, 200 66, 198 114 C 196 164, 155 199, 105 198 C 56 197, 21 156, 23 107 C 25 62, 57 31, 96 25"
+              pathLength={1}
+            />
+          </svg>
+        </div>
         <span className="showcase-story__eyebrow">序章 · MỘT NÉT MỰC</span>
         <div className="showcase-story__glyph" aria-hidden="true">
           <span className="showcase-story__glyph-first">言</span>
@@ -188,6 +206,11 @@ export default function HomeStory() {
         <span className="showcase-story__japanese" aria-hidden="true">
           一筆から、世界へ。
         </span>
+        <div className="showcase-story__acts" aria-hidden="true">
+          <span data-act="0">一</span>
+          <span data-act="1">二</span>
+          <span data-act="2">三</span>
+        </div>
         <div className="showcase-story__track" aria-hidden="true">
           <span />
         </div>
