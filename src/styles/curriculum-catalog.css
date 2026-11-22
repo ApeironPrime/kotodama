@@ -1892,7 +1892,90 @@
 .curriculum-study-shell {
   max-width: 76rem;
   margin: 0 auto;
-  padding: var(--space-4) var(--page-gutter) var(--space-16);
+  padding: 0.25rem var(--page-gutter) var(--space-16);
+}
+
+/* Compact Single-Row Study Bar */
+.curriculum-study-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0 0.7rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.curriculum-study-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.curriculum-study-bar__divider {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.curriculum-study-bar__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 5px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.76rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.curriculum-study-bar__title {
+  margin: 0;
+  font-family: var(--font-display), var(--font-jp-serif), serif;
+  font-size: clamp(1rem, 1.5vw, 1.18rem);
+  font-weight: 650;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.curriculum-study-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .curriculum-study-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+
+  .curriculum-study-bar__left {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+  }
+
+  .curriculum-study-bar__title {
+    white-space: normal;
+  }
+
+  .curriculum-study-bar__right {
+    justify-content: space-between;
+  }
 }
 
 /* Study Header & Progress Bar */
@@ -1954,12 +2037,12 @@
 .curriculum-progress-container {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 0.5rem;
 }
 
 .curriculum-progress-bar-track {
-  width: 120px;
-  height: 8px;
+  width: 72px;
+  height: 7px;
   border-radius: var(--radius-pill);
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
@@ -2342,7 +2425,7 @@
 }
 
 .curriculum-flashcard {
-  min-height: 310px;
+  min-height: 268px;
   background-color: var(--color-surface);
   background-image:
     linear-gradient(
@@ -2360,7 +2443,8 @@
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  padding: 1.75rem 2rem;
+  padding: 1.25rem 1.75rem;
+  overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -2380,6 +2464,23 @@
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
+}
+
+.curriculum-flashcard__rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-bg-subtle);
+  z-index: 2;
+}
+
+.curriculum-flashcard__rail > span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 0.24s ease;
 }
 
 .curriculum-flashcard.is-flipped {
@@ -2415,7 +2516,7 @@
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-  margin-top: 1.5rem;
+  margin-top: 0.9rem;
 }
 
 .curriculum-flashcard:hover,
@@ -2471,7 +2572,7 @@
 
 .curriculum-flashcard__word {
   font-family: var(--font-jp-serif);
-  font-size: 3.35rem;
+  font-size: clamp(2.5rem, 4.2vw, 3.2rem);
   font-weight: 500;
   color: var(--color-text);
   letter-spacing: 0.05em;
@@ -3022,6 +3123,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .curriculum-flashcard,
+  .curriculum-flashcard__rail > span,
   .curriculum-flashcard-hud__track > span,
   .lesson-dock-card,
   .dojo-mode-btn,
@@ -3036,14 +3138,14 @@
    UNIFIED LESSON WORKSPACE: TOP STAGE + GAME DOCK + ALWAYS-VISIBLE LIST
    -------------------------------------------------------------------------- */
 .lesson-stage-wrapper {
-  margin-bottom: 1.15rem;
+  margin-bottom: 0.75rem;
 }
 
 .lesson-game-dock {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-top: 1.15rem;
+  margin-top: 0.85rem;
 }
 
 .lesson-game-dock--two {
@@ -3067,7 +3169,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.8rem 1rem;
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--color-surface);
@@ -3139,8 +3241,8 @@
 }
 
 .lesson-vocab-section {
-  margin-top: 2.15rem;
-  padding-top: 1.65rem;
+  margin-top: 1.65rem;
+  padding-top: 1.25rem;
   border-top: 1px solid var(--color-border);
 }
 

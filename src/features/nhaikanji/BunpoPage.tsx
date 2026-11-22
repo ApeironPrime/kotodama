@@ -536,45 +536,35 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           {saveError}
         </p>
       )}
-      {/* 3.1 Header Navigation */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: '1rem',
-        }}
-      >
-        <Button variant="ghost" size="sm" onClick={() => setSelectedLesson(null)}>
-          <ArrowLeft size={16} /> Danh sách bài học
-        </Button>
+      {/* 3.1 Compact Single-Row Study Bar */}
+      <header className="curriculum-study-bar">
+        <div className="curriculum-study-bar__left">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedLesson(null)}>
+            <ArrowLeft size={16} /> Danh sách bài học
+          </Button>
 
-        <div style={{ textAlign: 'center' }}>
+          <span className="curriculum-study-bar__divider" aria-hidden="true" />
+
           <h2
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-display), var(--font-jp-serif)',
-              fontSize: '1.35rem',
-              fontWeight: 600,
-              color: 'var(--color-text)',
-            }}
+            className="curriculum-study-bar__title"
+            title={`${currentBookInfo?.subtitle || ''} - ${currentLessonInfo?.lesson_title || ''}`}
           >
-            {currentBookInfo?.subtitle} - {currentLessonInfo?.lesson_title}
+            {currentBookInfo?.subtitle} · {currentLessonInfo?.lesson_title}
           </h2>
         </div>
 
-        {onGoToSrs && (
-          <Button variant="secondary" size="sm" onClick={onGoToSrs}>
-            <Layers size={15} /> Mở Sổ Tay Ôn Tập SRS
-          </Button>
-        )}
-      </div>
+        <div className="curriculum-study-bar__right">
+          {onGoToSrs && (
+            <Button variant="secondary" size="sm" onClick={onGoToSrs}>
+              <Layers size={14} /> Mở Sổ Tay Ôn Tập SRS
+            </Button>
+          )}
+        </div>
+      </header>
 
       {/* 3.2 TOP STAGE: GRAMMAR FLASHCARD OR DOJO QUIZ */}
       {stageMode === 'game' ? (
-        <section className="dojo-game" style={{ marginBottom: '1.25rem' }} aria-label="Mini-Game Ngữ Pháp">
+        <section className="dojo-game" style={{ marginBottom: '0.85rem' }} aria-label="Mini-Game Ngữ Pháp">
           {grammarQuestions.length === 0 ? (
             <div className="dojo-empty">
               <Gamepad2 size={32} aria-hidden="true" />
@@ -732,7 +722,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       ) : (
         /* 3.3 LAYER 1: IN-LESSON FLASHCARD FOR GRAMMAR */
         currentCard && (
-          <div style={{ marginBottom: '1.25rem' }}>
+          <div style={{ marginBottom: '0.85rem' }}>
             <div
               role="button"
               tabIndex={0}

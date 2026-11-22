@@ -1039,62 +1039,55 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   return (
     <div className="washi-page curriculum-study-shell">
-      {/* 3.1 Top Navigation Bar */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: '1rem',
-        }}
-      >
-        <Button variant="ghost" size="sm" onClick={() => setSelectedUnitKey(null)}>
-          <ArrowLeft size={16} /> Danh sách Bài học
-        </Button>
-
-        {onGoToSrs && (
-          <Button variant="secondary" size="sm" onClick={onGoToSrs}>
-            <Layers size={15} /> Mở sổ tay ôn tập SRS
+      {/* 3.1 Compact Single-Row Study Bar */}
+      <header className="curriculum-study-bar">
+        <div className="curriculum-study-bar__left">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedUnitKey(null)}>
+            <ArrowLeft size={16} /> Danh sách Bài học
           </Button>
-        )}
-      </div>
 
-      {/* 3.2 Unit Header & Real Progress Bar */}
-      <header className="curriculum-study-header">
-        <div className="curriculum-study-header__identity">
-          <span className="curriculum-study-header__seal" aria-hidden="true" lang="ja">
+          <span className="curriculum-study-bar__divider" aria-hidden="true" />
+
+          <span className="curriculum-study-bar__seal" aria-hidden="true" lang="ja">
             第{currentUnitInfo?.ordinal || 1}課
           </span>
-          <div>
-            <h2>
-              {course?.title} - {currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}
-            </h2>
-            {currentUnitInfo?.topic && (
-              <div className="curriculum-study-header__topic">Chủ đề: {currentUnitInfo.topic}</div>
-            )}
-          </div>
+
+          <h2
+            className="curriculum-study-bar__title"
+            title={`${course?.title || ''} - ${currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}${
+              currentUnitInfo?.topic ? ` (${currentUnitInfo.topic})` : ''
+            }`}
+          >
+            {course?.title} · {currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}
+          </h2>
         </div>
 
-        <div
-          className="curriculum-progress-container"
-          aria-label={`Tiến độ bài học: ${savedCountInUnit} trên ${unitTotalTerms} từ`}
-        >
+        <div className="curriculum-study-bar__right">
           <div
-            className="curriculum-progress-bar-track"
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            title={`Đã lưu ${savedCountInUnit} / ${unitTotalTerms} từ`}
+            className="curriculum-progress-container"
+            aria-label={`Tiến độ bài học: ${savedCountInUnit} trên ${unitTotalTerms} từ`}
           >
-            <div className="curriculum-progress-bar-fill" style={{ width: `${progressPercent}%` }} />
+            <div
+              className="curriculum-progress-bar-track"
+              role="progressbar"
+              aria-valuenow={progressPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              title={`Đã lưu ${savedCountInUnit} / ${unitTotalTerms} từ`}
+            >
+              <div className="curriculum-progress-bar-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <span className="curriculum-progress-badge">
+              <Check size={12} aria-hidden="true" />
+              {savedCountInUnit} / {unitTotalTerms} từ đã lưu ({progressPercent}%)
+            </span>
           </div>
-          <span className="curriculum-progress-badge">
-            <Check size={12} aria-hidden="true" />
-            {savedCountInUnit} / {unitTotalTerms} từ đã lưu ({progressPercent}%)
-          </span>
+
+          {onGoToSrs && (
+            <Button variant="secondary" size="sm" onClick={onGoToSrs}>
+              <Layers size={14} /> Mở sổ tay ôn tập SRS
+            </Button>
+          )}
         </div>
       </header>
 
@@ -1158,32 +1151,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         <div className="lesson-stage-wrapper">
           {stageMode === 'flashcard' && currentCard && (
             <div id="panel-study-flashcard" role="tabpanel" aria-labelledby="tab-study-flashcard">
-              {/* Flashcard Session HUD */}
-              <div className="curriculum-flashcard-hud">
-                <div className="curriculum-flashcard-hud__left">
-                  <span className="curriculum-flashcard-hud__pill">
-                    Đã thuộc: <strong>{knownWords.length}</strong>
-                  </span>
-                  <button
-                    type="button"
-                    className={`curriculum-flashcard-hud__shuffle${isShuffled ? ' is-active' : ''}`}
-                    onClick={toggleShuffleDeck}
-                    aria-pressed={isShuffled}
-                  >
-                    <Shuffle size={13} aria-hidden="true" />
-                    <span>{isShuffled ? 'Đang xáo trộn' : 'Xáo trộn'}</span>
-                  </button>
-                </div>
-                <div className="curriculum-flashcard-hud__track" aria-hidden="true">
-                  <span
-                    style={{
-                      width: `${Math.round(((currentIndex + 1) / Math.max(1, flashcardDeck.length)) * 100)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Card Frame */}
+              {/* Card Frame with Integrated Progress Rail & Compact HUD */}
               <div
                 role="button"
                 tabIndex={0}
@@ -1198,8 +1166,25 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   }
                 }}
               >
+                <div className="curriculum-flashcard__rail" aria-hidden="true">
+                  <span
+                    style={{
+                      width: `${Math.round(((currentIndex + 1) / Math.max(1, flashcardDeck.length)) * 100)}%`,
+                    }}
+                  />
+                </div>
+
                 {/* Top Bar inside Card */}
-                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
+                  }}
+                >
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <button
                       type="button"
@@ -1236,7 +1221,22 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     </button>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                    <span className="curriculum-flashcard-hud__pill">
+                      Đã thuộc: <strong>{knownWords.length}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      className={`curriculum-flashcard-hud__shuffle${isShuffled ? ' is-active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleShuffleDeck()
+                      }}
+                      aria-pressed={isShuffled}
+                    >
+                      <Shuffle size={13} aria-hidden="true" />
+                      <span>{isShuffled ? 'Đang xáo trộn' : 'Xáo trộn'}</span>
+                    </button>
                     <button
                       type="button"
                       className={`curriculum-flashcard__icon-btn${playingAudioUrl ? ' is-active' : ''}`}

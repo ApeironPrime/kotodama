@@ -2077,8 +2077,8 @@
 }
 
 .bunpo-flashcard {
-  min-height: 360px;
-  padding: 2.25rem 2rem;
+  min-height: 278px;
+  padding: 1.35rem 1.75rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;

@@ -125,6 +125,13 @@ export default function DictionaryPage({
     'all',
   ])
   const [searchTerm, setSearchTerm] = useUrlState<string>('q', '')
+  const [urlUnit] = useUrlState<string | null>('unit', null)
+  const [urlLesson] = useUrlState<string | null>('lesson', null)
+  const isLessonFocusMode =
+    !searchTerm && ((activeTab === 'vocabulary' && Boolean(urlUnit)) || (activeTab === 'grammar' && Boolean(urlLesson)))
+  const showDictionarySearch = !isLessonFocusMode && !(activeTab === 'vocabulary' && !searchTerm)
+  const showQuickSuggestions =
+    showDictionarySearch && (activeTab === 'vocab' || activeTab === 'all' || activeTab === 'sentences')
   const [input, setInput] = useState(searchTerm)
   useEffect(() => setInput(searchTerm), [searchTerm])
   const [translateSentence, setTranslateSentence] = useState(false)
@@ -420,7 +427,7 @@ export default function DictionaryPage({
   const srsProgress = srsStats?.averageMastery
 
   return (
-    <section className="dictionary-page">
+    <section className={`dictionary-page${isLessonFocusMode ? ' dictionary-page--focus' : ''}`}>
       {((activeTab === 'kanji' && kanjiView === 'ink' && isKanjiError) ||
         (activeTab === 'grammar' && isBunpoError)) && (
         <div role="alert" className="ui-status-panel">
@@ -458,132 +465,138 @@ export default function DictionaryPage({
           </header>
         )}
 
-        <div className="dictionary-search-container">
-          <form className="dictionary-querybar" onSubmit={submit}>
-            <div className="dictionary-querybar__field">
-              <Search aria-hidden="true" size={20} className="dictionary-querybar__search-icon" />
-              <Input
-                ref={inputRef}
-                aria-label="Từ cần tra"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder={
-                  activeTab === 'kanji'
-                    ? 'Tìm Kanji, âm Hán Việt, On/Kun hoặc nghĩa…'
-                    : activeTab === 'grammar'
-                      ? 'Tìm mẫu ngữ pháp tiếng Nhật…'
-                      : activeTab === 'sentences'
-                        ? 'Tìm mẫu câu chứa từ khóa…'
-                        : 'Nhập Kanji, Kana, Romaji hoặc nghĩa tiếng Việt…'
-                }
-              />
-              {input && (
-                <button
-                  className="dictionary-querybar__clear"
-                  type="button"
-                  onClick={clearSearch}
-                  aria-label="Xóa từ đang tìm"
-                >
-                  <X aria-hidden="true" size={16} />
-                </button>
-              )}
-            </div>
-            <button
-              type="submit"
-              className="dictionary-querybar__submit"
-              title="Phân tích ngữ nghĩa (Nhấn Enter để tra cứu)"
-              aria-label="Phân tích"
-            >
-              {isLoading || isKanjiListLoading || isBunpoLoading ? (
-                <Loader2 aria-label="Đang tra cứu" size={18} className="animate-spin" />
-              ) : (
-                <>
-                  <span className="dictionary-querybar__seal" aria-hidden="true">
-                    析
-                  </span>
-                  <span className="dictionary-querybar__submit-text">Phân tích</span>
-                </>
-              )}
-            </button>
-          </form>
+        {showDictionarySearch && (
+          <div className="dictionary-search-container">
+            <form className="dictionary-querybar" onSubmit={submit}>
+              <div className="dictionary-querybar__field">
+                <Search aria-hidden="true" size={20} className="dictionary-querybar__search-icon" />
+                <Input
+                  ref={inputRef}
+                  aria-label="Từ cần tra"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder={
+                    activeTab === 'kanji'
+                      ? 'Tìm Kanji, âm Hán Việt, On/Kun hoặc nghĩa…'
+                      : activeTab === 'grammar'
+                        ? 'Tìm mẫu ngữ pháp tiếng Nhật…'
+                        : activeTab === 'sentences'
+                          ? 'Tìm mẫu câu chứa từ khóa…'
+                          : 'Nhập Kanji, Kana, Romaji hoặc nghĩa tiếng Việt…'
+                  }
+                />
+                {input && (
+                  <button
+                    className="dictionary-querybar__clear"
+                    type="button"
+                    onClick={clearSearch}
+                    aria-label="Xóa từ đang tìm"
+                  >
+                    <X aria-hidden="true" size={16} />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="dictionary-querybar__submit"
+                title="Phân tích ngữ nghĩa (Nhấn Enter để tra cứu)"
+                aria-label="Phân tích"
+              >
+                {isLoading || isKanjiListLoading || isBunpoLoading ? (
+                  <Loader2 aria-label="Đang tra cứu" size={18} className="animate-spin" />
+                ) : (
+                  <>
+                    <span className="dictionary-querybar__seal" aria-hidden="true">
+                      析
+                    </span>
+                    <span className="dictionary-querybar__submit-text">Phân tích</span>
+                  </>
+                )}
+              </button>
+            </form>
 
-          {/* Quick Suggestions Extracted Below Search */}
-          <div className="dictionary-quick-suggestions" aria-label="Từ gợi ý nhanh">
-            <span className="dictionary-quick-suggestions__label">Tra cứu nhanh:</span>
-            <div className="dictionary-quick-suggestions__list">
-              {POPULAR_SEARCHES.slice(0, 7).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="dictionary-quick-suggestions__btn"
-                  onClick={() => handleQuickSearch(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
+            {/* Quick Suggestions Extracted Below Search */}
+            {showQuickSuggestions && (
+              <div className="dictionary-quick-suggestions" aria-label="Từ gợi ý nhanh">
+                <span className="dictionary-quick-suggestions__label">Tra cứu nhanh:</span>
+                <div className="dictionary-quick-suggestions__list">
+                  {POPULAR_SEARCHES.slice(0, 7).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      className="dictionary-quick-suggestions__btn"
+                      onClick={() => handleQuickSearch(item)}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Dynamic Navigation Bar: Explore Modes vs Search Scopes */}
-        <div
-          className="dictionary-tabs"
-          role="tablist"
-          onKeyDown={(event) => {
-            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-            const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
-            const current = tabs.indexOf(document.activeElement as HTMLButtonElement)
-            const next =
-              event.key === 'Home'
-                ? 0
-                : event.key === 'End'
-                  ? tabs.length - 1
-                  : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
-            event.preventDefault()
-            tabs[next]?.focus()
-            tabs[next]?.click()
-          }}
-          aria-label={searchTerm ? 'Phạm vi kết quả tìm kiếm' : 'Loại nội dung từ điển'}
-        >
-          {searchTerm
-            ? SEARCH_SCOPES.map((tab) => {
-                const Icon = tab.icon
-                const selected = activeTab === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    tabIndex={selected ? 0 : -1}
-                    className={selected ? 'is-active' : ''}
-                    onClick={() => selectTab(tab.id)}
-                  >
-                    <Icon aria-hidden="true" size={17} />
-                    <span>{tab.label}</span>
-                    {tab.count > 0 && <span className="dictionary-tab-count">{tab.count}</span>}
-                  </button>
-                )
-              })
-            : EXPLORE_TABS.map((tab) => {
-                const Icon = tab.icon
-                const selected = activeTab === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    tabIndex={selected ? 0 : -1}
-                    className={selected ? 'is-active' : ''}
-                    onClick={() => selectTab(tab.id)}
-                  >
-                    <Icon aria-hidden="true" size={17} />
-                    <span>{tab.label}</span>
-                  </button>
-                )
-              })}
-        </div>
+        {!isLessonFocusMode && (
+          <div
+            className={`dictionary-tabs${!showDictionarySearch ? ' dictionary-tabs--flush' : ''}`}
+            role="tablist"
+            onKeyDown={(event) => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+              const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+              const current = tabs.indexOf(document.activeElement as HTMLButtonElement)
+              const next =
+                event.key === 'Home'
+                  ? 0
+                  : event.key === 'End'
+                    ? tabs.length - 1
+                    : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+              event.preventDefault()
+              tabs[next]?.focus()
+              tabs[next]?.click()
+            }}
+            aria-label={searchTerm ? 'Phạm vi kết quả tìm kiếm' : 'Loại nội dung từ điển'}
+          >
+            {searchTerm
+              ? SEARCH_SCOPES.map((tab) => {
+                  const Icon = tab.icon
+                  const selected = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      tabIndex={selected ? 0 : -1}
+                      className={selected ? 'is-active' : ''}
+                      onClick={() => selectTab(tab.id)}
+                    >
+                      <Icon aria-hidden="true" size={17} />
+                      <span>{tab.label}</span>
+                      {tab.count > 0 && <span className="dictionary-tab-count">{tab.count}</span>}
+                    </button>
+                  )
+                })
+              : EXPLORE_TABS.map((tab) => {
+                  const Icon = tab.icon
+                  const selected = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      tabIndex={selected ? 0 : -1}
+                      className={selected ? 'is-active' : ''}
+                      onClick={() => selectTab(tab.id)}
+                    >
+                      <Icon aria-hidden="true" size={17} />
+                      <span>{tab.label}</span>
+                    </button>
+                  )
+                })}
+          </div>
+        )}
 
         <div
           className={`dictionary-workspace ${activeTab === 'kanji' || activeTab === 'vocabulary' ? 'is-kanji-art-mode' : ''}`}

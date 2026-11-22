@@ -47,6 +47,14 @@
   display: none !important;
 }
 
+.dictionary-page--focus {
+  padding-top: 0.75rem;
+}
+
+.dictionary-page--focus .dictionary-workspace {
+  margin-top: 0;
+}
+
 .dictionary-shell {
   width: min(100%, 76rem);
   margin: 0 auto;
@@ -389,6 +397,10 @@
   margin-top: 1.5rem;
   overflow-x: auto;
   border-bottom: 1.5px solid var(--color-border);
+}
+
+.dictionary-tabs--flush {
+  margin-top: 0;
 }
 
 .dictionary-tabs button {
