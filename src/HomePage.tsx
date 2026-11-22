@@ -26,6 +26,45 @@ const HERO_POSTER = '/assets/ink-journey-poster.jpg'
 const HERO_START_FRAME = '/assets/ink-journey-start.jpg'
 const HeroCreativeWebGL = lazy(() => import('./components/HeroCreativeWebGL'))
 
+const JOURNEY_STEPS = [
+  {
+    index: 0 as const,
+    kanji: '一',
+    number: '01',
+    kicker: 'ĐỊNH HƯỚNG',
+    jpTag: '目標設定',
+    seal: '志',
+    chapterTag: '一 · 志向',
+    title: 'Chọn đích đến',
+    description: 'Đặt mục tiêu và nhịp học vừa với cuộc sống của bạn.',
+    cta: 'Thiết lập mục tiêu',
+  },
+  {
+    index: 1 as const,
+    kanji: '二',
+    number: '02',
+    kicker: 'ĐẮM MÌNH',
+    jpTag: '文脈学習',
+    seal: '境',
+    chapterTag: '二 · 没入',
+    title: 'Học trong ngữ cảnh',
+    description: 'Gặp từ mới qua câu chuyện, hình ảnh và video thực tế.',
+    cta: 'Trải nghiệm Video AI',
+  },
+  {
+    index: 2 as const,
+    kanji: '三',
+    number: '03',
+    kicker: 'KHẮC GHI',
+    jpTag: '間隔反復',
+    seal: '憶',
+    chapterTag: '三 · 定着',
+    title: 'Ghi nhớ theo nhịp',
+    description: 'Trở lại đúng lúc với những điều bạn muốn nhớ lâu.',
+    cta: 'Mở sổ tay SRS',
+  },
+] as const
+
 const COURSE_PREVIEWS = [
   {
     number: '01',
@@ -79,6 +118,7 @@ export default function HomePage({
   const heroRef = useRef<HTMLElement>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
   const sound = useInkSound()
+  const [activeJourneyStep, setActiveJourneyStep] = useState<0 | 1 | 2>(0)
   const [desktopArtwork, setDesktopArtwork] = useState(() => window.matchMedia?.('(min-width: 601px)').matches ?? true)
   useEffect(() => {
     const media = window.matchMedia?.('(min-width: 601px)')
@@ -240,54 +280,175 @@ export default function HomePage({
             onClick={() => setPage(isAuthenticated ? (visiblePlan ? 'vocabulary' : 'onboarding') : 'login')}
           />
           <div className="showcase-journey">
-            <div className="showcase-journey__lead" data-reveal>
-              <span className="showcase-journey__glyph" aria-hidden="true">
-                道
-              </span>
-              <p>
-                {visiblePlan && language
-                  ? `${language.label} · ${LEARNING_LEVELS[visiblePlan.level]} · ${visiblePlan.dailyMinutes} phút mỗi ngày`
-                  : 'Một hành trình không cần vội. Mỗi ngày thêm một âm, một nét, một điều mới hiểu.'}
-              </p>
-              <span className="showcase-journey__signature" aria-hidden="true">
-                一歩ずつ · từng bước một
-              </span>
+            <div className="showcase-journey__atelier" data-reveal aria-live="polite">
+              <div className="showcase-journey__atelier-head">
+                <span className="showcase-journey__atelier-seal" aria-hidden="true">
+                  {JOURNEY_STEPS[activeJourneyStep].seal}
+                </span>
+                <span className="showcase-journey__atelier-meta">
+                  {JOURNEY_STEPS[activeJourneyStep].number} · {JOURNEY_STEPS[activeJourneyStep].kicker}
+                </span>
+                <span className="showcase-journey__atelier-jp" aria-hidden="true">
+                  {JOURNEY_STEPS[activeJourneyStep].chapterTag}
+                </span>
+              </div>
+
+              <div className="showcase-journey__stage">
+                {activeJourneyStep === 0 && (
+                  <div className="showcase-journey__viz showcase-journey__viz--goal">
+                    <svg className="showcase-journey__arc-svg" viewBox="0 0 320 112" fill="none" aria-hidden="true">
+                      <path
+                        d="M 24 84 Q 160 12 296 84"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                        opacity="0.35"
+                      />
+                      <path d="M 24 84 Q 112 34 168 48" stroke="var(--home-vermilion)" strokeWidth="2.4" />
+                    </svg>
+                    <div className="showcase-journey__stones" role="presentation">
+                      {(['N5', 'N4', 'N3', 'N2', 'N1'] as const).map((lvl, idx) => (
+                        <span
+                          key={lvl}
+                          className={`showcase-journey__stone${idx === 2 ? ' is-current' : idx < 2 ? ' is-passed' : ''}`}
+                        >
+                          {lvl}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="showcase-journey__rhythm-pill">
+                      {visiblePlan && language
+                        ? `${LEARNING_LEVELS[visiblePlan.level]} · ${visiblePlan.dailyMinutes} phút/ngày`
+                        : 'Lộ trình cá nhân · 15 phút mỗi ngày'}
+                    </div>
+                  </div>
+                )}
+
+                {activeJourneyStep === 1 && (
+                  <div className="showcase-journey__viz showcase-journey__viz--context">
+                    <div className="showcase-journey__word-card">
+                      <div className="showcase-journey__word-top">
+                        <span className="showcase-journey__word-jp" lang="ja">
+                          <ruby>
+                            木<rt>こ</rt>漏<rt>も</rt>れ<rt>れ</rt>日<rt>び</rt>
+                          </ruby>
+                        </span>
+                        <svg className="showcase-journey__pitch-svg" viewBox="0 0 72 26" fill="none" aria-hidden="true">
+                          <polyline points="6,19 24,7 46,7 66,19" stroke="var(--home-vermilion)" strokeWidth="1.8" />
+                          <circle cx="6" cy="19" r="2.6" fill="var(--home-ink)" />
+                          <circle cx="24" cy="7" r="2.6" fill="var(--home-vermilion)" />
+                          <circle cx="46" cy="7" r="2.6" fill="var(--home-vermilion)" />
+                          <circle cx="66" cy="19" r="2.6" fill="var(--home-ink)" />
+                        </svg>
+                      </div>
+                      <p className="showcase-journey__word-meaning">Ánh nắng xuyên qua kẽ lá</p>
+                      <p className="showcase-journey__word-quote" lang="ja">
+                        「森の中に優しい木漏れ日が差す」
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {activeJourneyStep === 2 && (
+                  <div className="showcase-journey__viz showcase-journey__viz--srs">
+                    <div className="showcase-journey__srs-head">
+                      <span>ĐƯỜNG CONG GHI NHỚ</span>
+                      <strong>96% Bền vững</strong>
+                    </div>
+                    <svg className="showcase-journey__srs-svg" viewBox="0 0 320 116" fill="none" aria-hidden="true">
+                      <path
+                        d="M 22 92 C 74 88, 102 64, 134 52 C 166 40, 198 34, 224 28 C 254 22, 276 18, 298 16"
+                        stroke="var(--home-vermilion)"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                      />
+                      <circle
+                        cx="22"
+                        cy="92"
+                        r="4.5"
+                        fill="var(--color-surface)"
+                        stroke="var(--home-vermilion)"
+                        strokeWidth="2"
+                      />
+                      <circle
+                        cx="114"
+                        cy="60"
+                        r="4.5"
+                        fill="var(--color-surface)"
+                        stroke="var(--home-vermilion)"
+                        strokeWidth="2"
+                      />
+                      <circle
+                        cx="206"
+                        cy="32"
+                        r="4.5"
+                        fill="var(--color-surface)"
+                        stroke="var(--home-vermilion)"
+                        strokeWidth="2"
+                      />
+                      <circle cx="298" cy="16" r="5.5" fill="var(--home-vermilion)" />
+                    </svg>
+                    <div className="showcase-journey__srs-days">
+                      <span>Ngày 1</span>
+                      <span>Ngày 3</span>
+                      <span>Ngày 7</span>
+                      <span>Ngày 30</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="showcase-journey__atelier-foot">
+                <p>
+                  {visiblePlan && language
+                    ? `${language.label} · ${LEARNING_LEVELS[visiblePlan.level]} · ${visiblePlan.dailyMinutes} phút mỗi ngày`
+                    : 'Một hành trình không cần vội. Mỗi ngày thêm một âm, một nét, một điều mới hiểu.'}
+                </p>
+                <span className="showcase-journey__signature" aria-hidden="true">
+                  一歩ずつ · từng bước một
+                </span>
+              </div>
             </div>
+
             <ol className="showcase-journey__steps">
-              <li data-reveal>
-                <button
-                  type="button"
-                  className="showcase-journey__step-btn"
-                  onClick={() => setPage(isAuthenticated ? 'onboarding' : 'login')}
-                >
-                  <span>一 / 01</span>
-                  <div>
-                    <h3>Chọn đích đến</h3>
-                    <p>Đặt mục tiêu và nhịp học vừa với cuộc sống của bạn.</p>
-                  </div>
-                  <ArrowRight size={16} className="showcase-journey__step-arrow" aria-hidden="true" />
-                </button>
-              </li>
-              <li data-reveal>
-                <button type="button" className="showcase-journey__step-btn" onClick={() => setPage('video')}>
-                  <span>二 / 02</span>
-                  <div>
-                    <h3>Học trong ngữ cảnh</h3>
-                    <p>Gặp từ mới qua câu chuyện, hình ảnh và video thực tế.</p>
-                  </div>
-                  <ArrowRight size={16} className="showcase-journey__step-arrow" aria-hidden="true" />
-                </button>
-              </li>
-              <li data-reveal>
-                <button type="button" className="showcase-journey__step-btn" onClick={() => setPage('review')}>
-                  <span>三 / 03</span>
-                  <div>
-                    <h3>Ghi nhớ theo nhịp</h3>
-                    <p>Trở lại đúng lúc với những điều bạn muốn nhớ lâu.</p>
-                  </div>
-                  <ArrowRight size={16} className="showcase-journey__step-arrow" aria-hidden="true" />
-                </button>
-              </li>
+              {JOURNEY_STEPS.map((step) => {
+                const isActive = activeJourneyStep === step.index
+                const targetPage: Page =
+                  step.index === 0 ? (isAuthenticated ? 'onboarding' : 'login') : step.index === 1 ? 'video' : 'review'
+                return (
+                  <li key={step.number} data-reveal className={isActive ? 'is-active' : undefined}>
+                    <article
+                      className={`showcase-journey__card${isActive ? ' is-active' : ''}`}
+                      onMouseEnter={() => setActiveJourneyStep(step.index)}
+                    >
+                      <button
+                        type="button"
+                        className="showcase-journey__card-select"
+                        aria-pressed={isActive}
+                        onClick={() => setActiveJourneyStep(step.index)}
+                        onFocus={() => setActiveJourneyStep(step.index)}
+                      >
+                        <span className="showcase-journey__hanko" aria-hidden="true">
+                          {step.kanji}
+                        </span>
+                        <div className="showcase-journey__card-body">
+                          <div className="showcase-journey__card-meta">
+                            <span>
+                              {step.number} · {step.kicker}
+                            </span>
+                            <em aria-hidden="true">{step.jpTag}</em>
+                          </div>
+                          <h3>{step.title}</h3>
+                          <p>{step.description}</p>
+                        </div>
+                      </button>
+                      <button type="button" className="showcase-journey__card-cta" onClick={() => setPage(targetPage)}>
+                        {step.cta} <ArrowRight size={14} aria-hidden="true" />
+                      </button>
+                    </article>
+                  </li>
+                )
+              })}
             </ol>
           </div>
         </section>
@@ -654,18 +815,20 @@ function SectionHeader({
 
   return (
     <header className="showcase-section__header" data-reveal ref={headerRef}>
-      <div className="showcase-section__hanko-wrapper" aria-hidden="true">
-        <div ref={bleedRef} className="showcase-section__hanko-bleed" />
-        <div ref={hankoRef} className="showcase-section__hanko" title="Ấn triện Kotodama">
-          <span>{sealGlyph}</span>
+      <div className="showcase-section__lead">
+        <div className="showcase-section__hanko-wrapper" aria-hidden="true">
+          <div ref={bleedRef} className="showcase-section__hanko-bleed" />
+          <div ref={hankoRef} className="showcase-section__hanko" title="Ấn triện Kotodama">
+            <span>{sealGlyph}</span>
+          </div>
         </div>
-      </div>
-      <div>
-        <span className="showcase-section__ordinal" aria-hidden="true">
-          {ordinal}
-        </span>
-        <h2>{title}</h2>
-        <p>{description}</p>
+        <div>
+          <span className="showcase-section__ordinal" aria-hidden="true">
+            {ordinal}
+          </span>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
       </div>
       <Button variant="secondary" onClick={onClick}>
         {action} <ArrowRight aria-hidden="true" size={15} />
