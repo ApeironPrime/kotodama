@@ -22,7 +22,7 @@ interface KarutaCard {
   pairId: string
   kind: 'jp' | 'vi'
   primary: string
-  secondary?: string
+  secondary?: string | undefined
   wordRef: CurriculumWord
 }
 

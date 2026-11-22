@@ -952,7 +952,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
 
     // Speed Quiz should render
     expect(await screen.findByText('CHỌN NGHĨA ĐÚNG')).toBeTruthy()
-    const optionButtons = screen.getAllByRole('button', { name: /tôi, bản thân|sách/i })
+    const optionButtons = screen.getAllByRole('button', { name: /^[12]\s*(tôi, bản thân|sách)$/i })
     expect(optionButtons.length).toBe(2)
 
     const firstOpt = optionButtons[0]
