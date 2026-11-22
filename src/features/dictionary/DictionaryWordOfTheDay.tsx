@@ -363,6 +363,23 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
     }, 180)
   }, [later])
 
+  const handleSelectIndex = useCallback(
+    (index: number) => {
+      if (index === currentIndex) return
+      try {
+        sumiAudio.playSuikinkutsu()
+      } catch {
+        // ignore
+      }
+      setIsTransitioning(true)
+      later(() => {
+        setCurrentIndex(index)
+        setIsTransitioning(false)
+      }, 180)
+    },
+    [currentIndex, later]
+  )
+
   const handleHankoClick = useCallback(() => {
     try {
       sumiAudio.playHankoStamp()
@@ -403,6 +420,8 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
 
   return (
     <article className="wotd-stage" aria-label="Tác phẩm thư pháp - Từ của ngày">
+      {/* Subtle Sumi-e Mist Backdrop */}
+      <div className="wotd-stage__mist" aria-hidden="true" />
       {/* Decorative Faint Guideline */}
       <div className="wotd-stage__guideline" aria-hidden="true" />
 
@@ -419,6 +438,12 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
           </span>
         </div>
         <div className="wotd-stage__header-actions">
+          <span
+            className="wotd-stage__counter"
+            aria-label={`Từ số ${currentIndex + 1} trên ${MASTER_WORDS_OF_THE_DAY.length}`}
+          >
+            {String(currentIndex + 1).padStart(2, '0')} / {String(MASTER_WORDS_OF_THE_DAY.length).padStart(2, '0')}
+          </span>
           <button
             type="button"
             className="wotd-stage__cycle-btn"
@@ -443,13 +468,15 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
         <div className="wotd-stage__primary-col">
           <div className="wotd-stage__hero">
             <div className="wotd-stage__glyph-row">
-              <h2
-                className="wotd-stage__glyph"
-                onMouseEnter={handleKanjiHover}
-                title={`Chữ Hán: ${current.kanji} (${current.hanViet})`}
-              >
-                {current.kanji}
-              </h2>
+              <div className="wotd-stage__specimen-frame">
+                <h2
+                  className="wotd-stage__glyph"
+                  onMouseEnter={handleKanjiHover}
+                  title={`Chữ Hán: ${current.kanji} (${current.hanViet})`}
+                >
+                  {current.kanji}
+                </h2>
+              </div>
               <button
                 type="button"
                 className={`wotd-stage__audio-btn ${isSpeaking ? 'is-speaking' : ''}`}
@@ -511,7 +538,14 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
 
             <div className="wotd-stage__etymology-list">
               {current.characters.map((ch, idx) => (
-                <div key={`${ch.char}-${idx}`} className="wotd-stage__etymology-item" onMouseEnter={handleKanjiHover}>
+                <button
+                  type="button"
+                  key={`${ch.char}-${idx}`}
+                  className="wotd-stage__etymology-item"
+                  onMouseEnter={handleKanjiHover}
+                  onClick={() => onSearch(ch.char)}
+                  title={`Tra cứu chữ ${ch.char} (${ch.hanViet})`}
+                >
                   <div className="wotd-stage__etymology-char-badge" title={`${ch.char} · ${ch.strokes} nét`}>
                     <span>{ch.char}</span>
                   </div>
@@ -524,7 +558,7 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
                     </div>
                     <p className="wotd-stage__etymology-meaning">{ch.meaning}</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -532,6 +566,20 @@ export function DictionaryWordOfTheDay({ onSearch, onSpeak }: DictionaryWordOfTh
               <span className="wotd-stage__radicals-label">Bộ thủ cấu thành:</span>
               <span className="wotd-stage__radicals-val">{current.radicals}</span>
             </div>
+          </div>
+
+          <div className="wotd-stage__dots" role="group" aria-label="Chọn danh ngôn thư pháp">
+            {MASTER_WORDS_OF_THE_DAY.map((item, idx) => (
+              <button
+                key={item.kanji}
+                type="button"
+                className={`wotd-stage__dot ${idx === currentIndex ? 'is-active' : ''}`}
+                onClick={() => handleSelectIndex(idx)}
+                aria-pressed={idx === currentIndex}
+                aria-label={`Xem từ ${item.kanji} (${item.hanViet})`}
+                title={`${item.kanji} · ${item.hanViet}`}
+              />
+            ))}
           </div>
 
           {/* Borderless Actions & Living Breathing Red Hanko Seal */}

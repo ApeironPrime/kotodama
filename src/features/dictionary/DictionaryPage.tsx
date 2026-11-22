@@ -34,6 +34,37 @@ import { Link } from 'react-router-dom'
 
 const POPULAR_SEARCHES = ['学校', '先生', '桜', '儚い', '木漏れ日', 'もののあわれ', '幽玄', '勉強']
 
+const CURATED_LEXICON_SHELVES = [
+  {
+    seal: '美',
+    jp: '日本の美学',
+    title: 'Mỹ học Nhật Bản',
+    desc: 'Những khái niệm cảm thụ cái đẹp tinh tế trong văn hóa Phù Tang.',
+    words: ['侘び寂び', '一期一会', '風情', '余韻'],
+  },
+  {
+    seal: '季',
+    jp: '自然と四季',
+    title: 'Thiên nhiên & Bốn mùa',
+    desc: 'Thanh âm của gió, lá đỏ mùa thu và khoảnh khắc chuyển mùa.',
+    words: ['紅葉', '風', '静寂', '夕焼け'],
+  },
+  {
+    seal: '心',
+    jp: '心と暮らし',
+    title: 'Nội tâm & Đời sống',
+    desc: 'Từ vựng chạm vào cảm xúc, tri kỷ và nhịp sống thường nhật.',
+    words: ['心', '絆', '夢', '感謝'],
+  },
+  {
+    seal: '試',
+    jp: 'JLPT 基礎',
+    title: 'Trọng tâm JLPT',
+    desc: 'Mục từ nền tảng xuất hiện dày đặc trong giao tiếp và đề thi.',
+    words: ['図書館', '経験', '努力', '約束'],
+  },
+] as const
+
 const VocabularyPage = lazy(() => import('../vocabulary/VocabularyPage'))
 const BunpoPage = lazy(() => import('../nhaikanji/BunpoPage').then((module) => ({ default: module.BunpoPage })))
 const KanjiPage = lazy(() => import('../nhaikanji/KanjiPage').then((module) => ({ default: module.KanjiPage })))
@@ -377,6 +408,28 @@ export default function DictionaryPage({
         </div>
       )}
       <div className="dictionary-shell">
+        {!searchTerm && (activeTab === 'vocab' || activeTab === 'all' || activeTab === 'sentences') && (
+          <header className="dictionary-masthead">
+            <div className="dictionary-masthead__identity">
+              <span className="dictionary-masthead__hanko" aria-hidden="true">
+                辞
+              </span>
+              <div>
+                <span className="dictionary-masthead__eyebrow">THƯ VIỆN VĂN TỰ · 現代和紙辞典</span>
+                <h1 className="dictionary-masthead__title">Từ điển Nhật – Việt</h1>
+              </div>
+            </div>
+            <div className="dictionary-masthead__aside">
+              <p className="dictionary-masthead__subtitle">
+                Tra cứu ngữ nghĩa, chiết tự Hán tự và phân tích ngữ pháp nguyên câu.
+              </p>
+              <span className="dictionary-masthead__jp" aria-hidden="true" lang="ja">
+                一字一句に魂を
+              </span>
+            </div>
+          </header>
+        )}
+
         <div className="dictionary-search-container">
           <form className="dictionary-querybar" onSubmit={submit}>
             <div className="dictionary-querybar__field">
@@ -430,21 +483,15 @@ export default function DictionaryPage({
           <div className="dictionary-quick-suggestions" aria-label="Từ gợi ý nhanh">
             <span className="dictionary-quick-suggestions__label">Tra cứu nhanh:</span>
             <div className="dictionary-quick-suggestions__list">
-              {POPULAR_SEARCHES.slice(0, 7).map((item, idx) => (
-                <span key={item} className="dictionary-quick-suggestions__item">
-                  <button
-                    type="button"
-                    className="dictionary-quick-suggestions__btn"
-                    onClick={() => handleQuickSearch(item)}
-                  >
-                    {item}
-                  </button>
-                  {idx < 6 && (
-                    <span className="dictionary-quick-suggestions__dot" aria-hidden="true">
-                      ·
-                    </span>
-                  )}
-                </span>
+              {POPULAR_SEARCHES.slice(0, 7).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className="dictionary-quick-suggestions__btn"
+                  onClick={() => handleQuickSearch(item)}
+                >
+                  {item}
+                </button>
               ))}
             </div>
           </div>
@@ -698,9 +745,53 @@ export default function DictionaryPage({
                   </div>
                 )}
 
-                {/* Zero State: Wabi-Sabi Word of the Day Stage */}
+                {/* Zero State: Wabi-Sabi Word of the Day Stage + Curated Lexicon Shelf */}
                 {!searchTerm && !isLoading && (
-                  <DictionaryWordOfTheDay onSearch={handleQuickSearch} onSpeak={speakJapanese} />
+                  <>
+                    <DictionaryWordOfTheDay onSearch={handleQuickSearch} onSpeak={speakJapanese} />
+
+                    <section className="dictionary-lexicon-shelf" aria-label="Gợi ý khám phá theo chủ đề">
+                      <header className="dictionary-lexicon-shelf__header">
+                        <div>
+                          <span className="dictionary-lexicon-shelf__eyebrow" lang="ja">
+                            言葉の栞 · GỢI Ý KHÁM PHÁ
+                          </span>
+                          <h2 className="dictionary-lexicon-shelf__title">Mở nhanh theo chủ đề</h2>
+                        </div>
+                        <span className="dictionary-lexicon-shelf__note">Nhấn vào từ bất kỳ để tra cứu ngay</span>
+                      </header>
+                      <div className="dictionary-lexicon-grid">
+                        {CURATED_LEXICON_SHELVES.map((shelf) => (
+                          <article key={shelf.title} className="dictionary-lexicon-card">
+                            <div className="dictionary-lexicon-card__head">
+                              <span className="dictionary-lexicon-card__seal" aria-hidden="true">
+                                {shelf.seal}
+                              </span>
+                              <div>
+                                <span className="dictionary-lexicon-card__jp" lang="ja">
+                                  {shelf.jp}
+                                </span>
+                                <h3 className="dictionary-lexicon-card__title">{shelf.title}</h3>
+                              </div>
+                            </div>
+                            <p className="dictionary-lexicon-card__desc">{shelf.desc}</p>
+                            <div className="dictionary-lexicon-card__chips">
+                              {shelf.words.map((word) => (
+                                <button
+                                  key={word}
+                                  type="button"
+                                  className="dictionary-lexicon-chip"
+                                  onClick={() => handleQuickSearch(word)}
+                                >
+                                  {word}
+                                </button>
+                              ))}
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  </>
                 )}
 
                 {/* Empty result state */}

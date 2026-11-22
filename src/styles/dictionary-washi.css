@@ -53,35 +53,144 @@
 }
 
 /* --------------------------------------------------------------------------
-   DIGNIFIED INK-HAIRLINE SEARCH BAR & EDITORIAL QUICK SUGGESTIONS
-   Zero plastic boxes. Dissolves cleanly into warm Washi paper (#faf8f5),
-   anchored solely by an ink hairline rule with an artisan Hanko seal [析].
+   COMPACT EDITORIAL MASTHEAD (辞 · THƯ VIỆN VĂN TỰ)
+   -------------------------------------------------------------------------- */
+.dictionary-masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dictionary-masthead__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.dictionary-masthead__hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 5px;
+  background: var(--color-accent);
+  color: #ffffff;
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: rotate(-2.5deg);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+.dictionary-masthead__eyebrow {
+  display: block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+  margin-bottom: 0.2rem;
+}
+
+.dictionary-masthead__title {
+  margin: 0;
+  font-family: var(--font-display), var(--font-jp-serif), serif;
+  font-size: clamp(1.6rem, 2.8vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  word-spacing: 0.04em;
+  line-height: 1.15;
+  color: var(--color-text);
+}
+
+.dictionary-masthead__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  text-align: right;
+}
+
+.dictionary-masthead__subtitle {
+  margin: 0;
+  max-width: 24rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.dictionary-masthead__jp {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 767px) {
+  .dictionary-masthead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .dictionary-masthead__aside {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   WASHI SCHOLAR'S DESK SEARCH CONSOLE & EDITORIAL QUICK SUGGESTIONS
    -------------------------------------------------------------------------- */
 .dictionary-search-container {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0.5rem 1.25rem 0.95rem;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent),
+    0 10px 28px -14px color-mix(in srgb, var(--color-text) 8%, transparent);
+  transition:
+    border-color 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+.dictionary-search-container:focus-within {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-accent) 10%, transparent),
+    0 12px 30px -14px color-mix(in srgb, var(--color-text) 10%, transparent);
 }
 
 .dictionary-querybar {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  padding: 0.85rem 0.25rem 0.95rem;
+  gap: 1.15rem;
+  padding: 0.45rem 0.1rem 0.65rem;
   border: none !important;
-  border-bottom: 1.5px solid rgb(80 68 52 / 16%) !important;
+  border-bottom: 1px solid var(--color-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
   position: relative;
-  transition:
-    border-color 0.28s ease,
-    box-shadow 0.28s ease;
+  transition: border-color 0.24s ease;
 }
 
 .dictionary-querybar:focus-within {
-  border-bottom-color: var(--color-accent) !important;
-  box-shadow: 0 1.5px 0 0 var(--color-accent) !important;
+  border-bottom-color: color-mix(in srgb, var(--color-accent) 65%, var(--color-border)) !important;
+  box-shadow: none !important;
 }
 
 .dictionary-querybar__field {
@@ -126,11 +235,11 @@
 }
 
 .dictionary-querybar__field .ui-input::placeholder {
-  color: #8c8273;
+  color: var(--color-text-muted);
   font-family: 'Noto Serif JP', var(--font-serif), serif;
   font-style: normal;
   font-weight: 400;
-  opacity: 0.75;
+  opacity: 0.78;
 }
 
 .dictionary-querybar__clear {
@@ -158,13 +267,16 @@
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  padding: 0.4rem 0.5rem;
-  border: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  padding: 0.45rem 0.95rem 0.45rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 32%, var(--color-border)) !important;
+  border-radius: 8px !important;
+  background: var(--color-accent-subtle) !important;
   box-shadow: none !important;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.18s ease;
   white-space: nowrap;
 }
 
@@ -172,14 +284,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border: 1.5px solid var(--color-accent);
   border-radius: 4px;
-  background: var(--color-accent-subtle);
+  background: var(--color-surface);
   color: var(--color-accent-text);
   font-family: 'Noto Serif JP', serif;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
   line-height: 1;
   transform: rotate(-2deg);
@@ -194,16 +306,21 @@
   font-family: 'Noto Serif JP', var(--font-serif), serif;
   font-size: 0.88rem;
   font-weight: 650;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.06em;
+  color: var(--color-accent-text);
+  letter-spacing: 0.04em;
   transition: color 0.2s ease;
 }
 
+.dictionary-querybar__submit:hover {
+  border-color: var(--color-accent) !important;
+  transform: translateY(-1px);
+}
+
 .dictionary-querybar__submit:hover .dictionary-querybar__seal {
-  transform: scale(1.1) rotate(0deg);
+  transform: scale(1.06) rotate(0deg);
   background: var(--color-accent);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(184, 46, 46, 0.28);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-accent) 28%, transparent);
 }
 
 .dictionary-querybar__submit:hover .dictionary-querybar__submit-text {
@@ -217,10 +334,10 @@
 /* Quick suggestions extracted BELOW the search bar */
 .dictionary-quick-suggestions {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.4rem 0.65rem;
-  padding: 0.35rem 0.25rem 0;
+  gap: 0.45rem 0.65rem;
+  padding: 0.15rem 0.1rem 0;
   font-size: 0.88rem;
   color: var(--color-text-secondary);
 }
@@ -236,53 +353,31 @@
 
 .dictionary-quick-suggestions__list {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.35rem 0.55rem;
-}
-
-.dictionary-quick-suggestions__item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
 
 .dictionary-quick-suggestions__btn {
-  background: none;
-  border: none;
-  padding: 0;
+  padding: 0.22rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 65%, transparent);
   font-family: 'Noto Serif JP', var(--font-serif), serif;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 550;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
-  position: relative;
-}
-
-.dictionary-quick-suggestions__btn::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: 0;
-  height: 1px;
-  background: var(--color-accent);
-  transition: width 0.18s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .dictionary-quick-suggestions__btn:hover {
   color: var(--color-accent-text);
-}
-
-.dictionary-quick-suggestions__btn:hover::after {
-  width: 100%;
-}
-
-.dictionary-quick-suggestions__dot {
-  color: rgb(80 68 52 / 24%);
-  font-size: 0.75rem;
-  user-select: none;
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: var(--color-accent-subtle);
 }
 
 /* --------------------------------------------------------------------------
@@ -303,6 +398,7 @@
   flex: 0 0 auto;
   border: 0;
   border-bottom: 2.5px solid transparent;
+  border-radius: 8px 8px 0 0;
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -313,11 +409,13 @@
   padding: 0.85rem 1.25rem 0.75rem;
   transition:
     color 180ms ease,
-    border-color 180ms ease;
+    border-color 180ms ease,
+    background 180ms ease;
 }
 
 .dictionary-tabs button:hover {
   color: var(--color-accent-text);
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
 }
 
 .dictionary-tabs button.is-active {
@@ -363,7 +461,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   ARTISAN JAPANESE SLIDING DRAWER (硯箱・引き出し)
+   ARTISAN JAPANESE SHIORI BOOKMARK TAB & SLIDING DRAWER (硯箱・栞)
    -------------------------------------------------------------------------- */
 .dictionary-drawer-trigger {
   position: fixed;
@@ -374,24 +472,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 12px 7px 14px 9px;
-  background: #201e1b;
-  color: #f7f2e8;
-  border: 1px solid rgb(184 46 46 / 45%);
+  gap: 7px;
+  padding: 12px 8px 14px 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
   border-right: none;
   border-top-left-radius: 10px;
   border-bottom-left-radius: 10px;
   cursor: pointer;
-  box-shadow: -4px 4px 18px rgba(0, 0, 0, 0.18);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -4px 6px 20px color-mix(in srgb, var(--color-text) 10%, transparent);
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease,
+    color 0.22s ease;
+}
+
+[data-theme='dark'] .dictionary-drawer-trigger {
+  background: var(--color-surface-elevated, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  box-shadow: -4px 6px 22px rgba(0, 0, 0, 0.35);
 }
 
 .dictionary-drawer-trigger:hover {
-  transform: translateY(-50%) translateX(-3px);
-  background: #2b2722;
-  box-shadow: -6px 6px 22px rgba(0, 0, 0, 0.24);
+  transform: translateY(-50%);
   border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  box-shadow: -6px 8px 24px color-mix(in srgb, var(--color-accent) 16%, transparent);
 }
 
 .dictionary-drawer-trigger__hanko {
@@ -400,10 +508,10 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  border: 1.5px solid #d44343;
+  border: none;
   border-radius: 3px;
-  background: rgba(184, 46, 46, 0.2);
-  color: #ff8585;
+  background: var(--color-accent);
+  color: #ffffff;
   font-family: 'Noto Serif JP', serif;
   font-size: 0.72rem;
   font-weight: 800;
@@ -418,7 +526,12 @@
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #eae3d2;
+  color: var(--color-text-secondary);
+  transition: color 0.22s ease;
+}
+
+.dictionary-drawer-trigger:hover .dictionary-drawer-trigger__label {
+  color: var(--color-accent-text);
 }
 
 .dictionary-drawer-trigger__badge {
@@ -429,7 +542,7 @@
   height: 18px;
   padding: 0 4px;
   border-radius: 9px;
-  background: #b82e2e;
+  background: var(--color-accent);
   color: #ffffff;
   font-size: 0.65rem;
   font-family: var(--font-mono);
@@ -735,20 +848,25 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0.65rem 0.5rem;
+  padding: 0.65rem 0.75rem;
   border: none;
-  border-bottom: 1px solid rgb(80 68 52 / 10%);
+  border-left: 2.5px solid transparent;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 4px;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
-  transition: all 0.18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .orihon-history__item:hover {
   background: var(--color-accent-subtle);
   color: var(--color-accent-text);
-  padding-left: 0.85rem;
+  border-left-color: var(--color-accent);
 }
 
 .orihon-history__left {
@@ -782,7 +900,6 @@
 
 .orihon-history__item:hover .orihon-history__arrow {
   color: var(--color-accent-text);
-  transform: translateX(3px);
 }
 
 .orihon-history__empty {
@@ -793,23 +910,52 @@
 }
 
 /* --------------------------------------------------------------------------
-   WORD OF THE DAY CALLIGRAPHIC STAGE (本日の名言 · 墨絵舞台)
-   Pure Wabi-Sabi paper canvas: Zero nested boxes, open whitespace ("Ma"),
-   flawless unwrapped Kanji typography, balanced Chiết Tự constellation,
-   and subtle cinnabar vermilion accents.
+   WORD OF THE DAY CALLIGRAPHIC FOLIO (本日の名言 · 墨絵舞台)
+   Double-hairline Washi exhibition card, subtle Sumi-e mist backdrop,
+   Genko yoshi specimen plate, and balanced Chiet Tu side-folio.
    -------------------------------------------------------------------------- */
 .wotd-stage {
   position: relative;
-  margin: 2.25rem 0 3.5rem;
-  padding: 1.75rem 0.5rem 2.5rem;
-  background: transparent;
-  border: none;
-  border-top: 1px solid rgb(80 68 52 / 12%);
-  border-bottom: 1px solid rgb(80 68 52 / 12%);
-  border-radius: 0;
-  box-shadow: none;
-  overflow: visible;
+  margin: 1.5rem 0 2.25rem;
+  padding: clamp(1.5rem, 3vw, 2.35rem) clamp(1.35rem, 3vw, 2.6rem);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-text) 3%, transparent),
+    0 18px 42px -20px color-mix(in srgb, var(--color-text) 10%, transparent);
+  overflow: hidden;
   transition: border-color 0.2s ease;
+}
+
+.wotd-stage::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wotd-stage__mist {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 58%;
+  height: 100%;
+  background: url('/assets/journey-02-immersion.jpg') center right / cover no-repeat;
+  opacity: 0.085;
+  filter: saturate(0.55) contrast(1.05);
+  mask-image: radial-gradient(ellipse 85% 90% at 88% 32%, black 15%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 90% at 88% 32%, black 15%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme='dark'] .wotd-stage__mist {
+  opacity: 0.12;
+  filter: invert(0.88) hue-rotate(180deg) saturate(0.35);
 }
 
 .wotd-stage__guideline {
@@ -820,17 +966,22 @@
     90deg,
     transparent,
     transparent calc(50% - 1px),
-    rgb(80 68 52 / 1.8%) calc(50% - 1px),
-    rgb(80 68 52 / 1.8%) 50%
+    color-mix(in srgb, var(--color-border) 25%, transparent) calc(50% - 1px),
+    color-mix(in srgb, var(--color-border) 25%, transparent) 50%
   );
-  opacity: 0.5;
+  opacity: 0.45;
+  z-index: 0;
 }
 
 .wotd-stage__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--color-border);
   position: relative;
   z-index: 2;
 }
@@ -839,6 +990,24 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.wotd-stage__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wotd-stage__counter {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
 }
 
 .wotd-stage__hanko-mark {
@@ -866,29 +1035,34 @@
   color: var(--color-text-muted);
 }
 
-/* Minimalist borderless cycle action in ash-grey */
 .wotd-stage__cycle-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: transparent;
-  border: none;
-  padding: 0;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
   font-family: 'Noto Serif JP', var(--font-serif), serif;
   font-size: 0.76rem;
-  font-weight: 550;
-  letter-spacing: 0.04em;
-  color: #7d766b;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: color 0.18s ease;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
 }
 
 .wotd-stage__cycle-btn:hover {
   color: var(--color-accent-text);
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: var(--color-accent-subtle);
 }
 
 .wotd-stage__cycle-icon {
-  color: #8c8273;
+  color: var(--color-text-muted);
   transition: color 0.18s ease;
 }
 
@@ -943,33 +1117,56 @@
 .wotd-stage__glyph-row {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1.15rem;
+}
+
+.wotd-stage__specimen-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 55%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      0deg,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 55%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    color-mix(in srgb, var(--color-bg-subtle) 55%, var(--color-surface));
+  transition: border-color 0.22s ease;
+}
+
+.wotd-stage__specimen-frame:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
 }
 
 .wotd-stage__glyph {
   margin: 0;
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
-  font-size: clamp(3.2rem, 5.8vw, 4.6rem);
+  font-size: clamp(3rem, 5.4vw, 4.35rem);
   font-weight: 700;
   line-height: 1.05;
-  color: var(--home-ink, #201e1b);
-  letter-spacing: 0.12em;
+  color: var(--color-text);
+  letter-spacing: 0.1em;
   font-feature-settings: 'palt' 1;
   -webkit-font-smoothing: antialiased;
   white-space: nowrap !important;
-  text-shadow:
-    0 0 1px rgba(32, 30, 27, 0.35),
-    0 2px 14px rgba(80, 68, 52, 0.08);
   cursor: pointer;
   user-select: none;
-  transition:
-    color 0.25s ease,
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.25s ease;
 }
 
 .wotd-stage__glyph:hover {
   color: var(--color-accent-text);
-  transform: scale(1.02);
 }
 
 .wotd-stage__audio-btn {
@@ -995,8 +1192,8 @@
 .wotd-stage__audio-btn:hover {
   background: transparent !important;
   border: none !important;
-  color: #942020;
-  transform: scale(1.14);
+  color: var(--color-accent);
+  transform: scale(1.12);
 }
 
 .wotd-stage__audio-btn:focus-visible {
@@ -1006,7 +1203,7 @@
 
 /* Artisan Ink Sound Ripple animation when speaking (Hibiki) */
 .wotd-stage__audio-btn.is-speaking svg {
-  color: #942020;
+  color: var(--color-accent);
 }
 
 .ink-wave-1 {
@@ -1096,11 +1293,11 @@
 
 .wotd-stage__quote-card {
   margin: 0;
-  padding: 0.5rem 0 0.5rem 1.35rem;
-  border: none;
-  border-left: 2.5px solid var(--color-accent);
-  background: transparent;
-  border-radius: 0;
+  padding: 1.05rem 1.25rem 1.05rem 1.4rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  border-left: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-bg-subtle) 65%, var(--color-surface));
+  border-radius: 0 10px 10px 0;
 }
 
 .wotd-stage__quote-jp {
@@ -1135,13 +1332,17 @@
   font-style: italic;
 }
 
-/* Secondary Column (Right): Chiết Tự Anatomy & Hanko Seal */
+/* Secondary Column (Right): Chiết Tự Side-Folio & Hanko Seal */
 .wotd-stage__secondary-col {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
-  padding-left: 1.5rem;
-  border-left: 1px dashed rgb(80 68 52 / 12%);
+  justify-content: space-between;
+  gap: 1.35rem;
+  height: 100%;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 45%, var(--color-surface));
 }
 
 .wotd-stage__etymology-panel {
@@ -1181,7 +1382,7 @@
 }
 
 .wotd-stage__etymology-dot {
-  color: rgb(80 68 52 / 24%);
+  color: var(--color-border-strong);
   font-size: 0.75rem;
 }
 
@@ -1200,36 +1401,47 @@
 .wotd-stage__etymology-item {
   display: flex;
   align-items: flex-start;
+  width: 100%;
+  text-align: left;
   gap: 0.85rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 6px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
   transition:
     background 0.18s ease,
-    transform 0.18s ease;
-  cursor: default;
+    border-color 0.18s ease;
+  cursor: pointer;
 }
 
 .wotd-stage__etymology-item:hover {
-  background: rgb(80 68 52 / 4%);
-  transform: translateX(3px);
+  background: color-mix(in srgb, var(--color-accent-subtle) 45%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
 }
 
 .wotd-stage__etymology-char-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 5px;
-  border: 1px solid rgb(80 68 52 / 16%);
-  background: var(--color-bg-surface);
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
   font-size: 1.15rem;
   font-weight: 700;
   font-feature-settings: 'palt' 1;
   color: var(--color-text);
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.wotd-stage__etymology-item:hover .wotd-stage__etymology-char-badge {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .wotd-stage__etymology-info {
@@ -1269,8 +1481,8 @@
   font-size: 0.8rem;
   color: var(--color-text-muted);
   line-height: 1.5;
-  padding-top: 0.25rem;
-  border-top: 1px solid rgb(80 68 52 / 8%);
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--color-border);
 }
 
 .wotd-stage__radicals-label {
@@ -1285,24 +1497,63 @@
   font-weight: 600;
 }
 
+/* Curated Word Dot Stepper */
+.wotd-stage__dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.wotd-stage__dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-border-strong);
+  cursor: pointer;
+  transition:
+    width 0.22s ease,
+    background 0.22s ease;
+}
+
+.wotd-stage__dot:hover {
+  background: color-mix(in srgb, var(--color-accent) 65%, var(--color-border-strong));
+}
+
+.wotd-stage__dot.is-active {
+  width: 20px;
+  background: var(--color-accent);
+}
+
 /* Borderless Editorial Action & Hanko Seal */
 .wotd-stage__footer-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .wotd-stage__explore-link {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: transparent;
-  border: none;
-  padding: 0;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.wotd-stage__explore-link:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
 }
 
 .wotd-stage__explore-seal {
@@ -1328,12 +1579,8 @@
   font-size: 0.88rem;
   font-weight: 650;
   color: var(--color-text-secondary);
-  text-decoration: underline;
-  text-decoration-color: rgb(80 68 52 / 24%);
-  text-underline-offset: 4px;
-  transition:
-    color 0.18s ease,
-    text-decoration-color 0.18s ease;
+  text-decoration: none;
+  transition: color 0.18s ease;
 }
 
 .wotd-stage__explore-arrow {
@@ -1366,15 +1613,15 @@
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 2px solid #b82e2e;
+  border: 2px solid var(--color-accent);
   border-radius: 5px;
-  background: #fdf5f5;
-  color: #b82e2e;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
   cursor: pointer;
   user-select: none;
   box-shadow:
-    inset 0 0 0 1px rgba(184, 46, 46, 0.3),
-    0 2px 8px rgba(184, 46, 46, 0.15);
+    inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-accent) 16%, transparent);
   transition:
     transform 0.15s ease,
     filter 0.15s ease;
@@ -1448,14 +1695,162 @@
 @media (max-width: 58rem) {
   .wotd-stage__body {
     grid-template-columns: 1fr;
-    gap: 2.25rem;
+    gap: 1.75rem;
   }
-  .wotd-stage__secondary-col {
-    padding-left: 0;
-    border-left: none;
-    border-top: 1px dashed rgb(80 68 52 / 12%);
-    padding-top: 1.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   CURATED LEXICON SHELF (言葉の栞 · MỞ NHANH THEO CHỦ ĐỀ)
+   -------------------------------------------------------------------------- */
+.dictionary-lexicon-shelf {
+  margin-top: 2rem;
+}
+
+.dictionary-lexicon-shelf__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.dictionary-lexicon-shelf__eyebrow {
+  display: block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+  margin-bottom: 0.2rem;
+}
+
+.dictionary-lexicon-shelf__title {
+  margin: 0;
+  font-family: var(--font-display), var(--font-jp-serif), serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dictionary-lexicon-shelf__note {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.dictionary-lexicon-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 64rem) {
+  .dictionary-lexicon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+@media (max-width: 38rem) {
+  .dictionary-lexicon-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dictionary-lexicon-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.15rem 1.15rem 1.2rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.dictionary-lexicon-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-border));
+  box-shadow: 0 10px 24px -16px color-mix(in srgb, var(--color-text) 14%, transparent);
+  transform: translateY(-2px);
+}
+
+.dictionary-lexicon-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.dictionary-lexicon-card__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 4px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.dictionary-lexicon-card__jp {
+  display: block;
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.dictionary-lexicon-card__title {
+  margin: 0;
+  font-family: var(--font-display), var(--font-serif), serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.dictionary-lexicon-card__desc {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.48;
+  color: var(--color-text-secondary);
+  flex: 1;
+}
+
+.dictionary-lexicon-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.25rem;
+}
+
+.dictionary-lexicon-chip {
+  padding: 0.28rem 0.62rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.dictionary-lexicon-chip:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
 }
 
 /* ==========================================================================
@@ -1485,22 +1880,20 @@
 .dictionary-editorial-catalog {
   display: flex;
   flex-direction: column;
-  border-right: 1.5px solid rgb(80 68 52 / 12%);
-  padding-right: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
   position: sticky;
   top: 1.5rem;
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgb(80 68 52 / 20%) transparent;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
 @media (max-width: 62rem) {
   .dictionary-editorial-catalog {
-    border-right: none;
-    border-bottom: 1.5px solid rgb(80 68 52 / 12%);
-    padding-right: 0;
-    padding-bottom: 1.25rem;
     position: static;
     max-height: 18rem;
   }
@@ -1512,7 +1905,7 @@
   gap: 10px;
   padding-bottom: 0.75rem;
   margin-bottom: 0.65rem;
-  border-bottom: 1px solid rgb(80 68 52 / 10%);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .dictionary-editorial-catalog__hanko {
@@ -1562,23 +1955,23 @@
   padding: 0.7rem 0.85rem;
   border: none;
   border-left: 3px solid transparent;
-  border-radius: 4px;
+  border-radius: 6px;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .dictionary-editorial-item:hover {
-  background: var(--color-bg-subtle, #f5f0e6);
-  border-left-color: rgb(184 46 46 / 40%);
-  transform: translateX(3px);
+  background: var(--color-bg-subtle);
+  border-left-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
 }
 
 .dictionary-editorial-item.is-active {
-  background: #f0e9dc;
+  background: var(--color-accent-subtle);
   border-left-color: var(--color-accent);
-  box-shadow: 0 1px 4px rgba(80, 68, 52, 0.08);
 }
 
 .dictionary-editorial-item__line {
@@ -1592,7 +1985,7 @@
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--home-ink, #1e1d1a);
+  color: var(--color-text);
   letter-spacing: 0.04em;
 }
 
@@ -1633,11 +2026,18 @@
    -------------------------------------------------------------------------- */
 .dictionary-editorial-entry {
   min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: clamp(1.35rem, 2.8vw, 2.25rem);
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-text) 3%, transparent),
+    0 16px 36px -20px color-mix(in srgb, var(--color-text) 10%, transparent);
 }
 
 .dictionary-editorial-entry.is-full-width {
   grid-column: 1 / -1;
-  max-width: 52rem;
+  max-width: 54rem;
 }
 
 /* Hero Section */
@@ -1647,7 +2047,7 @@
   justify-content: space-between;
   gap: 1.5rem;
   padding: 0.25rem 0 1.5rem;
-  border-bottom: 1.5px solid rgb(80 68 52 / 14%) !important;
+  border-bottom: 1.5px solid var(--color-border) !important;
   margin-bottom: 1.5rem;
 }
 
@@ -1656,7 +2056,7 @@
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif) !important;
   font-size: clamp(2.8rem, 5.2vw, 4.2rem) !important;
   font-weight: 750 !important;
-  color: var(--home-ink, #1e1d1a) !important;
+  color: var(--color-text) !important;
   letter-spacing: 0.05em !important;
   line-height: 1.05 !important;
 }
@@ -1708,8 +2108,8 @@
   align-items: center;
   padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid rgb(80 68 52 / 14%);
-  background: var(--color-bg-subtle, #f5f0e6);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
   font-size: 0.76rem;
   font-weight: 650;
@@ -1717,7 +2117,7 @@
 }
 
 .dictionary-jlpt-tag {
-  border-color: rgb(184 46 46 / 25%);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
   color: var(--color-accent-text);
 }
 
@@ -1736,9 +2136,9 @@
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid rgb(80 68 52 / 18%);
+  border: 1px solid var(--color-border-strong);
   border-radius: 50%;
-  background: var(--color-bg-surface);
+  background: var(--color-surface);
   color: var(--color-accent-text);
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1815,7 +2215,7 @@
 .dictionary-word-section {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgb(80 68 52 / 12%) !important;
+  border-bottom: 1px solid var(--color-border) !important;
   border-radius: 0 !important;
   padding: 0 0 1.75rem 0 !important;
   box-shadow: none !important;
@@ -1990,9 +2390,9 @@
   grid-template-columns: 3.5rem 1fr;
   gap: 0.85rem;
   padding: 0.85rem;
-  border: 1px solid rgb(80 68 52 / 12%);
-  border-radius: 6px;
-  background: var(--color-bg-subtle, #f5f0e6);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
   align-items: center;
 }
 
@@ -2001,7 +2401,7 @@
   font-size: 2.4rem;
   line-height: 1;
   text-align: center;
-  color: var(--home-ink, #1e1d1a);
+  color: var(--color-text);
 }
 
 .dictionary-kanji-card__details {
@@ -2038,8 +2438,8 @@
   flex-direction: column;
   gap: 2px;
   padding: 0.55rem 0.75rem;
-  border: 1px solid rgb(80 68 52 / 10%);
-  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
   background: var(--color-bg-subtle);
 }
 
@@ -2067,9 +2467,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.65rem 0.85rem;
-  border: 1px solid rgb(80 68 52 / 12%);
-  border-radius: 6px;
-  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
   cursor: pointer;
   text-align: left;
   transition: all 0.18s ease;
@@ -2193,4 +2593,21 @@
   color: var(--color-text-inverse);
   border-color: transparent;
   box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wotd-stage__living-hanko,
+  .wotd-stage__hanko-pulse,
+  .wotd-spin {
+    animation: none !important;
+  }
+
+  .dictionary-search-container,
+  .dictionary-lexicon-card,
+  .dictionary-drawer-trigger,
+  .wotd-stage__body,
+  .wotd-stage__etymology-item,
+  .wotd-stage__dot {
+    transition: none !important;
+  }
 }
