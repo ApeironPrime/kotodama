@@ -337,7 +337,7 @@ describe('DictionaryPage Feature Suite', () => {
     expect(screen.queryByLabelText('Sổ tay học và lịch sử tra cứu')).toBeNull()
   })
 
-  it('shows matched Kanji in the all tab even when word search returns empty', async () => {
+  it('shows matched Kanji monograph in the all tab even when word search returns empty', async () => {
     vi.mocked(requestApi).mockResolvedValue({ results: [] })
     vi.mocked(srsApi.fetchCurriculumGrammar).mockResolvedValue({ items: [], total: 0, totalPages: 0 })
     vi.mocked(nhaikanjiApi.fetchKanjiList).mockResolvedValue({
@@ -358,12 +358,52 @@ describe('DictionaryPage Feature Suite', () => {
       limit: 6,
       totalPages: 1,
     })
+    vi.mocked(nhaikanjiApi.fetchKanjiDetail).mockResolvedValue({
+      kanji: '議',
+      summary: {
+        ...sampleNhaiKanjiDetail.summary,
+        kanji: '議',
+        hanzi: 'NGHỊ',
+        meaning_vi: 'bàn bạc, thảo luận',
+        jlpt_level: 'N3',
+        stroke_count: 20,
+        onyomi: 'ギ',
+        kunyomi: '',
+      },
+      detail: {
+        kanji: '議',
+        kanjiInfo: {
+          id: 'gi',
+          hanzi: 'NGHỊ',
+          meaning: 'bàn bạc, thảo luận',
+          story: 'Trong hội nghị không được nói lời vô nghĩa.',
+          jlptLevel: 'N3',
+          kanjialiveData: {
+            rad_name_ja: 'ごんべん',
+            onyomi_ja: 'ギ',
+            kunyomi_ja: '—',
+            rad_utf: '言',
+            rad_meaning: 'Lời nói',
+            examples: [
+              {
+                word: '会議室',
+                reading: 'かいぎしつ',
+                meaning: 'Phòng họp',
+                yinHan: 'HỘI NGHỊ THẤT',
+              },
+            ],
+          },
+        },
+      },
+    })
 
     renderWithClient(<DictionaryPage inputRef={{ current: null }} />, '/tra-tu?tab=all&q=議')
 
     expect(await screen.findByText('Chữ Hán liên quan (1)')).toBeTruthy()
     expect(screen.getByText('議')).toBeTruthy()
     expect(screen.getByText('NGHỊ')).toBeTruthy()
+    expect(await screen.findByText('会議室')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Luyện viết nét & Phả hệ' })).toBeTruthy()
     expect(screen.queryByText('Không tìm thấy kết quả cho “議”')).toBeNull()
   })
 })

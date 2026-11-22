@@ -13,6 +13,7 @@ import {
   Loader2,
   MessageCircleMore,
   MessageSquareText,
+  PenTool,
   RotateCcw,
   Search,
   Sparkles,
@@ -23,6 +24,7 @@ import { apiPaths, requestApi, type DictionarySearchResult, type DictionarySente
 import { nhaikanjiApi } from '../nhaikanji/nhaikanjiApi'
 import type { BunpoItem, KanjiSummary } from '../nhaikanji/nhaikanjiTypes'
 import { KanjiDetailModal } from '../nhaikanji/KanjiDetailModal'
+import { getRadicalVietnameseName, toCanonicalRadicalGlyph } from './kanjiRadicalDictionary'
 import { SumiECanvas } from './SumiECanvas'
 import { SumiDropOpening } from './SumiDropOpening'
 import { srsApi } from '../srs/srsApi'
@@ -266,6 +268,7 @@ export default function DictionaryPage({
 
   // 1. Query từ điển chung VNJP
   const sentenceSearch = isSentenceQuery(searchTerm)
+  const isSingleKanjiQuery = /^\p{Script=Han}$/u.test(searchTerm)
   const { data, isLoading, isError } = useQuery<DictionarySearchResult | DictionarySentenceAnalysis>({
     queryKey: ['dictionary-search', searchTerm, sentenceSearch, translateSentence],
     queryFn: () =>
@@ -278,7 +281,12 @@ export default function DictionaryPage({
     staleTime: 1000 * 60 * 10,
   })
 
-  // 2. Query danh sách Hán tự NhaiKanji khi ở tab "Hán tự" hoặc khi tìm kiếm ở tab "Tất cả"
+  const results = data && 'results' in data ? data.results : []
+  const sentenceAnalysis = data && 'tokens' in data ? data : null
+  const primaryWord = results[selectedResultIndex] ?? results[0]
+
+  // 2. Query danh sách Hán tự NhaiKanji khi ở tab "Hán tự", khi tìm kiếm ở tab "Tất cả",
+  // hoặc khi tra 1 chữ Hán đơn ở tab "Mục từ" nhưng kho từ vựng không có mục từ đứng riêng
   const {
     data: kanjiListData,
     isLoading: isKanjiListLoading,
@@ -294,9 +302,28 @@ export default function DictionaryPage({
         limit: activeTab === 'all' ? 6 : 120,
         sort: 'default',
       }),
-    enabled: (activeTab === 'kanji' && kanjiView === 'ink') || (Boolean(searchTerm) && activeTab === 'all'),
+    enabled:
+      (activeTab === 'kanji' && kanjiView === 'ink') ||
+      (Boolean(searchTerm) && activeTab === 'all') ||
+      (isSingleKanjiQuery && activeTab === 'vocab' && !isLoading && results.length === 0),
     staleTime: 1000 * 60 * 10,
     placeholderData: (previousData) => previousData,
+  })
+
+  const primaryMatchedKanji = kanjiListData?.items?.[0] ?? null
+  const showInlineKanjiMonograph =
+    (activeTab === 'all' || activeTab === 'vocab') &&
+    !sentenceAnalysis &&
+    !isLoading &&
+    !isError &&
+    results.length === 0 &&
+    Boolean(primaryMatchedKanji)
+
+  const { data: primaryKanjiDetail } = useQuery({
+    queryKey: ['nhaikanji', 'kanjiDetail', primaryMatchedKanji?.kanji],
+    queryFn: () => nhaikanjiApi.fetchKanjiDetail(primaryMatchedKanji?.kanji || ''),
+    enabled: showInlineKanjiMonograph && Boolean(primaryMatchedKanji?.kanji),
+    staleTime: 1000 * 60 * 10,
   })
 
   // 3. Query Ngữ pháp Bunpo khi ở tab "Ngữ pháp" hoặc khi tìm kiếm ở tab "Tất cả"
@@ -363,21 +390,17 @@ export default function DictionaryPage({
     setActiveTab(tab)
   }
 
-  const results = data && 'results' in data ? data.results : []
-  const sentenceAnalysis = data && 'tokens' in data ? data : null
-  const primaryWord = results[selectedResultIndex] ?? results[0]
-
   // Counts for search scopes
-  const isSingleKanjiQuery = /^\p{Script=Han}$/u.test(searchTerm)
   const vocabCount = results.length
   const kanjiCount = kanjiListData?.total ?? (primaryWord?.kanjis?.length || (isSingleKanjiQuery ? 1 : 0))
   const bunpoCount = bunpoListData?.items?.length ?? 0
   const sentenceCount = (primaryWord?.examples?.length || 0) + (sentenceAnalysis ? 1 : 0)
   const totalResultsCount = vocabCount + bunpoCount + (kanjiCount > 0 ? 1 : 0)
-  const hasAllTabKanji = activeTab === 'all' && Boolean(kanjiListData?.items?.length)
   const hasAllTabBunpo = activeTab === 'all' && Boolean(bunpoListData?.items?.length)
-  const hasAllTabCompanionResults = hasAllTabKanji || hasAllTabBunpo
-  const isAllTabCompanionLoading = activeTab === 'all' && (isKanjiListLoading || isBunpoLoading)
+  const hasCompanionResults = showInlineKanjiMonograph || hasAllTabBunpo
+  const isCompanionLoading =
+    (activeTab === 'all' && (isKanjiListLoading || isBunpoLoading)) ||
+    (isSingleKanjiQuery && activeTab === 'vocab' && results.length === 0 && isKanjiListLoading)
 
   // Dynamic Search Result Scopes (Morphs from Explore Tabs when query is active)
   const SEARCH_SCOPES = [
@@ -737,7 +760,7 @@ export default function DictionaryPage({
             {(activeTab === 'vocab' || activeTab === 'all' || activeTab === 'sentences') && (
               <>
                 {/* Loading state */}
-                {(isLoading || (activeTab === 'all' && results.length === 0 && isAllTabCompanionLoading)) && (
+                {(isLoading || (results.length === 0 && isCompanionLoading)) && (
                   <div style={{ textAlign: 'center', padding: '4rem 0' }}>
                     <Loader2
                       size={36}
@@ -801,11 +824,11 @@ export default function DictionaryPage({
 
                 {/* Empty result state */}
                 {!isLoading &&
-                  !isAllTabCompanionLoading &&
+                  !isCompanionLoading &&
                   searchTerm &&
                   results.length === 0 &&
                   !sentenceAnalysis &&
-                  !hasAllTabCompanionResults &&
+                  !hasCompanionResults &&
                   !isError && (
                     <EmptyState
                       title={`Không tìm thấy kết quả cho “${searchTerm}”`}
@@ -820,122 +843,288 @@ export default function DictionaryPage({
                     />
                   )}
 
-                {/* Standalone Kanji / Grammar matches in 'all' mode when no exact vocab entry matched */}
-                {activeTab === 'all' &&
-                  !sentenceAnalysis &&
-                  !isLoading &&
-                  !isError &&
-                  results.length === 0 &&
-                  hasAllTabCompanionResults && (
-                    <section className="dictionary-editorial-entry is-full-width">
-                      {kanjiListData && kanjiListData.items.length > 0 && (
-                        <div className="dictionary-word-section">
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '1rem',
-                              flexWrap: 'wrap',
-                              marginBottom: '1rem',
-                            }}
-                          >
-                            <h2 style={{ margin: 0 }}>
-                              <span className="dictionary-kanji-heading">漢</span> Chữ Hán liên quan (
-                              {kanjiListData.items.length})
-                            </h2>
-                            <Button variant="secondary" onClick={() => selectTab('kanji')}>
-                              Xem chi tiết trong tab Chữ Hán
-                            </Button>
-                          </div>
-                          <div className="dictionary-kanji-grid">
-                            {kanjiListData.items.slice(0, 6).map((k) => (
-                              <article
-                                key={k.kanji}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter' || event.key === ' ') {
-                                    event.preventDefault()
-                                    setSelectedKanjiModal(k)
-                                  }
-                                }}
-                                className="dictionary-kanji-card"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => setSelectedKanjiModal(k)}
-                                title={`Xem chi tiết chữ ${k.kanji}`}
-                              >
-                                <strong>{k.kanji}</strong>
-                                <div className="dictionary-kanji-card__details">
-                                  <div className="dictionary-kanji-card__row">
-                                    <span>Hán Việt:</span>
-                                    <b>{k.hanzi || '—'}</b>
-                                  </div>
-                                  <div className="dictionary-kanji-card__row">
-                                    <span>Nghĩa:</span>
-                                    <b>{k.meaning_vi || '—'}</b>
-                                  </div>
-                                  <div className="dictionary-kanji-card__row">
-                                    <span>JLPT:</span>
-                                    <b>{k.jlpt_level || '—'}</b>
-                                  </div>
-                                </div>
-                              </article>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                {/* Standalone Inline Kanji Monograph & Grammar matches when vocab search returns empty */}
+                {!sentenceAnalysis && !isLoading && !isError && results.length === 0 && hasCompanionResults && (
+                  <section className="dictionary-editorial-entry is-full-width">
+                    {showInlineKanjiMonograph &&
+                      primaryMatchedKanji &&
+                      (() => {
+                        const kanjiInfo = primaryKanjiDetail?.detail?.kanjiInfo
+                        const kanjialive = kanjiInfo?.kanjialiveData
+                        const rawRadical = kanjialive?.rad_utf || primaryMatchedKanji.radical_utf || ''
+                        const canonRadical = rawRadical ? toCanonicalRadicalGlyph(rawRadical) : ''
+                        const safeRadicalGlyph =
+                          canonRadical && !/[\uE000-\uF8FF]/.test(canonRadical) ? canonRadical : ''
+                        const radicalViName = safeRadicalGlyph
+                          ? getRadicalVietnameseName(safeRadicalGlyph, primaryMatchedKanji.radical_name_ja)
+                          : primaryMatchedKanji.radical_name_ja || '—'
+                        const onyomi = kanjialive?.onyomi_ja || primaryMatchedKanji.onyomi || '—'
+                        const kunyomi = kanjialive?.kunyomi_ja || primaryMatchedKanji.kunyomi || '—'
+                        const storyText = kanjiInfo?.story || primaryMatchedKanji.story
+                        const compoundExamples = kanjialive?.examples ?? []
 
-                      {bunpoListData && bunpoListData.items.length > 0 && (
-                        <div
-                          className="dictionary-word-section"
-                          style={kanjiListData?.items.length ? { marginTop: '2.5rem' } : undefined}
-                        >
-                          <h2>
-                            <GraduationCap size={18} /> Ngữ pháp liên quan ({bunpoListData.items.length})
-                          </h2>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {bunpoListData.items.slice(0, 4).map((b) => (
-                              <div
-                                key={b.id}
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  borderLeft: '2.5px solid var(--color-accent)',
-                                  background: 'var(--color-bg-subtle)',
-                                  borderRadius: '0 6px 6px 0',
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                  <span
-                                    style={{
-                                      fontSize: '1.1rem',
-                                      fontWeight: 800,
-                                      fontFamily: 'var(--font-jp)',
-                                      color: 'var(--color-accent-text)',
-                                    }}
-                                  >
-                                    {b.pattern}
+                        return (
+                          <article className="dictionary-kanji-monograph">
+                            <div className="dictionary-kanji-monograph__mist" aria-hidden="true" />
+                            <header className="dictionary-kanji-monograph__header">
+                              <div className="dictionary-kanji-monograph__title-group">
+                                <span className="dictionary-kanji-heading" aria-hidden="true">
+                                  漢
+                                </span>
+                                <div>
+                                  <span className="dictionary-kanji-monograph__eyebrow" lang="ja">
+                                    CHIẾT TỰ HÁN TỰ · 漢字字典
                                   </span>
-                                  {b.level && <Badge variant="primary">{b.level}</Badge>}
+                                  <h2 className="dictionary-kanji-monograph__heading">
+                                    Chữ Hán liên quan ({kanjiListData?.items.length ?? 1})
+                                  </h2>
                                 </div>
-                                <div
+                              </div>
+                              <div className="dictionary-kanji-monograph__header-actions">
+                                {primaryMatchedKanji.jlpt_level && (
+                                  <span className="dictionary-jlpt-tag">JLPT {primaryMatchedKanji.jlpt_level}</span>
+                                )}
+                                {primaryMatchedKanji.stroke_count && (
+                                  <span className="dictionary-pos-tag">{primaryMatchedKanji.stroke_count} nét</span>
+                                )}
+                                <button
+                                  type="button"
+                                  className="dictionary-kanji-monograph__studio-btn"
+                                  onClick={() => setSelectedKanjiModal(primaryMatchedKanji)}
+                                >
+                                  <PenTool size={15} aria-hidden="true" />
+                                  <span>Luyện viết nét & Phả hệ</span>
+                                </button>
+                              </div>
+                            </header>
+
+                            <div className="dictionary-kanji-monograph__body">
+                              <div className="dictionary-kanji-monograph__showcase">
+                                <div className="dictionary-kanji-monograph__hero-row">
+                                  <div className="dictionary-kanji-monograph__specimen">
+                                    <span lang="ja">{primaryMatchedKanji.kanji}</span>
+                                  </div>
+                                  <div className="dictionary-kanji-monograph__identity">
+                                    <div className="dictionary-kanji-monograph__hanviet-row">
+                                      <strong className="dictionary-kanji-monograph__hanviet">
+                                        {primaryMatchedKanji.hanzi || '—'}
+                                      </strong>
+                                      <button
+                                        type="button"
+                                        className="dictionary-listen-btn"
+                                        onClick={() =>
+                                          speakJapanese(
+                                            primaryMatchedKanji.onyomi ||
+                                              primaryMatchedKanji.kunyomi ||
+                                              primaryMatchedKanji.kanji
+                                          )
+                                        }
+                                        aria-label={`Nghe phát âm ${primaryMatchedKanji.kanji}`}
+                                        title="Nghe phát âm chữ Hán"
+                                      >
+                                        <Volume2 size={16} />
+                                      </button>
+                                    </div>
+                                    <p className="dictionary-kanji-monograph__meaning">
+                                      {primaryMatchedKanji.meaning_vi || 'Chưa có nghĩa tiếng Việt'}
+                                    </p>
+                                    {primaryMatchedKanji.meaning_en && (
+                                      <span className="dictionary-kanji-monograph__meaning-en">
+                                        {primaryMatchedKanji.meaning_en}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="dictionary-kanji-monograph__meta">
+                                  <div className="dictionary-kanji-monograph__meta-item">
+                                    <span>Âm On</span>
+                                    <strong lang="ja">{onyomi}</strong>
+                                  </div>
+                                  <div className="dictionary-kanji-monograph__meta-item">
+                                    <span>Âm Kun</span>
+                                    <strong lang="ja">{kunyomi}</strong>
+                                  </div>
+                                  <div className="dictionary-kanji-monograph__meta-item">
+                                    <span>Bộ thủ</span>
+                                    <strong>
+                                      {safeRadicalGlyph ? `${safeRadicalGlyph} · ${radicalViName}` : radicalViName}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                {storyText && (
+                                  <blockquote className="dictionary-kanji-monograph__story">
+                                    <span className="dictionary-kanji-monograph__story-label">Câu chuyện chiết tự</span>
+                                    <p>{storyText}</p>
+                                  </blockquote>
+                                )}
+                              </div>
+
+                              <div className="dictionary-kanji-monograph__compounds">
+                                <div className="dictionary-kanji-monograph__compounds-header">
+                                  <span lang="ja">語彙 · TỪ GHÉP CHỨA CHỮ {primaryMatchedKanji.kanji}</span>
+                                  <span>{compoundExamples.length} từ vựng</span>
+                                </div>
+                                {compoundExamples.length > 0 ? (
+                                  <div className="dictionary-kanji-compound-list">
+                                    {compoundExamples.slice(0, 6).map((ex, idx) => (
+                                      <div key={`${ex.word}-${idx}`} className="dictionary-kanji-compound-item">
+                                        <button
+                                          type="button"
+                                          className="dictionary-kanji-compound-item__main"
+                                          onClick={() => handleQuickSearch(ex.word)}
+                                          title={`Tra từ ${ex.word}`}
+                                        >
+                                          <div className="dictionary-kanji-compound-item__top">
+                                            <span className="dictionary-kanji-compound-item__idx">
+                                              {String(idx + 1).padStart(2, '0')}
+                                            </span>
+                                            <strong className="dictionary-kanji-compound-item__word" lang="ja">
+                                              {ex.word}
+                                            </strong>
+                                            {ex.reading && (
+                                              <span className="dictionary-kanji-compound-item__reading" lang="ja">
+                                                〔{ex.reading}〕
+                                              </span>
+                                            )}
+                                            {ex.yinHan && (
+                                              <span className="dictionary-kanji-compound-item__hanviet">
+                                                {ex.yinHan}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="dictionary-kanji-compound-item__meaning">{ex.meaning}</p>
+                                          {ex.example && (
+                                            <p className="dictionary-kanji-compound-item__example" lang="ja">
+                                              {ex.example}
+                                              {ex.exampleVi ? ` — ${ex.exampleVi}` : ''}
+                                            </p>
+                                          )}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="dictionary-example-audio-btn"
+                                          onClick={() => speakJapanese(ex.word)}
+                                          aria-label={`Nghe phát âm ${ex.word}`}
+                                          title={`Nghe phát âm ${ex.word}`}
+                                        >
+                                          <Volume2 size={15} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="dictionary-kanji-monograph__empty-compounds">
+                                    <p>
+                                      Mở xưởng thư pháp để xem phả hệ bộ thủ, thứ tự nét viết và luyện viết trực tiếp
+                                      chữ <strong>{primaryMatchedKanji.kanji}</strong>.
+                                    </p>
+                                    <Button
+                                      variant="secondary"
+                                      onClick={() => setSelectedKanjiModal(primaryMatchedKanji)}
+                                    >
+                                      Mở xưởng thư pháp
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {kanjiListData && kanjiListData.items.length > 1 && (
+                              <div className="dictionary-kanji-monograph__more">
+                                <h3>Các chữ Hán liên quan khác</h3>
+                                <div className="dictionary-kanji-grid">
+                                  {kanjiListData.items.slice(1, 7).map((k) => (
+                                    <article
+                                      key={k.kanji}
+                                      role="button"
+                                      tabIndex={0}
+                                      onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                          event.preventDefault()
+                                          setSelectedKanjiModal(k)
+                                        }
+                                      }}
+                                      className="dictionary-kanji-card"
+                                      style={{ cursor: 'pointer' }}
+                                      onClick={() => setSelectedKanjiModal(k)}
+                                      title={`Xem chi tiết chữ ${k.kanji}`}
+                                    >
+                                      <strong>{k.kanji}</strong>
+                                      <div className="dictionary-kanji-card__details">
+                                        <div className="dictionary-kanji-card__row">
+                                          <span>Hán Việt:</span>
+                                          <b>{k.hanzi || '—'}</b>
+                                        </div>
+                                        <div className="dictionary-kanji-card__row">
+                                          <span>Nghĩa:</span>
+                                          <b>{k.meaning_vi || '—'}</b>
+                                        </div>
+                                        <div className="dictionary-kanji-card__row">
+                                          <span>JLPT:</span>
+                                          <b>{k.jlpt_level || '—'}</b>
+                                        </div>
+                                      </div>
+                                    </article>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </article>
+                        )
+                      })()}
+
+                    {activeTab === 'all' && bunpoListData && bunpoListData.items.length > 0 && (
+                      <div
+                        className="dictionary-word-section"
+                        style={showInlineKanjiMonograph ? { marginTop: '2.25rem' } : undefined}
+                      >
+                        <h2>
+                          <GraduationCap size={18} /> Ngữ pháp liên quan ({bunpoListData.items.length})
+                        </h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {bunpoListData.items.slice(0, 4).map((b) => (
+                            <div
+                              key={b.id}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                borderLeft: '2.5px solid var(--color-accent)',
+                                background: 'var(--color-bg-subtle)',
+                                borderRadius: '0 6px 6px 0',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <span
                                   style={{
-                                    fontSize: '0.9rem',
-                                    color: 'var(--color-text)',
-                                    marginTop: '4px',
-                                    fontWeight: 600,
+                                    fontSize: '1.1rem',
+                                    fontWeight: 800,
+                                    fontFamily: 'var(--font-jp)',
+                                    color: 'var(--color-accent-text)',
                                   }}
                                 >
-                                  {b.shortMeaning}
-                                </div>
-                                <Link to={grammarLink(b)}>Mở bài học</Link>
+                                  {b.pattern}
+                                </span>
+                                {b.level && <Badge variant="primary">{b.level}</Badge>}
                               </div>
-                            ))}
-                          </div>
+                              <div
+                                style={{
+                                  fontSize: '0.9rem',
+                                  color: 'var(--color-text)',
+                                  marginTop: '4px',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {b.shortMeaning}
+                              </div>
+                              <Link to={grammarLink(b)}>Mở bài học</Link>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                    </section>
-                  )}
+                      </div>
+                    )}
+                  </section>
+                )}
 
                 {!isLoading && isError && (
                   <EmptyState

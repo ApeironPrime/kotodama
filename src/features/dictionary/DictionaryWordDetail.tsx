@@ -120,11 +120,13 @@ export function DictionaryWordDetail({
       .slice(0, 6)
   }, [results, word])
   const type = wordTypeLabel(word.partOfSpeech)
+  const hasSideFolio = word.kanjis.length > 0 || related.length > 0
 
   return (
     <div className="dictionary-word-detail">
       <header className="dictionary-word-detail__hero">
-        <div>
+        <div className="dictionary-word-detail__mist" aria-hidden="true" />
+        <div className="dictionary-word-detail__hero-main">
           <h1>{word.word}</h1>
           <div className="dictionary-word-detail__meta-line">
             <span className="dictionary-word-detail__primary-reading">{primaryReading}</span>
@@ -177,158 +179,182 @@ export function DictionaryWordDetail({
         </p>
       )}
 
-      <div className="dictionary-word-detail__content">
-        <section className="dictionary-word-section">
-          <h2>
-            <BookOpenCheck size={18} /> Tổng quan
-          </h2>
-          <div className="dictionary-definitions-list">
-            {word.meanings.length > 0 ? (
-              word.meanings.map((meaning, idx) => (
-                <div key={idx} className="dictionary-definition-item">
-                  <span className="dictionary-definition-num" aria-hidden="true">
-                    {CIRCLED_NUMBERS[idx] || `${idx + 1}.`}
-                  </span>
-                  <span className="dictionary-definition-text">{meaning}</span>
-                </div>
-              ))
-            ) : (
-              <div className="dictionary-definition-item">
-                <span className="dictionary-definition-text">Chưa có nghĩa tiếng Việt.</span>
-              </div>
-            )}
-          </div>
-
-          {readingVariants.length > 0 && (
-            <div className="dictionary-reading-variants-row">
-              <span className="dictionary-reading-variants-label">Cách đọc khác:</span>
-              {readingVariants.map((reading) => (
-                <button
-                  type="button"
-                  key={reading}
-                  className="dictionary-reading-variant-chip"
-                  onClick={() => onSpeak(word.word || reading)}
-                  title={`Nghe cách đọc ${reading}`}
-                >
-                  {reading}
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {forms.length > 0 && (
+      <div className={`dictionary-word-detail__content ${hasSideFolio ? 'has-side-folio' : ''}`}>
+        <div className="dictionary-word-detail__primary">
           <section className="dictionary-word-section">
             <h2>
-              <Layers3 size={18} /> Chia động từ
+              <BookOpenCheck size={18} /> Tổng quan
             </h2>
-            <div className="dictionary-conjugation">
-              {forms.map((form) => (
-                <div key={form.label} className="dictionary-conjugation-item">
-                  <span>{form.label}</span>
-                  <strong>{form.value}</strong>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {word.kanjis.length > 0 && (
-          <section className="dictionary-word-section">
-            <h2>
-              <span className="dictionary-kanji-heading">漢</span> Phân tích Kanji
-            </h2>
-            <div className="dictionary-kanji-grid">
-              {word.kanjis.map((kanji) => (
-                <article key={kanji.character} className="dictionary-kanji-card">
-                  <strong>{kanji.character}</strong>
-                  <div className="dictionary-kanji-card__details">
-                    <div className="dictionary-kanji-card__row">
-                      <span>Âm On:</span>
-                      <b>{kanji.onyomi || '—'}</b>
-                    </div>
-                    <div className="dictionary-kanji-card__row">
-                      <span>Âm Kun:</span>
-                      <b>{kanji.kunyomi || '—'}</b>
-                    </div>
-                    <div className="dictionary-kanji-card__row">
-                      <span>Số nét:</span>
-                      <b>{kanji.strokeCount || '—'}</b>
-                    </div>
-                    {kanji.jlpt && (
-                      <div className="dictionary-kanji-card__row">
-                        <span>JLPT:</span>
-                        <b>{kanji.jlpt}</b>
-                      </div>
-                    )}
+            <div className="dictionary-definitions-list">
+              {word.meanings.length > 0 ? (
+                word.meanings.map((meaning, idx) => (
+                  <div key={idx} className="dictionary-definition-item">
+                    <span className="dictionary-definition-num" aria-hidden="true">
+                      {CIRCLED_NUMBERS[idx] || `${idx + 1}.`}
+                    </span>
+                    <span className="dictionary-definition-text">{meaning}</span>
                   </div>
-                </article>
-              ))}
+                ))
+              ) : (
+                <div className="dictionary-definition-item">
+                  <span className="dictionary-definition-text">Chưa có nghĩa tiếng Việt.</span>
+                </div>
+              )}
             </div>
-          </section>
-        )}
 
-        {word.examples && word.examples.length > 0 && (
-          <section className="dictionary-word-section">
-            <h2>
-              <MessageCircleMore size={18} /> Câu ví dụ
-            </h2>
-            <div className="dictionary-examples">
-              {word.examples.map((example, index) => (
-                <article key={`${example.sentenceJp}-${index}`} className="dictionary-example-item">
-                  <div className="dictionary-example-body">
-                    <div className="dictionary-example-jp">{example.sentenceJp}</div>
-                    {example.furigana && (
-                      <small
-                        style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-jp)' }}
-                      >
-                        {example.furigana}
-                      </small>
-                    )}
-                    {example.sentenceVi && (
-                      <div className="dictionary-example-vi">
-                        <strong>VI</strong> {example.sentenceVi}
-                      </div>
-                    )}
-                  </div>
+            {readingVariants.length > 0 && (
+              <div className="dictionary-reading-variants-row">
+                <span className="dictionary-reading-variants-label">Cách đọc khác:</span>
+                {readingVariants.map((reading) => (
                   <button
                     type="button"
-                    className="dictionary-example-audio-btn"
-                    onClick={() => onSpeak(example.sentenceJp)}
-                    aria-label="Nghe câu ví dụ"
-                    title="Nghe phát âm câu ví dụ"
+                    key={reading}
+                    className="dictionary-reading-variant-chip"
+                    onClick={() => onSpeak(word.word || reading)}
+                    title={`Nghe cách đọc ${reading}`}
                   >
-                    <Volume2 size={16} />
+                    {reading}
                   </button>
-                </article>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
-        )}
 
-        {related.length > 0 && (
-          <section className="dictionary-word-section">
-            <h2>
-              <Link2 size={18} /> Từ tương ứng
-            </h2>
-            <div className="dictionary-related-grid">
-              {related.map((item) => (
-                <button
-                  type="button"
-                  key={item.word}
-                  className="dictionary-related-card"
-                  onClick={() => onSearch(item.word)}
-                >
-                  <div>
-                    <strong>{item.word}</strong>
-                    {item.reading && <small>{cleanReadingTokens(item.reading)[0] || item.reading}</small>}
-                    <p>{item.meaning || 'Xem nghĩa chi tiết'}</p>
+          {word.examples && word.examples.length > 0 && (
+            <section className="dictionary-word-section">
+              <h2>
+                <MessageCircleMore size={18} /> Câu ví dụ
+              </h2>
+              <div className="dictionary-examples">
+                {word.examples.map((example, index) => (
+                  <article key={`${example.sentenceJp}-${index}`} className="dictionary-example-item">
+                    <div className="dictionary-example-body">
+                      <div className="dictionary-example-jp">{example.sentenceJp}</div>
+                      {example.furigana && (
+                        <small
+                          style={{
+                            color: 'var(--color-text-muted)',
+                            fontSize: '0.85rem',
+                            fontFamily: 'var(--font-jp)',
+                          }}
+                        >
+                          {example.furigana}
+                        </small>
+                      )}
+                      {example.sentenceVi && (
+                        <div className="dictionary-example-vi">
+                          <strong>VI</strong> {example.sentenceVi}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="dictionary-example-audio-btn"
+                      onClick={() => onSpeak(example.sentenceJp)}
+                      aria-label="Nghe câu ví dụ"
+                      title="Nghe phát âm câu ví dụ"
+                    >
+                      <Volume2 size={16} />
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {forms.length > 0 && (
+            <section className="dictionary-word-section">
+              <h2>
+                <Layers3 size={18} /> Chia động từ
+              </h2>
+              <div className="dictionary-conjugation">
+                {forms.map((form) => (
+                  <div key={form.label} className="dictionary-conjugation-item">
+                    <span>{form.label}</span>
+                    <strong>{form.value}</strong>
                   </div>
-                  <ChevronRight size={15} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
-                </button>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {hasSideFolio && (
+          <aside className="dictionary-word-detail__aside" aria-label="Phân tích Hán tự và từ liên quan">
+            {word.kanjis.length > 0 && (
+              <section className="dictionary-word-section">
+                <h2>
+                  <span className="dictionary-kanji-heading">漢</span> Phân tích Kanji
+                </h2>
+                <div className="dictionary-kanji-grid">
+                  {word.kanjis.map((kanji) => (
+                    <article
+                      key={kanji.character}
+                      className="dictionary-kanji-card"
+                      role="button"
+                      tabIndex={0}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => onSearch(kanji.character)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onSearch(kanji.character)
+                        }
+                      }}
+                      title={`Tra cứu chữ ${kanji.character}`}
+                    >
+                      <strong>{kanji.character}</strong>
+                      <div className="dictionary-kanji-card__details">
+                        <div className="dictionary-kanji-card__row">
+                          <span>Âm On:</span>
+                          <b>{kanji.onyomi || '—'}</b>
+                        </div>
+                        <div className="dictionary-kanji-card__row">
+                          <span>Âm Kun:</span>
+                          <b>{kanji.kunyomi || '—'}</b>
+                        </div>
+                        <div className="dictionary-kanji-card__row">
+                          <span>Số nét:</span>
+                          <b>{kanji.strokeCount || '—'}</b>
+                        </div>
+                        {kanji.jlpt && (
+                          <div className="dictionary-kanji-card__row">
+                            <span>JLPT:</span>
+                            <b>{kanji.jlpt}</b>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {related.length > 0 && (
+              <section className="dictionary-word-section">
+                <h2>
+                  <Link2 size={18} /> Từ tương ứng
+                </h2>
+                <div className="dictionary-related-grid">
+                  {related.map((item) => (
+                    <button
+                      type="button"
+                      key={item.word}
+                      className="dictionary-related-card"
+                      onClick={() => onSearch(item.word)}
+                    >
+                      <div>
+                        <strong>{item.word}</strong>
+                        {item.reading && <small>{cleanReadingTokens(item.reading)[0] || item.reading}</small>}
+                        <p>{item.meaning || 'Xem nghĩa chi tiết'}</p>
+                      </div>
+                      <ChevronRight size={15} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+          </aside>
         )}
       </div>
     </div>

@@ -2025,30 +2025,75 @@
    RIGHT COLUMN: DIGITAL EDITORIAL ENCYCLOPEDIA ENTRY (BÁCH KHOA TOÀN THƯ)
    -------------------------------------------------------------------------- */
 .dictionary-editorial-entry {
+  position: relative;
+  overflow: hidden;
   min-width: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  padding: clamp(1.35rem, 2.8vw, 2.25rem);
+  padding: clamp(1.45rem, 3vw, 2.35rem);
   box-shadow:
     0 2px 4px color-mix(in srgb, var(--color-text) 3%, transparent),
     0 16px 36px -20px color-mix(in srgb, var(--color-text) 10%, transparent);
 }
 
+.dictionary-editorial-entry::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dictionary-editorial-entry > * {
+  position: relative;
+  z-index: 1;
+}
+
 .dictionary-editorial-entry.is-full-width {
   grid-column: 1 / -1;
-  max-width: 54rem;
+  width: 100%;
+  max-width: none;
 }
 
 /* Hero Section */
 .dictionary-word-detail__hero {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
   padding: 0.25rem 0 1.5rem;
   border-bottom: 1.5px solid var(--color-border) !important;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.dictionary-word-detail__mist {
+  position: absolute;
+  top: -1.25rem;
+  right: -1.5rem;
+  width: 50%;
+  height: calc(100% + 1.5rem);
+  background: url('/assets/journey-02-immersion.jpg') center right / cover no-repeat;
+  opacity: 0.08;
+  filter: saturate(0.55) contrast(1.05);
+  mask-image: radial-gradient(ellipse 85% 90% at 88% 35%, black 12%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 90% at 88% 35%, black 12%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme='dark'] .dictionary-word-detail__mist {
+  opacity: 0.11;
+  filter: invert(0.88) hue-rotate(180deg) saturate(0.35);
+}
+
+.dictionary-word-detail__hero-main,
+.dictionary-word-detail__actions {
+  position: relative;
+  z-index: 1;
 }
 
 .dictionary-word-detail__hero h1 {
@@ -2205,11 +2250,47 @@
   background: rgba(43, 122, 75, 0.08);
 }
 
-/* Sections (No Cards, Pure Editorial Manuscript) */
+/* Sections (Editorial 2-Column Spread when Side-Folio exists) */
 .dictionary-word-detail__content {
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+}
+
+.dictionary-word-detail__content.has-side-folio {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(270px, 0.95fr);
+  gap: 2.25rem;
+  align-items: start;
+}
+
+.dictionary-word-detail__primary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+.dictionary-word-detail__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 45%, var(--color-surface));
+}
+
+.dictionary-word-detail__aside .dictionary-word-section {
+  padding-bottom: 1.25rem !important;
+}
+
+@media (max-width: 58rem) {
+  .dictionary-word-detail__content.has-side-folio {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
 }
 
 .dictionary-word-section {
@@ -2324,8 +2405,11 @@
 
 .dictionary-example-item {
   position: relative;
-  padding: 0.5rem 0 0.5rem 1.25rem;
-  border-left: 2.5px solid var(--color-accent);
+  padding: 0.9rem 1.1rem 0.9rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--color-bg-subtle) 55%, var(--color-surface));
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -2378,42 +2462,73 @@
   background: var(--color-accent-subtle);
 }
 
-/* Woodblock Kanji Anatomy Grid */
-.dictionary-kanji-grid {
+/* Woodblock Kanji Anatomy Grid (overrides legacy src/index.css rules cleanly) */
+.dictionary-page .dictionary-kanji-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.85rem;
 }
 
-.dictionary-kanji-card {
+.dictionary-page .dictionary-kanji-grid article.dictionary-kanji-card {
   display: grid;
-  grid-template-columns: 3.5rem 1fr;
+  grid-template-columns: 3.6rem minmax(0, 1fr);
   gap: 0.85rem;
-  padding: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  align-items: center;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.dictionary-page .dictionary-kanji-grid article.dictionary-kanji-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent-subtle) 35%, var(--color-surface));
+}
+
+.dictionary-page .dictionary-kanji-grid article.dictionary-kanji-card > strong {
+  grid-row: auto;
+  display: grid;
+  place-items: center;
+  width: 3.6rem;
+  height: 3.6rem;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-bg-subtle);
-  align-items: center;
-}
-
-.dictionary-kanji-card > strong {
+  background: color-mix(in srgb, var(--color-bg-subtle) 65%, var(--color-surface));
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
-  font-size: 2.4rem;
+  font-size: 2rem;
+  font-weight: 700;
   line-height: 1;
   text-align: center;
   color: var(--color-text);
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
-.dictionary-kanji-card__details {
+.dictionary-page .dictionary-kanji-grid article.dictionary-kanji-card:hover > strong {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.dictionary-page .dictionary-kanji-grid article.dictionary-kanji-card > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   font-size: 0.8rem;
+  min-width: 0;
 }
 
 .dictionary-kanji-card__row {
   display: flex;
   justify-content: space-between;
+  gap: 0.5rem;
   color: var(--color-text-secondary);
 }
 
@@ -2424,6 +2539,395 @@
 .dictionary-kanji-card__row b {
   font-family: 'Noto Serif JP', serif;
   color: var(--color-text);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   INLINE KANJI MONOGRAPH (CHỮ HÁN CHUYÊN SÂU NGAY TRONG KẾT QUẢ TÌM KIẾM)
+   -------------------------------------------------------------------------- */
+.dictionary-kanji-monograph {
+  position: relative;
+}
+
+.dictionary-kanji-monograph__mist {
+  position: absolute;
+  top: -1.5rem;
+  right: -1.5rem;
+  width: 52%;
+  height: 16rem;
+  background: url('/assets/journey-02-immersion.jpg') center right / cover no-repeat;
+  opacity: 0.08;
+  filter: saturate(0.55) contrast(1.05);
+  mask-image: radial-gradient(ellipse 85% 90% at 88% 30%, black 12%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 90% at 88% 30%, black 12%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme='dark'] .dictionary-kanji-monograph__mist {
+  opacity: 0.11;
+  filter: invert(0.88) hue-rotate(180deg) saturate(0.35);
+}
+
+.dictionary-kanji-monograph__header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.15rem;
+  margin-bottom: 1.65rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dictionary-kanji-monograph__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dictionary-kanji-monograph__eyebrow {
+  display: block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.dictionary-kanji-monograph__heading {
+  margin: 0.12rem 0 0;
+  font-family: var(--font-display), var(--font-serif), serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dictionary-kanji-monograph__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.dictionary-kanji-monograph__studio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.48rem 0.95rem;
+  border: 1.2px solid var(--color-accent);
+  border-radius: 8px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-family: var(--font-serif), serif;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.dictionary-kanji-monograph__studio-btn:hover {
+  background: var(--color-accent);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.dictionary-kanji-monograph__body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.18fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 58rem) {
+  .dictionary-kanji-monograph__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dictionary-kanji-monograph__showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.dictionary-kanji-monograph__hero-row {
+  display: flex;
+  align-items: center;
+  gap: 1.35rem;
+  flex-wrap: wrap;
+}
+
+.dictionary-kanji-monograph__specimen {
+  display: grid;
+  place-items: center;
+  width: 7.5rem;
+  height: 7.5rem;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 60%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      0deg,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 60%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    color-mix(in srgb, var(--color-bg-subtle) 60%, var(--color-surface));
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.dictionary-kanji-monograph__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.dictionary-kanji-monograph__hanviet-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.dictionary-kanji-monograph__hanviet {
+  font-family: var(--font-display), var(--font-serif), serif;
+  font-size: clamp(1.55rem, 2.5vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-accent-text);
+}
+
+.dictionary-kanji-monograph__meaning {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.dictionary-kanji-monograph__meaning-en {
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.dictionary-kanji-monograph__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+@media (max-width: 36rem) {
+  .dictionary-kanji-monograph__meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dictionary-kanji-monograph__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-subtle);
+}
+
+.dictionary-kanji-monograph__meta-item span {
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.dictionary-kanji-monograph__meta-item strong {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.dictionary-kanji-monograph__story {
+  margin: 0;
+  padding: 0.95rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--color-bg-subtle) 60%, var(--color-surface));
+}
+
+.dictionary-kanji-monograph__story-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+  margin-bottom: 0.35rem;
+}
+
+.dictionary-kanji-monograph__story p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.dictionary-kanji-monograph__compounds {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 45%, var(--color-surface));
+}
+
+.dictionary-kanji-monograph__compounds-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.dictionary-kanji-compound-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dictionary-kanji-compound-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.dictionary-kanji-compound-item:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent-subtle) 30%, var(--color-surface));
+}
+
+.dictionary-kanji-compound-item__main {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dictionary-kanji-compound-item__top {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.dictionary-kanji-compound-item__idx {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.dictionary-kanji-compound-item__word {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dictionary-kanji-compound-item:hover .dictionary-kanji-compound-item__word {
+  color: var(--color-accent-text);
+}
+
+.dictionary-kanji-compound-item__reading {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.dictionary-kanji-compound-item__hanviet {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-accent-text);
+}
+
+.dictionary-kanji-compound-item__meaning {
+  margin: 0.22rem 0 0;
+  font-size: 0.86rem;
+  font-weight: 550;
+  color: var(--color-text-secondary);
+}
+
+.dictionary-kanji-compound-item__example {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.dictionary-kanji-monograph__empty-compounds {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.dictionary-kanji-monograph__more {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.dictionary-kanji-monograph__more h3 {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-serif), serif;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--color-text-secondary);
 }
 
 /* Conjugation Table */

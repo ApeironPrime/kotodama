@@ -46,7 +46,7 @@ export default function TopNav({
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const onScroll = () => setScrolled(window.scrollY > 24)
+    const onScroll = () => setScrolled((prev) => (prev ? window.scrollY > 12 : window.scrollY > 48))
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
