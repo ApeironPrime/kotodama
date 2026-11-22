@@ -410,13 +410,13 @@ export default function HomePage({
               </div>
             </div>
 
-            <ol className="showcase-journey__steps">
+            <ol className="showcase-journey__steps" data-reveal>
               {JOURNEY_STEPS.map((step) => {
                 const isActive = activeJourneyStep === step.index
                 const targetPage: Page =
                   step.index === 0 ? (isAuthenticated ? 'onboarding' : 'login') : step.index === 1 ? 'video' : 'review'
                 return (
-                  <li key={step.number} data-reveal className={isActive ? 'is-active' : undefined}>
+                  <li key={step.number} className={isActive ? 'is-active' : undefined}>
                     <article
                       className={`showcase-journey__card${isActive ? ' is-active' : ''}`}
                       onMouseEnter={() => setActiveJourneyStep(step.index)}
