@@ -38,6 +38,8 @@ const JOURNEY_STEPS = [
     title: 'Chọn đích đến',
     description: 'Đặt mục tiêu và nhịp học vừa với cuộc sống của bạn.',
     cta: 'Thiết lập mục tiêu',
+    artwork: '/assets/journey-01-destination.jpg',
+    artworkAlt: 'Con đường bậc đá dẫn lên cổng torii đỏ giữa sương sớm vẽ theo lối thủy mặc',
   },
   {
     index: 1 as const,
@@ -50,6 +52,8 @@ const JOURNEY_STEPS = [
     title: 'Học trong ngữ cảnh',
     description: 'Gặp từ mới qua câu chuyện, hình ảnh và video thực tế.',
     cta: 'Trải nghiệm Video AI',
+    artwork: '/assets/journey-02-immersion.jpg',
+    artworkAlt: 'Ánh nắng xuyên qua tán lá phong lên trang sách và tách trà bên hiên nhà Nhật',
   },
   {
     index: 2 as const,
@@ -62,6 +66,8 @@ const JOURNEY_STEPS = [
     title: 'Ghi nhớ theo nhịp',
     description: 'Trở lại đúng lúc với những điều bạn muốn nhớ lâu.',
     cta: 'Mở sổ tay SRS',
+    artwork: '/assets/journey-03-memory.jpg',
+    artworkAlt: 'Cây cầu đá bên hoa anh đào và thác nước phản chiếu trên mặt hồ thủy mặc',
   },
 ] as const
 
@@ -294,108 +300,17 @@ export default function HomePage({
               </div>
 
               <div className="showcase-journey__stage">
-                {activeJourneyStep === 0 && (
-                  <div className="showcase-journey__viz showcase-journey__viz--goal">
-                    <svg className="showcase-journey__arc-svg" viewBox="0 0 320 112" fill="none" aria-hidden="true">
-                      <path
-                        d="M 24 84 Q 160 12 296 84"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeDasharray="4 4"
-                        opacity="0.35"
-                      />
-                      <path d="M 24 84 Q 112 34 168 48" stroke="var(--home-vermilion)" strokeWidth="2.4" />
-                    </svg>
-                    <div className="showcase-journey__stones" role="presentation">
-                      {(['N5', 'N4', 'N3', 'N2', 'N1'] as const).map((lvl, idx) => (
-                        <span
-                          key={lvl}
-                          className={`showcase-journey__stone${idx === 2 ? ' is-current' : idx < 2 ? ' is-passed' : ''}`}
-                        >
-                          {lvl}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="showcase-journey__rhythm-pill">
-                      {visiblePlan && language
-                        ? `${LEARNING_LEVELS[visiblePlan.level]} · ${visiblePlan.dailyMinutes} phút/ngày`
-                        : 'Lộ trình cá nhân · 15 phút mỗi ngày'}
-                    </div>
-                  </div>
-                )}
-
-                {activeJourneyStep === 1 && (
-                  <div className="showcase-journey__viz showcase-journey__viz--context">
-                    <div className="showcase-journey__word-card">
-                      <div className="showcase-journey__word-top">
-                        <span className="showcase-journey__word-jp" lang="ja">
-                          <ruby>
-                            木<rt>こ</rt>漏<rt>も</rt>れ<rt>れ</rt>日<rt>び</rt>
-                          </ruby>
-                        </span>
-                        <svg className="showcase-journey__pitch-svg" viewBox="0 0 72 26" fill="none" aria-hidden="true">
-                          <polyline points="6,19 24,7 46,7 66,19" stroke="var(--home-vermilion)" strokeWidth="1.8" />
-                          <circle cx="6" cy="19" r="2.6" fill="var(--home-ink)" />
-                          <circle cx="24" cy="7" r="2.6" fill="var(--home-vermilion)" />
-                          <circle cx="46" cy="7" r="2.6" fill="var(--home-vermilion)" />
-                          <circle cx="66" cy="19" r="2.6" fill="var(--home-ink)" />
-                        </svg>
-                      </div>
-                      <p className="showcase-journey__word-meaning">Ánh nắng xuyên qua kẽ lá</p>
-                      <p className="showcase-journey__word-quote" lang="ja">
-                        「森の中に優しい木漏れ日が差す」
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {activeJourneyStep === 2 && (
-                  <div className="showcase-journey__viz showcase-journey__viz--srs">
-                    <div className="showcase-journey__srs-head">
-                      <span>ĐƯỜNG CONG GHI NHỚ</span>
-                      <strong>96% Bền vững</strong>
-                    </div>
-                    <svg className="showcase-journey__srs-svg" viewBox="0 0 320 116" fill="none" aria-hidden="true">
-                      <path
-                        d="M 22 92 C 74 88, 102 64, 134 52 C 166 40, 198 34, 224 28 C 254 22, 276 18, 298 16"
-                        stroke="var(--home-vermilion)"
-                        strokeWidth="2.4"
-                        strokeLinecap="round"
-                      />
-                      <circle
-                        cx="22"
-                        cy="92"
-                        r="4.5"
-                        fill="var(--color-surface)"
-                        stroke="var(--home-vermilion)"
-                        strokeWidth="2"
-                      />
-                      <circle
-                        cx="114"
-                        cy="60"
-                        r="4.5"
-                        fill="var(--color-surface)"
-                        stroke="var(--home-vermilion)"
-                        strokeWidth="2"
-                      />
-                      <circle
-                        cx="206"
-                        cy="32"
-                        r="4.5"
-                        fill="var(--color-surface)"
-                        stroke="var(--home-vermilion)"
-                        strokeWidth="2"
-                      />
-                      <circle cx="298" cy="16" r="5.5" fill="var(--home-vermilion)" />
-                    </svg>
-                    <div className="showcase-journey__srs-days">
-                      <span>Ngày 1</span>
-                      <span>Ngày 3</span>
-                      <span>Ngày 7</span>
-                      <span>Ngày 30</span>
-                    </div>
-                  </div>
-                )}
+                <div className="showcase-journey__artwork-frame">
+                  {JOURNEY_STEPS.map((step) => (
+                    <img
+                      key={step.number}
+                      src={step.artwork}
+                      alt={step.artworkAlt}
+                      className={`showcase-journey__artwork${activeJourneyStep === step.index ? ' is-active' : ''}`}
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
               </div>
 
               <div className="showcase-journey__atelier-foot">
