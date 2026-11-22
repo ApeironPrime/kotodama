@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Award,
@@ -7,6 +8,7 @@ import {
   House,
   Layers,
   LogIn,
+  Search,
   Settings,
   Video,
   type LucideIcon,
@@ -31,13 +33,24 @@ export default function TopNav({
   navigate,
   isAuthenticated,
   userName,
+  onQuickSearch,
 }: {
   page: Page
   navigate: (page: Page) => void
   isAuthenticated: boolean
   userName?: string | undefined
+  onQuickSearch?: () => void
 }) {
   const { user } = useAuth()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onScroll = () => setScrolled(window.scrollY > 24)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const { data: srsStats } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'stats', 'global'],
@@ -54,8 +67,19 @@ export default function TopNav({
       <a className="skip-link" href="#main-content">
         Chuyển đến nội dung chính
       </a>
-      <nav className="nav-bar nav-bar--home" aria-label="Điều hướng chính">
+      <nav className={`nav-bar nav-bar--home${scrolled ? ' is-scrolled' : ''}`} aria-label="Điều hướng chính">
         <div className="nav-inner">
+          <button
+            type="button"
+            className="nav-quick-search"
+            onClick={() => (onQuickSearch ? onQuickSearch() : navigate('dictionary'))}
+            aria-label="Tra từ nhanh (Ctrl+K)"
+            title="Tra từ nhanh (Ctrl+K)"
+          >
+            <Search aria-hidden="true" size={14} strokeWidth={1.9} />
+            <span>Tra nhanh</span>
+            <kbd>Ctrl K</kbd>
+          </button>
           <button
             type="button"
             className="nav-brand"

@@ -25,6 +25,21 @@
 .app-shell:has(.anime-page) .nav-bar--home .nav-tab.active::after {
   background: var(--rose-500);
 }
+.app-shell:has(.anime-page) .nav-quick-search,
+.app-shell:has(.anime-page) .nav-bar--home .nav-actions .ui-icon-button {
+  border-color: var(--neutral-800);
+  color: rgb(255 255 255 / 72%);
+}
+.app-shell:has(.anime-page) .nav-quick-search kbd {
+  border-color: var(--neutral-800);
+  color: rgb(255 255 255 / 55%);
+}
+.app-shell:has(.anime-page) .nav-quick-search:hover,
+.app-shell:has(.anime-page) .nav-bar--home .nav-actions .ui-icon-button:hover {
+  border-color: color-mix(in srgb, var(--rose-500) 45%, transparent);
+  color: var(--rose-300);
+  background: color-mix(in srgb, var(--rose-500) 14%, transparent);
+}
 .app-shell:has(.anime-page) .nav-bar--home .nav-brand::before {
   border-color: color-mix(in srgb, var(--rose-500) 34%, transparent);
   background:

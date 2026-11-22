@@ -88,6 +88,33 @@ function AppContent() {
       })
     }
   }
+  const openQuickSearch = () => {
+    goTo('dictionary')
+    window.setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 80)
+  }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+      const active = document.activeElement
+      if (
+        active instanceof HTMLElement &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.tagName === 'SELECT' ||
+          active.isContentEditable)
+      ) {
+        return
+      }
+      event.preventDefault()
+      openQuickSearch()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
   const isAuthenticated = status === 'authenticated'
   const canRenderBeforeSessionRestore = page === 'home' || page === 'dictionary' || page === 'jlpt' || page === 'anime'
   useEffect(() => {
@@ -122,7 +149,13 @@ function AppContent() {
   if (!page)
     return (
       <div className="app-shell">
-        <TopNav page="home" navigate={goTo} isAuthenticated={isAuthenticated} userName={user?.name} />
+        <TopNav
+          page="home"
+          navigate={goTo}
+          isAuthenticated={isAuthenticated}
+          userName={user?.name}
+          onQuickSearch={openQuickSearch}
+        />
         <main id="main-content" tabIndex={-1}>
           <NotFoundPage onNavigate={goTo} />
         </main>
@@ -153,7 +186,13 @@ function AppContent() {
       <HomeInkCursor />
       <ArtisticPreloader />
       <WashiPageTransition />
-      <TopNav page={page} navigate={goTo} isAuthenticated={isAuthenticated} userName={user?.name} />
+      <TopNav
+        page={page}
+        navigate={goTo}
+        isAuthenticated={isAuthenticated}
+        userName={user?.name}
+        onQuickSearch={openQuickSearch}
+      />
       <main id="main-content" tabIndex={-1}>
         <p className="route-announcer" aria-live="polite">
           {getRoute(page).title}
