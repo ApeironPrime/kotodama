@@ -530,8 +530,9 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await screen.findByText(/1 \/ 2 từ đã lưu \(50%\)/i)).toBeTruthy()
 
     // '私' shows 'Đã lưu', '本' shows '+ Thêm SRS'
-    expect(await screen.findByRole('button', { name: /Đã lưu/i })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /\+ Thêm SRS/i })).toBeTruthy()
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    expect(await within(vocabSection).findByRole('button', { name: /Đã lưu/i })).toBeTruthy()
+    expect(within(vocabSection).getByRole('button', { name: /\+ Thêm SRS/i })).toBeTruthy()
   })
 
   it('opens dictionary word detail modal and closes via close button or Escape', async () => {
@@ -540,10 +541,11 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    await within(vocabSection).findByText('私')
 
     // Click "Chi tiết từ điển" on first row
-    const dictBtns = screen.getAllByRole('button', { name: /Chi tiết từ điển/i })
+    const dictBtns = within(vocabSection).getAllByRole('button', { name: /Chi tiết từ điển/i })
     const firstDictBtn = dictBtns[0]
     expect(firstDictBtn).toBeDefined()
     if (firstDictBtn) fireEvent.click(firstDictBtn)
@@ -568,9 +570,10 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    await within(vocabSection).findByText('私')
 
-    const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
+    const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtn = addBtns[0]
     expect(firstAddBtn).toBeDefined()
     if (firstAddBtn) fireEvent.click(firstAddBtn)
@@ -590,9 +593,10 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    await within(vocabSection).findByText('私')
 
-    const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
+    const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtnFail = addBtns[0]
     expect(firstAddBtnFail).toBeDefined()
     if (firstAddBtnFail) fireEvent.click(firstAddBtnFail)
@@ -765,9 +769,10 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    await within(vocabSection).findByText('私')
 
-    const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
+    const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtnAnon = addBtns[0]
     expect(firstAddBtnAnon).toBeDefined()
     if (firstAddBtnAnon) fireEvent.click(firstAddBtnAnon)
@@ -783,9 +788,10 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    await within(vocabSection).findByText('私')
 
-    const addBtns = screen.getAllByRole('button', { name: /\+ Thêm SRS/i })
+    const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
     const firstAddBtnSave = addBtns[0]
     expect(firstAddBtnSave).toBeDefined()
     if (firstAddBtnSave) fireEvent.click(firstAddBtnSave)
@@ -933,7 +939,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     })
 
     // Now in Flashcard mode, Context B shows 'Đã lưu trong SRS Flashcard'
-    expect(screen.getByTitle('Đã lưu trong SRS Flashcard')).toBeTruthy()
+    expect(await screen.findByTitle('Đã lưu trong SRS Flashcard')).toBeTruthy()
 
     // In Word List directly below, Context B now shows 'Đã lưu' and progress is 100%
     const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })

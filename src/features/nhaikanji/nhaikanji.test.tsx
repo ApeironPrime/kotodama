@@ -2,7 +2,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { UrlStateProvider } from '../../components/UrlStateProvider'
 // @vitest-environment jsdom
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { KanjiPage } from './KanjiPage'
@@ -174,12 +174,13 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     const lesson1Card = await screen.findByText(/1課 〜とき/i)
     fireEvent.click(lesson1Card)
 
-    // The detail list is intentionally separate from focused flashcard practice.
-    fireEvent.click(screen.getByRole('button', { name: /^Danh Sách \(/i }))
-    // Verify pattern and meaning
-    const patternEls = await screen.findAllByText('〜うちに①')
+    // Verify pattern and meaning in the always-visible grammar list beneath the stage
+    const grammarListSection = await screen.findByRole('region', {
+      name: 'Danh sách mẫu ngữ pháp trong bài',
+    })
+    const patternEls = await within(grammarListSection).findAllByText('〜うちに①')
     expect(patternEls.length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/Nhân lúc, khi còn/i).length).toBeGreaterThan(0)
+    expect(within(grammarListSection).getAllByText(/Nhân lúc, khi còn/i).length).toBeGreaterThan(0)
   })
 
   it('renders BunpoPage with multi-group Mimikara grammar flashcard, furigana ruby, and 1 example per meaning', async () => {
@@ -274,10 +275,11 @@ describe('NhaiKanji Frontend Feature Suite', () => {
     const flashcardFrontPrompt = screen.getByText(/Nhấn \[Space\] hoặc chạm để lật xem ý nghĩa & 1 ví dụ mỗi nghĩa/i)
     fireEvent.click(flashcardFrontPrompt)
 
-    // Verify Back Side contains all 3 distinct meanings
-    expect(await screen.findByText('Có vẻ như…/Hình như…')).toBeTruthy()
-    expect(screen.getByText('Cứ như là…')).toBeTruthy()
-    expect(screen.getByText('Như là, kiểu như…')).toBeTruthy()
+    // Verify Back Side contains all 3 distinct meanings inside the flashcard
+    const flashcard = screen.getByRole('button', { name: 'Lật thẻ ngữ pháp' })
+    expect(await within(flashcard).findByText('Có vẻ như…/Hình như…')).toBeTruthy()
+    expect(within(flashcard).getByText('Cứ như là…')).toBeTruthy()
+    expect(within(flashcard).getByText('Như là, kiểu như…')).toBeTruthy()
 
     // Verify 1 representative example sentence with ruby and translation for each group is rendered
     expect(screen.getAllByText('Trời có nhiều sao. Có vẻ mai cũng sẽ nắng.').length).toBeGreaterThanOrEqual(1)

@@ -11,7 +11,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Gamepad2,
   Info,
   Layers,
   Search,
