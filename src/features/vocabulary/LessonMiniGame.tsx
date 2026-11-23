@@ -653,30 +653,44 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
             })}
           </div>
 
-          {selectedWord !== null && (
-            <div className="dojo-feedback-bar" role="status">
-              <div className="dojo-feedback-bar__info">
-                <strong>
-                  {selectedWord === currentQ.target.word
-                    ? `✓ Chính xác! ${currentQ.target.word} — ${currentQ.target.meaning}`
-                    : `✕ Đáp án đúng: ${currentQ.target.word} (${currentQ.target.meaning})`}
-                </strong>
-              </div>
-              <div className="dojo-feedback-bar__actions">
-                <button
-                  type="button"
-                  className={`dojo-srs-chip${isTermSaved(currentQ.target) ? ' is-saved' : ''}`}
-                  onClick={() => void onSaveToSrs(currentQ.target)}
-                >
-                  {isTermSaved(currentQ.target) ? <Check size={14} /> : <BookmarkPlus size={14} />}
-                  <span>{isTermSaved(currentQ.target) ? 'Đã lưu SRS' : '+ Lưu SRS'}</span>
-                </button>
-                <button type="button" className="dojo-next-btn" onClick={handleNextQuestion}>
-                  {qIndex + 1 >= clozeQuestions.length ? 'Xem tổng kết →' : 'Câu tiếp theo →'}
-                </button>
-              </div>
-            </div>
-          )}
+          {selectedWord !== null &&
+            (() => {
+              const pickedOption =
+                selectedWord !== currentQ.target.word
+                  ? currentQ.options.find((opt) => opt.word === selectedWord)
+                  : undefined
+              return (
+                <div className="dojo-feedback-bar" role="status">
+                  <div className="dojo-feedback-bar__info">
+                    <strong>
+                      {selectedWord === currentQ.target.word
+                        ? `✓ Chính xác! ${currentQ.target.word}${currentQ.target.hanViet ? ` (${currentQ.target.hanViet})` : ''} — ${currentQ.target.meaning}`
+                        : `✕ Đáp án đúng: ${currentQ.target.word}${currentQ.target.hanViet ? ` (${currentQ.target.hanViet})` : ''} — ${currentQ.target.meaning}`}
+                    </strong>
+                    {pickedOption && (
+                      <p className="dojo-cloze-contrast">
+                        Bạn chọn <strong lang="ja">{pickedOption.word}</strong>
+                        {pickedOption.hanViet ? ` (${pickedOption.hanViet})` : ''}: {pickedOption.meaning} — không khớp
+                        sắc thái ngữ cảnh câu này.
+                      </p>
+                    )}
+                  </div>
+                  <div className="dojo-feedback-bar__actions">
+                    <button
+                      type="button"
+                      className={`dojo-srs-chip${isTermSaved(currentQ.target) ? ' is-saved' : ''}`}
+                      onClick={() => void onSaveToSrs(currentQ.target)}
+                    >
+                      {isTermSaved(currentQ.target) ? <Check size={14} /> : <BookmarkPlus size={14} />}
+                      <span>{isTermSaved(currentQ.target) ? 'Đã lưu SRS' : '+ Lưu SRS'}</span>
+                    </button>
+                    <button type="button" className="dojo-next-btn" onClick={handleNextQuestion}>
+                      {qIndex + 1 >= clozeQuestions.length ? 'Xem tổng kết →' : 'Câu tiếp theo →'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
         </div>
       )}
 
@@ -871,25 +885,39 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
           </div>
 
           <form className="dojo-typing-form" onSubmit={handleTypingSubmit}>
-            <input
-              ref={typingInputRef}
-              type="text"
-              className={`dojo-typing-input${
+            <div
+              className={`dojo-typing-line${
                 typingSubmitted === 'correct'
                   ? ' is-correct'
                   : typingSubmitted === 'wrong' || typingSubmitted === 'timeout'
                     ? ' is-wrong'
                     : ''
               }`}
-              value={typingInput}
-              onChange={(e) => setTypingInput(e.target.value)}
-              disabled={typingSubmitted !== null}
-              aria-label="Nhập cách đọc Hiragana hoặc Romaji"
-              placeholder="Gõ Romaji (vd: jinsei) hoặc Hiragana..."
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-            />
+            >
+              <input
+                ref={typingInputRef}
+                type="text"
+                className="dojo-typing-input"
+                value={typingInput}
+                onChange={(e) => setTypingInput(e.target.value)}
+                disabled={typingSubmitted !== null}
+                aria-label="Nhập cách đọc Hiragana hoặc Romaji"
+                placeholder="Gõ Romaji (vd: jinsei) hoặc Hiragana..."
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              {typingSubmitted === null && (
+                <button
+                  type="submit"
+                  className="dojo-typing-inline-enter"
+                  title="Kiểm tra (Enter)"
+                  aria-label="Kiểm tra (Enter)"
+                >
+                  ↵
+                </button>
+              )}
+            </div>
 
             <div className="dojo-typing-preview">
               Chuyển Kana: <strong lang="ja">{liveRomajiPreview || '—'}</strong>
@@ -897,18 +925,13 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
 
             <div className="dojo-typing-actions">
               {typingSubmitted === null ? (
-                <>
-                  <button
-                    type="button"
-                    className="dojo-editorial-btn"
-                    onClick={() => handleTypingFailure(currentTypingCard, 'wrong')}
-                  >
-                    Chưa nhớ · Xem đáp án
-                  </button>
-                  <button type="submit" className="dojo-typing-submit-btn">
-                    Kiểm tra (Enter)
-                  </button>
-                </>
+                <button
+                  type="button"
+                  className="dojo-editorial-btn"
+                  onClick={() => handleTypingFailure(currentTypingCard, 'wrong')}
+                >
+                  Chưa nhớ · Xem đáp án
+                </button>
               ) : (
                 <button type="button" className="dojo-next-btn" onClick={handleNextTypingCard}>
                   {typingIndex + 1 >= typingDeck.length ? 'Xem tổng kết →' : 'Từ tiếp theo →'}

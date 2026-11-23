@@ -85,8 +85,14 @@ const RAW_POS_MAP: Array<[RegExp, string]> = [
   [/慣用句/g, 'Quán dụng ngữ'],
 ]
 
+function normalizeFullWidthAscii(text: string): string {
+  return text
+    .replace(/\u3000/g, ' ')
+    .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+}
+
 function formatEditorialUnitTitle(rawTitle?: string, ordinal?: number, topic?: string): string {
-  const title = (rawTitle || '').trim()
+  const title = normalizeFullWidthAscii((rawTitle || '').trim())
   if (!title) return `Chương ${ordinal || 1}`
   const looksTechnical = /\|/.test(title) || /_\s*\[[^\]]+\]/.test(title) || /^Unit\s+\d+/i.test(title)
   if (!looksTechnical) return title
@@ -1113,7 +1119,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               currentUnitInfo?.topic ? ` (${currentUnitInfo.topic})` : ''
             }`}
           >
-            {course?.title?.replace(/\s*\([^)]*\)\s*$/, '')} ·{' '}
+            {normalizeFullWidthAscii(course?.title?.replace(/\s*\([^)]*\)\s*$/, '') || '')} ·{' '}
             {formatEditorialUnitTitle(currentUnitInfo?.title, currentUnitInfo?.ordinal, currentUnitInfo?.topic)}
           </h2>
         </div>
@@ -1248,7 +1254,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               title="Phát âm (Phím R)"
                               aria-label="Phát âm (Phím R)"
                             >
-                              <Volume2 size={16} />
+                              <Volume2 size={14} aria-hidden="true" />
+                              <span className="curriculum-flashcard__audio-label">Nghe [R]</span>
                             </button>
 
                             <button
