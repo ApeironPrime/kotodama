@@ -14,7 +14,11 @@ export const APPROVED_RIGHTS_STATUSES = Object.freeze(new Set(['verified', 'publ
 export const PUBLIC_VISIBILITIES = Object.freeze(new Set(['public', 'unlisted']))
 
 function isEnabled(value) {
-  return String(value ?? '').trim().toLowerCase() === 'true'
+  return (
+    String(value ?? '')
+      .trim()
+      .toLowerCase() === 'true'
+  )
 }
 
 /**
@@ -131,12 +135,15 @@ export class CurriculumCatalogService {
       this.sqlitePath = null
 
       if (!this.pool) {
-        console.warn('[CurriculumCatalogService] Storage is configured as postgres, but PostgreSQL connection pool was not provided.')
+        console.warn(
+          '[CurriculumCatalogService] Storage is configured as postgres, but PostgreSQL connection pool was not provided.'
+        )
       }
     } else if (normalizedStorage === 'sqlite') {
       this.storage = 'sqlite'
       this.pool = null
-      this.sqlitePath = options.sqlitePath || process.env.CURRICULUM_SQLITE_PATH || path.resolve('tmp/curriculum/curriculum.db')
+      this.sqlitePath =
+        options.sqlitePath || process.env.CURRICULUM_SQLITE_PATH || path.resolve('tmp/curriculum/curriculum.db')
 
       if (options.db) {
         this.db = options.db
@@ -149,7 +156,9 @@ export class CurriculumCatalogService {
             this.db = null
           }
         } else {
-          console.warn(`[CurriculumCatalogService] SQLite database not found at ${this.sqlitePath}. Run 'npm run curriculum:ingest' first.`)
+          console.warn(
+            `[CurriculumCatalogService] SQLite database not found at ${this.sqlitePath}. Run 'npm run curriculum:ingest' first.`
+          )
           this.db = null
         }
       } else {
@@ -157,8 +166,13 @@ export class CurriculumCatalogService {
         this.db = null
       }
     } else {
-      throw new Error(`[CurriculumCatalogService] Invalid CURRICULUM_STORAGE '${rawStorage}'. Supported values: 'sqlite' | 'postgres'.`)
+      throw new Error(
+        `[CurriculumCatalogService] Invalid CURRICULUM_STORAGE '${rawStorage}'. Supported values: 'sqlite' | 'postgres'.`
+      )
     }
+
+    this.dictSqlitePath = options.dictSqlitePath || path.resolve('data/master_dictionary.db')
+    this.dictDb = null
   }
 
   /**
@@ -179,6 +193,95 @@ export class CurriculumCatalogService {
 
   canReadCourse(course) {
     return this.allowUnverifiedContent || isCoursePublicAndApproved(course)
+  }
+
+  /**
+   * Lazily opens data/master_dictionary.db (read-only) to enrich missing examples/readings.
+   */
+  getDictionaryDb() {
+    if (this.dictDb !== null) {
+      return this.dictDb || null
+    }
+    if (!DatabaseSync || !this.dictSqlitePath || !fs.existsSync(this.dictSqlitePath)) {
+      this.dictDb = false
+      return null
+    }
+    try {
+      this.dictDb = new DatabaseSync(this.dictSqlitePath, { readOnly: true })
+      return this.dictDb
+    } catch {
+      this.dictDb = false
+      return null
+    }
+  }
+
+  /**
+   * Enriches curriculum terms missing examples or readings from master_dictionary.db.
+   * Only called when isApprovedRights is true.
+   */
+  enrichTermsFromDictionary(items) {
+    if (!Array.isArray(items) || items.length === 0) return items
+    const missingWords = [
+      ...new Set(
+        items
+          .filter(
+            (item) => (!item.examples || item.examples.length === 0 || !item.display_reading) && item.display_word
+          )
+          .map((item) => String(item.display_word).trim())
+          .filter(Boolean)
+      ),
+    ]
+    if (missingWords.length === 0) return items
+
+    const dictDb = this.getDictionaryDb()
+    if (!dictDb) return items
+
+    try {
+      const placeholders = missingWords.map(() => '?').join(', ')
+      const rows = dictDb
+        .prepare(`SELECT word, reading, examples FROM words WHERE word IN (${placeholders})`)
+        .all(...missingWords)
+      if (!rows || rows.length === 0) return items
+
+      const dictMap = new Map()
+      for (const row of rows) {
+        const key = String(row.word || '').trim()
+        if (!key) continue
+        const existing = dictMap.get(key)
+        const hasEx = Boolean(row.examples && row.examples !== '[]')
+        if (!existing || (hasEx && (!existing.examples || existing.examples === '[]'))) {
+          dictMap.set(key, row)
+        }
+      }
+
+      return items.map((item) => {
+        const key = String(item.display_word || '').trim()
+        const dictRow = dictMap.get(key)
+        if (!dictRow) return item
+
+        let nextExamples = item.examples
+        if (!nextExamples || nextExamples.length === 0) {
+          const rawList = safeParseJson(dictRow.examples, [])
+          if (Array.isArray(rawList) && rawList.length > 0) {
+            const stem = key.length >= 2 ? key.slice(0, -1) : key
+            const normalized = rawList
+              .filter((ex) => ex && typeof ex.jp === 'string' && ex.jp.trim())
+              .map((ex) => ({ ja: ex.jp.trim(), vi: String(ex.vi || '').trim() }))
+            const matching = normalized.filter((ex) => ex.ja.includes(key) || (stem && ex.ja.includes(stem)))
+            nextExamples = (matching.length > 0 ? matching : normalized).slice(0, 2)
+          }
+        }
+
+        const nextReading = item.display_reading || String(dictRow.reading || '').trim()
+        return {
+          ...item,
+          display_reading: nextReading,
+          examples: nextExamples,
+        }
+      })
+    } catch {
+      return items
+    }
   }
 
   /**
@@ -689,6 +792,8 @@ export class CurriculumCatalogService {
       }
     })
 
+    const enrichedItems = isApprovedRights ? this.enrichTermsFromDictionary(items) : items
+
     return {
       course: {
         course_code: course.course_code,
@@ -702,7 +807,7 @@ export class CurriculumCatalogService {
         ordinal: Number(unit.ordinal),
         title: unit.title,
       },
-      items,
+      items: enrichedItems,
       pagination: {
         page: validPage,
         limit: validLimit,

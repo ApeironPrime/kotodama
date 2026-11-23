@@ -128,7 +128,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   } | null>(null)
 
   // In-Unit stage mode: flashcard (default at top) or mini-games; vocabulary list stays visible below
-  const [stageMode, setStageMode] = useState<'flashcard' | 'quiz' | 'karuta' | 'listening'>('flashcard')
+  const [stageMode, setStageMode] = useState<'flashcard' | 'cloze' | 'karuta' | 'typing'>('flashcard')
   const [isShuffled, setIsShuffled] = useState(false)
   const [shuffledOrder, setShuffledOrder] = useState<number[]>([])
   const [unitSearchQuery, setUnitSearchQuery] = useState('')
@@ -1479,8 +1479,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 <div id="panel-study-game" role="tabpanel" aria-labelledby={`tab-study-${stageMode}`}>
                   <LessonMiniGame
                     words={words}
-                    activeMode={stageMode === 'karuta' ? 'karuta' : 'quiz'}
-                    defaultAudioFirst={stageMode === 'listening'}
+                    activeMode={stageMode}
                     isTermSaved={isCurriculumTermSaved}
                     onSaveToSrs={handleSaveWordToSrs}
                     onSpeak={(text, url) => playAudio(url, text)}
@@ -1513,18 +1512,18 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             <button
               type="button"
               role="tab"
-              id="tab-study-quiz"
+              id="tab-study-cloze"
               aria-controls="panel-study-game"
-              aria-selected={stageMode === 'quiz'}
-              className={`lesson-dock-card${stageMode === 'quiz' ? ' is-active' : ''}`}
-              onClick={() => setStageMode('quiz')}
+              aria-selected={stageMode === 'cloze'}
+              className={`lesson-dock-card${stageMode === 'cloze' ? ' is-active' : ''}`}
+              onClick={() => setStageMode('cloze')}
             >
               <span className="lesson-dock-card__seal" aria-hidden="true">
-                速
+                文
               </span>
               <span className="lesson-dock-card__text">
-                <strong>Phản Xạ Nghĩa</strong>
-                <small>Trắc nghiệm 4 chọn 1</small>
+                <strong>Điền Từ Văn Cảnh</strong>
+                <small>Đục lỗ ngữ cảnh câu</small>
               </span>
             </button>
 
@@ -1541,26 +1540,26 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 歌
               </span>
               <span className="lesson-dock-card__text">
-                <strong>Ghép Thẻ Karuta</strong>
-                <small>Đấu cặp Nhật – Việt</small>
+                <strong>Đấu Trường Karuta</strong>
+                <small>Nghe âm đập thẻ Kanji</small>
               </span>
             </button>
 
             <button
               type="button"
               role="tab"
-              id="tab-study-listening"
+              id="tab-study-typing"
               aria-controls="panel-study-game"
-              aria-selected={stageMode === 'listening'}
-              className={`lesson-dock-card${stageMode === 'listening' ? ' is-active' : ''}`}
-              onClick={() => setStageMode('listening')}
+              aria-selected={stageMode === 'typing'}
+              className={`lesson-dock-card${stageMode === 'typing' ? ' is-active' : ''}`}
+              onClick={() => setStageMode('typing')}
             >
               <span className="lesson-dock-card__seal" aria-hidden="true">
-                聴
+                筆
               </span>
               <span className="lesson-dock-card__text">
-                <strong>Luyện Nghe</strong>
-                <small>Nghe âm chọn nghĩa</small>
+                <strong>Gõ Âm Đọc</strong>
+                <small>Tự gõ Kana / Romaji</small>
               </span>
             </button>
           </div>

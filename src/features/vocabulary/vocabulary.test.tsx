@@ -956,7 +956,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(screen.getByText(/1 \/ 1 từ đã lưu \(100%\)/i)).toBeTruthy()
   })
 
-  it('switches top stage via Game Dock between Flashcard, Speed Quiz, Karuta, and Listening while keeping list below', async () => {
+  it('switches top stage via Game Dock between Flashcard, Cloze, Audio Karuta, and Typing Recall while keeping list below', async () => {
     renderWithClient(<VocabularyPage />)
 
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
@@ -965,13 +965,12 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     const vocabSection = await openVocabLedger()
     expect(await within(vocabSection).findByText('私')).toBeTruthy()
 
-    // Switch top stage to Phản Xạ Nghĩa via Game Dock
-    fireEvent.click(screen.getByRole('tab', { name: /Phản Xạ Nghĩa/i }))
-    expect(await screen.findByText('CHỌN NGHĨA ĐÚNG')).toBeTruthy()
-    // Vocabulary list remains visible below the dock
+    // 1. Switch top stage to Điền Từ Văn Cảnh (Cloze) via Game Dock
+    fireEvent.click(screen.getByRole('tab', { name: /Điền Từ Văn Cảnh/i }))
+    expect(await screen.findByText(/ĐIỀN TỪ VÀO VĂN CẢNH|CHỌN TỪ TIẾNG NHẬT PHÙ HỢP/i)).toBeTruthy()
     expect(within(vocabSection).getByText('私')).toBeTruthy()
 
-    const optionButtons = screen.getAllByRole('button', { name: /^[12]\s*(tôi, bản thân|sách)$/i })
+    const optionButtons = screen.getAllByRole('button', { name: /^[12]\s*(私|本)$/i })
     expect(optionButtons.length).toBe(2)
 
     const firstOpt = optionButtons[0]
@@ -981,14 +980,22 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await screen.findByRole('status')).toBeTruthy()
     expect(screen.getByRole('button', { name: /Câu tiếp theo/i })).toBeTruthy()
 
-    // Switch to Ghép Thẻ Karuta via Game Dock
-    fireEvent.click(screen.getByRole('tab', { name: /Ghép Thẻ Karuta/i }))
-    const karutaBoard = await screen.findByRole('group', { name: 'Bảng ghép thẻ Karuta' })
+    // 2. Switch to Đấu Trường Karuta (Audio Karuta) via Game Dock — Kanji cards only, no Vietnamese spoilers
+    fireEvent.click(screen.getByRole('tab', { name: /Đấu Trường Karuta/i }))
+    const karutaBoard = await screen.findByRole('group', { name: 'Sân đấu Karuta thính giác' })
     expect(within(karutaBoard).getByText('私')).toBeTruthy()
-    expect(within(karutaBoard).getByText('sách')).toBeTruthy()
+    expect(within(karutaBoard).getByText('本')).toBeTruthy()
+    expect(within(karutaBoard).queryByText('tôi, bản thân')).toBeNull()
+    expect(within(karutaBoard).queryByText('sách')).toBeNull()
 
-    // Switch to Luyện Nghe via Game Dock
-    fireEvent.click(screen.getByRole('tab', { name: /Luyện Nghe/i }))
-    expect(await screen.findByText('NGHE ÂM CHỌN NGHĨA')).toBeTruthy()
+    // 3. Switch to Gõ Âm Đọc (Typing Recall) via Game Dock
+    fireEvent.click(screen.getByRole('tab', { name: /Gõ Âm Đọc/i }))
+    expect(await screen.findByText('GÕ ÂM ĐỌC HIRAGANA / ROMAJI')).toBeTruthy()
+    const typingInput = screen.getByLabelText('Nhập cách đọc Hiragana hoặc Romaji')
+    const panel = document.getElementById('panel-study-game')
+    const promptKanji = panel?.querySelector('.dojo-quiz-card__prompt')?.textContent?.trim()
+    fireEvent.change(typingInput, { target: { value: promptKanji === '本' ? 'hon' : 'watashi' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra' }))
+    expect((await screen.findByRole('status')).textContent).toMatch(/Chính xác!/i)
   })
 })
