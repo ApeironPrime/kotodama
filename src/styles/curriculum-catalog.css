@@ -4223,6 +4223,26 @@ input.dojo-typing-input:focus-visible {
   }
 }
 
+@media (min-width: 1220px) and (min-height: 661px) {
+  .lesson-split-workspace.is-zen .lesson-stage-wrapper {
+    min-height: max(24rem, calc(100dvh - 14rem));
+  }
+
+  .lesson-split-workspace.is-zen :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .lesson-split-workspace.is-zen .curriculum-flashcard {
+    flex: 1;
+  }
+
+  .lesson-split-workspace.is-zen .kakejiku-rod {
+    flex-shrink: 0;
+  }
+}
+
 .lesson-game-dock {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
