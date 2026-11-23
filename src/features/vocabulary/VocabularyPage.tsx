@@ -1247,16 +1247,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             >
                               <Shuffle size={15} aria-hidden="true" />
                             </button>
-                            <button
-                              type="button"
-                              className={`curriculum-flashcard__icon-btn curriculum-flashcard__icon-btn--audio${playingAudioUrl ? ' is-active' : ''}`}
-                              onClick={() => playAudio(currentCard.audioUrl, currentCard.word)}
-                              title="Phát âm (Phím R)"
-                              aria-label="Phát âm (Phím R)"
-                            >
-                              <Volume2 size={14} aria-hidden="true" />
-                              <span className="curriculum-flashcard__audio-label">Nghe [R]</span>
-                            </button>
 
                             <button
                               type="button"
@@ -1270,6 +1260,17 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               }
                             >
                               {isCurrentCardSaved ? <Check size={16} /> : <BookmarkPlus size={16} />}
+                            </button>
+
+                            <button
+                              type="button"
+                              className={`curriculum-flashcard__icon-btn curriculum-flashcard__icon-btn--audio${playingAudioUrl ? ' is-active' : ''}`}
+                              onClick={() => playAudio(currentCard.audioUrl, currentCard.word)}
+                              title="Phát âm (Phím R)"
+                              aria-label="Phát âm (Phím R)"
+                            >
+                              <Volume2 size={14} aria-hidden="true" />
+                              <span className="curriculum-flashcard__audio-label">Nghe [R]</span>
                             </button>
                           </div>
                         </div>

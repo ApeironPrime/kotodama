@@ -24,7 +24,35 @@ const KARUTA_TURN_MS = 8000
 const TYPING_TURN_MS = 10000
 const KARUTA_KEYS = ['Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F'] as const
 const PERSON_MEANING_RE =
-  /người|con trai|con gái|chủ nhân|tác giả|họ hàng|nhân viên|học sinh|giáo viên|bạn bè|tha nhân|trưởng nam/i
+  /người|con trai|con gái|cha|mẹ|anh|em|chị|chủ nhân|tác giả|họ hàng|nhân viên|học sinh|giáo viên|bạn bè|tha nhân|trưởng nam|sinh đôi|trẻ lạc/i
+
+const SEMANTIC_BUCKETS: ReadonlyArray<readonly [string, RegExp]> = [
+  ['family_person', PERSON_MEANING_RE],
+  ['ability_quality', /năng lực|tài năng|tính cách|cá tính|ưu điểm|khuyết điểm|tinh thần|cảm giác|khả năng|trình độ/i],
+  ['life_time', /cuộc đời|tuổi thọ|tuổi trẻ|tương lai|quá khứ|thế hệ|khoảnh khắc|thời gian|năm|tuổi|già|mạng sống/i],
+  ['work_society', /công việc|xã hội|kinh tế|nghề|công ty|pháp luật|trách nhiệm|dư luận|văn hóa|tổ chức/i],
+  ['place_space', /địa điểm|nơi|vị trí|quê|khu vực|phương hướng|không gian|chỗ|cảnh/i],
+]
+
+function getSemanticTags(word: CurriculumWord): Set<string> {
+  const tags = new Set<string>()
+  const text = `${word.meaning || ''} ${word.partOfSpeech || ''}`
+  for (const [tag, regex] of SEMANTIC_BUCKETS) {
+    if (regex.test(text)) tags.add(tag)
+  }
+  return tags
+}
+
+function getHanVietSyllables(hanViet?: string): Set<string> {
+  if (!hanViet) return new Set()
+  return new Set(
+    hanViet
+      .toUpperCase()
+      .split(/[\s,;/]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 2)
+  )
+}
 
 function shuffleArray<T>(list: readonly T[]): T[] {
   const copy = [...list]
@@ -48,11 +76,29 @@ function scoreDistractorSimilarity(target: CurriculumWord, candidate: Curriculum
       score += 6
     }
   }
+  const targetHv = getHanVietSyllables(target.hanViet)
+  const candHv = getHanVietSyllables(candidate.hanViet)
+  for (const syl of candHv) {
+    if (targetHv.has(syl)) score += 5
+  }
+
+  const targetTags = getSemanticTags(target)
+  const candTags = getSemanticTags(candidate)
+  let sharedSemantic = 0
+  for (const tag of candTags) {
+    if (targetTags.has(tag)) sharedSemantic += 1
+  }
+  if (sharedSemantic > 0) {
+    score += sharedSemantic * 5
+  } else if (targetTags.size > 0 && candTags.size > 0) {
+    score -= 4
+  }
+
   if (target.partOfSpeech && candidate.partOfSpeech === target.partOfSpeech) score += 3
   if (target.word.length === candidate.word.length) score += 2
   const targetIsPerson = PERSON_MEANING_RE.test(target.meaning || '')
   const candidateIsPerson = PERSON_MEANING_RE.test(candidate.meaning || '')
-  if (targetIsPerson !== candidateIsPerson) score -= 3
+  if (targetIsPerson !== candidateIsPerson) score -= 4
   return score
 }
 

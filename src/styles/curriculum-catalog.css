@@ -2475,7 +2475,7 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 0.4rem;
-  padding-inline: 0.15rem;
+  padding-inline: 10px;
 }
 
 /* Kakejiku Hanging Scroll Frame */
@@ -3126,6 +3126,7 @@
   margin-top: 0.9rem;
 }
 
+.curriculum-flashcard-controls button,
 .curriculum-flashcard-controls .ui-btn,
 .curriculum-study-bar .ui-btn,
 .curriculum-progress-badge,
@@ -3134,7 +3135,7 @@
 .curriculum-term-row__icon-btn,
 .curriculum-term-row__index-btn,
 .lesson-vocab-rail .ui-btn {
-  border-radius: 3px !important;
+  border-radius: 2px !important;
 }
 
 .curriculum-flashcard-controls__miss {
@@ -3441,7 +3442,7 @@
   gap: 0.75rem;
   padding: 0.9rem 0.65rem;
   border: none;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 20%, transparent);
   border-radius: 0;
   background: transparent;
   color: var(--color-text);
@@ -3456,7 +3457,13 @@
 
 .dojo-option-btn:hover:not(:disabled) {
   border-bottom-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
+}
+
+.dojo-option-btn:hover:not(:disabled) .dojo-option-btn__key {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  color: var(--color-accent-text);
 }
 
 .dojo-option-btn:focus-visible {
@@ -3469,15 +3476,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.55rem;
+  height: 1.55rem;
   flex-shrink: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
   font-family: var(--font-mono, monospace);
-  font-size: 0.76rem;
-  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
 }
 
 .dojo-option-btn.is-correct {
@@ -4093,6 +4105,22 @@ input.dojo-typing-input::placeholder {
   grid-template-columns: minmax(0, 1fr);
   max-width: 58rem;
   margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  .lesson-split-workspace.is-zen .lesson-split-workspace__stage {
+    min-height: calc(100dvh - 8.5rem);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lesson-split-workspace.is-zen .lesson-stage-wrapper {
+    flex: 1;
+  }
+
+  .lesson-split-workspace.is-zen .lesson-game-dock {
+    margin-top: auto;
+  }
 }
 
 .lesson-zen-shiori {
