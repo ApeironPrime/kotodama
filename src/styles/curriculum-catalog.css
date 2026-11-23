@@ -1890,7 +1890,7 @@
 /* ─── Task T06: Unit Learning, Toolbar, Progress, & Dictionary Modal ──────── */
 
 .curriculum-study-shell {
-  max-width: 76rem;
+  max-width: 80rem;
   margin: 0 auto;
   padding: 0.25rem var(--page-gutter) var(--space-16);
 }
@@ -2425,25 +2425,17 @@
 }
 
 .curriculum-flashcard {
-  min-height: 268px;
+  min-height: 390px;
   background-color: var(--color-surface);
-  background-image:
-    linear-gradient(
-      to right,
-      transparent calc(50% - 0.5px),
-      color-mix(in srgb, var(--color-border) 42%, transparent) 50%,
-      transparent calc(50% + 0.5px)
-    ),
-    linear-gradient(
-      to bottom,
-      transparent calc(50% - 0.5px),
-      color-mix(in srgb, var(--color-border) 42%, transparent) 50%,
-      transparent calc(50% + 0.5px)
-    );
+  background-image: linear-gradient(
+    180deg,
+    var(--color-surface) 0%,
+    color-mix(in srgb, var(--color-bg-subtle) 42%, var(--color-surface)) 100%
+  );
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 1.25rem 1.75rem;
+  border-radius: 18px;
+  padding: 1.5rem 2rem;
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -2453,17 +2445,64 @@
   text-align: center;
   box-shadow:
     0 2px 6px color-mix(in srgb, var(--color-text) 4%, transparent),
-    0 8px 0 -3px var(--color-bg-subtle),
-    0 9px 0 -3px var(--color-border),
-    0 18px 36px -18px color-mix(in srgb, var(--color-text) 14%, transparent),
-    inset 0 0 0 6px var(--color-surface),
-    inset 0 0 0 7px color-mix(in srgb, var(--color-border) 55%, transparent);
+    0 9px 0 -3px var(--color-bg-subtle),
+    0 10px 0 -3px var(--color-border),
+    0 22px 44px -20px color-mix(in srgb, var(--color-text) 16%, transparent),
+    inset 0 0 0 8px var(--color-surface),
+    inset 0 0 0 9px color-mix(in srgb, var(--color-border) 50%, transparent);
   position: relative;
   user-select: none;
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
+}
+
+@media (max-width: 767px) {
+  .curriculum-flashcard {
+    min-height: 300px;
+    padding: 1.2rem 1.15rem;
+  }
+}
+
+.curriculum-flashcard__watermark {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 2.8rem;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: clamp(5rem, 8vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text);
+  opacity: 0.045;
+  pointer-events: none;
+  user-select: none;
+}
+
+.curriculum-flashcard__hint-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.35rem;
+  padding: 0.36rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 55%, var(--color-surface));
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.curriculum-flashcard__footer {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  position: relative;
+  z-index: 1;
 }
 
 .curriculum-flashcard__rail {
@@ -2572,10 +2611,11 @@
 
 .curriculum-flashcard__word {
   font-family: var(--font-jp-serif);
-  font-size: clamp(2.5rem, 4.2vw, 3.2rem);
+  font-size: clamp(3rem, 4.8vw, 4.25rem);
   font-weight: 500;
   color: var(--color-text);
   letter-spacing: 0.05em;
+  line-height: 1.18;
 }
 
 .curriculum-flashcard__reading {
@@ -3135,8 +3175,32 @@
 }
 
 /* --------------------------------------------------------------------------
-   UNIFIED LESSON WORKSPACE: TOP STAGE + GAME DOCK + ALWAYS-VISIBLE LIST
+   UNIFIED LESSON WORKSPACE: 2-COLUMN SPLIT STUDIO + COMPACT VOCAB RAIL
    -------------------------------------------------------------------------- */
+.lesson-split-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(340px, 410px);
+  gap: 1.35rem;
+  align-items: start;
+}
+
+.lesson-split-workspace__stage {
+  position: sticky;
+  top: 5.25rem;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .lesson-split-workspace {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .lesson-split-workspace__stage {
+    position: static;
+  }
+}
+
 .lesson-stage-wrapper {
   margin-bottom: 0.75rem;
 }
@@ -3144,12 +3208,18 @@
 .lesson-game-dock {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.6rem;
   margin-top: 0.85rem;
 }
 
 .lesson-game-dock--two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1219px) {
+  .lesson-split-workspace .lesson-game-dock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -3168,8 +3238,8 @@
 .lesson-dock-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
+  gap: 0.55rem;
+  padding: 0.6rem 0.7rem;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--color-surface);
@@ -3199,15 +3269,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 1.85rem;
+  height: 1.85rem;
   flex-shrink: 0;
   border: 1.2px solid color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
   border-radius: 7px;
   background: var(--color-bg-subtle);
   color: var(--color-accent-text);
   font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 800;
   transition:
     background 0.18s ease,
@@ -3228,14 +3298,14 @@
 }
 
 .lesson-dock-card__text strong {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--color-text);
-  line-height: 1.25;
+  line-height: 1.22;
 }
 
 .lesson-dock-card__text small {
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   color: var(--color-text-muted);
   margin-top: 2px;
 }
@@ -3244,6 +3314,180 @@
   margin-top: 1.65rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--color-border);
+}
+
+.lesson-vocab-section.lesson-vocab-rail {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-text) 3%, transparent),
+    0 14px 32px -20px color-mix(in srgb, var(--color-text) 10%, transparent);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .lesson-vocab-section.lesson-vocab-rail {
+    max-height: calc(100vh - 9.25rem);
+    min-height: 540px;
+  }
+}
+
+.lesson-vocab-rail__header {
+  padding: 0.9rem 1rem 0.8rem;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-bg-subtle) 45%, var(--color-surface));
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.lesson-vocab-rail__header .curriculum-unit-search {
+  max-width: none;
+  width: 100%;
+}
+
+.lesson-vocab-rail__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.lesson-vocab-rail__list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.curriculum-term-row--rail {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0.8rem 0.95rem;
+}
+
+.curriculum-term-row__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.curriculum-term-row__identity-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.curriculum-term-row__identity-btn {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.45rem;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.curriculum-term-row__word {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', serif);
+  font-size: 1.12rem;
+  font-weight: 750;
+  color: var(--color-text);
+}
+
+.curriculum-term-row__reading {
+  font-size: 0.82rem;
+  color: var(--color-accent-text);
+  font-weight: 600;
+}
+
+.curriculum-term-row__hanviet {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+}
+
+.curriculum-term-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.curriculum-term-row__audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.curriculum-term-row__audio-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+
+.curriculum-term-row__meaning {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.curriculum-term-row__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.1rem;
+}
+
+.curriculum-term-row--rail .curriculum-term-row__example {
+  margin-top: 0;
+  font-size: 0.77rem;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-vocab-rail .curriculum-pagination {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--color-bg-subtle) 35%, var(--color-surface));
+}
+
+@media (max-width: 1280px) {
+  .lesson-split-workspace__stage .dojo-karuta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .lesson-vocab-section__header {
