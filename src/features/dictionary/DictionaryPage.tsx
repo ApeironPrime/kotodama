@@ -443,27 +443,7 @@ export default function DictionaryPage({
         </div>
       )}
       <div className="dictionary-shell">
-        {!searchTerm && (activeTab === 'vocab' || activeTab === 'all' || activeTab === 'sentences') && (
-          <header className="dictionary-masthead">
-            <div className="dictionary-masthead__identity">
-              <span className="dictionary-masthead__hanko" aria-hidden="true">
-                辞
-              </span>
-              <div>
-                <span className="dictionary-masthead__eyebrow">THƯ VIỆN VĂN TỰ · 現代和紙辞典</span>
-                <h1 className="dictionary-masthead__title">Từ điển Nhật – Việt</h1>
-              </div>
-            </div>
-            <div className="dictionary-masthead__aside">
-              <p className="dictionary-masthead__subtitle">
-                Tra cứu ngữ nghĩa, chiết tự Hán tự và phân tích ngữ pháp nguyên câu.
-              </p>
-              <span className="dictionary-masthead__jp" aria-hidden="true" lang="ja">
-                一字一句に魂を
-              </span>
-            </div>
-          </header>
-        )}
+        <h1 className="sr-only">Từ điển Nhật – Việt</h1>
 
         {showDictionarySearch && (
           <div className="dictionary-search-container">
