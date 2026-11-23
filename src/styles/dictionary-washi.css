@@ -48,7 +48,11 @@
 }
 
 .dictionary-page--focus {
-  padding-top: 0.75rem;
+  padding: 0.65rem clamp(1rem, 2.2vw, 2rem) var(--space-10);
+}
+
+.dictionary-page--focus .dictionary-shell {
+  width: min(100%, 92rem);
 }
 
 .dictionary-page--focus .dictionary-workspace {

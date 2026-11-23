@@ -1890,9 +1890,9 @@
 /* ─── Task T06: Unit Learning, Toolbar, Progress, & Dictionary Modal ──────── */
 
 .curriculum-study-shell {
-  max-width: 80rem;
+  max-width: none;
   margin: 0 auto;
-  padding: 0.25rem var(--page-gutter) var(--space-16);
+  padding: 0 0 var(--space-6);
 }
 
 /* Compact Single-Row Study Bar */
@@ -2057,6 +2057,8 @@
 }
 
 .curriculum-progress-badge {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -2064,9 +2066,20 @@
   font-weight: 700;
   color: var(--color-text-secondary);
   background: var(--color-bg-subtle);
-  padding: 0.2rem 0.55rem;
+  padding: 0.28rem 0.68rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border-subtle);
+}
+
+.curriculum-progress-badge::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2.5px;
+  width: var(--progress, 0%);
+  background: var(--color-success);
+  transition: width var(--duration-normal) var(--ease-standard);
 }
 
 /* In-Unit Search & Filter Toolbar */
@@ -2425,17 +2438,23 @@
 }
 
 .curriculum-flashcard {
-  min-height: 390px;
+  min-height: clamp(410px, calc(100vh - 20.5rem), 520px);
   background-color: var(--color-surface);
-  background-image: linear-gradient(
-    180deg,
-    var(--color-surface) 0%,
-    color-mix(in srgb, var(--color-bg-subtle) 42%, var(--color-surface)) 100%
-  );
+  background-image:
+    radial-gradient(
+      ellipse 70% 55% at 50% 45%,
+      color-mix(in srgb, var(--color-accent) 4%, transparent),
+      transparent 72%
+    ),
+    linear-gradient(
+      180deg,
+      var(--color-surface) 0%,
+      color-mix(in srgb, var(--color-bg-subtle) 45%, var(--color-surface)) 100%
+    );
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 18px;
-  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  padding: 1.4rem 2.25rem 1.2rem;
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -2445,17 +2464,25 @@
   text-align: center;
   box-shadow:
     0 2px 6px color-mix(in srgb, var(--color-text) 4%, transparent),
-    0 9px 0 -3px var(--color-bg-subtle),
-    0 10px 0 -3px var(--color-border),
-    0 22px 44px -20px color-mix(in srgb, var(--color-text) 16%, transparent),
+    0 6px 0 -2px var(--color-surface),
+    0 7px 0 -2px color-mix(in srgb, var(--color-border) 85%, transparent),
+    0 12px 0 -4px var(--color-bg-subtle),
+    0 13px 0 -4px color-mix(in srgb, var(--color-border) 75%, transparent),
+    0 24px 48px -22px color-mix(in srgb, var(--color-text) 18%, transparent),
     inset 0 0 0 8px var(--color-surface),
-    inset 0 0 0 9px color-mix(in srgb, var(--color-border) 50%, transparent);
+    inset 0 0 0 9px color-mix(in srgb, var(--color-border) 48%, transparent);
   position: relative;
   user-select: none;
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
+}
+
+@media (max-width: 1023px) {
+  .curriculum-flashcard {
+    min-height: 350px;
+  }
 }
 
 @media (max-width: 767px) {
@@ -2465,31 +2492,182 @@
   }
 }
 
-.curriculum-flashcard__watermark {
+.curriculum-flashcard__corners {
   position: absolute;
-  right: 1.5rem;
-  bottom: 2.8rem;
-  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
-  font-size: clamp(5rem, 8vw, 7rem);
-  font-weight: 800;
-  line-height: 1;
-  color: var(--color-text);
-  opacity: 0.045;
+  inset: 14px;
   pointer-events: none;
-  user-select: none;
+  z-index: 1;
 }
 
-.curriculum-flashcard__hint-pill {
+.curriculum-flashcard__corners > span {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: color-mix(in srgb, var(--color-accent) 34%, transparent);
+  border-style: solid;
+  border-width: 0;
+}
+
+.curriculum-flashcard__corners > span:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-top-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.curriculum-flashcard__corners > span:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.curriculum-flashcard__corners > span:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.curriculum-flashcard__corners > span:nth-child(4) {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.curriculum-flashcard__tategaki {
+  position: absolute;
+  right: 1.55rem;
+  top: 52%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  color: color-mix(in srgb, var(--color-text-muted) 68%, transparent);
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .curriculum-flashcard__tategaki {
+    display: none;
+  }
+}
+
+.curriculum-flashcard__hanko {
+  writing-mode: horizontal-tb;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 1.35rem;
-  padding: 0.36rem 0.9rem;
+  width: 1.45rem;
+  height: 1.45rem;
+  border: 1.2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-accent-subtle) 65%, transparent);
+  color: var(--color-accent-text);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  transform: rotate(-3deg);
+  opacity: 0.78;
+}
+
+.curriculum-flashcard__topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.curriculum-flashcard__topbar-left,
+.curriculum-flashcard__topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.curriculum-flashcard__segment {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-bg-subtle) 55%, var(--color-surface));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 75%, var(--color-surface));
+}
+
+.curriculum-flashcard__seg-btn {
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.curriculum-flashcard__seg-btn.is-active {
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+}
+
+.curriculum-flashcard__center {
+  margin: auto 0;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  padding-inline: 1.25rem;
+}
+
+.curriculum-flashcard__word-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.curriculum-flashcard__brush-rule {
+  width: min(140px, 38%);
+  height: 1.5px;
+  margin-top: 0.85rem;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-accent) 42%, var(--color-border)) 50%,
+    transparent 100%
+  );
+}
+
+.curriculum-flashcard__cue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1.15rem;
   font-size: 0.8rem;
   color: var(--color-text-muted);
+  letter-spacing: 0.01em;
+}
+
+.curriculum-flashcard__cue > span:first-child {
+  color: var(--color-accent-text);
+  font-size: 0.7rem;
+  opacity: 0.75;
 }
 
 .curriculum-flashcard__footer {
@@ -2499,10 +2677,27 @@
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding-top: 0.85rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
   position: relative;
-  z-index: 1;
+  z-index: 2;
+}
+
+.curriculum-flashcard__footer-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.curriculum-flashcard__footer-keys {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+}
+
+.curriculum-flashcard-controls__nav {
+  color: var(--color-text-secondary);
 }
 
 .curriculum-flashcard__rail {
@@ -2611,11 +2806,11 @@
 
 .curriculum-flashcard__word {
   font-family: var(--font-jp-serif);
-  font-size: clamp(3rem, 4.8vw, 4.25rem);
+  font-size: clamp(3.6rem, 5.4vw, 5rem);
   font-weight: 500;
   color: var(--color-text);
-  letter-spacing: 0.05em;
-  line-height: 1.18;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
 }
 
 .curriculum-flashcard__reading {
@@ -3179,14 +3374,15 @@
    -------------------------------------------------------------------------- */
 .lesson-split-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(340px, 410px);
-  gap: 1.35rem;
-  align-items: start;
+  grid-template-columns: minmax(0, 1.38fr) minmax(400px, 530px);
+  gap: 1.5rem;
+  align-items: stretch;
 }
 
 .lesson-split-workspace__stage {
   position: sticky;
   top: 5.25rem;
+  align-self: start;
   min-width: 0;
 }
 
@@ -3302,6 +3498,7 @@
   font-weight: 700;
   color: var(--color-text);
   line-height: 1.22;
+  white-space: nowrap;
 }
 
 .lesson-dock-card__text small {
@@ -3333,7 +3530,8 @@
 
 @media (min-width: 1024px) {
   .lesson-vocab-section.lesson-vocab-rail {
-    max-height: calc(100vh - 9.25rem);
+    height: calc(100vh - 9.25rem);
+    max-height: 760px;
     min-height: 540px;
   }
 }
@@ -3429,14 +3627,14 @@
   flex-shrink: 0;
 }
 
-.curriculum-term-row__audio-btn {
+.curriculum-term-row__icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border: 1px solid var(--color-border);
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -3446,10 +3644,16 @@
     background 0.16s ease;
 }
 
-.curriculum-term-row__audio-btn:hover {
+.curriculum-term-row__icon-btn:hover {
   border-color: var(--color-accent);
   color: var(--color-accent-text);
   background: var(--color-accent-subtle);
+}
+
+.curriculum-term-row__srs-btn.is-saved {
+  border-color: var(--color-success);
+  background: var(--color-success-subtle, rgba(16, 185, 129, 0.14));
+  color: var(--color-success);
 }
 
 .curriculum-term-row__meaning {
@@ -3458,28 +3662,21 @@
   line-height: 1.4;
 }
 
-.curriculum-term-row__footer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.6rem;
-  margin-top: 0.1rem;
-}
-
 .curriculum-term-row--rail .curriculum-term-row__example {
-  margin-top: 0;
-  font-size: 0.77rem;
-  line-height: 1.4;
-  flex: 1;
-  min-width: 0;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  width: 100%;
 }
 
 .lesson-vocab-rail .curriculum-pagination {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.5rem;
-  padding: 0.7rem 0.95rem;
-  font-size: 0.78rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.6rem 0.95rem;
+  font-size: 0.76rem;
   flex-shrink: 0;
   background: color-mix(in srgb, var(--color-bg-subtle) 35%, var(--color-surface));
 }
