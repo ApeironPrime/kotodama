@@ -60,7 +60,7 @@
   --color-danger-text: #453f38;
   --color-border: rgba(34, 29, 24, 0.12);
   --color-border-subtle: rgba(34, 29, 24, 0.08);
-  padding: 0.65rem clamp(1rem, 2.2vw, 2rem) var(--space-8);
+  padding: 0.3rem clamp(1rem, 2.2vw, 2rem) var(--space-4);
   background: #faf7f2;
 }
 
