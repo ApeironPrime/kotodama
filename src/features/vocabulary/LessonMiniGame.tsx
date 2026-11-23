@@ -579,7 +579,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
       {mode === 'cloze' && !clozeFinished && currentQ && (
         <div className="dojo-quiz-stage">
           <div className="dojo-quiz-card">
-            <div className="dojo-quiz-card__eyebrow">
+            <div className="dojo-quiz-card__eyebrow dojo-quiz-card__eyebrow--center">
               <span>{currentQ.cloze ? 'ĐIỀN TỪ VÀO VĂN CẢNH' : 'CHỌN TỪ TIẾNG NHẬT PHÙ HỢP'}</span>
               {selectedWord !== null && (
                 <button
@@ -891,31 +891,29 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
               spellCheck={false}
             />
 
-            <div className="dojo-typing-meta-row">
-              <span className="dojo-typing-preview">
-                Chuyển Kana: <strong lang="ja">{liveRomajiPreview || '—'}</strong>
-              </span>
+            <div className="dojo-typing-preview">
+              Chuyển Kana: <strong lang="ja">{liveRomajiPreview || '—'}</strong>
+            </div>
 
-              <div className="dojo-typing-actions">
-                {typingSubmitted === null ? (
-                  <>
-                    <button
-                      type="button"
-                      className="dojo-editorial-btn"
-                      onClick={() => handleTypingFailure(currentTypingCard, 'wrong')}
-                    >
-                      Chưa nhớ · Xem đáp án
-                    </button>
-                    <button type="submit" className="dojo-typing-submit-btn">
-                      Kiểm tra (Enter)
-                    </button>
-                  </>
-                ) : (
-                  <button type="button" className="dojo-next-btn" onClick={handleNextTypingCard}>
-                    {typingIndex + 1 >= typingDeck.length ? 'Xem tổng kết →' : 'Từ tiếp theo →'}
+            <div className="dojo-typing-actions">
+              {typingSubmitted === null ? (
+                <>
+                  <button
+                    type="button"
+                    className="dojo-editorial-btn"
+                    onClick={() => handleTypingFailure(currentTypingCard, 'wrong')}
+                  >
+                    Chưa nhớ · Xem đáp án
                   </button>
-                )}
-              </div>
+                  <button type="submit" className="dojo-typing-submit-btn">
+                    Kiểm tra (Enter)
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="dojo-next-btn" onClick={handleNextTypingCard}>
+                  {typingIndex + 1 >= typingDeck.length ? 'Xem tổng kết →' : 'Từ tiếp theo →'}
+                </button>
+              )}
             </div>
           </form>
 

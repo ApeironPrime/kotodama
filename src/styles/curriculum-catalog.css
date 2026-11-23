@@ -3241,11 +3241,21 @@
    WASHI DOJO MINI-GAMES (OPEN EDITORIAL SANCTUARY — NO SAAS BOXES)
    -------------------------------------------------------------------------- */
 .dojo-game {
+  min-height: clamp(30.5rem, 58vh, 34rem);
+  display: flex;
+  flex-direction: column;
   padding: 0.35rem 0 0.75rem;
   background: transparent;
   border: none;
   border-radius: 0;
   box-shadow: none;
+}
+
+.dojo-quiz-stage,
+.dojo-karuta-arena,
+.dojo-typing-stage,
+.dojo-summary {
+  margin-block: auto;
 }
 
 .dojo-empty {
@@ -3806,12 +3816,16 @@
 
 .dojo-karuta-grid--fuda {
   display: grid;
+  width: 100%;
+  max-width: 34rem;
+  margin-inline: auto;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.05rem;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 640px) {
   .dojo-karuta-grid--fuda {
+    max-width: 19rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.85rem;
   }
@@ -3819,8 +3833,9 @@
 
 .dojo-karuta-card--fuda {
   position: relative;
-  min-height: 11.5rem;
-  padding: 1.25rem 0.75rem;
+  aspect-ratio: 3 / 4;
+  min-height: 9.8rem;
+  padding: 1.1rem 0.65rem;
   border-radius: 3px;
   background: #fcf9f3;
   border: 1px solid #cfc6b6;
@@ -3909,7 +3924,7 @@
   min-width: 0;
   padding: 0.55rem 0.5rem;
   border: none;
-  border-bottom: 1.5px solid var(--color-border);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--color-text) 34%, transparent);
   border-radius: 0;
   background: transparent;
   color: var(--color-text);
@@ -3923,7 +3938,7 @@
 .dojo-typing-input:focus-visible {
   outline: none;
   box-shadow: none;
-  border-bottom-color: var(--color-text);
+  border-bottom-color: var(--color-accent);
 }
 
 .dojo-typing-input.is-correct {
@@ -3936,38 +3951,37 @@
   color: var(--color-accent-text);
 }
 
-.dojo-typing-meta-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
 .dojo-typing-actions {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
+  justify-content: center;
+  gap: 1.15rem;
+  margin-top: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .dojo-typing-submit-btn {
-  padding: 0.35rem 0.85rem;
-  border: 1px solid var(--color-text);
+  padding: 0.42rem 1.05rem;
+  border: 1px solid var(--color-accent);
   border-radius: 4px;
-  background: var(--color-text);
-  color: #fcf9f3;
+  background: var(--color-accent);
+  color: #ffffff;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .dojo-typing-submit-btn:hover {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 88%, #1c1b20);
+  border-color: color-mix(in srgb, var(--color-accent) 88%, #1c1b20);
 }
 
 .dojo-typing-preview {
+  margin-top: -0.35rem;
+  text-align: center;
   font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
@@ -4091,6 +4105,10 @@
 }
 
 .lesson-stage-wrapper {
+  min-height: clamp(30.5rem, 58vh, 34rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   margin-bottom: 0.75rem;
 }
 
