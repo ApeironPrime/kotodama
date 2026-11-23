@@ -11,8 +11,11 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
   Info,
   Layers,
+  PanelRightClose,
   Search,
   Shuffle,
   Volume2,
@@ -68,6 +71,46 @@ function formatJpQuote(text: string): string {
   return `「${trimmed}」`
 }
 
+const RAW_POS_MAP: Array<[RegExp, string]> = [
+  [/い形容詞/g, 'Tính từ い'],
+  [/な形容詞/g, 'Tính từ な'],
+  [/複合動詞/g, 'Động từ ghép'],
+  [/名詞/g, 'Danh từ'],
+  [/動詞/g, 'Động từ'],
+  [/形容詞/g, 'Tính từ'],
+  [/副詞/g, 'Phó từ'],
+  [/カタカナ/g, 'Katakana'],
+  [/接続詞/g, 'Liên từ'],
+  [/接辞/g, 'Tiếp tố'],
+  [/慣用句/g, 'Quán dụng ngữ'],
+]
+
+function formatEditorialUnitTitle(rawTitle?: string, ordinal?: number, topic?: string): string {
+  const title = (rawTitle || '').trim()
+  if (!title) return `Chương ${ordinal || 1}`
+  const looksTechnical = /\|/.test(title) || /_\s*\[[^\]]+\]/.test(title) || /^Unit\s+\d+/i.test(title)
+  if (!looksTechnical) return title
+
+  const unitMatch = title.match(/^Unit\s+(\d+)/i)
+  const chapterNum = unitMatch?.[1] || String(ordinal || 1)
+  let body = title
+    .replace(/^Unit\s+\d+\s*\|?\s*/i, '')
+    .replace(/_\s*\[[^\]]+\]/g, '')
+    .trim()
+
+  for (const [pattern, viLabel] of RAW_POS_MAP) {
+    body = body.replace(pattern, viLabel)
+  }
+  body = body
+    .replace(/\s+([A-Z])$/, ' (Phần $1)')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+
+  const fallbackTopic = topic ? topic.trim() : ''
+  const resolvedBody = body || fallbackTopic
+  return resolvedBody ? `Chương ${chapterNum} · ${resolvedBody}` : `Chương ${chapterNum}`
+}
+
 export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // Navigation level: 'catalog' -> 'lessons' -> 'study'
   const [selectedCourseCode, setSelectedCourseCode] = useUrlState<string | null>('course', null)
@@ -96,6 +139,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // In-Lesson Flashcard State
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [hideListAnswers, setHideListAnswers] = useState(true)
+  const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(false)
   const [stampBurstCount, setStampBurstCount] = useState(0)
   const [flipRippleCount, setFlipRippleCount] = useState(0)
   const [showStampFlash, setShowStampFlash] = useState(false)
@@ -1069,7 +1114,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               currentUnitInfo?.topic ? ` (${currentUnitInfo.topic})` : ''
             }`}
           >
-            {course?.title} · {currentUnitInfo?.title || `Bài ${currentUnitInfo?.ordinal || ''}`}
+            {course?.title?.replace(/\s*\([^)]*\)\s*$/, '')} ·{' '}
+            {formatEditorialUnitTitle(currentUnitInfo?.title, currentUnitInfo?.ordinal, currentUnitInfo?.topic)}
           </h2>
         </div>
 
@@ -1154,7 +1200,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       )}
 
       {/* 3.3 + 3.4 + 3.5: 2-COLUMN SPLIT STUDIO WORKSPACE */}
-      <div className="lesson-split-workspace">
+      <div className={`lesson-split-workspace${isLedgerCollapsed ? ' is-zen' : ''}`}>
         <div className="lesson-split-workspace__stage">
           {!isTermsLoading && !isTermsError && words.length > 0 && (
             <div className="lesson-stage-wrapper">
@@ -1182,7 +1228,75 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   }
                   return (
                     <div id="panel-study-flashcard" role="tabpanel" aria-labelledby="tab-study-flashcard">
-                      {/* Kakejiku Hanging Scroll Frame */}
+                      {/* Slim Software Toolbar ABOVE the Kakemono Rod (keeps interior 100% pure art) */}
+                      <div className="kakejiku-toolbar">
+                        <div className="curriculum-flashcard__topbar-left">
+                          <div className="curriculum-flashcard__segment" role="group" aria-label="Chế độ mặt thẻ">
+                            <button
+                              type="button"
+                              className={`curriculum-flashcard__seg-btn${cardContentMode === 'word' ? ' is-active' : ''}`}
+                              onClick={() => setCardContentMode('word')}
+                            >
+                              Từ vựng
+                            </button>
+                            {currentCard.examples && currentCard.examples.length > 0 && (
+                              <button
+                                type="button"
+                                className={`curriculum-flashcard__seg-btn${cardContentMode === 'example' ? ' is-active' : ''}`}
+                                onClick={() => setCardContentMode('example')}
+                              >
+                                Câu ví dụ
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            className="curriculum-flashcard__pill"
+                            onClick={() => setSelectedDictWord(currentCard.word)}
+                            title="Tra từ điển"
+                            aria-label="Tra từ điển"
+                          >
+                            <BookOpen size={12} aria-hidden="true" /> Tra từ điển
+                          </button>
+                        </div>
+
+                        <div className="curriculum-flashcard__topbar-right">
+                          <button
+                            type="button"
+                            className={`curriculum-flashcard__icon-btn${isShuffled ? ' is-active' : ''}`}
+                            onClick={toggleShuffleDeck}
+                            aria-pressed={isShuffled}
+                            title={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
+                            aria-label={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
+                          >
+                            <Shuffle size={15} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className={`curriculum-flashcard__icon-btn${playingAudioUrl ? ' is-active' : ''}`}
+                            onClick={() => playAudio(currentCard.audioUrl, currentCard.word)}
+                            title="Phát âm (Phím R)"
+                            aria-label="Phát âm (Phím R)"
+                          >
+                            <Volume2 size={16} />
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`curriculum-flashcard__icon-btn${isCurrentCardSaved ? ' is-saved' : ''}`}
+                            onClick={() => void handleSaveWordToSrs(currentCard)}
+                            title={isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'}
+                            aria-label={
+                              isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'
+                            }
+                          >
+                            {isCurrentCardSaved ? <Check size={16} /> : <BookmarkPlus size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pure Kakejiku Hanging Scroll Frame */}
                       <div className="kakejiku-scroll">
                         <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true">
                           <div className="curriculum-flashcard__rail">
@@ -1230,94 +1344,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
                             <span>語彙墨蹟</span>
                             <span className="curriculum-flashcard__hanko">{isFlipped ? '裏' : '表'}</span>
-                          </div>
-
-                          {/* Top Bar inside Card */}
-                          <div className="curriculum-flashcard__topbar">
-                            <div className="curriculum-flashcard__topbar-left">
-                              <div className="curriculum-flashcard__segment" role="group" aria-label="Chế độ mặt thẻ">
-                                <button
-                                  type="button"
-                                  className={`curriculum-flashcard__seg-btn${cardContentMode === 'word' ? ' is-active' : ''}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setCardContentMode('word')
-                                  }}
-                                >
-                                  Từ vựng
-                                </button>
-                                {currentCard.examples && currentCard.examples.length > 0 && (
-                                  <button
-                                    type="button"
-                                    className={`curriculum-flashcard__seg-btn${cardContentMode === 'example' ? ' is-active' : ''}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setCardContentMode('example')
-                                    }}
-                                  >
-                                    Câu ví dụ
-                                  </button>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                className="curriculum-flashcard__pill"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedDictWord(currentCard.word)
-                                }}
-                                title="Tra từ điển"
-                                aria-label="Tra từ điển"
-                              >
-                                <BookOpen size={12} aria-hidden="true" /> Tra từ điển
-                              </button>
-                            </div>
-
-                            <div className="curriculum-flashcard__topbar-right">
-                              <button
-                                type="button"
-                                className={`curriculum-flashcard__icon-btn${isShuffled ? ' is-active' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  toggleShuffleDeck()
-                                }}
-                                aria-pressed={isShuffled}
-                                title={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
-                                aria-label={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
-                              >
-                                <Shuffle size={16} aria-hidden="true" />
-                              </button>
-                              <button
-                                type="button"
-                                className={`curriculum-flashcard__icon-btn${playingAudioUrl ? ' is-active' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  playAudio(currentCard.audioUrl, currentCard.word)
-                                }}
-                                title="Phát âm (Phím R)"
-                                aria-label="Phát âm (Phím R)"
-                              >
-                                <Volume2 size={17} />
-                              </button>
-
-                              <button
-                                type="button"
-                                className={`curriculum-flashcard__icon-btn${isCurrentCardSaved ? ' is-saved' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  void handleSaveWordToSrs(currentCard)
-                                }}
-                                title={
-                                  isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'
-                                }
-                                aria-label={
-                                  isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'
-                                }
-                              >
-                                {isCurrentCardSaved ? <Check size={17} /> : <BookmarkPlus size={17} />}
-                              </button>
-                            </div>
                           </div>
 
                           {/* Middle Main Display */}
@@ -1564,203 +1590,268 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </div>
         </div>
 
-        {/* 3.5 RIGHT RAIL: STITCHED ORIHON MANUSCRIPT LEDGER */}
-        <section className="lesson-vocab-section lesson-vocab-rail" aria-label="Danh sách từ vựng bài học">
-          <div className="orihon-binding" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="lesson-vocab-rail__header">
-            <div className="lesson-vocab-section__title-group">
-              <span className="lesson-vocab-section__hanko" aria-hidden="true">
-                語
-              </span>
-              <h3>Danh Sách ({totalTerms})</h3>
+        {/* 3.5 RIGHT RAIL: STITCHED ORIHON MANUSCRIPT LEDGER OR ZEN SHIORI TAB */}
+        {isLedgerCollapsed ? (
+          <button
+            type="button"
+            className="lesson-zen-shiori"
+            onClick={() => setIsLedgerCollapsed(false)}
+            aria-label="Mở danh sách từ vựng"
+            title="Mở danh sách từ vựng"
+          >
+            <span className="lesson-zen-shiori__seal" aria-hidden="true">
+              録
+            </span>
+            <span>Mục lục ({totalTerms})</span>
+          </button>
+        ) : (
+          <section className="lesson-vocab-section lesson-vocab-rail" aria-label="Danh sách từ vựng bài học">
+            <div className="orihon-binding" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
             </div>
-            <div className="curriculum-unit-search">
-              <Search size={15} className="curriculum-unit-search__icon" aria-hidden="true" />
-              <input
-                type="search"
-                className="curriculum-unit-search__input"
-                placeholder="Tìm từ, cách đọc, hán việt, ý nghĩa..."
-                value={unitSearchQuery}
-                onChange={(e) => {
-                  setUnitSearchQuery(e.target.value)
-                  setUnitPage(1)
-                }}
-                aria-label="Tìm kiếm từ vựng trong bài học"
-              />
-            </div>
-          </div>
-
-          <div id="panel-study-list" className="lesson-vocab-rail__body">
-            {isTermsLoading ? (
-              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                <p style={{ margin: 0 }}>Đang tải danh sách từ vựng...</p>
-              </div>
-            ) : isTermsError ? (
-              <RetryState
-                title="Chưa tải được từ vựng"
-                description="Kiểm tra kết nối rồi thử lại."
-                onRetry={() => void refetchTerms()}
-              />
-            ) : words.length === 0 ? (
-              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                <p style={{ margin: '0 0 1rem 0' }}>Không tìm thấy từ vựng nào khớp với từ khóa "{unitSearchQuery}".</p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setUnitSearchQuery('')
-                    setUnitPage(1)
-                  }}
-                >
-                  Xóa tìm kiếm
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="lesson-vocab-rail__list">
-                  {paginatedWords.map((item, idx) => {
-                    const globalIdx = (unitPage - 1) * PAGE_SIZE + idx + 1
-                    const isSaved = isCurriculumTermSaved(item)
-                    const isKnown = knownWords.includes(item.termId || String(item.id))
-                    const isCurrentOnStage = stageMode === 'flashcard' && currentCard?.word === item.word
-                    const loadOntoStage = () => {
-                      setIsShuffled(false)
-                      setShuffledOrder([])
-                      setCurrentIndex(idx)
-                      setIsFlipped(false)
-                      setStageMode('flashcard')
-                    }
-                    return (
-                      <div
-                        key={item.id || idx}
-                        className={`curriculum-term-row curriculum-term-row--rail${isCurrentOnStage ? ' is-current' : ''}`}
-                      >
-                        <div className="curriculum-term-row__top">
-                          <div className="curriculum-term-row__identity-wrap">
-                            <button
-                              type="button"
-                              className="curriculum-term-row__index-btn"
-                              onClick={loadOntoStage}
-                              title="Đưa từ này lên Flashcard"
-                            >
-                              #{globalIdx}
-                            </button>
-
-                            <button
-                              type="button"
-                              className="curriculum-term-row__identity-btn"
-                              onClick={loadOntoStage}
-                              title="Học từ này trên Flashcard"
-                            >
-                              <span className="curriculum-term-row__word">{item.word}</span>
-                              {item.reading && <span className="curriculum-term-row__reading">【{item.reading}】</span>}
-                              {item.hanViet && <span className="curriculum-term-row__hanviet">({item.hanViet})</span>}
-                              {isKnown && (
-                                <span
-                                  className="curriculum-term-row__known-seal"
-                                  title="Đã thuộc"
-                                  aria-label="Đã thuộc"
-                                >
-                                  済
-                                </span>
-                              )}
-                            </button>
-                          </div>
-
-                          <div className="curriculum-term-row__actions">
-                            <button
-                              type="button"
-                              className="curriculum-term-row__icon-btn"
-                              onClick={() => playAudio(item.audioUrl, item.word)}
-                              title="Phát âm"
-                              aria-label={`Phát âm từ ${item.word}`}
-                            >
-                              <Volume2 size={15} />
-                            </button>
-
-                            <button
-                              type="button"
-                              className="curriculum-term-row__icon-btn"
-                              onClick={() => setSelectedDictWord(item.word)}
-                              title="Chi tiết từ điển"
-                              aria-label="Chi tiết từ điển"
-                            >
-                              <BookOpen size={15} aria-hidden="true" />
-                            </button>
-
-                            <button
-                              type="button"
-                              className={`curriculum-term-row__icon-btn curriculum-term-row__srs-btn${isSaved ? ' is-saved' : ''}`}
-                              onClick={() => void handleSaveWordToSrs(item)}
-                              title={isSaved ? 'Đã lưu trong SRS' : 'Lưu vào SRS'}
-                              aria-label={isSaved ? 'Đã lưu' : '+ Thêm SRS'}
-                            >
-                              {isSaved ? <Check size={15} /> : <BookmarkPlus size={15} />}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="curriculum-term-row__meaning">{item.meaning}</div>
-
-                        {item.examples?.[0]?.jp && (
-                          <div className="curriculum-term-row__example" lang="ja">
-                            {formatJpQuote(item.examples[0].jp)}
-                            {item.examples[0].vi ? ` — ${item.examples[0].vi}` : ''}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+            <div className="lesson-vocab-rail__header">
+              <div className="lesson-vocab-rail__header-top">
+                <div className="lesson-vocab-section__title-group">
+                  <span className="lesson-vocab-section__hanko" aria-hidden="true">
+                    語
+                  </span>
+                  <h3>Danh Sách ({totalTerms})</h3>
                 </div>
 
-                {/* In-Unit Pagination */}
-                {totalPages > 1 && (
-                  <div className="curriculum-pagination">
-                    <span>
-                      Hiển thị {(unitPage - 1) * PAGE_SIZE + 1} – {Math.min(unitPage * PAGE_SIZE, totalTerms)} trên tổng
-                      số {totalTerms} từ
-                    </span>
-                    <div
-                      style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}
-                    >
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={unitPage <= 1}
-                        onClick={() => setUnitPage((p) => Math.max(1, p - 1))}
-                      >
-                        <ChevronLeft size={15} /> Trước
-                      </Button>
-                      <span
+                <div className="lesson-vocab-rail__header-tools">
+                  <button
+                    type="button"
+                    className={`lesson-vocab-rail__tool-btn${hideListAnswers ? ' is-active' : ''}`}
+                    onClick={() => setHideListAnswers((v) => !v)}
+                    aria-pressed={hideListAnswers}
+                    title="Che phiên âm & nghĩa để tránh lộ đáp án khi học Flashcard"
+                  >
+                    {hideListAnswers ? <EyeOff size={13} aria-hidden="true" /> : <Eye size={13} aria-hidden="true" />}
+                    <span>{hideListAnswers ? 'Che đáp án' : 'Đang hiện'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lesson-vocab-rail__collapse-btn"
+                    onClick={() => setIsLedgerCollapsed(true)}
+                    title="Thu gọn danh sách (Chế độ tập trung Zen)"
+                    aria-label="Thu gọn danh sách"
+                  >
+                    <PanelRightClose size={15} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <div className="curriculum-unit-search">
+                <Search size={15} className="curriculum-unit-search__icon" aria-hidden="true" />
+                <input
+                  type="search"
+                  className="curriculum-unit-search__input"
+                  placeholder="Tìm từ, cách đọc, hán việt, ý nghĩa..."
+                  value={unitSearchQuery}
+                  onChange={(e) => {
+                    setUnitSearchQuery(e.target.value)
+                    setUnitPage(1)
+                  }}
+                  aria-label="Tìm kiếm từ vựng trong bài học"
+                />
+              </div>
+            </div>
+
+            <div id="panel-study-list" className="lesson-vocab-rail__body">
+              {isTermsLoading ? (
+                <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                  <p style={{ margin: 0 }}>Đang tải danh sách từ vựng...</p>
+                </div>
+              ) : isTermsError ? (
+                <RetryState
+                  title="Chưa tải được từ vựng"
+                  description="Kiểm tra kết nối rồi thử lại."
+                  onRetry={() => void refetchTerms()}
+                />
+              ) : words.length === 0 ? (
+                <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                  <p style={{ margin: '0 0 1rem 0' }}>
+                    Không tìm thấy từ vựng nào khớp với từ khóa "{unitSearchQuery}".
+                  </p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setUnitSearchQuery('')
+                      setUnitPage(1)
+                    }}
+                  >
+                    Xóa tìm kiếm
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="lesson-vocab-rail__list">
+                    {paginatedWords.map((item, idx) => {
+                      const globalIdx = (unitPage - 1) * PAGE_SIZE + idx + 1
+                      const isSaved = isCurriculumTermSaved(item)
+                      const isKnown = knownWords.includes(item.termId || String(item.id))
+                      const isCurrentOnStage = stageMode === 'flashcard' && currentCard?.word === item.word
+                      const shouldVeilAnswer =
+                        stageMode === 'flashcard' && hideListAnswers && !isKnown && !(isCurrentOnStage && isFlipped)
+                      const loadOntoStage = () => {
+                        setIsShuffled(false)
+                        setShuffledOrder([])
+                        setCurrentIndex(idx)
+                        setIsFlipped(false)
+                        setStageMode('flashcard')
+                      }
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className={`curriculum-term-row curriculum-term-row--rail${isCurrentOnStage ? ' is-current' : ''}`}
+                        >
+                          <div className="curriculum-term-row__top">
+                            <div className="curriculum-term-row__identity-wrap">
+                              <button
+                                type="button"
+                                className="curriculum-term-row__index-btn"
+                                onClick={loadOntoStage}
+                                title="Đưa từ này lên Flashcard"
+                              >
+                                #{globalIdx}
+                              </button>
+
+                              <button
+                                type="button"
+                                className="curriculum-term-row__identity-btn"
+                                onClick={loadOntoStage}
+                                title="Học từ này trên Flashcard"
+                              >
+                                <span className="curriculum-term-row__word">{item.word}</span>
+                                {item.reading && (
+                                  <span
+                                    className={`curriculum-term-row__reading${shouldVeilAnswer ? ' is-answer-veiled' : ''}`}
+                                  >
+                                    【{item.reading}】
+                                  </span>
+                                )}
+                                {item.hanViet && (
+                                  <span
+                                    className={`curriculum-term-row__hanviet${shouldVeilAnswer ? ' is-answer-veiled' : ''}`}
+                                  >
+                                    ({item.hanViet})
+                                  </span>
+                                )}
+                                {isKnown && (
+                                  <span
+                                    className="curriculum-term-row__known-seal"
+                                    title="Đã thuộc"
+                                    aria-label="Đã thuộc"
+                                  >
+                                    済
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+
+                            <div className="curriculum-term-row__actions">
+                              <button
+                                type="button"
+                                className="curriculum-term-row__icon-btn"
+                                onClick={() => playAudio(item.audioUrl, item.word)}
+                                title="Phát âm"
+                                aria-label={`Phát âm từ ${item.word}`}
+                              >
+                                <Volume2 size={15} />
+                              </button>
+
+                              <button
+                                type="button"
+                                className="curriculum-term-row__icon-btn"
+                                onClick={() => setSelectedDictWord(item.word)}
+                                title="Chi tiết từ điển"
+                                aria-label="Chi tiết từ điển"
+                              >
+                                <BookOpen size={15} aria-hidden="true" />
+                              </button>
+
+                              <button
+                                type="button"
+                                className={`curriculum-term-row__icon-btn curriculum-term-row__srs-btn${isSaved ? ' is-saved' : ''}`}
+                                onClick={() => void handleSaveWordToSrs(item)}
+                                title={isSaved ? 'Đã lưu trong SRS' : 'Lưu vào SRS'}
+                                aria-label={isSaved ? 'Đã lưu' : '+ Thêm SRS'}
+                              >
+                                {isSaved ? <Check size={15} /> : <BookmarkPlus size={15} />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className={`curriculum-term-row__meaning${shouldVeilAnswer ? ' is-answer-veiled' : ''}`}>
+                            {item.meaning}
+                          </div>
+
+                          {item.examples?.[0]?.jp && (
+                            <div
+                              className={`curriculum-term-row__example${shouldVeilAnswer ? ' is-answer-veiled' : ''}`}
+                              lang="ja"
+                            >
+                              {formatJpQuote(item.examples[0].jp)}
+                              {item.examples[0].vi ? ` — ${item.examples[0].vi}` : ''}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* In-Unit Pagination */}
+                  {totalPages > 1 && (
+                    <div className="curriculum-pagination">
+                      <span>
+                        Hiển thị {(unitPage - 1) * PAGE_SIZE + 1} – {Math.min(unitPage * PAGE_SIZE, totalTerms)} trên
+                        tổng số {totalTerms} từ
+                      </span>
+                      <div
                         style={{
-                          display: 'inline-flex',
+                          display: 'flex',
+                          gap: '0.5rem',
+                          justifyContent: 'space-between',
                           alignItems: 'center',
-                          padding: '0 0.5rem',
-                          fontWeight: 600,
                         }}
                       >
-                        Trang {unitPage} / {totalPages}
-                      </span>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={unitPage >= totalPages}
-                        onClick={() => setUnitPage((p) => Math.min(totalPages, p + 1))}
-                      >
-                        Sau <ChevronRight size={15} />
-                      </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={unitPage <= 1}
+                          onClick={() => setUnitPage((p) => Math.max(1, p - 1))}
+                        >
+                          <ChevronLeft size={15} /> Trước
+                        </Button>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '0 0.5rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Trang {unitPage} / {totalPages}
+                        </span>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={unitPage >= totalPages}
+                          onClick={() => setUnitPage((p) => Math.min(totalPages, p + 1))}
+                        >
+                          Sau <ChevronRight size={15} />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* 3.6 DICTIONARY DETAIL MODAL */}

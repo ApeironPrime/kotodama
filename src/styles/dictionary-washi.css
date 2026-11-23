@@ -48,7 +48,30 @@
 }
 
 .dictionary-page--focus {
-  padding: 0.65rem clamp(1rem, 2.2vw, 2rem) var(--space-10);
+  --color-bg-canvas: #f9f6f0;
+  --color-bg-subtle: #f1ebe0;
+  --color-surface: #fdfbf7;
+  --color-bg-hover: #eee6d8;
+  --color-accent: #b82e2e;
+  --color-accent-text: #9f2626;
+  --color-accent-subtle: rgba(184, 46, 46, 0.08);
+  --color-border: rgba(34, 29, 24, 0.12);
+  --color-border-subtle: rgba(34, 29, 24, 0.08);
+  padding: 0.65rem clamp(1rem, 2.2vw, 2rem) var(--space-8);
+  background: #f9f6f0;
+}
+
+[data-theme='dark'] .dictionary-page--focus {
+  --color-bg-canvas: var(--neutral-950);
+  --color-bg-subtle: var(--neutral-900);
+  --color-surface: var(--neutral-925);
+  --color-bg-hover: var(--neutral-850);
+  --color-accent: #d9534f;
+  --color-accent-text: #f08a86;
+  --color-accent-subtle: rgba(217, 83, 79, 0.16);
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-canvas);
 }
 
 .dictionary-page--focus .dictionary-shell {
