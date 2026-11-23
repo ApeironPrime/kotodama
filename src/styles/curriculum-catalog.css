@@ -2545,7 +2545,7 @@
   border-top: none;
   border-bottom: none;
   border-radius: 0;
-  padding: 1.25rem 2.75rem 1.05rem;
+  padding: 1.65rem 2.75rem 1.8rem;
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -2949,10 +2949,16 @@
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding-top: 0.75rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  padding-top: 0.85rem;
+  border-top: 1px solid transparent;
   position: relative;
   z-index: 2;
+  transition: border-color 200ms ease;
+}
+
+.kakejiku-stage:hover .curriculum-flashcard__footer,
+.kakejiku-stage:focus-within .curriculum-flashcard__footer {
+  border-top-color: color-mix(in srgb, var(--color-border) 55%, transparent);
 }
 
 .curriculum-flashcard__footer-meta {
@@ -2961,11 +2967,50 @@
   gap: 0.45rem;
   font-size: 0.8rem;
   color: var(--color-text-muted);
+  opacity: 0.45;
+  transition: opacity 200ms ease;
 }
 
 .curriculum-flashcard__footer-keys {
   font-size: 0.72rem;
   color: var(--color-text-secondary);
+}
+
+/* 3-Tier Display Hierarchy: Hover-Reveal HUD + Touch Device Fallback */
+.kakejiku-stage .curriculum-flashcard__topbar-right,
+.kakejiku-stage .curriculum-flashcard__cue,
+.kakejiku-stage .curriculum-flashcard__footer-keys {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.kakejiku-stage:hover .curriculum-flashcard__topbar-right,
+.kakejiku-stage:focus-within .curriculum-flashcard__topbar-right,
+.kakejiku-stage:hover .curriculum-flashcard__cue,
+.kakejiku-stage:focus-within .curriculum-flashcard__cue,
+.kakejiku-stage:hover .curriculum-flashcard__footer-keys,
+.kakejiku-stage:focus-within .curriculum-flashcard__footer-keys {
+  opacity: 1;
+}
+
+.kakejiku-stage:hover .curriculum-flashcard__footer-meta,
+.kakejiku-stage:focus-within .curriculum-flashcard__footer-meta {
+  opacity: 0.88;
+}
+
+@media (hover: none) {
+  .kakejiku-stage .curriculum-flashcard__topbar-right {
+    opacity: 1;
+  }
+
+  .kakejiku-stage .curriculum-flashcard__cue,
+  .kakejiku-stage .curriculum-flashcard__footer-meta {
+    opacity: 0.72;
+  }
+
+  .kakejiku-stage .curriculum-flashcard__footer-keys {
+    display: none;
+  }
 }
 
 .curriculum-flashcard-controls__nav {
@@ -3647,6 +3692,11 @@
   .curriculum-flashcard-hud__track > span,
   .kakejiku-stamp-flash,
   .is-answer-veiled,
+  .kakejiku-stage .curriculum-flashcard__topbar-right,
+  .kakejiku-stage .curriculum-flashcard__cue,
+  .kakejiku-stage .curriculum-flashcard__footer-meta,
+  .kakejiku-stage .curriculum-flashcard__footer-keys,
+  .kakejiku-stage .curriculum-flashcard__footer,
   .lesson-dock-card,
   .dojo-mode-btn,
   .dojo-option-btn,
@@ -3870,38 +3920,15 @@
   position: relative;
   margin-top: 0;
   padding-top: 0;
-  padding-left: 16px;
+  padding-left: 1.35rem;
   border: none;
-  border-left: 1px solid var(--color-border);
+  border-left: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.orihon-binding {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 14px;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  align-items: center;
-  padding-block: 1.5rem;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.orihon-binding > span {
-  width: 7px;
-  height: 2px;
-  border-radius: 1px;
-  background: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
 }
 
 @media (min-width: 1024px) {
@@ -3913,7 +3940,7 @@
 }
 
 .lesson-vocab-rail__header {
-  padding: 0.15rem 0.2rem 0.75rem 0.5rem;
+  padding: 0.15rem 0 0.75rem;
   border-bottom: 1px solid var(--color-border);
   background: transparent;
   display: flex;
@@ -4022,7 +4049,7 @@
   flex-direction: column;
   align-items: stretch;
   gap: 0.28rem;
-  padding: 0.68rem 0.45rem 0.68rem 0.7rem;
+  padding: 0.68rem 0.25rem 0.68rem 0.45rem;
   background: transparent;
   border-bottom: 1px solid var(--color-border-subtle);
 }
@@ -4175,7 +4202,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.45rem;
-  padding: 0.65rem 0.45rem 0.1rem 0.7rem;
+  padding: 0.65rem 0 0.1rem;
   font-size: 0.76rem;
   flex-shrink: 0;
   background: transparent;
