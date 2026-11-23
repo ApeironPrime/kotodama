@@ -2448,25 +2448,93 @@
   }
 }
 
+@keyframes hankoSlam {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.1) rotate(-14deg);
+  }
+  40% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(0.96) rotate(-6deg);
+  }
+  75% {
+    opacity: 0.92;
+    transform: translate(-50%, -50%) scale(1) rotate(-6deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.06) rotate(-6deg);
+  }
+}
+
+/* Kakejiku Hanging Scroll Frame */
+.kakejiku-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  filter: drop-shadow(0 18px 34px color-mix(in srgb, var(--color-text) 12%, transparent));
+}
+
+.kakejiku-rod {
+  position: relative;
+  height: 11px;
+  margin-inline: -6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-text) 78%, #5e4433) 0%,
+    color-mix(in srgb, var(--color-text) 92%, #241914) 55%,
+    color-mix(in srgb, var(--color-text) 72%, #4a3527) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 210, 0.22),
+    0 3px 8px -2px color-mix(in srgb, var(--color-text) 25%, transparent);
+  z-index: 3;
+}
+
+.kakejiku-rod::before,
+.kakejiku-rod::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  width: 12px;
+  height: 13px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #e5c687 0%, #a8823c 55%, #7b5d27 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 230, 0.55);
+}
+
+.kakejiku-rod::before {
+  left: -3px;
+}
+
+.kakejiku-rod::after {
+  right: -3px;
+}
+
+.kakejiku-rod--top {
+  overflow: hidden;
+}
+
+.kakejiku-rod--bottom {
+  height: 13px;
+}
+
 .curriculum-flashcard {
   perspective: 1400px;
-  min-height: clamp(360px, calc(100vh - 21.5rem), 470px);
+  min-height: clamp(320px, calc(100dvh - 23rem), 430px);
   background-color: var(--color-surface);
-  background-image:
-    radial-gradient(
-      ellipse 70% 55% at 50% 45%,
-      color-mix(in srgb, var(--color-accent) 4%, transparent),
-      transparent 72%
-    ),
-    linear-gradient(
-      180deg,
-      var(--color-surface) 0%,
-      color-mix(in srgb, var(--color-bg-subtle) 45%, var(--color-surface)) 100%
-    );
+  background-image: linear-gradient(
+    180deg,
+    var(--color-surface) 0%,
+    color-mix(in srgb, var(--color-bg-subtle) 35%, var(--color-surface)) 100%
+  );
   color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 1.4rem 2.25rem 1.2rem;
+  border-inline: 10px solid color-mix(in srgb, var(--color-bg-subtle) 88%, var(--color-border));
+  border-top: none;
+  border-bottom: none;
+  border-radius: 0;
+  padding: 1.25rem 2.75rem 1.05rem;
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -2475,77 +2543,110 @@
   align-items: center;
   text-align: center;
   box-shadow:
-    0 2px 6px color-mix(in srgb, var(--color-text) 4%, transparent),
-    0 6px 0 -2px var(--color-surface),
-    0 7px 0 -2px color-mix(in srgb, var(--color-border) 85%, transparent),
-    0 12px 0 -4px var(--color-bg-subtle),
-    0 13px 0 -4px color-mix(in srgb, var(--color-border) 75%, transparent),
-    0 24px 48px -22px color-mix(in srgb, var(--color-text) 18%, transparent),
-    inset 0 0 0 8px var(--color-surface),
-    inset 0 0 0 9px color-mix(in srgb, var(--color-border) 48%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 22%, var(--color-border)),
+    inset 0 0 0 6px color-mix(in srgb, var(--color-surface) 92%, transparent),
+    inset 0 0 0 7px color-mix(in srgb, var(--color-border) 55%, transparent);
   position: relative;
   user-select: none;
   transition:
     border-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.kakejiku-art-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.44;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.curriculum-flashcard.is-flipped .kakejiku-art-bg {
+  opacity: 0.16;
+  filter: blur(1.5px);
+}
+
+[data-theme='dark'] .kakejiku-art-bg {
+  mix-blend-mode: screen;
+  filter: invert(1) contrast(0.85);
+  opacity: 0.16;
+}
+
+[data-theme='dark'] .curriculum-flashcard.is-flipped .kakejiku-art-bg {
+  opacity: 0.08;
+  filter: invert(1) contrast(0.85) blur(2px);
+}
+
+.kakejiku-atmosphere-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.kakejiku-stamp-flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4.5rem;
+  height: 4.5rem;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--color-accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-accent-subtle) 85%, transparent);
+  color: var(--color-accent-text);
+  font-family: var(--font-jp-serif, 'Shippori Mincho', serif);
+  font-size: 2.3rem;
+  font-weight: 800;
+  pointer-events: none;
+  z-index: 4;
+  animation: hankoSlam 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.kakejiku-colophon {
+  position: absolute;
+  left: 1.35rem;
+  top: 52%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: color-mix(in srgb, var(--color-text-muted) 72%, transparent);
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+}
+
+@media (max-width: 640px) {
+  .kakejiku-colophon {
+    display: none;
+  }
 }
 
 @media (max-width: 1023px) {
   .curriculum-flashcard {
-    min-height: 350px;
+    min-height: 330px;
   }
 }
 
 @media (max-width: 767px) {
   .curriculum-flashcard {
-    min-height: 300px;
-    padding: 1.2rem 1.15rem;
+    min-height: 280px;
+    padding: 1.15rem 1.25rem;
+    border-inline-width: 6px;
   }
-}
-
-.curriculum-flashcard__corners {
-  position: absolute;
-  inset: 14px;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.curriculum-flashcard__corners > span {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-color: color-mix(in srgb, var(--color-accent) 34%, transparent);
-  border-style: solid;
-  border-width: 0;
-}
-
-.curriculum-flashcard__corners > span:nth-child(1) {
-  top: 0;
-  left: 0;
-  border-top-width: 1.5px;
-  border-left-width: 1.5px;
-}
-
-.curriculum-flashcard__corners > span:nth-child(2) {
-  top: 0;
-  right: 0;
-  border-top-width: 1.5px;
-  border-right-width: 1.5px;
-}
-
-.curriculum-flashcard__corners > span:nth-child(3) {
-  bottom: 0;
-  left: 0;
-  border-bottom-width: 1.5px;
-  border-left-width: 1.5px;
-}
-
-.curriculum-flashcard__corners > span:nth-child(4) {
-  bottom: 0;
-  right: 0;
-  border-bottom-width: 1.5px;
-  border-right-width: 1.5px;
 }
 
 .curriculum-flashcard__tategaki {
@@ -2977,11 +3078,12 @@
 
 .curriculum-flashcard__word {
   font-family: var(--font-jp-serif);
-  font-size: clamp(3.6rem, 5.4vw, 5rem);
+  font-size: clamp(4.2rem, 6.2vw, 5.8rem);
   font-weight: 500;
   color: var(--color-text);
   letter-spacing: 0.06em;
-  line-height: 1.15;
+  line-height: 1.12;
+  text-shadow: 0 2px 14px color-mix(in srgb, var(--color-surface) 92%, transparent);
 }
 
 .curriculum-flashcard__reading {
@@ -3532,6 +3634,7 @@
   .curriculum-flashcard__flip-stage,
   .curriculum-flashcard__rail > span,
   .curriculum-flashcard-hud__track > span,
+  .kakejiku-stamp-flash,
   .lesson-dock-card,
   .dojo-mode-btn,
   .dojo-option-btn,
@@ -3689,8 +3792,10 @@
 }
 
 .lesson-vocab-section.lesson-vocab-rail {
+  position: relative;
   margin-top: 0;
   padding-top: 0;
+  padding-left: 14px;
   border-top: none;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -3704,11 +3809,36 @@
   overflow: hidden;
 }
 
+.orihon-binding {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  border-right: 1px dashed color-mix(in srgb, var(--color-border) 85%, transparent);
+  background: color-mix(in srgb, var(--color-bg-subtle) 65%, var(--color-surface));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  padding-block: 1.5rem;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.orihon-binding > span {
+  width: 6px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 50%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface));
+}
+
 @media (min-width: 1024px) {
   .lesson-vocab-section.lesson-vocab-rail {
-    height: calc(100vh - 10.25rem);
-    max-height: 670px;
-    min-height: 490px;
+    height: calc(100dvh - 10.5rem);
+    max-height: 615px;
+    min-height: 410px;
   }
 }
 

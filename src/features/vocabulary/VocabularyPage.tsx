@@ -38,7 +38,9 @@ import { WatojiBookCover } from './WatojiBookCover'
 import { HorizontalBookshelf } from './HorizontalBookshelf'
 import { KaikaShokoModal } from './KaikaShokoModal'
 import { LessonMiniGame } from './LessonMiniGame'
+import { StudyInkAtmosphere } from './StudyInkAtmosphere'
 import { WashiGoldDustCanvas } from './WashiGoldDustCanvas'
+import { sumiAudio } from '../dictionary/sumiAudio'
 
 const FILTER_TABS = [
   { id: 'ALL', label: 'Tất cả' },
@@ -94,6 +96,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // In-Lesson Flashcard State
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [stampBurstCount, setStampBurstCount] = useState(0)
+  const [flipRippleCount, setFlipRippleCount] = useState(0)
+  const [showStampFlash, setShowStampFlash] = useState(false)
+  const stampTimerRef = useRef<number | null>(null)
+  useEffect(() => {
+    return () => {
+      if (stampTimerRef.current) window.clearTimeout(stampTimerRef.current)
+    }
+  }, [])
   const { user } = useAuth()
   const [knownWords, setKnownWords] = usePersistentState<string[]>(
     `kotodama.known:${user?.id ?? 'guest'}:${selectedCourseCode}:${selectedUnitKey}`,
@@ -1147,313 +1158,320 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         <div className="lesson-split-workspace__stage">
           {!isTermsLoading && !isTermsError && words.length > 0 && (
             <div className="lesson-stage-wrapper">
-              {stageMode === 'flashcard' && currentCard && (
-                <div id="panel-study-flashcard" role="tabpanel" aria-labelledby="tab-study-flashcard">
-                  {/* Card Frame with Integrated Progress Rail & Compact HUD */}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={isFlipped}
-                    aria-label={`Thẻ ghi nhớ ${currentCard.word}`}
-                    className={`curriculum-flashcard${isFlipped ? ' is-flipped' : ''}`}
-                    onClick={() => setIsFlipped((f) => !f)}
-                    onKeyDown={(e) => {
-                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                        e.preventDefault()
-                        setIsFlipped((f) => !f)
-                      }
-                    }}
-                  >
-                    <div className="curriculum-flashcard__rail" aria-hidden="true">
-                      <span
-                        style={{
-                          width: `${Math.round(((currentIndex + 1) / Math.max(1, flashcardDeck.length)) * 100)}%`,
-                        }}
-                      />
-                    </div>
-
-                    <div className="curriculum-flashcard__corners" aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-
-                    <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
-                      <span>第{currentUnitInfo?.ordinal || 1}課 · 語彙札</span>
-                      <span className="curriculum-flashcard__hanko">{isFlipped ? '裏' : '表'}</span>
-                    </div>
-
-                    {/* Top Bar inside Card */}
-                    <div className="curriculum-flashcard__topbar">
-                      <div className="curriculum-flashcard__topbar-left">
-                        <div className="curriculum-flashcard__segment" role="group" aria-label="Chế độ mặt thẻ">
-                          <button
-                            type="button"
-                            className={`curriculum-flashcard__seg-btn${cardContentMode === 'word' ? ' is-active' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setCardContentMode('word')
-                            }}
-                          >
-                            Từ vựng
-                          </button>
-                          {currentCard.examples && currentCard.examples.length > 0 && (
-                            <button
-                              type="button"
-                              className={`curriculum-flashcard__seg-btn${cardContentMode === 'example' ? ' is-active' : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setCardContentMode('example')
+              {stageMode === 'flashcard' &&
+                currentCard &&
+                (() => {
+                  const currentCardKanjis = Array.from(
+                    new Set(Array.from(currentCard.word).filter((ch) => /\p{Script=Han}/u.test(ch)))
+                  )
+                  const toggleCardFlip = () => {
+                    sumiAudio.initOnGesture()
+                    sumiAudio.playBrushFriction()
+                    setFlipRippleCount((c) => c + 1)
+                    setIsFlipped((f) => !f)
+                  }
+                  const triggerKnownStamp = () => {
+                    sumiAudio.initOnGesture()
+                    sumiAudio.playHankoStamp()
+                    setStampBurstCount((c) => c + 1)
+                    setShowStampFlash(true)
+                    if (stampTimerRef.current) window.clearTimeout(stampTimerRef.current)
+                    stampTimerRef.current = window.setTimeout(() => setShowStampFlash(false), 650)
+                    setKnownWords((prev) => [...new Set([...prev, currentCard.termId || String(currentCard.id)])])
+                    handleNextCard()
+                  }
+                  return (
+                    <div id="panel-study-flashcard" role="tabpanel" aria-labelledby="tab-study-flashcard">
+                      {/* Kakejiku Hanging Scroll Frame */}
+                      <div className="kakejiku-scroll">
+                        <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true">
+                          <div className="curriculum-flashcard__rail">
+                            <span
+                              style={{
+                                width: `${Math.round(((currentIndex + 1) / Math.max(1, flashcardDeck.length)) * 100)}%`,
                               }}
-                            >
-                              Câu ví dụ
-                            </button>
-                          )}
+                            />
+                          </div>
                         </div>
 
-                        <button
-                          type="button"
-                          className="curriculum-flashcard__pill"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedDictWord(currentCard.word)
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isFlipped}
+                          aria-label={`Thẻ ghi nhớ ${currentCard.word}`}
+                          className={`curriculum-flashcard${isFlipped ? ' is-flipped' : ''}`}
+                          onClick={toggleCardFlip}
+                          onKeyDown={(e) => {
+                            if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                              e.preventDefault()
+                              toggleCardFlip()
+                            }
                           }}
-                          title="Tra từ điển"
-                          aria-label="Tra từ điển"
                         >
-                          <BookOpen size={12} aria-hidden="true" /> Tra từ điển
-                        </button>
-                      </div>
+                          <img
+                            src="/assets/study-scroll-sumie.jpg"
+                            alt=""
+                            aria-hidden="true"
+                            className="kakejiku-art-bg"
+                          />
+                          <StudyInkAtmosphere burstTrigger={stampBurstCount} rippleTrigger={flipRippleCount} />
 
-                      <div className="curriculum-flashcard__topbar-right">
-                        <button
-                          type="button"
-                          className={`curriculum-flashcard__icon-btn${isShuffled ? ' is-active' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleShuffleDeck()
-                          }}
-                          aria-pressed={isShuffled}
-                          title={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
-                          aria-label={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
-                        >
-                          <Shuffle size={16} aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          className={`curriculum-flashcard__icon-btn${playingAudioUrl ? ' is-active' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            playAudio(currentCard.audioUrl, currentCard.word)
-                          }}
-                          title="Phát âm (Phím R)"
-                          aria-label="Phát âm (Phím R)"
-                        >
-                          <Volume2 size={17} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className={`curriculum-flashcard__icon-btn${isCurrentCardSaved ? ' is-saved' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void handleSaveWordToSrs(currentCard)
-                          }}
-                          title={isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'}
-                          aria-label={
-                            isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'
-                          }
-                        >
-                          {isCurrentCardSaved ? <Check size={17} /> : <BookmarkPlus size={17} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Middle Main Display */}
-                    <div
-                      key={`${currentCard.id}-${isFlipped ? 'back' : 'front'}`}
-                      className="curriculum-flashcard__center curriculum-flashcard__flip-stage"
-                    >
-                      {(() => {
-                        const currentCardKanjis = Array.from(
-                          new Set(Array.from(currentCard.word).filter((ch) => /\p{Script=Han}/u.test(ch)))
-                        )
-                        if (cardContentMode === 'example') {
-                          return (
-                            <div style={{ maxWidth: '650px', margin: '0 auto' }}>
-                              <div className="curriculum-flashcard__example-jp">
-                                {currentCard.examples?.[0]?.jp || 'Không có câu ví dụ'}
-                              </div>
-                              {isFlipped && (
-                                <div className="curriculum-flashcard__example-vi">{currentCard.examples?.[0]?.vi}</div>
-                              )}
+                          {showStampFlash && (
+                            <div className="kakejiku-stamp-flash" aria-hidden="true">
+                              済
                             </div>
-                          )
-                        }
-                        if (!isFlipped) {
-                          return (
-                            <>
-                              <div className="curriculum-flashcard__word-stage">
-                                <svg
-                                  viewBox="0 0 220 220"
-                                  className="curriculum-flashcard__enso"
-                                  aria-hidden="true"
-                                  fill="none"
-                                >
-                                  <path
-                                    d="M 114 22 C 166 22, 198 58, 198 110 C 198 164, 158 198, 108 198 C 56 198, 22 162, 24 108 C 26 60, 62 28, 102 24"
-                                    stroke="currentColor"
-                                    strokeWidth="7"
-                                    strokeLinecap="round"
-                                  />
-                                  <path
-                                    d="M 124 25 C 172 30, 194 68, 192 114 C 190 158, 156 192, 106 193"
-                                    stroke="currentColor"
-                                    strokeWidth="2.2"
-                                    strokeLinecap="round"
-                                    opacity="0.55"
-                                  />
-                                </svg>
-                                <div className="curriculum-flashcard__word">{currentCard.word}</div>
-                                <div className="curriculum-flashcard__brush-rule" aria-hidden="true" />
-                                <div className="curriculum-flashcard__front-meta">
-                                  {currentCard.jlptLevel || course?.level || 'JP'} ·{' '}
-                                  {currentCardKanjis.length > 0 ? `${currentCardKanjis.length} Hán tự` : 'Kana'}
-                                  {currentCard.examples?.[0] ? ' · Có câu ví dụ' : ''}
-                                </div>
-                              </div>
-                            </>
-                          )
-                        }
-                        return (
-                          <div className="curriculum-flashcard__back-spread">
-                            <div className="curriculum-flashcard__back-header">
-                              <span className="curriculum-flashcard__back-word">{currentCard.word}</span>
-                              {currentCard.reading && (
-                                <span className="curriculum-flashcard__reading">【{currentCard.reading}】</span>
-                              )}
-                              {currentCard.hanViet && (
-                                <span className="curriculum-flashcard__hanviet">
-                                  Hán Việt: <strong>{currentCard.hanViet}</strong>
-                                </span>
-                              )}
-                            </div>
+                          )}
 
-                            <div className="curriculum-flashcard__meaning">{currentCard.meaning}</div>
+                          <div className="kakejiku-colophon" aria-hidden="true" lang="ja">
+                            {currentCard.jlptLevel || course?.level || 'JP'} · 第{currentUnitInfo?.ordinal || 1}課 ·{' '}
+                            {currentCardKanjis.length > 0 ? `${currentCardKanjis.length}字` : '仮名'}
+                          </div>
 
-                            {currentCard.examples?.[0] && (
-                              <div className="curriculum-flashcard__example-plate">
-                                <div className="curriculum-flashcard__example-plate-text">
-                                  <div lang="ja">{formatJpQuote(currentCard.examples[0].jp)}</div>
-                                  {currentCard.examples[0].vi && <small>{currentCard.examples[0].vi}</small>}
-                                </div>
+                          <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
+                            <span>語彙墨蹟</span>
+                            <span className="curriculum-flashcard__hanko">{isFlipped ? '裏' : '表'}</span>
+                          </div>
+
+                          {/* Top Bar inside Card */}
+                          <div className="curriculum-flashcard__topbar">
+                            <div className="curriculum-flashcard__topbar-left">
+                              <div className="curriculum-flashcard__segment" role="group" aria-label="Chế độ mặt thẻ">
                                 <button
                                   type="button"
-                                  className="curriculum-flashcard__example-audio"
+                                  className={`curriculum-flashcard__seg-btn${cardContentMode === 'word' ? ' is-active' : ''}`}
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    playAudio(undefined, currentCard.examples?.[0]?.jp || currentCard.word)
+                                    setCardContentMode('word')
                                   }}
-                                  title="Nghe câu ví dụ"
-                                  aria-label="Nghe câu ví dụ"
                                 >
-                                  <Volume2 size={14} />
+                                  Từ vựng
                                 </button>
-                              </div>
-                            )}
-
-                            {currentCardKanjis.length > 0 && (
-                              <div className="curriculum-flashcard__kanji-stamps">
-                                <span className="curriculum-flashcard__kanji-label">Chữ Hán:</span>
-                                {currentCardKanjis.map((kanji) => (
+                                {currentCard.examples && currentCard.examples.length > 0 && (
                                   <button
-                                    key={kanji}
                                     type="button"
-                                    className="curriculum-flashcard__kanji-tile"
+                                    className={`curriculum-flashcard__seg-btn${cardContentMode === 'example' ? ' is-active' : ''}`}
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      setSelectedDictWord(kanji)
+                                      setCardContentMode('example')
                                     }}
-                                    title={`Tra chữ Hán ${kanji}`}
-                                    aria-label={`Tra chữ Hán ${kanji}`}
                                   >
-                                    {kanji}
+                                    Câu ví dụ
                                   </button>
-                                ))}
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                className="curriculum-flashcard__pill"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedDictWord(currentCard.word)
+                                }}
+                                title="Tra từ điển"
+                                aria-label="Tra từ điển"
+                              >
+                                <BookOpen size={12} aria-hidden="true" /> Tra từ điển
+                              </button>
+                            </div>
+
+                            <div className="curriculum-flashcard__topbar-right">
+                              <button
+                                type="button"
+                                className={`curriculum-flashcard__icon-btn${isShuffled ? ' is-active' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toggleShuffleDeck()
+                                }}
+                                aria-pressed={isShuffled}
+                                title={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
+                                aria-label={isShuffled ? 'Đang xáo trộn thẻ' : 'Xáo trộn thẻ'}
+                              >
+                                <Shuffle size={16} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className={`curriculum-flashcard__icon-btn${playingAudioUrl ? ' is-active' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  playAudio(currentCard.audioUrl, currentCard.word)
+                                }}
+                                title="Phát âm (Phím R)"
+                                aria-label="Phát âm (Phím R)"
+                              >
+                                <Volume2 size={17} />
+                              </button>
+
+                              <button
+                                type="button"
+                                className={`curriculum-flashcard__icon-btn${isCurrentCardSaved ? ' is-saved' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  void handleSaveWordToSrs(currentCard)
+                                }}
+                                title={
+                                  isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'
+                                }
+                                aria-label={
+                                  isCurrentCardSaved ? 'Đã lưu trong SRS Flashcard' : 'Lưu vào SRS Flashcard (Phím C)'
+                                }
+                              >
+                                {isCurrentCardSaved ? <Check size={17} /> : <BookmarkPlus size={17} />}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Middle Main Display */}
+                          <div
+                            key={`${currentCard.id}-${isFlipped ? 'back' : 'front'}`}
+                            className="curriculum-flashcard__center curriculum-flashcard__flip-stage"
+                          >
+                            {(() => {
+                              if (cardContentMode === 'example') {
+                                return (
+                                  <div style={{ maxWidth: '650px', margin: '0 auto' }}>
+                                    <div className="curriculum-flashcard__example-jp">
+                                      {currentCard.examples?.[0]?.jp || 'Không có câu ví dụ'}
+                                    </div>
+                                    {isFlipped && (
+                                      <div className="curriculum-flashcard__example-vi">
+                                        {currentCard.examples?.[0]?.vi}
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              }
+                              if (!isFlipped) {
+                                return (
+                                  <div className="curriculum-flashcard__word-stage">
+                                    <div className="curriculum-flashcard__word">{currentCard.word}</div>
+                                    <div className="curriculum-flashcard__brush-rule" aria-hidden="true" />
+                                  </div>
+                                )
+                              }
+                              return (
+                                <div className="curriculum-flashcard__back-spread">
+                                  <div className="curriculum-flashcard__back-header">
+                                    <span className="curriculum-flashcard__back-word">{currentCard.word}</span>
+                                    {currentCard.reading && (
+                                      <span className="curriculum-flashcard__reading">【{currentCard.reading}】</span>
+                                    )}
+                                    {currentCard.hanViet && (
+                                      <span className="curriculum-flashcard__hanviet">
+                                        Hán Việt: <strong>{currentCard.hanViet}</strong>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="curriculum-flashcard__meaning">{currentCard.meaning}</div>
+
+                                  {currentCard.examples?.[0] && (
+                                    <div className="curriculum-flashcard__example-plate">
+                                      <div className="curriculum-flashcard__example-plate-text">
+                                        <div lang="ja">{formatJpQuote(currentCard.examples[0].jp)}</div>
+                                        {currentCard.examples[0].vi && <small>{currentCard.examples[0].vi}</small>}
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="curriculum-flashcard__example-audio"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          playAudio(undefined, currentCard.examples?.[0]?.jp || currentCard.word)
+                                        }}
+                                        title="Nghe câu ví dụ"
+                                        aria-label="Nghe câu ví dụ"
+                                      >
+                                        <Volume2 size={14} />
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {currentCardKanjis.length > 0 && (
+                                    <div className="curriculum-flashcard__kanji-stamps">
+                                      <span className="curriculum-flashcard__kanji-label">Chữ Hán:</span>
+                                      {currentCardKanjis.map((kanji) => (
+                                        <button
+                                          key={kanji}
+                                          type="button"
+                                          className="curriculum-flashcard__kanji-tile"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setSelectedDictWord(kanji)
+                                          }}
+                                          title={`Tra chữ Hán ${kanji}`}
+                                          aria-label={`Tra chữ Hán ${kanji}`}
+                                        >
+                                          {kanji}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })()}
+
+                            {!isFlipped && (
+                              <div className="curriculum-flashcard__cue">
+                                <span aria-hidden="true">◇</span>
+                                <span>Nhấn [Space] hoặc chạm để lật xem nghĩa</span>
                               </div>
                             )}
                           </div>
-                        )
-                      })()}
 
-                      {!isFlipped && (
-                        <div className="curriculum-flashcard__cue">
-                          <span aria-hidden="true">◇</span>
-                          <span>Nhấn [Space] hoặc chạm để lật xem nghĩa</span>
+                          {/* Bottom Counter Bar */}
+                          <div className="curriculum-flashcard__footer">
+                            <span className="curriculum-flashcard__footer-meta">
+                              <span>
+                                Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {unitTotalTerms || words.length}{' '}
+                                (Trang {unitPage} / {totalPages})
+                              </span>
+                              <span aria-hidden="true">·</span>
+                              <span>
+                                Đã thuộc: <strong>{knownWords.length}</strong>
+                              </span>
+                            </span>
+                            <span className="curriculum-flashcard__footer-keys">
+                              Phím tắt: [Z] Đã thuộc • [X] Chưa thuộc • [Space] Lật • [R] Nghe • [C] Lưu SRS
+                            </span>
+                          </div>
                         </div>
-                      )}
-                    </div>
+                        <div className="kakejiku-rod kakejiku-rod--bottom" aria-hidden="true" />
+                      </div>
 
-                    {/* Bottom Counter Bar */}
-                    <div className="curriculum-flashcard__footer">
-                      <span className="curriculum-flashcard__footer-meta">
-                        <span>
-                          Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {unitTotalTerms || words.length} (Trang{' '}
-                          {unitPage} / {totalPages})
-                        </span>
-                        <span aria-hidden="true">·</span>
-                        <span>
-                          Đã thuộc: <strong>{knownWords.length}</strong>
-                        </span>
-                      </span>
-                      <span className="curriculum-flashcard__footer-keys">
-                        Phím tắt: [Z] Đã thuộc • [X] Chưa thuộc • [Space] Lật • [R] Nghe • [C] Lưu SRS
-                      </span>
+                      {/* Navigation Controls under card */}
+                      <div className="curriculum-flashcard-controls">
+                        <Button
+                          variant="ghost"
+                          size="md"
+                          className="curriculum-flashcard-controls__nav"
+                          onClick={handlePrevCard}
+                          disabled={currentIndex === 0 && unitPage <= 1}
+                        >
+                          <ChevronLeft size={18} /> Từ trước
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="md"
+                          onClick={() => handleNextCard()}
+                          disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
+                        >
+                          Chưa thuộc (X)
+                        </Button>
+                        <Button variant="primary" size="md" onClick={triggerKnownStamp}>
+                          <Check size={16} aria-hidden="true" /> Đã thuộc (Z)
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="md"
+                          className="curriculum-flashcard-controls__nav"
+                          onClick={handleNextCard}
+                          disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
+                        >
+                          Tiếp theo <ChevronRight size={18} />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Navigation Controls under card */}
-                  <div className="curriculum-flashcard-controls">
-                    <Button
-                      variant="ghost"
-                      size="md"
-                      className="curriculum-flashcard-controls__nav"
-                      onClick={handlePrevCard}
-                      disabled={currentIndex === 0 && unitPage <= 1}
-                    >
-                      <ChevronLeft size={18} /> Từ trước
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="md"
-                      onClick={() => handleNextCard()}
-                      disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
-                    >
-                      Chưa thuộc (X)
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="md"
-                      onClick={() => {
-                        setKnownWords((prev) => [...new Set([...prev, currentCard.termId || String(currentCard.id)])])
-                        handleNextCard()
-                      }}
-                    >
-                      <Check size={16} aria-hidden="true" /> Đã thuộc (Z)
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="md"
-                      className="curriculum-flashcard-controls__nav"
-                      onClick={handleNextCard}
-                      disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
-                    >
-                      Tiếp theo <ChevronRight size={18} />
-                    </Button>
-                  </div>
-                </div>
-              )}
+                  )
+                })()}
 
               {stageMode !== 'flashcard' && (
                 <div id="panel-study-game" role="tabpanel" aria-labelledby={`tab-study-${stageMode}`}>
@@ -1546,8 +1564,14 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </div>
         </div>
 
-        {/* 3.5 RIGHT RAIL: ALWAYS-VISIBLE VOCABULARY LIST */}
+        {/* 3.5 RIGHT RAIL: STITCHED ORIHON MANUSCRIPT LEDGER */}
         <section className="lesson-vocab-section lesson-vocab-rail" aria-label="Danh sách từ vựng bài học">
+          <div className="orihon-binding" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
           <div className="lesson-vocab-rail__header">
             <div className="lesson-vocab-section__title-group">
               <span className="lesson-vocab-section__hanko" aria-hidden="true">
