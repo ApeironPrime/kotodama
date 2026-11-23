@@ -2057,9 +2057,8 @@
   transition: width var(--duration-normal) var(--ease-standard);
 }
 
-.curriculum-progress-badge {
-  position: relative;
-  overflow: hidden;
+.curriculum-mastery-count,
+.curriculum-srs-count {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -2072,15 +2071,8 @@
   border: 1px solid var(--color-border-subtle);
 }
 
-.curriculum-progress-badge::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 2.5px;
-  width: var(--progress, 0%);
-  background: var(--color-success);
-  transition: width var(--duration-normal) var(--ease-standard);
+.curriculum-mastery-count svg {
+  color: var(--color-success);
 }
 
 /* In-Unit Search & Filter Toolbar */
@@ -2654,7 +2646,7 @@
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
   font-size: 0.72rem;
   letter-spacing: 0.2em;
-  color: color-mix(in srgb, var(--color-text-muted) 72%, transparent);
+  color: var(--color-text);
   pointer-events: none;
   user-select: none;
   z-index: 2;
@@ -2799,6 +2791,8 @@
   align-items: center;
   gap: 0.45rem;
   max-width: 36rem;
+  width: 100%;
+  overflow-wrap: anywhere;
   margin: 0 auto;
 }
 
@@ -2970,9 +2964,7 @@
   align-items: center;
   gap: 0.45rem;
   font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  opacity: 0.68;
-  transition: opacity 200ms ease;
+  color: var(--color-text);
 }
 
 .curriculum-flashcard__footer-keys {
@@ -2994,7 +2986,8 @@
   width: auto;
   padding: 0 0.52rem;
   gap: 0.34rem;
-  opacity: 0.62;
+  opacity: 1;
+  color: var(--color-text-secondary);
   border-color: transparent;
   background: transparent;
 }
@@ -3035,11 +3028,6 @@
   background: var(--color-surface);
 }
 
-.kakejiku-stage:hover .curriculum-flashcard__footer-meta,
-.kakejiku-stage:focus-within .curriculum-flashcard__footer-meta {
-  opacity: 0.95;
-}
-
 @media (hover: none) {
   .kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn {
     opacity: 1;
@@ -3048,11 +3036,6 @@
   .kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn--audio {
     border-color: var(--color-border);
     background: var(--color-surface);
-  }
-
-  .kakejiku-stage .curriculum-flashcard__cue,
-  .kakejiku-stage .curriculum-flashcard__footer-meta {
-    opacity: 0.72;
   }
 
   .kakejiku-stage .curriculum-flashcard__footer-keys {
@@ -3066,11 +3049,10 @@
 
 .curriculum-flashcard__rail {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--color-bg-subtle);
+  bottom: 5px;
+  inset-inline: 8px;
+  height: 2px;
+  background: var(--color-border);
   z-index: 2;
 }
 
@@ -3130,7 +3112,8 @@
 .curriculum-flashcard-controls button,
 .curriculum-flashcard-controls .ui-btn,
 .curriculum-study-bar .ui-btn,
-.curriculum-progress-badge,
+.curriculum-mastery-count,
+.curriculum-srs-count,
 .lesson-vocab-rail__tool-btn,
 .lesson-vocab-rail__collapse-btn,
 .curriculum-term-row__icon-btn,
@@ -3253,7 +3236,7 @@
    WASHI DOJO MINI-GAMES (OPEN EDITORIAL SANCTUARY — NO SAAS BOXES)
    -------------------------------------------------------------------------- */
 .dojo-game {
-  min-height: clamp(24rem, calc(100dvh - 18.5rem), 28rem);
+  flex: 1;
   display: flex;
   flex-direction: column;
   padding: 0.25rem 0 0.5rem;
@@ -3344,6 +3327,19 @@
   outline: none;
   color: var(--color-accent-text);
   border-bottom-color: var(--color-accent);
+}
+
+.dojo-timed-toggle {
+  min-height: 2rem;
+  padding-inline: 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.dojo-timed-toggle[aria-pressed='true'] {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  border-color: var(--color-accent);
 }
 
 .dojo-quiz-stage {
@@ -3860,17 +3856,17 @@
 
 @media (max-width: 640px) {
   .dojo-karuta-grid--fuda {
-    max-width: 19rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem;
+    gap: 0.45rem;
   }
 }
 
 .dojo-karuta-card--fuda {
   position: relative;
+  container-type: size;
+  inline-size: 100%;
   aspect-ratio: 3 / 4;
   min-height: 9.8rem;
-  padding: 1.1rem 0.65rem;
+  padding: 0.9rem 0.65rem 2rem;
   border-radius: 3px;
   background: #fcf9f3;
   border: 1px solid #cfc6b6;
@@ -3896,12 +3892,13 @@
 .dojo-karuta-card--fuda .dojo-karuta-card__primary {
   writing-mode: vertical-rl;
   text-orientation: upright;
+  white-space: nowrap;
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
-  font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+  font-size: min(1.85rem, calc(100cqh / var(--fuda-length) / 1.1));
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.06em;
   line-height: 1;
-  color: var(--color-text);
+  color: #211d1a;
 }
 
 .dojo-karuta-card__key {
@@ -3910,11 +3907,11 @@
   left: 0.72rem;
   padding: 0.08rem 0.34rem;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  background: #eeebe6;
   font-family: var(--font-mono, monospace);
   font-size: 0.76rem;
   font-weight: 700;
-  color: var(--color-text-secondary);
+  color: #514943;
   opacity: 0.92;
 }
 
@@ -3932,9 +3929,23 @@
   transform: rotate(-8deg);
 }
 
-.dojo-karuta-card.is-missed-reveal {
+.dojo-karuta-card--fuda.is-mismatch,
+.dojo-karuta-card--fuda.is-missed-reveal {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 10%, #fcf9f3);
+  background: color-mix(in srgb, var(--color-accent) 16%, #fcf9f3);
+}
+
+@media (max-width: 640px) {
+  .dojo-karuta-card--fuda {
+    min-height: 7.5rem;
+    padding: 0.55rem 0.35rem 1.5rem;
+  }
+
+  .dojo-karuta-card__key {
+    bottom: 0.42rem;
+    left: 0.48rem;
+    font-size: 0.65rem;
+  }
 }
 
 .dojo-typing-stage {
@@ -3982,7 +3993,7 @@ input.dojo-typing-input {
   flex: 1;
   min-width: 0;
   appearance: none;
-  padding: 0.5rem 0.25rem 0.5rem 1.8rem;
+  padding: 0.5rem 0.35rem;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -4001,12 +4012,6 @@ input.dojo-typing-input:focus-visible {
   border: none !important;
 }
 
-input.dojo-typing-input::placeholder {
-  font-size: 0.88rem;
-  font-weight: 400;
-  color: color-mix(in srgb, var(--color-text-muted) 65%, transparent);
-}
-
 .dojo-typing-line.is-correct input.dojo-typing-input {
   color: var(--color-success, #2b7a4b);
 }
@@ -4019,14 +4024,14 @@ input.dojo-typing-input::placeholder {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.8rem;
-  height: 1.8rem;
+  min-height: 2.75rem;
+  padding-inline: 0.85rem;
   flex-shrink: 0;
   border: none;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 1rem;
+  border-radius: 4px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -4052,6 +4057,8 @@ input.dojo-typing-input::placeholder {
 
 .dojo-typing-preview {
   margin-top: -0.3rem;
+  display: grid;
+  gap: 0.3rem;
   text-align: center;
   font-size: 0.84rem;
   color: var(--color-text-secondary);
@@ -4063,10 +4070,10 @@ input.dojo-typing-input::placeholder {
   font-size: 1rem;
 }
 
-.dojo-typing-srs-note {
-  margin: 0.2rem 0 0;
-  font-size: 0.82rem;
-  color: var(--color-text-secondary);
+.dojo-typing-reveal {
+  min-height: 2.75rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4157,6 +4164,24 @@ input.dojo-typing-input::placeholder {
   font-weight: 800;
 }
 
+@media (max-width: 640px) {
+  .lesson-zen-shiori {
+    position: static;
+    justify-self: end;
+    writing-mode: horizontal-tb;
+    transform: none;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  .lesson-zen-shiori:hover {
+    transform: none;
+  }
+}
+
 .lesson-split-workspace__stage {
   position: sticky;
   top: 5.25rem;
@@ -4181,6 +4206,21 @@ input.dojo-typing-input::placeholder {
   flex-direction: column;
   justify-content: flex-start;
   margin-bottom: 0.5rem;
+}
+
+.lesson-stage-wrapper--game {
+  min-height: max(24rem, calc(100dvh - 14rem));
+}
+
+.lesson-stage-wrapper--game .lesson-game-panel {
+  display: flex;
+  flex: 1;
+}
+
+@media (max-width: 900px), (max-height: 660px) {
+  .lesson-stage-wrapper--game {
+    min-height: 24rem;
+  }
 }
 
 .lesson-game-dock {
@@ -4612,8 +4652,8 @@ input.dojo-typing-input::placeholder {
   background: transparent;
 }
 
-@media (max-width: 1280px) {
-  .lesson-split-workspace__stage .dojo-karuta-grid {
+@media (min-width: 1024px) and (max-width: 1280px) {
+  .lesson-split-workspace:not(.is-zen) .dojo-karuta-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

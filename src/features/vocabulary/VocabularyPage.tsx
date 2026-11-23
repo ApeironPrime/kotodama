@@ -366,8 +366,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     return unitSavedContexts.size
   }, [user, unitContextPrefix, savedTermsData, selectedCourseCode, currentUnitId, savedSrs])
 
-  const progressPercent = unitTotalTerms > 0 ? Math.min(100, Math.round((savedCountInUnit / unitTotalTerms) * 100)) : 0
-
   const activeDictCurriculumWord = useMemo(() => {
     if (!selectedDictWord) return null
     return words.find((w) => w.word === selectedDictWord) || null
@@ -431,8 +429,9 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   const currentCard = flashcardDeck[currentIndex] || words[currentIndex] || null
   const isCurrentCardSaved = isCurriculumTermSaved(currentCard)
+  const pendingSrsSaves = useRef(new Set<string>())
 
-  const playAudio = (url?: string, fallbackText?: string) => {
+  const playAudio = useCallback((url?: string, fallbackText?: string) => {
     if (audioRef.current) {
       audioRef.current.pause()
     }
@@ -452,9 +451,11 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     } else if (fallbackText) {
       speakJapanese(fallbackText)
     }
-  }
+  }, [])
 
-  const handleNextCard = () => {
+  const speakStudyWord = useCallback((reading: string, url?: string) => playAudio(url, reading), [playAudio])
+
+  const handleNextCard = useCallback(() => {
     setIsFlipped(false)
     if (currentIndex < words.length - 1) {
       setCurrentIndex((i) => i + 1)
@@ -462,7 +463,25 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       setUnitPage((p) => p + 1)
       setCurrentIndex(0)
     }
-  }
+  }, [currentIndex, words.length, unitPage, totalPages])
+
+  const handleCardRecall = useCallback(
+    (known: boolean) => {
+      if (!currentCard) return
+      const id = currentCard.termId || String(currentCard.id)
+      setKnownWords((prev) => (known ? [...new Set([...prev, id])] : prev.filter((termId) => termId !== id)))
+      if (known) {
+        sumiAudio.initOnGesture()
+        sumiAudio.playHankoStamp()
+        setStampBurstCount((c) => c + 1)
+        setShowStampFlash(true)
+        if (stampTimerRef.current) window.clearTimeout(stampTimerRef.current)
+        stampTimerRef.current = window.setTimeout(() => setShowStampFlash(false), 650)
+      }
+      handleNextCard()
+    },
+    [currentCard, handleNextCard, setKnownWords]
+  )
 
   const handlePrevCard = () => {
     setIsFlipped(false)
@@ -480,6 +499,9 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         setAuthNotice('Vui lòng đăng nhập để lưu từ vựng vào kho ôn tập SRS.')
         return
       }
+      const saveKey = JSON.stringify([user.id, item.sourceContext || item.word])
+      if (isCurriculumTermSaved(item) || pendingSrsSaves.current.has(saveKey)) return
+      pendingSrsSaves.current.add(saveKey)
       setAuthNotice(null)
       setSrsError(null)
       try {
@@ -515,14 +537,26 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       } catch (err) {
         console.error('Không thể lưu từ vào SRS:', err)
         setSrsError('Không thể lưu từ vào SRS lúc này. Vui lòng thử lại sau.')
+      } finally {
+        pendingSrsSaves.current.delete(saveKey)
       }
     },
-    [user, queryClient]
+    [user, queryClient, isCurriculumTermSaved]
+  )
+
+  const handleMissedWord = useCallback(
+    (item: CurriculumWord) => {
+      const id = item.termId || String(item.id)
+      setKnownWords((prev) => (prev.includes(id) ? prev.filter((termId) => termId !== id) : prev))
+      if (user) void handleSaveWordToSrs(item)
+    },
+    [handleSaveWordToSrs, setKnownWords, user]
   )
 
   // Keyboard shortcut listener with strict input focus isolation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return
       // Strictly ignore keyboard shortcuts if user is typing in an input, textarea, or select
       const targetTag = (e.target as HTMLElement)?.tagName
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag)) return
@@ -536,17 +570,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       if (!selectedUnitKey || stageMode !== 'flashcard' || !currentCard) return
 
       if (e.code === 'Space') {
+        if (e.target instanceof Element && e.target.closest('button, a')) return
         e.preventDefault()
         setIsFlipped((f) => !f)
       } else if (e.key === 'z' || e.key === 'Z') {
         e.preventDefault()
-        setKnownWords((prev) => [...new Set([...prev, currentCard.termId || String(currentCard.id)])])
-        setIsFlipped(false)
-        setCurrentIndex((i) => (i < words.length - 1 ? i + 1 : i))
+        handleCardRecall(true)
       } else if (e.key === 'x' || e.key === 'X') {
         e.preventDefault()
-        setIsFlipped(false)
-        setCurrentIndex((i) => (i < words.length - 1 ? i + 1 : i))
+        handleCardRecall(false)
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault()
         playAudio(currentCard.audioUrl, currentCard.word)
@@ -558,7 +590,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedUnitKey, stageMode, currentCard, words.length, handleSaveWordToSrs, selectedDictWord, setKnownWords])
+  }, [selectedUnitKey, stageMode, currentCard, handleCardRecall, handleSaveWordToSrs, selectedDictWord, playAudio])
 
   // =========================================================================
   // VIEW 1: CATALOG OVERVIEW (Duyệt theo cấp độ A1..N1, SE & phong cách giấy kem)
@@ -1125,20 +1157,12 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         </div>
 
         <div className="curriculum-study-bar__right">
-          <div
-            className="curriculum-progress-badge"
-            role="progressbar"
-            aria-label={`Tiến độ bài học: ${savedCountInUnit} trên ${unitTotalTerms} từ`}
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            title={`Đã lưu ${savedCountInUnit} / ${unitTotalTerms} từ`}
-            style={{ '--progress': `${progressPercent}%` } as React.CSSProperties}
-          >
-            <Check size={12} aria-hidden="true" />
-            <span>
-              {savedCountInUnit} / {unitTotalTerms} từ đã lưu ({progressPercent}%)
-            </span>
+          <span className="curriculum-mastery-count">
+            <Check size={14} aria-hidden="true" /> Đã thuộc {knownWords.length} / {unitTotalTerms} từ
+          </span>
+          <div className="curriculum-srs-count" title="Từ của bài này đã lưu để ôn tập">
+            <BookmarkPlus size={14} aria-hidden="true" />
+            <span>SRS · {savedCountInUnit} từ đã lưu</span>
           </div>
 
           {onGoToSrs && (
@@ -1208,7 +1232,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       <div className={`lesson-split-workspace${isLedgerCollapsed ? ' is-zen' : ''}`}>
         <div className="lesson-split-workspace__stage">
           {!isTermsLoading && !isTermsError && words.length > 0 && (
-            <div className="lesson-stage-wrapper">
+            <div className={`lesson-stage-wrapper${stageMode !== 'flashcard' ? ' lesson-stage-wrapper--game' : ''}`}>
               {stageMode === 'flashcard' &&
                 currentCard &&
                 (() => {
@@ -1220,16 +1244,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     sumiAudio.playBrushFriction()
                     setFlipRippleCount((c) => c + 1)
                     setIsFlipped((f) => !f)
-                  }
-                  const triggerKnownStamp = () => {
-                    sumiAudio.initOnGesture()
-                    sumiAudio.playHankoStamp()
-                    setStampBurstCount((c) => c + 1)
-                    setShowStampFlash(true)
-                    if (stampTimerRef.current) window.clearTimeout(stampTimerRef.current)
-                    stampTimerRef.current = window.setTimeout(() => setShowStampFlash(false), 650)
-                    setKnownWords((prev) => [...new Set([...prev, currentCard.termId || String(currentCard.id)])])
-                    handleNextCard()
                   }
                   return (
                     <div id="panel-study-flashcard" role="tabpanel" aria-labelledby="tab-study-flashcard">
@@ -1277,15 +1291,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                         {/* Pure Kakejiku Hanging Scroll Frame */}
                         <div className="kakejiku-scroll">
-                          <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true">
-                            <div className="curriculum-flashcard__rail">
-                              <span
-                                style={{
-                                  width: `${Math.round(((currentIndex + 1) / Math.max(1, flashcardDeck.length)) * 100)}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
+                          <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true" />
 
                           <div
                             role="button"
@@ -1424,17 +1430,19 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             <div className="curriculum-flashcard__footer">
                               <span className="curriculum-flashcard__footer-meta">
                                 <span>
-                                  Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {unitTotalTerms || words.length}{' '}
-                                  (Trang {unitPage} / {totalPages})
-                                </span>
-                                <span aria-hidden="true">·</span>
-                                <span>
-                                  Đã thuộc: <strong>{knownWords.length}</strong>
+                                  Từ {(unitPage - 1) * PAGE_SIZE + currentIndex + 1} / {totalTerms}
                                 </span>
                               </span>
                               <span className="curriculum-flashcard__footer-keys">
                                 Phím tắt: [Z] Đã thuộc • [X] Chưa thuộc • [Space] Lật • [R] Nghe • [C] Lưu SRS
                               </span>
+                            </div>
+                            <div className="curriculum-flashcard__rail" aria-hidden="true">
+                              <span
+                                style={{
+                                  width: `${(((unitPage - 1) * PAGE_SIZE + currentIndex + 1) / totalTerms) * 100}%`,
+                                }}
+                              />
                             </div>
                           </div>
                           <div className="kakejiku-rod kakejiku-rod--bottom" aria-hidden="true" />
@@ -1456,8 +1464,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           variant="danger"
                           size="md"
                           className="curriculum-flashcard-controls__miss"
-                          onClick={() => handleNextCard()}
-                          disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
+                          onClick={() => handleCardRecall(false)}
                         >
                           Chưa thuộc (X)
                         </Button>
@@ -1465,7 +1472,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           variant="primary"
                           size="md"
                           className="curriculum-flashcard-controls__pass"
-                          onClick={triggerKnownStamp}
+                          onClick={() => handleCardRecall(true)}
                         >
                           <Check size={16} aria-hidden="true" /> Đã thuộc (Z)
                         </Button>
@@ -1484,13 +1491,19 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 })()}
 
               {stageMode !== 'flashcard' && (
-                <div id="panel-study-game" role="tabpanel" aria-labelledby={`tab-study-${stageMode}`}>
+                <div
+                  id="panel-study-game"
+                  className="lesson-game-panel"
+                  role="tabpanel"
+                  aria-labelledby={`tab-study-${stageMode}`}
+                >
                   <LessonMiniGame
                     words={words}
                     activeMode={stageMode}
                     isTermSaved={isCurriculumTermSaved}
                     onSaveToSrs={handleSaveWordToSrs}
-                    onSpeak={(text, url) => playAudio(url, text)}
+                    onMissedWord={handleMissedWord}
+                    onSpeak={speakStudyWord}
                   />
                 </div>
               )}

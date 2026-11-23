@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type FormEvent, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { BookmarkPlus, Check, Clock, Eye, Gamepad2, RotateCcw, Volume2 } from 'lucide-react'
 import type { CurriculumWord } from '../srs/srsTypes'
 import { sumiAudio } from '../dictionary/sumiAudio'
@@ -11,6 +11,7 @@ interface LessonMiniGameProps {
   activeMode?: DojoGameMode
   isTermSaved: (item: CurriculumWord) => boolean
   onSaveToSrs: (item: CurriculumWord) => Promise<void> | void
+  onMissedWord: (item: CurriculumWord) => void
   onSpeak: (text: string, audioUrl?: string) => void
 }
 
@@ -23,6 +24,15 @@ interface ClozeQuestion {
 const KARUTA_TURN_MS = 8000
 const TYPING_TURN_MS = 10000
 const KARUTA_KEYS = ['Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F'] as const
+const GENERIC_IDENTITY_QUESTION = /^[「『]?あの\s*(.+?)\s*は\s*(?:だれ|誰)ですか[。？?」』]*$/u
+const CLOZE_ALTERNATIVES = [
+  ['先輩', '後輩', '同僚', '上司', '部下'],
+  ['男性', '女性', '男', '女'],
+  ['賛成', '反対'],
+  ['友人', '友達', '知り合い', '知人'],
+  ['故郷', 'ふるさと', '出身地'],
+  ['合格', '不合格'],
+]
 const PERSON_MEANING_RE =
   /người|con trai|con gái|cha|mẹ|anh|em|chị|chủ nhân|tác giả|họ hàng|nhân viên|học sinh|giáo viên|bạn bè|tha nhân|trưởng nam|sinh đôi|trẻ lạc/i
 
@@ -106,27 +116,43 @@ function buildClozeQuestions(words: CurriculumWord[]): ClozeQuestion[] {
   if (words.length < 2) return []
   const withCloze: Array<{ word: CurriculumWord; cloze: ClozeSentence | null }> = words.map((w) => ({
     word: w,
-    cloze: buildClozeSentence(w.word, w.examples),
+    cloze: buildClozeSentence(
+      w.word,
+      w.examples?.filter(({ jp }) => GENERIC_IDENTITY_QUESTION.exec(jp.trim())?.[1] !== w.word)
+    ),
   }))
 
   const clozeReady = shuffleArray(withCloze.filter((item) => item.cloze !== null))
   const fallbackOnly = shuffleArray(withCloze.filter((item) => item.cloze === null))
   const targets = [...clozeReady, ...fallbackOnly].slice(0, Math.min(10, words.length))
 
-  return targets.map(({ word: target, cloze }) => {
+  return targets.flatMap(({ word: target, cloze }) => {
     const pool = words.filter((candidate) => candidate.word !== target.word && candidate.meaning !== target.meaning)
-    const ranked = shuffleArray(pool).sort(
+    const alternatives = CLOZE_ALTERNATIVES.filter((group) => group.includes(target.word))
+    const contextualPool = pool.filter((candidate) => !alternatives.some((group) => group.includes(candidate.word)))
+    const useContext = cloze !== null && contextualPool.length > 0
+    const ranked = shuffleArray(useContext ? contextualPool : pool).sort(
       (a, b) => scoreDistractorSimilarity(target, b) - scoreDistractorSimilarity(target, a)
     )
-    const distractors = ranked.slice(0, 3)
+    const distractors = [...new Map(ranked.map((word) => [word.word, word])).values()].slice(0, 3)
+    if (distractors.length === 0) return []
     const options = shuffleArray([target, ...distractors])
-    return { target, cloze, options }
+    return [{ target, cloze: useContext ? cloze : null, options }]
   })
 }
 
 function buildKarutaArena(words: CurriculumWord[]): { board: CurriculumWord[]; queue: CurriculumWord[] } {
-  if (words.length < 2) return { board: [], queue: [] }
-  const board = shuffleArray(words).slice(0, Math.min(8, words.length))
+  const readings = new Set<string>()
+  const spellings = new Set<string>()
+  const board = shuffleArray(words)
+    .filter((word) => {
+      const reading = word.reading || word.word
+      if (readings.has(reading) || spellings.has(word.word)) return false
+      readings.add(reading)
+      spellings.add(word.word)
+      return true
+    })
+    .slice(0, KARUTA_KEYS.length)
   const queue = shuffleArray(board)
   return { board, queue }
 }
@@ -141,7 +167,14 @@ function padTwo(n: number): string {
   return String(Math.max(0, n)).padStart(2, '0')
 }
 
-export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, onSpeak }: LessonMiniGameProps) {
+export function LessonMiniGame({
+  words,
+  activeMode,
+  isTermSaved,
+  onSaveToSrs,
+  onMissedWord,
+  onSpeak,
+}: LessonMiniGameProps) {
   const [mode, setMode] = useState<DojoGameMode>(activeMode ?? 'cloze')
 
   // Cloze State
@@ -157,8 +190,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
   const [clozeFinished, setClozeFinished] = useState(false)
 
   // Audio Karuta Arena State
-  const [karutaBoard, setKarutaBoard] = useState<CurriculumWord[]>(() => buildKarutaArena(words).board)
-  const [karutaQueue, setKarutaQueue] = useState<CurriculumWord[]>(() => buildKarutaArena(words).queue)
+  const [{ board: karutaBoard, queue: karutaQueue }, setKarutaArena] = useState(() => buildKarutaArena(words))
   const [karutaTurnIdx, setKarutaTurnIdx] = useState(0)
   const [karutaMatched, setKarutaMatched] = useState<Record<string, boolean>>({})
   const [karutaMismatchWord, setKarutaMismatchWord] = useState<string | null>(null)
@@ -189,6 +221,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
   const [typingFinished, setTypingFinished] = useState(false)
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const roundInputsRef = useRef({ words, activeMode })
   const turnStartRef = useRef<number>(Date.now())
   const typingInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -228,9 +261,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
       setClozeFinished(false)
 
       // Reset Karuta Arena
-      const arena = buildKarutaArena(words)
-      setKarutaBoard(arena.board)
-      setKarutaQueue(arena.queue)
+      setKarutaArena(buildKarutaArena(words))
       setKarutaTurnIdx(0)
       setKarutaMatched({})
       setKarutaMismatchWord(null)
@@ -264,12 +295,29 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
   )
 
   useEffect(() => {
+    if (roundInputsRef.current.words === words && roundInputsRef.current.activeMode === activeMode) return
+    roundInputsRef.current = { words, activeMode }
     resetRound(activeMode ?? 'cloze')
-  }, [activeMode, resetRound])
+  }, [activeMode, resetRound, words])
 
   const currentQ = clozeQuestions[qIndex] || null
   const currentKarutaTarget = karutaQueue[karutaTurnIdx] || null
   const currentTypingCard = typingDeck[typingIndex] || null
+
+  const srsButton = (item: CurriculumWord, savedLabel = 'Đã lưu SRS') => {
+    const saved = isTermSaved(item)
+    return (
+      <button
+        type="button"
+        className={`dojo-srs-chip${saved ? ' is-saved' : ''}`}
+        disabled={saved}
+        onClick={() => void onSaveToSrs(item)}
+      >
+        {saved ? <Check size={14} /> : <BookmarkPlus size={14} />}
+        <span>{saved ? savedLabel : 'Lưu vào SRS'}</span>
+      </button>
+    )
+  }
 
   // ---------------------------------------------------------------------------
   // MODE 1: CLOZE HANDLERS
@@ -292,12 +340,13 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
         setScore((s) => s + 100 + Math.min(nextCombo - 1, 5) * 20)
       } else {
         setCombo(0)
+        onMissedWord(currentQ.target)
         setMissedWords((prev) =>
           prev.some((w) => w.word === currentQ.target.word) ? prev : [...prev, currentQ.target]
         )
       }
     },
-    [currentQ, selectedWord, combo]
+    [currentQ, selectedWord, combo, onMissedWord]
   )
 
   const handleNextQuestion = useCallback(() => {
@@ -324,6 +373,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
           handleSelectOption(opt)
         }
       } else if ((event.key === 'Enter' || event.code === 'Space') && selectedWord !== null) {
+        if (event.target instanceof Element && event.target.closest('.dojo-game button:not(:disabled)')) return
         event.preventDefault()
         handleNextQuestion()
       }
@@ -344,6 +394,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
       return prev + 1
     })
     setKarutaMissedRevealWord(null)
+    setKarutaMismatchWord(null)
     setKarutaTimeLeftMs(KARUTA_TURN_MS)
     turnStartRef.current = Date.now()
   }, [karutaQueue.length])
@@ -374,8 +425,11 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
         }, 600)
         timersRef.current.push(tid)
       } else {
+        if (karutaMismatchWord) return
         setKarutaCombo(0)
         setKarutaMismatchWord(card.word)
+        setKarutaLastFeedback(null)
+        onMissedWord(currentKarutaTarget)
         setKarutaMissedWords((prev) =>
           prev.some((w) => w.word === currentKarutaTarget.word) ? prev : [...prev, currentKarutaTarget]
         )
@@ -385,35 +439,52 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
         timersRef.current.push(tid)
       }
     },
-    [advanceKarutaTurn, currentKarutaTarget, karutaCombo, karutaFinished, karutaMatched, karutaMissedRevealWord]
+    [
+      advanceKarutaTurn,
+      currentKarutaTarget,
+      karutaCombo,
+      karutaFinished,
+      karutaMatched,
+      karutaMismatchWord,
+      karutaMissedRevealWord,
+      onMissedWord,
+    ]
   )
 
+  const playKarutaPrompt = useEffectEvent(speakWord)
+  const recordKarutaTimeout = useEffectEvent((word: CurriculumWord) => {
+    onMissedWord(word)
+    setKarutaCombo(0)
+    setKarutaMissedRevealWord(word.word)
+    setKarutaLastFeedback({ ok: false, word })
+    setKarutaMissedWords((prev) => (prev.some((item) => item.word === word.word) ? prev : [...prev, word]))
+    timersRef.current.push(setTimeout(advanceKarutaTurn, 900))
+  })
+
   useEffect(() => {
-    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget) return
+    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget || karutaQueue.length < 2) return
     turnStartRef.current = Date.now()
     setKarutaTimeLeftMs(KARUTA_TURN_MS)
-    speakWord(currentKarutaTarget)
+    playKarutaPrompt(currentKarutaTarget)
+  }, [mode, karutaFinished, currentKarutaTarget, karutaQueue])
 
+  useEffect(() => {
+    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget || karutaQueue.length < 2 || karutaMissedRevealWord)
+      return
     const intervalId = setInterval(() => {
-      if (karutaMissedRevealWord) return
       const elapsed = Date.now() - turnStartRef.current
       const remaining = Math.max(0, KARUTA_TURN_MS - elapsed)
       setKarutaTimeLeftMs(remaining)
       if (remaining === 0) {
         clearInterval(intervalId)
-        setKarutaCombo(0)
-        setKarutaMissedRevealWord(currentKarutaTarget.word)
-        setKarutaLastFeedback({ ok: false, word: currentKarutaTarget })
-        setKarutaMissedWords((prev) =>
-          prev.some((w) => w.word === currentKarutaTarget.word) ? prev : [...prev, currentKarutaTarget]
-        )
-        const tid = setTimeout(() => {
-          advanceKarutaTurn()
-        }, 900)
-        timersRef.current.push(tid)
+        recordKarutaTimeout(currentKarutaTarget)
       }
     }, 100)
+    return () => clearInterval(intervalId)
+  }, [mode, karutaFinished, currentKarutaTarget, karutaMissedRevealWord, karutaQueue])
 
+  useEffect(() => {
+    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget || karutaBoard.length < 2) return
     const onKeyDown = (event: KeyboardEvent) => {
       const targetTag = (event.target as HTMLElement | null)?.tagName
       if (targetTag && ['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag)) return
@@ -431,20 +502,8 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     }
     window.addEventListener('keydown', onKeyDown)
 
-    return () => {
-      clearInterval(intervalId)
-      window.removeEventListener('keydown', onKeyDown)
-    }
-  }, [
-    mode,
-    karutaFinished,
-    currentKarutaTarget,
-    karutaMissedRevealWord,
-    karutaBoard,
-    speakWord,
-    advanceKarutaTurn,
-    handleKarutaCardSlap,
-  ])
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mode, karutaFinished, currentKarutaTarget, karutaBoard, speakWord, handleKarutaCardSlap])
 
   // ---------------------------------------------------------------------------
   // MODE 3: TYPING RECALL
@@ -454,18 +513,21 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
       setTypingSubmitted(reason)
       setTypingCombo(0)
       setTypingMissedWords((prev) => (prev.some((w) => w.word === card.word) ? prev : [...prev, card]))
-      if (!isTermSaved(card)) {
-        void onSaveToSrs(card)
-      }
+      onMissedWord(card)
     },
-    [isTermSaved, onSaveToSrs]
+    [onMissedWord]
   )
+
+  const recordTypingTimeout = useEffectEvent(handleTypingFailure)
+  useEffect(() => {
+    if (mode !== 'typing' || typingFinished || !currentTypingCard || typingSubmitted !== null) return
+    typingInputRef.current?.focus({ preventScroll: true })
+  }, [mode, typingFinished, currentTypingCard, typingSubmitted, typingDeck])
 
   useEffect(() => {
     if (mode !== 'typing' || typingFinished || !currentTypingCard || typingSubmitted !== null) return
     turnStartRef.current = Date.now()
     setTypingTimeLeftMs(TYPING_TURN_MS)
-    typingInputRef.current?.focus()
 
     if (!typingTimedMode) return undefined
 
@@ -475,12 +537,12 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
       setTypingTimeLeftMs(remaining)
       if (remaining === 0) {
         clearInterval(intervalId)
-        handleTypingFailure(currentTypingCard, 'timeout')
+        recordTypingTimeout(currentTypingCard, 'timeout')
       }
     }, 100)
 
     return () => clearInterval(intervalId)
-  }, [mode, typingFinished, currentTypingCard, typingSubmitted, typingTimedMode, handleTypingFailure])
+  }, [mode, typingFinished, currentTypingCard, typingSubmitted, typingTimedMode, typingDeck])
 
   const handleNextTypingCard = useCallback(() => {
     if (typingIndex + 1 >= typingDeck.length) {
@@ -523,12 +585,17 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     }
   }
 
-  if (words.length < 2) {
+  if (
+    words.length < 2 ||
+    (mode === 'cloze' && clozeQuestions.length === 0) ||
+    (mode === 'karuta' && karutaBoard.length < 2) ||
+    (mode === 'typing' && typingDeck.length === 0)
+  ) {
     return (
       <div className="dojo-game dojo-empty">
         <Gamepad2 size={32} aria-hidden="true" />
-        <h3>Cần ít nhất 2 từ vựng để mở Võ Đường</h3>
-        <p>Hãy chọn bài học hoặc xóa bộ lọc tìm kiếm để có đủ từ luyện Điền Từ, Karuta và Gõ Âm Đọc.</p>
+        <h3>Chưa đủ từ phù hợp để luyện tập</h3>
+        <p>Chọn bài học khác hoặc xóa bộ lọc tìm kiếm để có thêm từ.</p>
       </div>
     )
   }
@@ -603,13 +670,14 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
               </button>
               <button
                 type="button"
-                className={`dojo-editorial-btn${typingTimedMode ? ' is-active' : ''}`}
+                className="dojo-editorial-btn dojo-timed-toggle"
                 onClick={() => setTypingTimedMode((v) => !v)}
                 aria-pressed={typingTimedMode}
+                aria-label="Áp lực 10 giây"
                 title="Bật hoặc tắt đồng hồ đếm ngược 10 giây"
               >
                 <Clock size={13} aria-hidden="true" />
-                <span>{typingTimedMode ? 'Đang bật 10s' : 'Áp lực 10s'}</span>
+                <span>Áp lực 10s · {typingTimedMode ? 'Bật' : 'Tắt'}</span>
               </button>
             </>
           )}
@@ -635,7 +703,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                   aria-label={`Nghe phát âm ${currentQ.target.word}`}
                 >
                   <Volume2 size={14} aria-hidden="true" />
-                  <span>Nghe câu</span>
+                  <span>{currentQ.cloze ? 'Nghe câu' : 'Nghe từ'}</span>
                 </button>
               )}
             </div>
@@ -716,20 +784,12 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                     {pickedOption && (
                       <p className="dojo-cloze-contrast">
                         Bạn chọn <strong lang="ja">{pickedOption.word}</strong>
-                        {pickedOption.hanViet ? ` (${pickedOption.hanViet})` : ''}: {pickedOption.meaning} — không khớp
-                        sắc thái ngữ cảnh câu này.
+                        {pickedOption.hanViet ? ` (${pickedOption.hanViet})` : ''} · {pickedOption.meaning}
                       </p>
                     )}
                   </div>
                   <div className="dojo-feedback-bar__actions">
-                    <button
-                      type="button"
-                      className={`dojo-srs-chip${isTermSaved(currentQ.target) ? ' is-saved' : ''}`}
-                      onClick={() => void onSaveToSrs(currentQ.target)}
-                    >
-                      {isTermSaved(currentQ.target) ? <Check size={14} /> : <BookmarkPlus size={14} />}
-                      <span>{isTermSaved(currentQ.target) ? 'Đã lưu SRS' : '+ Lưu SRS'}</span>
-                    </button>
+                    {srsButton(currentQ.target)}
                     <button type="button" className="dojo-next-btn" onClick={handleNextQuestion}>
                       {qIndex + 1 >= clozeQuestions.length ? 'Xem tổng kết →' : 'Câu tiếp theo →'}
                     </button>
@@ -767,14 +827,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                       {item.reading && <span lang="ja"> 【{item.reading}】</span>}
                       <p>{item.meaning}</p>
                     </div>
-                    <button
-                      type="button"
-                      className={`dojo-srs-chip${isTermSaved(item) ? ' is-saved' : ''}`}
-                      onClick={() => void onSaveToSrs(item)}
-                    >
-                      {isTermSaved(item) ? <Check size={14} /> : <BookmarkPlus size={14} />}
-                      <span>{isTermSaved(item) ? 'Đã lưu' : '+ Lưu SRS'}</span>
-                    </button>
+                    {srsButton(item)}
                   </div>
                 ))}
               </div>
@@ -802,6 +855,11 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
               <span className="dojo-karuta-caller__eyebrow">
                 NGHE ÂM ĐỌC · ĐẬP THẺ BÀI ({KARUTA_KEYS.slice(0, karutaBoard.length).join(' · ')})
               </span>
+              {karutaMismatchWord && !karutaLastFeedback && (
+                <span className="dojo-karuta-status is-miss" role="status">
+                  Chọn nhầm thẻ. Thử lại!
+                </span>
+              )}
               {karutaLastFeedback && (
                 <div className={`dojo-karuta-status${karutaLastFeedback.ok ? ' is-ok' : ' is-miss'}`} role="status">
                   {karutaLastFeedback.ok ? '✓ Chuẩn: ' : '✕ Hết giờ: '}
@@ -836,7 +894,11 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                       取
                     </span>
                   )}
-                  <span className="dojo-karuta-card__primary" lang="ja">
+                  <span
+                    className="dojo-karuta-card__primary"
+                    lang="ja"
+                    style={{ '--fuda-length': Math.max(3, [...card.word].length) } as CSSProperties}
+                  >
                     {card.word}
                   </span>
                   {shortcutKey && (
@@ -877,14 +939,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                       {item.reading && <span lang="ja"> 【{item.reading}】</span>}
                       <p>{item.meaning}</p>
                     </div>
-                    <button
-                      type="button"
-                      className={`dojo-srs-chip${isTermSaved(item) ? ' is-saved' : ''}`}
-                      onClick={() => void onSaveToSrs(item)}
-                    >
-                      {isTermSaved(item) ? <Check size={14} /> : <BookmarkPlus size={14} />}
-                      <span>{isTermSaved(item) ? 'Đã lưu' : '+ Lưu SRS'}</span>
-                    </button>
+                    {srsButton(item)}
                   </div>
                 ))}
               </div>
@@ -948,7 +1003,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                 onChange={(e) => setTypingInput(e.target.value)}
                 disabled={typingSubmitted !== null}
                 aria-label="Nhập cách đọc Hiragana hoặc Romaji"
-                placeholder="Gõ Romaji (vd: jinsei) hoặc Hiragana..."
+                aria-describedby="dojo-typing-help"
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -960,20 +1015,25 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                   title="Kiểm tra (Enter)"
                   aria-label="Kiểm tra (Enter)"
                 >
-                  ↵
+                  Kiểm tra
                 </button>
               )}
             </div>
 
             <div className="dojo-typing-preview">
-              Chuyển Kana: <strong lang="ja">{liveRomajiPreview || '—'}</strong>
+              <span id="dojo-typing-help">Ví dụ: jinsei hoặc じんせい</span>
+              {liveRomajiPreview && (
+                <span>
+                  Chuyển Kana · <strong lang="ja">{liveRomajiPreview}</strong>
+                </span>
+              )}
             </div>
 
             <div className="dojo-typing-actions">
               {typingSubmitted === null ? (
                 <button
                   type="button"
-                  className="dojo-editorial-btn"
+                  className="dojo-editorial-btn dojo-typing-reveal"
                   onClick={() => handleTypingFailure(currentTypingCard, 'wrong')}
                 >
                   Chưa nhớ · Xem đáp án
@@ -996,11 +1056,9 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                       ? `⏱ Hết giờ! Đáp án: ${currentTypingCard.reading || currentTypingCard.word}`
                       : `✕ Chưa khớp! Đáp án: ${currentTypingCard.reading || currentTypingCard.word}`}
                 </strong>
-                {typingSubmitted !== 'correct' && (
-                  <p className="dojo-typing-srs-note">Đã tự động đưa từ này vào hàng chờ SRS để ôn lại.</p>
-                )}
               </div>
               <div className="dojo-feedback-bar__actions">
+                {typingSubmitted !== 'correct' && srsButton(currentTypingCard)}
                 <button type="button" className="dojo-editorial-btn" onClick={() => speakWord(currentTypingCard)}>
                   <Volume2 size={14} aria-hidden="true" />
                   <span>Nghe âm</span>
@@ -1028,7 +1086,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
 
           {typingMissedWords.length > 0 && (
             <div className="dojo-summary__missed">
-              <h4>Từ đã đẩy vào hàng chờ SRS ({typingMissedWords.length})</h4>
+              <h4>Từ cần ôn lại ({typingMissedWords.length})</h4>
               <div className="dojo-summary__missed-list">
                 {typingMissedWords.map((item) => (
                   <div key={item.word} className="dojo-summary__missed-row">
@@ -1037,10 +1095,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                       {item.reading && <span lang="ja"> 【{item.reading}】</span>}
                       <p>{item.meaning}</p>
                     </div>
-                    <span className="dojo-srs-chip is-saved">
-                      <Check size={14} />
-                      <span>Đã vào SRS</span>
-                    </span>
+                    {srsButton(item)}
                   </div>
                 ))}
               </div>

@@ -399,8 +399,8 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     const unitCard = await screen.findByText('Bài 1: Chào hỏi & Làm quen')
     fireEvent.click(unitCard)
 
-    // Header & Real Progress: 0 / 2 terms saved (0%)
-    expect(await screen.findByText(/0 \/ 2 từ đã lưu \(0%\)/i)).toBeTruthy()
+    // The lesson tracks mastery and SRS saves independently.
+    expect(await screen.findByText(/SRS · 0 từ đã lưu/i)).toBeTruthy()
 
     // Zen mode by default: ledger is collapsed behind the right-edge Shiori button
     expect(screen.queryByRole('region', { name: 'Danh sách từ vựng bài học' })).toBeNull()
@@ -532,8 +532,8 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    // 1 of 2 terms is saved -> exactly 50%
-    expect(await screen.findByText(/1 \/ 2 từ đã lưu \(50%\)/i)).toBeTruthy()
+    // The SRS badge reflects the saved card.
+    expect(await screen.findByText(/SRS · 1 từ đã lưu/i)).toBeTruthy()
 
     // '私' shows 'Đã lưu', '本' shows '+ Thêm SRS'
     const vocabSection = await openVocabLedger()
@@ -610,8 +610,8 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     // Error banner appears
     expect(await screen.findByText(/Không thể lưu từ vào SRS lúc này/i)).toBeTruthy()
 
-    // Progress remains 0 / 2 (0%)
-    expect(screen.getByText(/0 \/ 2 từ đã lưu \(0%\)/i)).toBeTruthy()
+    // The SRS badge stays at zero.
+    expect(screen.getByText(/SRS · 0 từ đã lưu/i)).toBeTruthy()
 
     // Button remains '+ Thêm SRS'
     expect(screen.queryByRole('button', { name: /Đã lưu/i })).toBeNull()
@@ -722,7 +722,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
     // 1. Progress bar denominator is 121
-    expect(await screen.findByText(/0 \/ 121 từ đã lưu \(0%\)/i)).toBeTruthy()
+    expect(await screen.findByText(/SRS · 0 từ đã lưu/i)).toBeTruthy()
 
     // 2. Page 1 displays items 1-20 in the list
     const vocabSection = await openVocabLedger()
@@ -762,7 +762,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
 
     const flashcardPanel = await screen.findByRole('tabpanel')
     expect(within(flashcardPanel).getByText('単語_1')).toBeTruthy()
-    expect(within(flashcardPanel).getByText(/Từ 1 \/ 121 \(Trang 1 \/ 7\)/i)).toBeTruthy()
+    expect(within(flashcardPanel).getByText(/^Từ 1 \/ 121$/i)).toBeTruthy()
   })
 
   it('anonymous visitor never invokes fetchSavedTerms or addCard and sees login alert', async () => {
@@ -918,7 +918,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     await within(vocabSectionB).findByText('tôi, bản thân')
 
     // Context B progress must be 0, and button must still be "+ Thêm SRS"
-    expect(await screen.findByText(/0 \/ 1 từ đã lưu \(0%\)/i)).toBeTruthy()
+    expect(await screen.findByText(/SRS · 0 từ đã lưu/i)).toBeTruthy()
     expect(within(vocabSectionB).getByRole('button', { name: /\+ Thêm SRS/i })).toBeTruthy()
     expect(within(vocabSectionB).queryByRole('button', { name: /Đã lưu/i })).toBeNull()
 
@@ -949,11 +949,11 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     // Now in Flashcard mode, Context B shows 'Đã lưu trong SRS Flashcard'
     expect(await screen.findByTitle('Đã lưu trong SRS Flashcard')).toBeTruthy()
 
-    // In Word List directly below, Context B now shows 'Đã lưu' and progress is 100%
+    // The word list and SRS badge reflect the saved card.
     const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
     expect(await within(vocabSection).findByRole('button', { name: /Đã lưu/i })).toBeTruthy()
     expect(within(vocabSection).queryByRole('button', { name: /\+ Thêm SRS/i })).toBeNull()
-    expect(screen.getByText(/1 \/ 1 từ đã lưu \(100%\)/i)).toBeTruthy()
+    expect(screen.getByText(/SRS · 1 từ đã lưu/i)).toBeTruthy()
   })
 
   it('switches top stage via Game Dock between Flashcard, Cloze, Audio Karuta, and Typing Recall while keeping list below', async () => {
@@ -1003,5 +1003,99 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.change(typingInput, { target: { value: promptKanji === '本' ? 'hon' : 'watashi' } })
     fireEvent.click(screen.getByRole('button', { name: /Kiểm tra/i }))
     expect((await screen.findByRole('status')).textContent).toMatch(/Chính xác!/i)
+  })
+
+  it('uses the vocabulary meaning for generic identity questions that fit both genders', async () => {
+    const [firstTerm, secondTerm] = mockUnitTermsData.items
+    if (!firstTerm || !secondTerm) throw new Error('Expected two fixture terms')
+    vi.mocked(curriculumApi.fetchUnitTerms).mockResolvedValue({
+      ...mockUnitTermsData,
+      items: [
+        {
+          ...firstTerm,
+          display_word: '男性',
+          display_reading: 'だんせい',
+          meanings: ['người đàn ông'],
+          examples: [{ ja: 'あの男性はだれですか。', vi: 'Người đàn ông kia là ai?' }],
+        },
+        {
+          ...secondTerm,
+          display_word: '女性',
+          display_reading: 'じょせい',
+          meanings: ['người phụ nữ'],
+          examples: [{ ja: 'あの女性は誰ですか？', vi: 'Người phụ nữ kia là ai?' }],
+        },
+      ],
+    })
+    renderWithClient(<VocabularyPage />)
+
+    fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
+    fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
+    fireEvent.click(await screen.findByRole('tab', { name: /Điền Từ Văn Cảnh/i }))
+    const panel = within(await screen.findByRole('tabpanel', { name: /Điền Từ Văn Cảnh/i }))
+
+    for (const nextButton of ['Câu tiếp theo →', 'Xem tổng kết →']) {
+      expect(panel.queryByText('あの')).toBeNull()
+      const isMale = panel.queryByText('người đàn ông') !== null
+      expect(panel.getByText(isMale ? 'người đàn ông' : 'người phụ nữ')).toBeTruthy()
+      fireEvent.click(panel.getByRole('button', { name: isMale ? /男性/ : /女性/ }))
+      expect(panel.getByRole('status').textContent).toMatch(/Chính xác/)
+      fireEvent.click(panel.getByRole('button', { name: nextButton }))
+    }
+  })
+
+  it('excludes interchangeable cloze options and sends a missed known word to SRS across rounds', async () => {
+    const [unit] = mockCourseDetailData.units
+    const [firstTerm, secondTerm] = mockUnitTermsData.items
+    if (!unit || !firstTerm || !secondTerm) throw new Error('Expected a unit and two fixture terms')
+    vi.mocked(curriculumApi.fetchCourseDetail).mockResolvedValue({
+      ...mockCourseDetailData,
+      units: [{ ...unit, term_count: 3 }],
+    })
+    vi.mocked(curriculumApi.fetchUnitTerms).mockResolvedValue({
+      ...mockUnitTermsData,
+      items: [
+        {
+          ...firstTerm,
+          display_word: '先輩',
+          display_reading: 'せんぱい',
+          meanings: ['tiền bối'],
+          examples: [
+            {
+              ja: '田中さんと私は同じ年だが、職場では彼のほうが先輩だ',
+              vi: 'Anh Tanaka bằng tuổi tôi nhưng là tiền bối ở nơi làm việc.',
+            },
+          ],
+        },
+        {
+          ...secondTerm,
+          display_word: '後輩',
+          display_reading: 'こうはい',
+          meanings: ['hậu bối'],
+          examples: [],
+        },
+        { ...secondTerm, term_id: 'term-03', ordinal: 3, examples: [] },
+      ],
+      pagination: { ...mockUnitTermsData.pagination, total: 3 },
+    })
+    renderWithClient(<VocabularyPage />)
+
+    fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
+    fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Đã thuộc (Z)' }))
+    expect(screen.getByText(/Đã thuộc 1 \/ 3 từ/)).toBeTruthy()
+    expect(screen.getByText(/SRS · 0 từ đã lưu/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('tab', { name: /Điền Từ Văn Cảnh/i }))
+    const panel = within(screen.getByRole('tabpanel', { name: /Điền Từ Văn Cảnh/i }))
+    expect(panel.getByText(/田中さんと私は同じ年/)).toBeTruthy()
+    expect(panel.queryByRole('button', { name: /後輩/ })).toBeNull()
+    fireEvent.click(panel.getByRole('button', { name: /\d\s*本/ }))
+    expect(panel.getByRole('status').textContent).toMatch(/Đáp án đúng.*先輩/)
+    expect(screen.getByText(/Đã thuộc 0 \/ 3 từ/)).toBeTruthy()
+
+    fireEvent.click(panel.getByRole('button', { name: 'Ván mới' }))
+    expect(await screen.findByText(/SRS · 1 từ đã lưu/)).toBeTruthy()
+    expect(srsApi.addCard).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ term: '先輩', termId: 'term-01' }))
   })
 })
