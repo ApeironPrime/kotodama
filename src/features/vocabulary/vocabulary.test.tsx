@@ -969,6 +969,11 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Điền Từ Văn Cảnh/i }))
     expect(await screen.findByText(/ĐIỀN TỪ VÀO VĂN CẢNH|CHỌN TỪ TIẾNG NHẬT PHÙ HỢP/i)).toBeTruthy()
     expect(within(vocabSection).getByText('私')).toBeTruthy()
+    // Vietnamese translation spoiler is hidden by default until answered or toggled
+    const studyPanel = document.getElementById('panel-study-game')
+    expect(studyPanel).toBeTruthy()
+    if (!studyPanel) return
+    expect(within(studyPanel).queryByText('Tôi là sinh viên.')).toBeNull()
 
     const optionButtons = screen.getAllByRole('button', { name: /^[12]\s*(私|本)$/i })
     expect(optionButtons.length).toBe(2)
@@ -980,11 +985,13 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await screen.findByRole('status')).toBeTruthy()
     expect(screen.getByRole('button', { name: /Câu tiếp theo/i })).toBeTruthy()
 
-    // 2. Switch to Đấu Trường Karuta (Audio Karuta) via Game Dock — Kanji cards only, no Vietnamese spoilers
+    // 2. Switch to Đấu Trường Karuta (Audio Karuta) via Game Dock — vertical Fuda cards with Q/W keys, no Vietnamese spoilers
     fireEvent.click(screen.getByRole('tab', { name: /Đấu Trường Karuta/i }))
     const karutaBoard = await screen.findByRole('group', { name: 'Sân đấu Karuta thính giác' })
     expect(within(karutaBoard).getByText('私')).toBeTruthy()
     expect(within(karutaBoard).getByText('本')).toBeTruthy()
+    expect(within(karutaBoard).getByText('Q')).toBeTruthy()
+    expect(within(karutaBoard).getByText('W')).toBeTruthy()
     expect(within(karutaBoard).queryByText('tôi, bản thân')).toBeNull()
     expect(within(karutaBoard).queryByText('sách')).toBeNull()
 
@@ -992,10 +999,9 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Gõ Âm Đọc/i }))
     expect(await screen.findByText('GÕ ÂM ĐỌC HIRAGANA / ROMAJI')).toBeTruthy()
     const typingInput = screen.getByLabelText('Nhập cách đọc Hiragana hoặc Romaji')
-    const panel = document.getElementById('panel-study-game')
-    const promptKanji = panel?.querySelector('.dojo-quiz-card__prompt')?.textContent?.trim()
+    const promptKanji = studyPanel.querySelector('.dojo-quiz-card__prompt')?.textContent?.trim()
     fireEvent.change(typingInput, { target: { value: promptKanji === '本' ? 'hon' : 'watashi' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra' }))
+    fireEvent.click(screen.getByRole('button', { name: /Kiểm tra/i }))
     expect((await screen.findByRole('status')).textContent).toMatch(/Chính xác!/i)
   })
 })

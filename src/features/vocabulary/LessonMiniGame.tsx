@@ -1,16 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
-import {
-  BookmarkPlus,
-  Check,
-  Eye,
-  FileText,
-  Flame,
-  Gamepad2,
-  Keyboard,
-  RotateCcw,
-  Sparkles,
-  Volume2,
-} from 'lucide-react'
+import { BookmarkPlus, Check, Clock, Eye, Gamepad2, RotateCcw, Volume2 } from 'lucide-react'
 import type { CurriculumWord } from '../srs/srsTypes'
 import { sumiAudio } from '../dictionary/sumiAudio'
 import { buildClozeSentence, type ClozeSentence, isReadingMatch, romajiToHiragana } from './kanaRomaji'
@@ -33,6 +22,9 @@ interface ClozeQuestion {
 
 const KARUTA_TURN_MS = 8000
 const TYPING_TURN_MS = 10000
+const KARUTA_KEYS = ['Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F'] as const
+const PERSON_MEANING_RE =
+  /người|con trai|con gái|chủ nhân|tác giả|họ hàng|nhân viên|học sinh|giáo viên|bạn bè|tha nhân|trưởng nam/i
 
 function shuffleArray<T>(list: readonly T[]): T[] {
   const copy = [...list]
@@ -50,14 +42,17 @@ function shuffleArray<T>(list: readonly T[]): T[] {
 
 function scoreDistractorSimilarity(target: CurriculumWord, candidate: CurriculumWord): number {
   let score = 0
-  if (target.partOfSpeech && candidate.partOfSpeech === target.partOfSpeech) score += 2
   const targetChars = new Set([...target.word])
   for (const ch of candidate.word) {
     if (/[\u4e00-\u9faf]/.test(ch) && targetChars.has(ch)) {
-      score += 3
+      score += 6
     }
   }
-  if (Math.abs(target.word.length - candidate.word.length) <= 1) score += 1
+  if (target.partOfSpeech && candidate.partOfSpeech === target.partOfSpeech) score += 3
+  if (target.word.length === candidate.word.length) score += 2
+  const targetIsPerson = PERSON_MEANING_RE.test(target.meaning || '')
+  const candidateIsPerson = PERSON_MEANING_RE.test(candidate.meaning || '')
+  if (targetIsPerson !== candidateIsPerson) score -= 3
   return score
 }
 
@@ -96,6 +91,10 @@ function buildTypingDeck(words: CurriculumWord[]): CurriculumWord[] {
   return shuffleArray(withReading).slice(0, Math.min(10, withReading.length))
 }
 
+function padTwo(n: number): string {
+  return String(Math.max(0, n)).padStart(2, '0')
+}
+
 export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, onSpeak }: LessonMiniGameProps) {
   const [mode, setMode] = useState<DojoGameMode>(activeMode ?? 'cloze')
 
@@ -103,6 +102,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
   const [clozeQuestions, setClozeQuestions] = useState<ClozeQuestion[]>(() => buildClozeQuestions(words))
   const [qIndex, setQIndex] = useState(0)
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
+  const [clozeShowHint, setClozeShowHint] = useState(false)
   const [score, setScore] = useState(0)
   const [combo, setCombo] = useState(0)
   const [bestCombo, setBestCombo] = useState(0)
@@ -133,6 +133,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
   const [typingInput, setTypingInput] = useState('')
   const [typingSubmitted, setTypingSubmitted] = useState<'correct' | 'wrong' | 'timeout' | null>(null)
   const [typingShowHint, setTypingShowHint] = useState(false)
+  const [typingTimedMode, setTypingTimedMode] = useState(false)
   const [typingTimeLeftMs, setTypingTimeLeftMs] = useState(TYPING_TURN_MS)
   const [typingScore, setTypingScore] = useState(0)
   const [typingCombo, setTypingCombo] = useState(0)
@@ -172,6 +173,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
       setClozeQuestions(buildClozeQuestions(words))
       setQIndex(0)
       setSelectedWord(null)
+      setClozeShowHint(false)
       setScore(0)
       setCombo(0)
       setBestCombo(0)
@@ -258,6 +260,7 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     } else {
       setQIndex((i) => i + 1)
       setSelectedWord(null)
+      setClozeShowHint(false)
     }
   }, [qIndex, clozeQuestions.length])
 
@@ -299,7 +302,46 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     turnStartRef.current = Date.now()
   }, [karutaQueue.length])
 
-  // Auto-speak + countdown on each Karuta turn
+  const handleKarutaCardSlap = useCallback(
+    (card: CurriculumWord) => {
+      if (!currentKarutaTarget || karutaFinished || karutaMatched[card.word] || karutaMissedRevealWord) return
+
+      if (card.word === currentKarutaTarget.word) {
+        try {
+          sumiAudio.playHankoStamp()
+        } catch {
+          // ignore audio error
+        }
+        const elapsed = Math.max(150, Date.now() - turnStartRef.current)
+        const speedBonus = Math.max(0, Math.round((KARUTA_TURN_MS - elapsed) / 100))
+        const nextCombo = karutaCombo + 1
+        setKarutaMatched((prev) => ({ ...prev, [card.word]: true }))
+        setKarutaReactionTimes((prev) => [...prev, elapsed])
+        setKarutaCombo(nextCombo)
+        setKarutaBestCombo((prev) => Math.max(prev, nextCombo))
+        setKarutaCorrectCount((c) => c + 1)
+        setKarutaScore((s) => s + 100 + speedBonus + Math.min(nextCombo - 1, 5) * 20)
+        setKarutaLastFeedback({ ok: true, word: card })
+        setKarutaMissedRevealWord(card.word)
+        const tid = setTimeout(() => {
+          advanceKarutaTurn()
+        }, 600)
+        timersRef.current.push(tid)
+      } else {
+        setKarutaCombo(0)
+        setKarutaMismatchWord(card.word)
+        setKarutaMissedWords((prev) =>
+          prev.some((w) => w.word === currentKarutaTarget.word) ? prev : [...prev, currentKarutaTarget]
+        )
+        const tid = setTimeout(() => {
+          setKarutaMismatchWord(null)
+        }, 420)
+        timersRef.current.push(tid)
+      }
+    },
+    [advanceKarutaTurn, currentKarutaTarget, karutaCombo, karutaFinished, karutaMatched, karutaMissedRevealWord]
+  )
+
   useEffect(() => {
     if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget) return
     turnStartRef.current = Date.now()
@@ -329,9 +371,16 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     const onKeyDown = (event: KeyboardEvent) => {
       const targetTag = (event.target as HTMLElement | null)?.tagName
       if (targetTag && ['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag)) return
-      if (event.key.toLowerCase() === 'r') {
+      if (event.code === 'Space') {
         event.preventDefault()
         speakWord(currentKarutaTarget)
+        return
+      }
+      const keyUpper = event.key.toUpperCase()
+      const idx = KARUTA_KEYS.indexOf(keyUpper as (typeof KARUTA_KEYS)[number])
+      if (idx !== -1 && karutaBoard[idx]) {
+        event.preventDefault()
+        handleKarutaCardSlap(karutaBoard[idx])
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -340,44 +389,16 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
       clearInterval(intervalId)
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [mode, karutaFinished, currentKarutaTarget, karutaMissedRevealWord, speakWord, advanceKarutaTurn])
-
-  const handleKarutaCardSlap = (card: CurriculumWord) => {
-    if (!currentKarutaTarget || karutaFinished || karutaMatched[card.word] || karutaMissedRevealWord) return
-
-    if (card.word === currentKarutaTarget.word) {
-      try {
-        sumiAudio.playHankoStamp()
-      } catch {
-        // ignore audio error
-      }
-      const elapsed = Math.max(150, Date.now() - turnStartRef.current)
-      const speedBonus = Math.max(0, Math.round((KARUTA_TURN_MS - elapsed) / 100))
-      const nextCombo = karutaCombo + 1
-      setKarutaMatched((prev) => ({ ...prev, [card.word]: true }))
-      setKarutaReactionTimes((prev) => [...prev, elapsed])
-      setKarutaCombo(nextCombo)
-      setKarutaBestCombo((prev) => Math.max(prev, nextCombo))
-      setKarutaCorrectCount((c) => c + 1)
-      setKarutaScore((s) => s + 100 + speedBonus + Math.min(nextCombo - 1, 5) * 20)
-      setKarutaLastFeedback({ ok: true, word: card })
-      setKarutaMissedRevealWord(card.word)
-      const tid = setTimeout(() => {
-        advanceKarutaTurn()
-      }, 600)
-      timersRef.current.push(tid)
-    } else {
-      setKarutaCombo(0)
-      setKarutaMismatchWord(card.word)
-      setKarutaMissedWords((prev) =>
-        prev.some((w) => w.word === currentKarutaTarget.word) ? prev : [...prev, currentKarutaTarget]
-      )
-      const tid = setTimeout(() => {
-        setKarutaMismatchWord(null)
-      }, 420)
-      timersRef.current.push(tid)
-    }
-  }
+  }, [
+    mode,
+    karutaFinished,
+    currentKarutaTarget,
+    karutaMissedRevealWord,
+    karutaBoard,
+    speakWord,
+    advanceKarutaTurn,
+    handleKarutaCardSlap,
+  ])
 
   // ---------------------------------------------------------------------------
   // MODE 3: TYPING RECALL
@@ -400,6 +421,8 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     setTypingTimeLeftMs(TYPING_TURN_MS)
     typingInputRef.current?.focus()
 
+    if (!typingTimedMode) return undefined
+
     const intervalId = setInterval(() => {
       const elapsed = Date.now() - turnStartRef.current
       const remaining = Math.max(0, TYPING_TURN_MS - elapsed)
@@ -411,7 +434,20 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     }, 100)
 
     return () => clearInterval(intervalId)
-  }, [mode, typingFinished, currentTypingCard, typingSubmitted, handleTypingFailure])
+  }, [mode, typingFinished, currentTypingCard, typingSubmitted, typingTimedMode, handleTypingFailure])
+
+  const handleNextTypingCard = useCallback(() => {
+    if (typingIndex + 1 >= typingDeck.length) {
+      setTypingFinished(true)
+    } else {
+      setTypingIndex((i) => i + 1)
+      setTypingInput('')
+      setTypingSubmitted(null)
+      setTypingShowHint(false)
+      setTypingTimeLeftMs(TYPING_TURN_MS)
+      turnStartRef.current = Date.now()
+    }
+  }, [typingIndex, typingDeck.length])
 
   const handleTypingSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -441,19 +477,6 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
     }
   }
 
-  const handleNextTypingCard = useCallback(() => {
-    if (typingIndex + 1 >= typingDeck.length) {
-      setTypingFinished(true)
-    } else {
-      setTypingIndex((i) => i + 1)
-      setTypingInput('')
-      setTypingSubmitted(null)
-      setTypingShowHint(false)
-      setTypingTimeLeftMs(TYPING_TURN_MS)
-      turnStartRef.current = Date.now()
-    }
-  }, [typingIndex, typingDeck.length])
-
   if (words.length < 2) {
     return (
       <div className="dojo-game dojo-empty">
@@ -472,85 +495,87 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
 
   return (
     <section className="dojo-game" aria-label="Võ Đường Mini-Game Kotodama">
-      {/* Top Dojo HUD */}
+      {/* Minimal Editorial HUD Line (no pills, no redundant mode title) */}
       <header className="dojo-hud">
-        <div className="dojo-hud__modes">
-          <span className="dojo-mode-btn is-active">
-            {mode === 'karuta' ? (
-              <>
-                <Sparkles size={14} aria-hidden="true" />
-                <span>Đấu Trường Karuta</span>
-              </>
-            ) : mode === 'typing' ? (
-              <>
-                <Keyboard size={14} aria-hidden="true" />
-                <span>Gõ Âm Đọc (Recall)</span>
-              </>
-            ) : (
-              <>
-                <FileText size={14} aria-hidden="true" />
-                <span>Điền Từ Văn Cảnh</span>
-              </>
-            )}
-          </span>
+        <div className="dojo-hud__editorial">
+          {mode === 'cloze' && (
+            <span>
+              Câu <strong>{padTwo(Math.min(qIndex + 1, clozeQuestions.length))}</strong> /{' '}
+              {padTwo(clozeQuestions.length)} · Chuỗi đúng <strong>{combo}</strong> · <strong>{score}</strong> điểm
+            </span>
+          )}
+          {mode === 'karuta' && (
+            <span>
+              Lá <strong>{padTwo(Math.min(karutaTurnIdx + 1, karutaQueue.length))}</strong> /{' '}
+              {padTwo(karutaQueue.length)} · Chuỗi đúng <strong>{karutaCombo}</strong> · <strong>{karutaScore}</strong>{' '}
+              điểm
+            </span>
+          )}
+          {mode === 'typing' && (
+            <span>
+              Từ <strong>{padTwo(Math.min(typingIndex + 1, typingDeck.length))}</strong> / {padTwo(typingDeck.length)} ·
+              Chuỗi đúng <strong>{typingCombo}</strong> · <strong>{typingScore}</strong> điểm
+            </span>
+          )}
         </div>
 
-        <div className="dojo-hud__stats">
-          {mode === 'cloze' && (
+        <div className="dojo-hud__actions">
+          {mode === 'cloze' && !clozeFinished && currentQ?.cloze?.vi && selectedWord === null && (
+            <button
+              type="button"
+              className={`dojo-editorial-btn${clozeShowHint ? ' is-active' : ''}`}
+              onClick={() => setClozeShowHint((v) => !v)}
+              aria-pressed={clozeShowHint}
+            >
+              <Eye size={13} aria-hidden="true" />
+              <span>{clozeShowHint ? 'Ẩn gợi ý nghĩa' : 'Gợi ý nghĩa'}</span>
+            </button>
+          )}
+
+          {mode === 'karuta' && !karutaFinished && currentKarutaTarget && (
+            <button
+              type="button"
+              className="dojo-editorial-btn"
+              onClick={() => speakWord(currentKarutaTarget)}
+              aria-label="Nghe lại âm đọc (Phím Space)"
+            >
+              <Volume2 size={13} aria-hidden="true" />
+              <span>Nghe lại [Space]</span>
+            </button>
+          )}
+
+          {mode === 'typing' && !typingFinished && currentTypingCard && (
             <>
-              <span className="dojo-stat-pill">
-                Điểm <strong>{score}</strong>
-              </span>
-              <span className={`dojo-stat-pill${combo > 1 ? ' is-hot' : ''}`}>
-                <Flame size={13} aria-hidden="true" />
-                <span>x{combo}</span>
-              </span>
-              <span className="dojo-stat-pill">
-                {Math.min(qIndex + 1, clozeQuestions.length)} / {clozeQuestions.length}
-              </span>
+              <button
+                type="button"
+                className={`dojo-editorial-btn${typingShowHint ? ' is-active' : ''}`}
+                onClick={() => setTypingShowHint((v) => !v)}
+                aria-pressed={typingShowHint}
+              >
+                <Eye size={13} aria-hidden="true" />
+                <span>{typingShowHint ? 'Ẩn gợi ý nghĩa' : 'Gợi ý nghĩa'}</span>
+              </button>
+              <button
+                type="button"
+                className={`dojo-editorial-btn${typingTimedMode ? ' is-active' : ''}`}
+                onClick={() => setTypingTimedMode((v) => !v)}
+                aria-pressed={typingTimedMode}
+                title="Bật hoặc tắt đồng hồ đếm ngược 10 giây"
+              >
+                <Clock size={13} aria-hidden="true" />
+                <span>{typingTimedMode ? 'Đang bật 10s' : 'Áp lực 10s'}</span>
+              </button>
             </>
           )}
 
-          {mode === 'karuta' && (
-            <>
-              <span className="dojo-stat-pill">
-                Điểm <strong>{karutaScore}</strong>
-              </span>
-              <span className={`dojo-stat-pill${karutaCombo > 1 ? ' is-hot' : ''}`}>
-                <Flame size={13} aria-hidden="true" />
-                <span>x{karutaCombo}</span>
-              </span>
-              <span className="dojo-stat-pill">
-                Lá{' '}
-                <strong>
-                  {Math.min(karutaTurnIdx + 1, karutaQueue.length)} / {karutaQueue.length}
-                </strong>
-              </span>
-            </>
-          )}
-
-          {mode === 'typing' && (
-            <>
-              <span className="dojo-stat-pill">
-                Điểm <strong>{typingScore}</strong>
-              </span>
-              <span className={`dojo-stat-pill${typingCombo > 1 ? ' is-hot' : ''}`}>
-                <Flame size={13} aria-hidden="true" />
-                <span>x{typingCombo}</span>
-              </span>
-              <span className="dojo-stat-pill">
-                {Math.min(typingIndex + 1, typingDeck.length)} / {typingDeck.length}
-              </span>
-            </>
-          )}
-
-          <button type="button" className="dojo-reset-btn" onClick={() => resetRound()} title="Chơi ván mới">
-            <RotateCcw size={14} aria-hidden="true" />
+          <button type="button" className="dojo-editorial-btn" onClick={() => resetRound()} title="Chơi ván mới">
+            <RotateCcw size={13} aria-hidden="true" />
+            <span>Ván mới</span>
           </button>
         </div>
       </header>
 
-      {/* MODE 1: CONTEXTUAL CLOZE TEST */}
+      {/* MODE 1: CONTEXTUAL CLOZE TEST (Direct on Washi) */}
       {mode === 'cloze' && !clozeFinished && currentQ && (
         <div className="dojo-quiz-stage">
           <div className="dojo-quiz-card">
@@ -559,11 +584,11 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
               {selectedWord !== null && (
                 <button
                   type="button"
-                  className="dojo-speak-btn"
+                  className="dojo-editorial-btn"
                   onClick={() => (currentQ.cloze ? onSpeak(currentQ.cloze.fullJa) : speakWord(currentQ.target))}
                   aria-label={`Nghe phát âm ${currentQ.target.word}`}
                 >
-                  <Volume2 size={16} aria-hidden="true" />
+                  <Volume2 size={14} aria-hidden="true" />
                   <span>Nghe câu</span>
                 </button>
               )}
@@ -578,7 +603,9 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                   </span>
                   <span>{currentQ.cloze.after}</span>
                 </p>
-                {currentQ.cloze.vi && <p className="dojo-cloze-vi">{currentQ.cloze.vi}</p>}
+                {(clozeShowHint || selectedWord !== null) && currentQ.cloze.vi && (
+                  <p className="dojo-cloze-vi">{currentQ.cloze.vi}</p>
+                )}
               </div>
             ) : (
               <div className="dojo-cloze-prompt">
@@ -701,53 +728,48 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
         </div>
       )}
 
-      {/* MODE 2: AUDIO KARUTA ARENA */}
+      {/* MODE 2: AUTHENTIC VERTICAL UTA-GARUTA ARENA */}
       {mode === 'karuta' && !karutaFinished && currentKarutaTarget && (
         <div className="dojo-karuta-arena">
           <div className="dojo-karuta-caller">
-            <div className="dojo-karuta-caller__top">
-              <span className="dojo-karuta-caller__eyebrow">NGHE ÂM ĐỌC · ĐẬP ĐÚNG THẺ KANJI</span>
-              <button
-                type="button"
-                className="dojo-speak-btn"
-                onClick={() => speakWord(currentKarutaTarget)}
-                aria-label="Nghe lại âm đọc (Phím R)"
-              >
-                <Volume2 size={16} aria-hidden="true" />
-                <span>Nghe lại (R)</span>
-              </button>
-            </div>
             <div className="dojo-timer-bar" aria-label={`Thời gian còn lại ${Math.ceil(karutaTimeLeftMs / 1000)} giây`}>
               <div
                 className="dojo-timer-bar__fill"
                 style={{ width: `${Math.round((karutaTimeLeftMs / KARUTA_TURN_MS) * 100)}%` }}
               />
             </div>
-            {karutaLastFeedback && (
-              <div className={`dojo-karuta-status${karutaLastFeedback.ok ? ' is-ok' : ' is-miss'}`} role="status">
-                {karutaLastFeedback.ok ? '✓ Chuẩn xác: ' : '✕ Hết giờ: '}
-                <strong lang="ja">{karutaLastFeedback.word.word}</strong>
-                {karutaLastFeedback.word.reading && (
-                  <span lang="ja"> 【{karutaLastFeedback.word.reading}】</span>
-                )} — {karutaLastFeedback.word.meaning}
-              </div>
-            )}
+            <div className="dojo-karuta-caller__meta">
+              <span className="dojo-karuta-caller__eyebrow">
+                NGHE ÂM ĐỌC · ĐẬP THẺ BÀI ({KARUTA_KEYS.slice(0, karutaBoard.length).join(' · ')})
+              </span>
+              {karutaLastFeedback && (
+                <div className={`dojo-karuta-status${karutaLastFeedback.ok ? ' is-ok' : ' is-miss'}`} role="status">
+                  {karutaLastFeedback.ok ? '✓ Chuẩn: ' : '✕ Hết giờ: '}
+                  <strong lang="ja">{karutaLastFeedback.word.word}</strong>
+                  {karutaLastFeedback.word.reading && (
+                    <span lang="ja"> 【{karutaLastFeedback.word.reading}】</span>
+                  )} — {karutaLastFeedback.word.meaning}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="dojo-karuta-grid" role="group" aria-label="Sân đấu Karuta thính giác">
-            {karutaBoard.map((card) => {
+          <div className="dojo-karuta-grid dojo-karuta-grid--fuda" role="group" aria-label="Sân đấu Karuta thính giác">
+            {karutaBoard.map((card, idx) => {
               const isMatched = Boolean(karutaMatched[card.word])
               const isMismatch = karutaMismatchWord === card.word
               const isMissedReveal = karutaMissedRevealWord === card.word && !isMatched
+              const shortcutKey = KARUTA_KEYS[idx]
               return (
                 <button
                   key={card.word}
                   type="button"
                   disabled={isMatched}
-                  className={`dojo-karuta-card dojo-karuta-card--kanji${isMatched ? ' is-matched' : ''}${
+                  className={`dojo-karuta-card dojo-karuta-card--fuda${isMatched ? ' is-matched' : ''}${
                     isMismatch ? ' is-mismatch' : ''
                   }${isMissedReveal ? ' is-missed-reveal' : ''}`}
                   onClick={() => handleKarutaCardSlap(card)}
+                  aria-label={`${card.word}${shortcutKey ? ` (Phím ${shortcutKey})` : ''}`}
                 >
                   {isMatched && (
                     <span className="dojo-karuta-card__seal" aria-hidden="true">
@@ -757,6 +779,11 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                   <span className="dojo-karuta-card__primary" lang="ja">
                     {card.word}
                   </span>
+                  {shortcutKey && (
+                    <span className="dojo-karuta-card__key" aria-hidden="true">
+                      {shortcutKey}
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -811,28 +838,21 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
         </div>
       )}
 
-      {/* MODE 3: TYPING RECALL (KANA / ROMAJI) */}
+      {/* MODE 3: CALM HAIRLINE TYPING RECALL */}
       {mode === 'typing' && !typingFinished && currentTypingCard && (
         <div className="dojo-typing-stage">
-          <div className="dojo-quiz-card">
-            <div className="dojo-quiz-card__eyebrow">
-              <span>GÕ ÂM ĐỌC HIRAGANA / ROMAJI</span>
-              <button
-                type="button"
-                className="dojo-speak-btn"
-                onClick={() => setTypingShowHint((v) => !v)}
-                aria-pressed={typingShowHint}
-              >
-                <Eye size={15} aria-hidden="true" />
-                <span>{typingShowHint ? 'Ẩn gợi ý nghĩa' : 'Gợi ý nghĩa'}</span>
-              </button>
-            </div>
-
+          {typingTimedMode && (
             <div className="dojo-timer-bar" aria-label={`Thời gian còn lại ${Math.ceil(typingTimeLeftMs / 1000)} giây`}>
               <div
                 className="dojo-timer-bar__fill"
                 style={{ width: `${Math.round((typingTimeLeftMs / TYPING_TURN_MS) * 100)}%` }}
               />
+            </div>
+          )}
+
+          <div className="dojo-quiz-card">
+            <div className="dojo-quiz-card__eyebrow dojo-quiz-card__eyebrow--center">
+              <span>GÕ ÂM ĐỌC HIRAGANA / ROMAJI</span>
             </div>
 
             <div className="dojo-quiz-card__prompt" lang="ja">
@@ -851,50 +871,51 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
           </div>
 
           <form className="dojo-typing-form" onSubmit={handleTypingSubmit}>
-            <div className="dojo-typing-input-row">
-              <input
-                ref={typingInputRef}
-                type="text"
-                className={`dojo-typing-input${
-                  typingSubmitted === 'correct'
-                    ? ' is-correct'
-                    : typingSubmitted === 'wrong' || typingSubmitted === 'timeout'
-                      ? ' is-wrong'
-                      : ''
-                }`}
-                value={typingInput}
-                onChange={(e) => setTypingInput(e.target.value)}
-                disabled={typingSubmitted !== null}
-                aria-label="Nhập cách đọc Hiragana hoặc Romaji"
-                placeholder="Gõ Romaji (vd: jinsei) hoặc Hiragana..."
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-              />
-              {typingSubmitted === null ? (
-                <button type="submit" className="dojo-next-btn">
-                  Kiểm tra
-                </button>
-              ) : (
-                <button type="button" className="dojo-next-btn" onClick={handleNextTypingCard}>
-                  {typingIndex + 1 >= typingDeck.length ? 'Xem tổng kết →' : 'Từ tiếp theo →'}
-                </button>
-              )}
-            </div>
+            <input
+              ref={typingInputRef}
+              type="text"
+              className={`dojo-typing-input${
+                typingSubmitted === 'correct'
+                  ? ' is-correct'
+                  : typingSubmitted === 'wrong' || typingSubmitted === 'timeout'
+                    ? ' is-wrong'
+                    : ''
+              }`}
+              value={typingInput}
+              onChange={(e) => setTypingInput(e.target.value)}
+              disabled={typingSubmitted !== null}
+              aria-label="Nhập cách đọc Hiragana hoặc Romaji"
+              placeholder="Gõ Romaji (vd: jinsei) hoặc Hiragana..."
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+            />
 
             <div className="dojo-typing-meta-row">
               <span className="dojo-typing-preview">
-                Chuyển Kana: <strong lang="ja">{liveRomajiPreview ? liveRomajiPreview : '—'}</strong>
+                Chuyển Kana: <strong lang="ja">{liveRomajiPreview || '—'}</strong>
               </span>
-              {typingSubmitted === null && (
-                <button
-                  type="button"
-                  className="dojo-srs-chip"
-                  onClick={() => handleTypingFailure(currentTypingCard, 'wrong')}
-                >
-                  Chưa nhớ · Xem đáp án
-                </button>
-              )}
+
+              <div className="dojo-typing-actions">
+                {typingSubmitted === null ? (
+                  <>
+                    <button
+                      type="button"
+                      className="dojo-editorial-btn"
+                      onClick={() => handleTypingFailure(currentTypingCard, 'wrong')}
+                    >
+                      Chưa nhớ · Xem đáp án
+                    </button>
+                    <button type="submit" className="dojo-typing-submit-btn">
+                      Kiểm tra (Enter)
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="dojo-next-btn" onClick={handleNextTypingCard}>
+                    {typingIndex + 1 >= typingDeck.length ? 'Xem tổng kết →' : 'Từ tiếp theo →'}
+                  </button>
+                )}
+              </div>
             </div>
           </form>
 
@@ -913,8 +934,8 @@ export function LessonMiniGame({ words, activeMode, isTermSaved, onSaveToSrs, on
                 )}
               </div>
               <div className="dojo-feedback-bar__actions">
-                <button type="button" className="dojo-speak-btn" onClick={() => speakWord(currentTypingCard)}>
-                  <Volume2 size={15} aria-hidden="true" />
+                <button type="button" className="dojo-editorial-btn" onClick={() => speakWord(currentTypingCard)}>
+                  <Volume2 size={14} aria-hidden="true" />
                   <span>Nghe âm</span>
                 </button>
               </div>
