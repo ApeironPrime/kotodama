@@ -1181,7 +1181,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                     <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
                       <span>第{currentUnitInfo?.ordinal || 1}課 · 語彙札</span>
-                      <span className="curriculum-flashcard__hanko">札</span>
+                      <span className="curriculum-flashcard__hanko">{isFlipped ? '裏' : '表'}</span>
                     </div>
 
                     {/* Top Bar inside Card */}
@@ -1271,43 +1271,121 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     </div>
 
                     {/* Middle Main Display */}
-                    <div className="curriculum-flashcard__center">
-                      {cardContentMode === 'word' ? (
-                        <>
-                          <div className="curriculum-flashcard__word-stage">
-                            <div className="curriculum-flashcard__word">{currentCard.word}</div>
-                            {!isFlipped && <div className="curriculum-flashcard__brush-rule" aria-hidden="true" />}
-                          </div>
-                          {isFlipped && (
-                            <div style={{ marginTop: '0.9rem', animation: 'fadeIn 0.2s ease' }}>
+                    <div
+                      key={`${currentCard.id}-${isFlipped ? 'back' : 'front'}`}
+                      className="curriculum-flashcard__center curriculum-flashcard__flip-stage"
+                    >
+                      {(() => {
+                        const currentCardKanjis = Array.from(
+                          new Set(Array.from(currentCard.word).filter((ch) => /\p{Script=Han}/u.test(ch)))
+                        )
+                        if (cardContentMode === 'example') {
+                          return (
+                            <div style={{ maxWidth: '650px', margin: '0 auto' }}>
+                              <div className="curriculum-flashcard__example-jp">
+                                {currentCard.examples?.[0]?.jp || 'Không có câu ví dụ'}
+                              </div>
+                              {isFlipped && (
+                                <div className="curriculum-flashcard__example-vi">{currentCard.examples?.[0]?.vi}</div>
+                              )}
+                            </div>
+                          )
+                        }
+                        if (!isFlipped) {
+                          return (
+                            <>
+                              <div className="curriculum-flashcard__word-stage">
+                                <svg
+                                  viewBox="0 0 220 220"
+                                  className="curriculum-flashcard__enso"
+                                  aria-hidden="true"
+                                  fill="none"
+                                >
+                                  <path
+                                    d="M 114 22 C 166 22, 198 58, 198 110 C 198 164, 158 198, 108 198 C 56 198, 22 162, 24 108 C 26 60, 62 28, 102 24"
+                                    stroke="currentColor"
+                                    strokeWidth="7"
+                                    strokeLinecap="round"
+                                  />
+                                  <path
+                                    d="M 124 25 C 172 30, 194 68, 192 114 C 190 158, 156 192, 106 193"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    opacity="0.55"
+                                  />
+                                </svg>
+                                <div className="curriculum-flashcard__word">{currentCard.word}</div>
+                                <div className="curriculum-flashcard__brush-rule" aria-hidden="true" />
+                                <div className="curriculum-flashcard__front-meta">
+                                  {currentCard.jlptLevel || course?.level || 'JP'} ·{' '}
+                                  {currentCardKanjis.length > 0 ? `${currentCardKanjis.length} Hán tự` : 'Kana'}
+                                  {currentCard.examples?.[0] ? ' · Có câu ví dụ' : ''}
+                                </div>
+                              </div>
+                            </>
+                          )
+                        }
+                        return (
+                          <div className="curriculum-flashcard__back-spread">
+                            <div className="curriculum-flashcard__back-header">
+                              <span className="curriculum-flashcard__back-word">{currentCard.word}</span>
                               {currentCard.reading && (
-                                <div className="curriculum-flashcard__reading">【{currentCard.reading}】</div>
+                                <span className="curriculum-flashcard__reading">【{currentCard.reading}】</span>
                               )}
                               {currentCard.hanViet && (
-                                <div className="curriculum-flashcard__hanviet">
+                                <span className="curriculum-flashcard__hanviet">
                                   Hán Việt: <strong>{currentCard.hanViet}</strong>
-                                </div>
+                                </span>
                               )}
-                              <div className="curriculum-flashcard__meaning">{currentCard.meaning}</div>
-                              {currentCard.examples?.[0] && (
-                                <div className="curriculum-flashcard__example-plate">
+                            </div>
+
+                            <div className="curriculum-flashcard__meaning">{currentCard.meaning}</div>
+
+                            {currentCard.examples?.[0] && (
+                              <div className="curriculum-flashcard__example-plate">
+                                <div className="curriculum-flashcard__example-plate-text">
                                   <div lang="ja">{formatJpQuote(currentCard.examples[0].jp)}</div>
                                   {currentCard.examples[0].vi && <small>{currentCard.examples[0].vi}</small>}
                                 </div>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div style={{ maxWidth: '650px', margin: '0 auto' }}>
-                          <div className="curriculum-flashcard__example-jp">
-                            {currentCard.examples?.[0]?.jp || 'Không có câu ví dụ'}
+                                <button
+                                  type="button"
+                                  className="curriculum-flashcard__example-audio"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    playAudio(undefined, currentCard.examples?.[0]?.jp || currentCard.word)
+                                  }}
+                                  title="Nghe câu ví dụ"
+                                  aria-label="Nghe câu ví dụ"
+                                >
+                                  <Volume2 size={14} />
+                                </button>
+                              </div>
+                            )}
+
+                            {currentCardKanjis.length > 0 && (
+                              <div className="curriculum-flashcard__kanji-stamps">
+                                <span className="curriculum-flashcard__kanji-label">Chữ Hán:</span>
+                                {currentCardKanjis.map((kanji) => (
+                                  <button
+                                    key={kanji}
+                                    type="button"
+                                    className="curriculum-flashcard__kanji-tile"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedDictWord(kanji)
+                                    }}
+                                    title={`Tra chữ Hán ${kanji}`}
+                                    aria-label={`Tra chữ Hán ${kanji}`}
+                                  >
+                                    {kanji}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          {isFlipped && (
-                            <div className="curriculum-flashcard__example-vi">{currentCard.examples?.[0]?.vi}</div>
-                          )}
-                        </div>
-                      )}
+                        )
+                      })()}
 
                       {!isFlipped && (
                         <div className="curriculum-flashcard__cue">
@@ -1524,6 +1602,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   {paginatedWords.map((item, idx) => {
                     const globalIdx = (unitPage - 1) * PAGE_SIZE + idx + 1
                     const isSaved = isCurriculumTermSaved(item)
+                    const isKnown = knownWords.includes(item.termId || String(item.id))
                     const isCurrentOnStage = stageMode === 'flashcard' && currentCard?.word === item.word
                     const loadOntoStage = () => {
                       setIsShuffled(false)
@@ -1557,6 +1636,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               <span className="curriculum-term-row__word">{item.word}</span>
                               {item.reading && <span className="curriculum-term-row__reading">【{item.reading}】</span>}
                               {item.hanViet && <span className="curriculum-term-row__hanviet">({item.hanViet})</span>}
+                              {isKnown && (
+                                <span
+                                  className="curriculum-term-row__known-seal"
+                                  title="Đã thuộc"
+                                  aria-label="Đã thuộc"
+                                >
+                                  済
+                                </span>
+                              )}
                             </button>
                           </div>
 
