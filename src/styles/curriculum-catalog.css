@@ -2980,20 +2980,48 @@
 }
 
 /* 3-Tier Display Hierarchy: Hover-Reveal HUD + Touch Device Fallback */
-.kakejiku-stage .curriculum-flashcard__topbar-right,
+.kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn {
+  opacity: 0;
+  transition:
+    opacity 200ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn--audio {
+  opacity: 0.42;
+  border-color: transparent;
+  background: transparent;
+}
+
+.kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn--audio.is-active {
+  opacity: 1;
+}
+
 .kakejiku-stage .curriculum-flashcard__cue,
 .kakejiku-stage .curriculum-flashcard__footer-keys {
   opacity: 0;
   transition: opacity 200ms ease;
 }
 
-.kakejiku-stage:hover .curriculum-flashcard__topbar-right,
-.kakejiku-stage:focus-within .curriculum-flashcard__topbar-right,
+.kakejiku-stage .curriculum-flashcard__cue.is-first-card {
+  opacity: 0.62;
+}
+
+.kakejiku-stage:hover .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn,
+.kakejiku-stage:focus-within .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn,
 .kakejiku-stage:hover .curriculum-flashcard__cue,
 .kakejiku-stage:focus-within .curriculum-flashcard__cue,
 .kakejiku-stage:hover .curriculum-flashcard__footer-keys,
 .kakejiku-stage:focus-within .curriculum-flashcard__footer-keys {
   opacity: 1;
+}
+
+.kakejiku-stage:hover .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn--audio,
+.kakejiku-stage:focus-within .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn--audio {
+  border-color: var(--color-border);
+  background: var(--color-surface);
 }
 
 .kakejiku-stage:hover .curriculum-flashcard__footer-meta,
@@ -3002,8 +3030,13 @@
 }
 
 @media (hover: none) {
-  .kakejiku-stage .curriculum-flashcard__topbar-right {
+  .kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn {
     opacity: 1;
+  }
+
+  .kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn--audio {
+    border-color: var(--color-border);
+    background: var(--color-surface);
   }
 
   .kakejiku-stage .curriculum-flashcard__cue,
@@ -3713,7 +3746,7 @@
   .curriculum-flashcard-hud__track > span,
   .kakejiku-stamp-flash,
   .is-answer-veiled,
-  .kakejiku-stage .curriculum-flashcard__topbar-right,
+  .kakejiku-stage .curriculum-flashcard__topbar-right .curriculum-flashcard__icon-btn,
   .kakejiku-stage .curriculum-flashcard__cue,
   .kakejiku-stage .curriculum-flashcard__footer-meta,
   .kakejiku-stage .curriculum-flashcard__footer-keys,
@@ -3857,9 +3890,14 @@
   gap: 0.55rem;
   padding: 0.55rem 0.45rem;
   border: none;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
+  outline: none;
   color: var(--color-text);
   text-align: left;
   cursor: pointer;
@@ -3873,11 +3911,21 @@
   color: var(--color-accent-text);
 }
 
-.lesson-dock-card.is-active {
-  border-color: transparent;
+.lesson-dock-card:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
   border-bottom-color: var(--color-accent);
+  border-radius: 4px 4px 0 0;
+}
+
+.lesson-dock-card.is-active {
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 2px solid var(--color-accent);
   background: transparent;
   box-shadow: none;
+  outline: none;
 }
 
 .lesson-dock-card__seal {

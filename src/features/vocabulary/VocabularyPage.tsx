@@ -1243,7 +1243,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             </button>
                             <button
                               type="button"
-                              className={`curriculum-flashcard__icon-btn${playingAudioUrl ? ' is-active' : ''}`}
+                              className={`curriculum-flashcard__icon-btn curriculum-flashcard__icon-btn--audio${playingAudioUrl ? ' is-active' : ''}`}
                               onClick={() => playAudio(currentCard.audioUrl, currentCard.word)}
                               title="Phát âm (Phím R)"
                               aria-label="Phát âm (Phím R)"
@@ -1403,7 +1403,9 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               })()}
 
                               {!isFlipped && (
-                                <div className="curriculum-flashcard__cue">
+                                <div
+                                  className={`curriculum-flashcard__cue${unitPage === 1 && currentIndex === 0 ? ' is-first-card' : ''}`}
+                                >
                                   <span aria-hidden="true">◇</span>
                                   <span>Nhấn [Space] hoặc chạm để lật xem nghĩa</span>
                                 </div>
