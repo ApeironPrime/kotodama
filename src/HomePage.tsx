@@ -3,10 +3,13 @@ import HomeInkCanvas from './components/HomeInkCanvas'
 import HomeStory from './components/HomeStory'
 import { useHomeSmoothScroll } from './components/useHomeSmoothScroll'
 import { useInkSound } from './components/useInkSound'
+import { curriculumApi } from './features/curriculum/curriculumApi'
 import { sumiAudio } from './features/dictionary/sumiAudio'
 import 'lenis/dist/lenis.css'
 import { LEARNING_LANGUAGES, LEARNING_LEVELS, useLearningPlan } from './features/learning/learningPlan'
-import type { Page } from './types/app'
+import { PAGE_PATHS, type Page } from './types/app'
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   BookOpen,
@@ -70,44 +73,13 @@ const JOURNEY_STEPS = [
   },
 ] as const
 
-const COURSE_PREVIEWS = [
-  {
-    number: '01',
-    title: 'Nét chữ đầu tiên',
-    japanese: 'はじめの一筆',
-    seal: '初',
-    level: 'N5 · Nhập môn',
-    description: 'Từ âm thanh đầu tiên đến những lời chào thân thuộc.',
-    chapter: 3,
-    total: 12,
-    scene: 'mountain',
-    cover: '/assets/artbook-01-first-stroke.jpg',
-  },
-  {
-    number: '02',
-    title: 'Chuyện thường ngày',
-    japanese: '日々のことば',
-    seal: '日',
-    level: 'N4 · Hội thoại',
-    description: 'Để mỗi cuộc gặp gỡ trở thành một dịp dùng tiếng Nhật.',
-    chapter: 7,
-    total: 16,
-    scene: 'bridge',
-    cover: '/assets/artbook-02-everyday.jpg',
-  },
-  {
-    number: '03',
-    title: 'Đọc giữa những dòng',
-    japanese: '読むたびに',
-    seal: '読',
-    level: 'N3 · Đọc hiểu',
-    description: 'Đi sâu hơn vào câu chữ, sắc thái và câu chuyện.',
-    chapter: 2,
-    total: 18,
-    scene: 'temple',
-    cover: '/assets/artbook-03-between-lines.jpg',
-  },
+const COURSE_ARTWORK = [
+  { scene: 'mountain', cover: '/assets/artbook-01-first-stroke.jpg' },
+  { scene: 'bridge', cover: '/assets/artbook-02-everyday.jpg' },
+  { scene: 'temple', cover: '/assets/artbook-03-between-lines.jpg' },
 ] as const
+
+const COURSE_LEVEL_ORDER = ['N5', 'N4', 'N3', 'N2', 'N1'] as const
 
 export default function HomePage({
   setPage,
@@ -119,6 +91,17 @@ export default function HomePage({
   userName?: string | undefined
 }) {
   const [plan] = useLearningPlan()
+  const catalog = useQuery({
+    queryKey: ['curriculum', 'catalog', 'ALL', ''],
+    queryFn: () => curriculumApi.fetchCatalog({ limit: 100 }),
+    staleTime: 60_000,
+  })
+  const publicCourses =
+    catalog.data?.items.filter((course) => course.visibility === 'public' && course.unit_count > 0) ?? []
+  const coursesByLevel = COURSE_LEVEL_ORDER.flatMap(
+    (level) => publicCourses.find((course) => course.level === level) ?? []
+  )
+  const featuredCourses = [...new Set([...coursesByLevel, ...publicCourses])].slice(0, COURSE_ARTWORK.length)
   const homeRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLElement>(null)
   const sound = useInkSound()
@@ -366,9 +349,9 @@ export default function HomePage({
           <SectionHeader
             ordinal="02  /  学びの書"
             title="Những trang đầu"
-            description="Ba hành trình mẫu để bạn hình dung con đường học tiếng Nhật của mình."
-            action="Khám phá Từ điển"
-            onClick={() => setPage('dictionary')}
+            description="Chọn giáo trình từ vựng theo cấp độ và mở danh sách bài học."
+            action="Xem toàn bộ giáo trình"
+            onClick={() => setPage('vocabulary')}
           />
           <div className="showcase-course-gallery__sound">
             <button
@@ -385,44 +368,67 @@ export default function HomePage({
               Âm giấy {sound.enabled ? 'đang bật' : 'đang tắt'}
             </button>
           </div>
+          {featuredCourses.length === 0 && (
+            <div>
+              <p role="status">
+                {catalog.isPending
+                  ? 'Đang tải giáo trình…'
+                  : catalog.isError
+                    ? 'Chưa tải được danh mục giáo trình.'
+                    : 'Chưa có giáo trình để giới thiệu.'}
+              </p>
+              {catalog.isError && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void catalog.refetch()}
+                  disabled={catalog.isFetching}
+                >
+                  Thử lại
+                </Button>
+              )}
+            </div>
+          )}
           <div className="showcase-course-gallery" data-reveal>
-            {COURSE_PREVIEWS.map((course) => (
-              <article
-                className={`showcase-course-plate showcase-course-plate--${course.scene}`}
-                key={course.number}
-                onPointerEnter={() => {
-                  sound.play()
-                  sumiAudio.playSuikinkutsu()
-                }}
-                onFocus={() => {
-                  sound.play()
-                  sumiAudio.playSuikinkutsu()
-                }}
-              >
-                <div className="showcase-course-plate__cover">
-                  <img src={course.cover} alt="" loading="lazy" />
-                  <span className="showcase-course-plate__spine" aria-hidden="true" />
-                  <span className="showcase-course-plate__number">VOL. {course.number}</span>
-                  <span className="showcase-course-plate__japanese" aria-hidden="true">
-                    {course.japanese}
-                  </span>
-                  <span className="showcase-course-plate__seal" aria-hidden="true">
-                    {course.seal}
-                  </span>
-                </div>
-                <div className="showcase-course-plate__caption">
-                  <span className="showcase-course-plate__level">{course.level}</span>
-                  <h3>{course.title}</h3>
-                  <p>{course.description}</p>
-                  <div className="showcase-course-plate__footer">
-                    <span className="showcase-course-plate__chapters">{course.total} chương học</span>
-                    <Button variant="ghost" size="sm" onClick={() => setPage('vocabulary')}>
-                      Khám phá tủ sách <ArrowRight aria-hidden="true" size={14} />
-                    </Button>
+            {COURSE_ARTWORK.map(({ scene, cover }, index) => {
+              const course = featuredCourses[index]
+              if (!course) return null
+              const params = new URLSearchParams({ tab: 'vocabulary', course: course.course_code })
+              return (
+                <article
+                  className={`showcase-course-plate showcase-course-plate--${scene}`}
+                  key={course.course_code}
+                  onPointerEnter={() => {
+                    sound.play()
+                    sumiAudio.playSuikinkutsu()
+                  }}
+                  onFocus={() => {
+                    sound.play()
+                    sumiAudio.playSuikinkutsu()
+                  }}
+                >
+                  <div className="showcase-course-plate__cover">
+                    <img src={cover} alt="" loading="lazy" />
+                    <span className="showcase-course-plate__spine" aria-hidden="true" />
                   </div>
-                </div>
-              </article>
-            ))}
+                  <div className="showcase-course-plate__caption">
+                    <span className="showcase-course-plate__level">{course.level}</span>
+                    <h3>{course.title}</h3>
+                    {course.description && <p>{course.description}</p>}
+                    <div className="showcase-course-plate__footer">
+                      <span className="showcase-course-plate__chapters">{course.unit_count} bài học</span>
+                      <Link
+                        className="ui-button ui-button--ghost ui-button--sm"
+                        to={`${PAGE_PATHS.dictionary}?${params}`}
+                        aria-label={`Mở giáo trình ${course.title}`}
+                      >
+                        Mở giáo trình <ArrowRight aria-hidden="true" size={14} />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </section>
 
