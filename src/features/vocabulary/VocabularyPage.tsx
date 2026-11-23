@@ -134,7 +134,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [unitSearchQuery, setUnitSearchQuery] = useState('')
   const debouncedUnitSearchQuery = useDebouncedValue(unitSearchQuery)
   const [unitPage, setUnitPage] = useState(1)
-  const [cardContentMode, setCardContentMode] = useState<'word' | 'example'>('word')
 
   // In-Lesson Flashcard State
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -1229,39 +1228,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   return (
                     <div id="panel-study-flashcard" role="tabpanel" aria-labelledby="tab-study-flashcard">
                       <div className="kakejiku-stage">
-                        {/* Slim Software Toolbar ABOVE the Kakemono Rod (keeps interior 100% pure art) */}
+                        {/* Slim Utility Icons ABOVE the Kakemono Rod (hover-reveal on desktop) */}
                         <div className="kakejiku-toolbar">
-                          <div className="curriculum-flashcard__topbar-left">
-                            <div className="curriculum-flashcard__segment" role="group" aria-label="Chế độ mặt thẻ">
-                              <button
-                                type="button"
-                                className={`curriculum-flashcard__seg-btn${cardContentMode === 'word' ? ' is-active' : ''}`}
-                                onClick={() => setCardContentMode('word')}
-                              >
-                                Từ vựng
-                              </button>
-                              {currentCard.examples && currentCard.examples.length > 0 && (
-                                <button
-                                  type="button"
-                                  className={`curriculum-flashcard__seg-btn${cardContentMode === 'example' ? ' is-active' : ''}`}
-                                  onClick={() => setCardContentMode('example')}
-                                >
-                                  Câu ví dụ
-                                </button>
-                              )}
-                            </div>
-
-                            <button
-                              type="button"
-                              className="curriculum-flashcard__pill"
-                              onClick={() => setSelectedDictWord(currentCard.word)}
-                              title="Tra từ điển"
-                              aria-label="Tra từ điển"
-                            >
-                              <BookOpen size={12} aria-hidden="true" /> Tra từ điển
-                            </button>
-                          </div>
-
                           <div className="curriculum-flashcard__topbar-right">
                             <button
                               type="button"
@@ -1355,20 +1323,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               className="curriculum-flashcard__center curriculum-flashcard__flip-stage"
                             >
                               {(() => {
-                                if (cardContentMode === 'example') {
-                                  return (
-                                    <div style={{ maxWidth: '650px', margin: '0 auto' }}>
-                                      <div className="curriculum-flashcard__example-jp">
-                                        {currentCard.examples?.[0]?.jp || 'Không có câu ví dụ'}
-                                      </div>
-                                      {isFlipped && (
-                                        <div className="curriculum-flashcard__example-vi">
-                                          {currentCard.examples?.[0]?.vi}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )
-                                }
                                 if (!isFlipped) {
                                   return (
                                     <div className="curriculum-flashcard__word-stage">
@@ -1380,7 +1334,17 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 return (
                                   <div className="curriculum-flashcard__back-spread">
                                     <div className="curriculum-flashcard__back-header">
-                                      <span className="curriculum-flashcard__back-word">{currentCard.word}</span>
+                                      <button
+                                        type="button"
+                                        className="curriculum-flashcard__back-word"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedDictWord(currentCard.word)
+                                        }}
+                                        title="Xem chi tiết trong từ điển"
+                                      >
+                                        {currentCard.word}
+                                      </button>
                                       {currentCard.reading && (
                                         <span className="curriculum-flashcard__reading">【{currentCard.reading}】</span>
                                       )}
