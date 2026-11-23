@@ -48,17 +48,20 @@
 }
 
 .dictionary-page--focus {
-  --color-bg-canvas: #f9f6f0;
-  --color-bg-subtle: #f1ebe0;
+  --color-bg-canvas: #faf7f2;
+  --color-bg-subtle: #f5f1e9;
   --color-surface: #fdfbf7;
-  --color-bg-hover: #eee6d8;
+  --color-bg-hover: #efe9dd;
   --color-accent: #b82e2e;
   --color-accent-text: #9f2626;
-  --color-accent-subtle: rgba(184, 46, 46, 0.08);
+  --color-accent-subtle: rgba(184, 46, 46, 0.07);
+  --color-danger: #6c645a;
+  --color-danger-subtle: #f0ebe1;
+  --color-danger-text: #453f38;
   --color-border: rgba(34, 29, 24, 0.12);
   --color-border-subtle: rgba(34, 29, 24, 0.08);
   padding: 0.65rem clamp(1rem, 2.2vw, 2rem) var(--space-8);
-  background: #f9f6f0;
+  background: #faf7f2;
 }
 
 [data-theme='dark'] .dictionary-page--focus {

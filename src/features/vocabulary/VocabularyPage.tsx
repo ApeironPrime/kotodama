@@ -1481,12 +1481,18 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         <Button
                           variant="danger"
                           size="md"
+                          className="curriculum-flashcard-controls__miss"
                           onClick={() => handleNextCard()}
                           disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
                         >
                           Chưa thuộc (X)
                         </Button>
-                        <Button variant="primary" size="md" onClick={triggerKnownStamp}>
+                        <Button
+                          variant="primary"
+                          size="md"
+                          className="curriculum-flashcard-controls__pass"
+                          onClick={triggerKnownStamp}
+                        >
                           <Check size={16} aria-hidden="true" /> Đã thuộc (Z)
                         </Button>
                         <Button
