@@ -95,7 +95,7 @@ function formatEditorialUnitTitle(rawTitle?: string, ordinal?: number, topic?: s
   const chapterNum = unitMatch?.[1] || String(ordinal || 1)
   let body = title
     .replace(/^Unit\s+\d+\s*\|?\s*/i, '')
-    .replace(/_\s*\[[^\]]+\]/g, '')
+    .replace(/[_\s]*\[[^\]]+\]/g, '')
     .trim()
 
   for (const [pattern, viLabel] of RAW_POS_MAP) {
@@ -140,7 +140,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [hideListAnswers, setHideListAnswers] = useState(true)
-  const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(false)
+  const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true)
   const [stampBurstCount, setStampBurstCount] = useState(0)
   const [flipRippleCount, setFlipRippleCount] = useState(0)
   const [showStampFlash, setShowStampFlash] = useState(false)

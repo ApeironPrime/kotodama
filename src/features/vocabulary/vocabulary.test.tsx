@@ -220,6 +220,12 @@ function renderWithClient(ui: React.ReactElement) {
   )
 }
 
+async function openVocabLedger() {
+  const shioriBtn = await screen.findByRole('button', { name: 'Mở danh sách từ vựng' })
+  fireEvent.click(shioriBtn)
+  return screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+}
+
 describe('VocabularyPage Suite (Task T05 & T06)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -396,8 +402,9 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     // Header & Real Progress: 0 / 2 terms saved (0%)
     expect(await screen.findByText(/0 \/ 2 từ đã lưu \(0%\)/i)).toBeTruthy()
 
-    // Terms table renders terms inside Danh sách từ vựng bài học
-    const vocabListSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    // Zen mode by default: ledger is collapsed behind the right-edge Shiori button
+    expect(screen.queryByRole('region', { name: 'Danh sách từ vựng bài học' })).toBeNull()
+    const vocabListSection = await openVocabLedger()
     expect(await within(vocabListSection).findByText('私')).toBeTruthy()
     expect(within(vocabListSection).getByText('【わたし】')).toBeTruthy()
     expect(within(vocabListSection).getByText('(TƯ)')).toBeTruthy()
@@ -484,8 +491,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     const unitSearchInput = screen.getByPlaceholderText(/Tìm từ, cách đọc, hán việt, ý nghĩa/i)
 
     // 1. Search by reading 'ほん' -> only '本' appears in list
@@ -530,7 +536,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await screen.findByText(/1 \/ 2 từ đã lưu \(50%\)/i)).toBeTruthy()
 
     // '私' shows 'Đã lưu', '本' shows '+ Thêm SRS'
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     expect(await within(vocabSection).findByRole('button', { name: /Đã lưu/i })).toBeTruthy()
     expect(within(vocabSection).getByRole('button', { name: /\+ Thêm SRS/i })).toBeTruthy()
   })
@@ -541,7 +547,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     await within(vocabSection).findByText('私')
 
     // Click "Chi tiết từ điển" on first row
@@ -570,7 +576,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     await within(vocabSection).findByText('私')
 
     const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
@@ -593,7 +599,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     await within(vocabSection).findByText('私')
 
     const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
@@ -622,6 +628,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(within(flashcardPanel).getByText('私')).toBeTruthy()
 
     // Focus into search input
+    await openVocabLedger()
     const searchInput = screen.getByPlaceholderText(/Tìm từ, cách đọc, hán việt, ý nghĩa/i)
     searchInput.focus()
 
@@ -718,7 +725,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await screen.findByText(/0 \/ 121 từ đã lưu \(0%\)/i)).toBeTruthy()
 
     // 2. Page 1 displays items 1-20 in the list
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     expect(await within(vocabSection).findByText('単語_1')).toBeTruthy()
     expect(screen.getByText('Trang 1 / 7')).toBeTruthy()
     expect(screen.getByText(/Hiển thị 1 – 20 trên tổng số 121 từ/i)).toBeTruthy()
@@ -769,7 +776,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     await within(vocabSection).findByText('私')
 
     const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
@@ -788,7 +795,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    const vocabSection = screen.getByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     await within(vocabSection).findByText('私')
 
     const addBtns = within(vocabSection).getAllByRole('button', { name: /\+ Thêm SRS/i })
@@ -906,13 +913,14 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Nihongo Soumatome N3 Từ Vựng'))
     fireEvent.click(await screen.findByText('Tuần 1: Bài 1'))
 
+    const vocabSectionB = await openVocabLedger()
     // Wait for Context B's term '私' to be rendered
-    await screen.findByText('tôi, bản thân')
+    await within(vocabSectionB).findByText('tôi, bản thân')
 
     // Context B progress must be 0, and button must still be "+ Thêm SRS"
     expect(await screen.findByText(/0 \/ 1 từ đã lưu \(0%\)/i)).toBeTruthy()
-    expect(screen.getByRole('button', { name: /\+ Thêm SRS/i })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /Đã lưu/i })).toBeNull()
+    expect(within(vocabSectionB).getByRole('button', { name: /\+ Thêm SRS/i })).toBeTruthy()
+    expect(within(vocabSectionB).queryByRole('button', { name: /Đã lưu/i })).toBeNull()
 
     // In Flashcard mode for Context B: bookmark button is not yet saved
     const flashcardTab = screen.getByRole('tab', { name: /Flashcard Bài Học/i })
@@ -954,7 +962,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
 
-    const vocabSection = await screen.findByRole('region', { name: 'Danh sách từ vựng bài học' })
+    const vocabSection = await openVocabLedger()
     expect(await within(vocabSection).findByText('私')).toBeTruthy()
 
     // Switch top stage to Phản Xạ Nghĩa via Game Dock
