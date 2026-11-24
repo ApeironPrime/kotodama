@@ -79,10 +79,48 @@ const FONT_NUANCE = '600 28px "Noto Serif JP", "Hiragino Mincho ProN", "Yu Minch
 const FONT_HANZI = '700 11px system-ui, -apple-system, sans-serif'
 const FONT_MEANING = '500 10.5px system-ui, -apple-system, sans-serif'
 const GLYPH_ROW_HEIGHT = 112
+const GLYPH_FRAME_MARGIN = 18
+const MAX_RIPPLE_DISPLACEMENT = 24
+
+interface GlyphView {
+  width: number
+  height: number
+  zoom: number
+  pan: { x: number; y: number }
+  camera: { x: number; y: number }
+}
 
 function glyphEdgeOpacity(x: number, y: number, width: number, height: number, fontSize: number, scale: number) {
   const clearance = Math.min(x, width - x, y, height - y) - (fontSize * 0.73 + 11) * scale
   return Math.max(0, Math.min(1, (clearance - 8) / 16))
+}
+
+function projectGlyph(particle: GlyphParticle, view: GlyphView, includeRipple = true) {
+  const { width, height, zoom, pan, camera } = view
+  const offsetX = (width * (1 - zoom)) / 2 - pan.x * zoom
+  const offsetY = (height * (1 - zoom)) / 2 - pan.y * zoom
+  const x = (particle.x + camera.x * particle.parallaxFactor + (includeRipple ? particle.dispX : 0)) * zoom + offsetX
+  const y = (particle.y + camera.y * particle.parallaxFactor + (includeRipple ? particle.dispY : 0)) * zoom + offsetY
+  const { baseFontSize, scale } = particle
+  const paddingX = GLYPH_FRAME_MARGIN + Math.max(44, baseFontSize * 0.8 + 12) * scale
+  const paddingTop = GLYPH_FRAME_MARGIN + (baseFontSize * 0.78 + 8) * scale
+  const paddingBottom = GLYPH_FRAME_MARGIN + (baseFontSize * 0.52 + 28) * scale
+  if (paddingX * 2 > width || paddingTop + paddingBottom > height) return { x, y, opacity: 0 }
+
+  // Limit motion for glyphs whose resting positions are in view. Panning still lets rows leave the frame.
+  const homeX = particle.targetX * zoom + offsetX
+  const homeY = particle.targetY * zoom + offsetY
+  const homeOpacity = glyphEdgeOpacity(homeX, homeY, width, height, baseFontSize, zoom)
+  if (homeOpacity > 0) {
+    return {
+      x: Math.max(paddingX, Math.min(width - paddingX, x)),
+      y: Math.max(paddingTop, Math.min(height - paddingBottom, y)),
+      opacity: homeOpacity,
+    }
+  }
+
+  const clearance = Math.min(x - paddingX, width - paddingX - x, y - paddingTop, height - paddingBottom - y)
+  return { x, y, opacity: Math.max(0, Math.min(1, clearance / 16)) }
 }
 
 export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, onSelectLevel, onSelectKanji }) => {
@@ -271,24 +309,27 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
 
       // Staggered dissolve of old particles from center outward
       if (particlesRef.current.length > 0) {
-        const panY = panRef.current.y
-        const panX = panRef.current.x
+        const view: GlyphView = {
+          width,
+          height: viewportHeight,
+          zoom: zoomRef.current.current,
+          pan: panRef.current,
+          camera: cameraParallaxRef.current,
+        }
         outgoingParticlesRef.current = particlesRef.current
-          .filter((p) => {
-            const screenY = p.y - panY
-            return screenY >= -100 && screenY <= viewportHeight + 100
-          })
+          .map((particle) => ({ particle, point: projectGlyph(particle, view) }))
+          .filter(({ point }) => point.opacity > 0)
           .slice(0, 60)
-          .map((p, idx) => {
+          .map(({ particle: p, point }, idx) => {
             const distCenter = Math.hypot(p.targetX - centerX, p.targetY - centerY)
             const outDelay = Math.min(180, (distCenter / maxR) * 140 + (idx % 6) * 8)
             return {
               item: p.item,
-              x: p.x - panX,
-              y: p.y - panY,
+              x: point.x,
+              y: point.y,
               scale: p.scale,
               baseFontSize: p.baseFontSize,
-              baseAlpha: p.baseAlpha,
+              baseAlpha: p.baseAlpha * point.opacity,
               dissolveStart: now + outDelay,
               dissolveDuration: 360,
             }
@@ -429,17 +470,14 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         const canvas = canvasRef.current
         if (!p || !canvas) return null
         const rect = canvas.getBoundingClientRect()
-        const cam = cameraParallaxRef.current
-        const panX = panRef.current.x
-        const panY = panRef.current.y
-        const width = parseFloat(canvas.style.width) || canvas.width
-        const height = parseFloat(canvas.style.height) || canvas.height
-        const currentZoom = zoomRef.current.current
-        const worldX = p.x + cam.x * p.parallaxFactor + p.dispX - panX
-        const worldY = p.y - panY + cam.y * p.parallaxFactor + p.dispY
-        const screenX = (worldX - width / 2) * currentZoom + width / 2
-        const screenY = (worldY - height / 2) * currentZoom + height / 2
-        return { x: rect.left + screenX, y: rect.top + screenY }
+        const point = projectGlyph(p, {
+          width: rect.width,
+          height: rect.height,
+          zoom: zoomRef.current.current,
+          pan: panRef.current,
+          camera: cameraParallaxRef.current,
+        })
+        return { x: rect.left + point.x, y: rect.top + point.y }
       }
     }
   }, [])
@@ -460,7 +498,6 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       const pan = panRef.current
       pan.x += (pan.targetX - pan.x) * 0.12
       pan.y += (pan.targetY - pan.y) * 0.12
-      const panX = pan.x
       const panY = pan.y
 
       const zoom = zoomRef.current
@@ -472,6 +509,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       const cam = cameraParallaxRef.current
       cam.x += (targetCam.x - cam.x) * 0.05
       cam.y += (targetCam.y - cam.y) * 0.05
+      const view: GlyphView = { width, height, zoom: currentZoom, pan, camera: cam }
 
       // Deconstruction progress LERP (0 -> 1)
       const targetDeconstruct = deconstructionStage ? 1 : 0
@@ -629,16 +667,13 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         const driftX = Math.sin(time * 0.0013 + p.phase) * (4.8 * p.depth)
         const driftY = Math.cos(time * 0.001 + p.phase * 1.3) * (3.8 * p.depth)
 
-        // 3D Parallax offset based on depth tier
-        const parallaxX = cam.x * p.parallaxFactor
-        const parallaxY = cam.y * p.parallaxFactor
-
         // Water Wave Displacement (Refraction wave effect)
+        const restingPoint = ripples.length ? projectGlyph(p, view, false) : null
         for (let rIdx = 0; rIdx < ripples.length; rIdx++) {
           const rip = ripples[rIdx]
-          if (!rip) continue
-          const rdx = p.x + parallaxX - rip.x
-          const rdy = p.y - panY + parallaxY - rip.y
+          if (!rip || !restingPoint || restingPoint.opacity === 0) continue
+          const rdx = restingPoint.x - rip.x
+          const rdy = restingPoint.y - rip.y
           const distToWave = Math.hypot(rdx, rdy)
           const waveWidth = 42
           const waveDiff = distToWave - rip.radius
@@ -651,23 +686,19 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
             p.dispY += Math.sin(angle) * dispPulse
           }
         }
-        p.dispX *= 0.82
-        p.dispY *= 0.82
-
-        // Screen coordinate with true multi-layer 3D Parallax + Living Drift + 2D Zoom
-        const worldX = p.x + parallaxX + p.dispX - panX
-        const worldY = p.y - panY + parallaxY + p.dispY
-        const screenX = (worldX - width / 2) * currentZoom + width / 2
-        const screenY = (worldY - height / 2) * currentZoom + height / 2
+        const displacement = Math.hypot(p.dispX, p.dispY) * currentZoom
+        const waveDamping = displacement > 0 ? Math.min(0.82, MAX_RIPPLE_DISPLACEMENT / displacement) : 0.82
+        p.dispX *= waveDamping
+        p.dispY *= waveDamping
 
         // Spatial mouse interaction
-        const edgeOpacity = glyphEdgeOpacity(screenX, screenY, width, height, p.baseFontSize, p.scale)
+        const hoverPoint = projectGlyph(p, view)
         let isHover = false
-        const dx = screenX - mouse.x
-        const dy = screenY - mouse.y
-        const mouseDist = mouse.active && edgeOpacity > 0 ? Math.hypot(dx, dy) : 9999
+        const dx = hoverPoint.x - mouse.x
+        const dy = hoverPoint.y - mouse.y
+        const mouseDist = mouse.active && hoverPoint.opacity > 0 ? Math.hypot(dx, dy) : 9999
 
-        if (edgeOpacity > 0 && mouse.active && !pointerDragRef.current.isDragging && deconstructProgress < 0.2) {
+        if (hoverPoint.opacity > 0 && mouse.active && !pointerDragRef.current.isDragging && deconstructProgress < 0.2) {
           if (Math.abs(dx) <= 46 * currentZoom && dy >= -46 * currentZoom && dy <= 54 * currentZoom) {
             isHover = true
             newHoveredIndex = idx
@@ -770,10 +801,11 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         const zenStageDim = 1 - deconstructProgress * 0.92
 
         // Draw Entity at screen position
-        if (edgeOpacity === 0) continue
+        const point = projectGlyph(p, view)
+        if (point.opacity === 0) continue
         ctx.save()
-        ctx.globalAlpha = edgeOpacity
-        ctx.translate(screenX, screenY)
+        ctx.globalAlpha = point.opacity
+        ctx.translate(point.x, point.y)
         ctx.rotate(p.rotation)
         ctx.scale(p.scale * entranceScale, p.scale * entranceScale)
 
@@ -958,29 +990,17 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       }
 
       // ─── 6. DRAW ACADEMIC CONSTELLATION NETWORK THREADS & RELATIONSHIP BADGE PILLS ──
+      const activePoint = activeHoveredParticle ? projectGlyph(activeHoveredParticle, view) : null
       if (
         activeHoveredParticle &&
+        activePoint &&
+        activePoint.opacity > 0 &&
         activeMeaningfulLinks.length > 0 &&
         activeHoveredParticle.hoverRatio > 0.08 &&
         deconstructProgress < 0.2
       ) {
         const hr = activeHoveredParticle.hoverRatio
-        const hScreenX =
-          (activeHoveredParticle.x +
-            cam.x * activeHoveredParticle.parallaxFactor +
-            activeHoveredParticle.dispX -
-            panX -
-            width / 2) *
-            currentZoom +
-          width / 2
-        const hScreenY =
-          (activeHoveredParticle.y -
-            panY +
-            cam.y * activeHoveredParticle.parallaxFactor +
-            activeHoveredParticle.dispY -
-            height / 2) *
-            currentZoom +
-          height / 2
+        const { x: hScreenX, y: hScreenY } = activePoint
 
         const numLinks = activeMeaningfulLinks.length
 
@@ -1007,10 +1027,8 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
           const targetP = particles[item.index]
           if (!targetP) continue
 
-          const tScreenX =
-            (targetP.x + cam.x * targetP.parallaxFactor + targetP.dispX - panX - width / 2) * currentZoom + width / 2
-          const tScreenY =
-            (targetP.y - panY + cam.y * targetP.parallaxFactor + targetP.dispY - height / 2) * currentZoom + height / 2
+          const { x: tScreenX, y: tScreenY, opacity } = projectGlyph(targetP, view)
+          if (opacity === 0) continue
 
           // Arc physics: perpendicular curvature outward from the fan center
           const dx = tScreenX - hScreenX
@@ -1221,19 +1239,13 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       const hold = holdPressRef.current
       if (hold.isHolding && hold.targetIndex !== null && deconstructProgress < 0.2) {
         const holdParticle = particles[hold.targetIndex]
-        if (holdParticle) {
+        const holdPoint = holdParticle && projectGlyph(holdParticle, view)
+        if (holdParticle && holdPoint && holdPoint.opacity > 0) {
           const elapsed = time - hold.startTime
           const chargeProgress = Math.min(1.0, elapsed / 500)
 
-          const hpParallaxX = cam.x * holdParticle.parallaxFactor
-          const hpParallaxY = cam.y * holdParticle.parallaxFactor
-          const hpWorldX = holdParticle.x + hpParallaxX + holdParticle.dispX - panX
-          const hpWorldY = holdParticle.y - panY + hpParallaxY + holdParticle.dispY
-          const hpScreenX = (hpWorldX - width / 2) * currentZoom + width / 2
-          const hpScreenY = (hpWorldY - height / 2) * currentZoom + height / 2
-
           ctx.save()
-          ctx.translate(hpScreenX, hpScreenY)
+          ctx.translate(holdPoint.x, holdPoint.y)
 
           // Shrinking/charging cinnabar ring
           const chargeRadius = (38 - 12 * chargeProgress) * currentZoom
@@ -1264,7 +1276,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
           // Trigger stamping upon completing 500ms
           if (elapsed >= 500 && !hold.completed) {
             hold.completed = true
-            executeStampAction(holdParticle.item.kanji, hpScreenX, hpScreenY)
+            executeStampAction(holdParticle.item.kanji, holdPoint.x, holdPoint.y)
           }
         }
       }
@@ -1510,25 +1522,24 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     }
 
     // Check hit against visible kanji particles for hold-to-stamp
-    const panX = panRef.current.x
-    const panY = panRef.current.y
     const currentZoom = zoomRef.current.current
     const particles = particlesRef.current
-    const cam = cameraParallaxRef.current
+    const view: GlyphView = {
+      width: rect.width,
+      height: rect.height,
+      zoom: currentZoom,
+      pan: panRef.current,
+      camera: cameraParallaxRef.current,
+    }
 
     let hitIdx: number | null = null
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i]
       if (!p) continue
-      const parallaxX = cam.x * p.parallaxFactor
-      const parallaxY = cam.y * p.parallaxFactor
-      const worldX = p.x + parallaxX + p.dispX - panX
-      const worldY = p.y - panY + parallaxY + p.dispY
-      const screenX = (worldX - rect.width / 2) * currentZoom + rect.width / 2
-      const screenY = (worldY - rect.height / 2) * currentZoom + rect.height / 2
-      if (glyphEdgeOpacity(screenX, screenY, rect.width, rect.height, p.baseFontSize, p.scale) === 0) continue
-      const dx = screenX - x
-      const dy = screenY - y
+      const point = projectGlyph(p, view)
+      if (point.opacity === 0) continue
+      const dx = point.x - x
+      const dy = point.y - y
 
       if (
         (Math.abs(dx) <= 48 * currentZoom && dy >= -48 * currentZoom && dy <= 56 * currentZoom) ||
