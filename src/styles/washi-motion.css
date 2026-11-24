@@ -147,25 +147,228 @@
   will-change: transform;
 }
 
-/* ─── 2. Unflattened True 3D 180° Two-Sided Flashcard Flipper ────────────── */
+/* ─── 2. Physical Paper 3D Flipper, Card Stack & Hanko Stamp ─────────────── */
 
-/* CRITICAL: Never set overflow:hidden or filter on .washi-3d-scene or .washi-3d-flipper,
-   as CSS Transforms Level 2 flattens preserve-3d when those properties are present. */
+@keyframes washi-corner-hanko-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.45) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+@keyframes shiori-content-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* CRITICAL: Never set overflow:hidden or filter on .washi-3d-scene, .washi-3d-active-wrap,
+   or .washi-3d-flipper, as CSS Transforms Level 2 flattens preserve-3d when present. */
 .washi-3d-scene {
-  perspective: 1650px;
-  -webkit-perspective: 1650px;
+  perspective: 1200px;
+  -webkit-perspective: 1200px;
   width: 100%;
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
+.washi-3d-scene--stacked {
+  padding-bottom: 14px;
+}
+
+.washi-3d-active-wrap {
+  perspective: 1200px;
+  -webkit-perspective: 1200px;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 5;
+  will-change: transform;
+}
+
 @media (min-width: 768px) {
-  .lesson-stage-wrapper :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll, .washi-3d-scene) {
+  .lesson-stage-wrapper
+    :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll, .washi-3d-scene, .washi-3d-active-wrap) {
     display: flex;
     flex-direction: column;
     flex: 1;
   }
+}
+
+/* Waiting Card Stack Underlays (1–2 next cards peeking underneath) */
+.washi-stack-underlay {
+  position: absolute;
+  inset: 0 0 14px 0;
+  pointer-events: none;
+  transform-origin: bottom center;
+  background-color: color-mix(in srgb, var(--color-bg-subtle, #f2ede2) 55%, var(--color-surface, #faf7f0));
+  border: 1px solid color-mix(in srgb, var(--color-border, #dfd8c8) 88%, transparent);
+  will-change: transform;
+}
+
+.washi-stack-underlay--kakejiku {
+  inset: 11px 6px 25px 6px;
+  border-inline: 8px solid color-mix(in srgb, #efe9dd 88%, var(--color-border));
+  border-radius: 2px;
+}
+
+.washi-stack-underlay--srs {
+  border-radius: 10px;
+}
+
+.washi-stack-underlay--kanji {
+  border-radius: 3px;
+}
+
+.washi-stack-underlay--1 {
+  z-index: 3;
+  transform: translate3d(0, 8px, 0) scale(0.96);
+  filter: contrast(0.96) brightness(0.985);
+  box-shadow: 0 10px 22px -12px rgba(30, 27, 22, 0.14);
+}
+
+.washi-stack-underlay--2 {
+  z-index: 2;
+  transform: translate3d(0, 15px, 0) scale(0.925);
+  opacity: 0.72;
+  filter: contrast(0.93) brightness(0.97);
+  box-shadow: 0 8px 18px -12px rgba(30, 27, 22, 0.1);
+}
+
+[data-theme='dark'] .washi-stack-underlay {
+  filter: brightness(0.9);
+  border-color: color-mix(in srgb, var(--color-border) 95%, transparent);
+}
+
+/* Outgoing Card Fling Ghost (-5deg crimson left / +5deg moss-celadon right) */
+.washi-outgoing-ghost {
+  position: absolute;
+  inset: 0 0 14px 0;
+  z-index: 14;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  transform-origin: center 65%;
+  will-change: transform, opacity;
+}
+
+.washi-outgoing-ghost__sheet {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-surface, #fcfaf5);
+  border: 1.5px solid var(--color-border);
+  box-shadow: 0 22px 42px -12px rgba(28, 25, 20, 0.2);
+  overflow: hidden;
+}
+
+.washi-outgoing-ghost--kakejiku .washi-outgoing-ghost__sheet {
+  border-inline-width: 10px;
+  border-inline-color: #efe9dd;
+}
+
+.washi-outgoing-ghost--srs .washi-outgoing-ghost__sheet {
+  border-radius: 10px;
+}
+
+.washi-outgoing-ghost--kanji .washi-outgoing-ghost__sheet {
+  border-radius: 3px;
+}
+
+.washi-outgoing-ghost::after {
+  content: attr(data-ghost-term);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-inline: 2rem;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: clamp(2.05rem, 3.6vw, 3rem);
+  font-weight: 600;
+  color: var(--color-text);
+  opacity: 0.9;
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.washi-outgoing-ghost.is-miss .washi-outgoing-ghost__sheet {
+  border-color: rgba(184, 46, 46, 0.68);
+  background-image: linear-gradient(135deg, rgba(184, 46, 46, 0.06) 0%, transparent 55%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(184, 46, 46, 0.32),
+    0 22px 42px -12px rgba(72, 22, 22, 0.22);
+}
+
+.washi-outgoing-ghost.is-pass .washi-outgoing-ghost__sheet {
+  border-color: rgba(47, 118, 90, 0.64);
+  background-image: linear-gradient(225deg, rgba(47, 118, 90, 0.065) 0%, transparent 55%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(47, 118, 90, 0.3),
+    0 22px 42px -12px rgba(20, 56, 42, 0.22);
+}
+
+/* Signature Brand Red Square Hanko Stamp (言 / 録 / 済 / 完) — 160ms crisp stamp */
+.washi-corner-hanko {
+  position: absolute;
+  top: 1.05rem;
+  right: 1.35rem;
+  width: 2.05rem;
+  height: 2.05rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--color-accent, #b42d2a);
+  color: #fffdf9;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 250, 240, 0.34),
+    0 4px 10px -3px rgba(180, 45, 42, 0.38);
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: rotate(-6deg);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.washi-corner-hanko[data-seal]::before {
+  content: attr(data-seal);
+}
+
+.washi-corner-hanko.is-stamping,
+.washi-completion-hanko {
+  animation: washi-corner-hanko-stamp 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.washi-completion-hanko {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.85rem;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--color-accent, #b42d2a);
+  color: #fffdf9;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 250, 240, 0.34),
+    0 8px 18px -6px rgba(180, 45, 42, 0.42);
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.5rem;
+  font-weight: 800;
+  transform: rotate(-6deg);
 }
 
 .washi-3d-flipper {
@@ -178,9 +381,14 @@
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
   transform: translate3d(0, 0, 0) rotateY(0deg);
-  transition: transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
   cursor: pointer;
+}
+
+/* When driven by GSAP timeline, disable CSS transition so per-frame 90deg lift is razor-sharp */
+.washi-3d-flipper--gsap {
+  transition: none !important;
 }
 
 .washi-3d-flipper:focus-visible {
@@ -189,6 +397,7 @@
 
 .washi-3d-flipper:focus-visible .washi-3d-face--front .curriculum-flashcard,
 .washi-3d-flipper:focus-visible .washi-3d-face--back .curriculum-flashcard,
+.washi-3d-flipper:focus-visible .srs-3d-card-surface,
 .washi-3d-flipper:focus-visible .kanji-flashcard-3d-face {
   box-shadow:
     0 0 0 2px var(--color-accent, #b82e2e),
@@ -214,7 +423,15 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform-style: flat;
-  box-shadow: 0 18px 34px -10px rgba(30, 29, 26, 0.14);
+  box-shadow: 0 16px 30px -12px rgba(30, 29, 26, 0.14);
+  transition: box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* At 90deg mid-flip, card lifts off desk with wider, softer paper shadow */
+.washi-3d-flipper[data-lifting='true'] .washi-3d-face {
+  box-shadow:
+    0 28px 50px -12px rgba(28, 24, 18, 0.24),
+    0 8px 20px -6px rgba(28, 24, 18, 0.12);
 }
 
 .washi-3d-face--front {
@@ -246,6 +463,189 @@
 
 .washi-3d-face > .kakejiku-rod {
   flex-shrink: 0;
+}
+
+/* SRS Study Modal 3D Card Surface */
+.srs-3d-stage {
+  padding: 1.25rem 1.35rem 0.5rem;
+  background: color-mix(in srgb, var(--color-bg-subtle, #f4efe4) 36%, transparent);
+}
+
+.srs-3d-card-surface {
+  flex: 1;
+  min-height: 330px;
+  padding: 1.85rem 1.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.srs-3d-card-surface--back {
+  background-color: color-mix(in srgb, var(--color-bg-subtle) 28%, var(--color-surface));
+  justify-content: flex-start;
+}
+
+/* ─── Attached Shiori Bookmark Drawer (録 Mục lục — Unified Tab + Sheet) ── */
+
+.shiori-attached-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 64;
+  background: rgba(40, 35, 30, 0.12);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shiori-attached-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.shiori-attached-drawer {
+  position: fixed;
+  top: 4rem;
+  right: 0;
+  bottom: 0;
+  width: min(calc(100vw - 46px), 480px);
+  z-index: 65;
+  transform: translate3d(100%, 0, 0);
+  transition: transform 270ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.shiori-attached-drawer.is-open {
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+}
+
+.shiori-attached-drawer > .lesson-zen-shiori {
+  position: absolute;
+  left: 1px;
+  right: auto;
+  top: 44%;
+  transform: translate3d(-100%, -50%, 0);
+  margin: 0;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.9rem 0.55rem;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: -4px 8px 22px -10px rgba(32, 26, 20, 0.22);
+  pointer-events: auto;
+  z-index: 3;
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Closed hover: pull bookmark out 7px to invite pulling — zero width/padding change */
+.shiori-attached-drawer:not(.is-open) > .lesson-zen-shiori:hover {
+  transform: translate3d(calc(-100% - 7px), -50%, 0);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  color: var(--color-accent-text);
+  box-shadow: -8px 12px 28px -8px rgba(32, 26, 20, 0.28);
+}
+
+/* Open hover: subtle 2px nudge right hinting fold-back */
+.shiori-attached-drawer.is-open > .lesson-zen-shiori:hover {
+  transform: translate3d(calc(-100% + 2px), -50%, 0);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  color: var(--color-accent-text);
+}
+
+.lesson-zen-shiori__seal {
+  position: relative;
+  overflow: hidden;
+}
+
+.lesson-zen-shiori__seal-glyph,
+.lesson-zen-shiori__seal-close {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transition:
+    opacity 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lesson-zen-shiori__seal-glyph {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.lesson-zen-shiori__seal-close {
+  opacity: 0;
+  transform: scale(0.75);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.shiori-attached-drawer.is-open .lesson-zen-shiori__seal-glyph {
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.shiori-attached-drawer.is-open .lesson-zen-shiori__seal-close {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.shiori-attached-drawer__sheet {
+  flex: 1;
+  height: 100%;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  box-shadow: -16px 0 38px -14px rgba(32, 26, 20, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shiori-attached-drawer__sheet .lesson-vocab-section.lesson-vocab-rail {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  contain: none;
+  padding: 1rem 1.2rem 1.15rem;
+  border-left: none;
+  animation: shiori-content-fade-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.shiori-attached-drawer__sheet .lesson-vocab-rail__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+@media (max-width: 767px) {
+  .shiori-attached-drawer {
+    top: 3.5rem;
+  }
 }
 
 .kakejiku-stamp-flash {
@@ -623,10 +1023,48 @@
   animation: acoustic-vermilion-pulse 1.15s ease-out infinite;
 }
 
-/* ─── Reduced Motion Guardrail ────────────────────────────────────────────── */
+/* ─── Reduced Motion Guardrail (120ms flat opacity fade instead of 3D spin) ─ */
 
 @media (prefers-reduced-motion: reduce) {
-  .washi-3d-flipper,
+  .washi-3d-flipper {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .washi-3d-face--front,
+  .washi-3d-face--back {
+    transform: none !important;
+    backface-visibility: visible !important;
+    -webkit-backface-visibility: visible !important;
+    transition: opacity 120ms ease !important;
+  }
+
+  .washi-3d-face--front {
+    opacity: 1;
+  }
+
+  .washi-3d-flipper.is-flipped .washi-3d-face--front {
+    opacity: 0;
+  }
+
+  .washi-3d-face--back {
+    opacity: 0;
+  }
+
+  .washi-3d-flipper.is-flipped .washi-3d-face--back {
+    opacity: 1;
+  }
+
+  .shiori-attached-drawer {
+    transition: opacity 120ms ease !important;
+  }
+
+  .shiori-attached-backdrop {
+    transition: opacity 120ms ease !important;
+  }
+
+  .washi-corner-hanko.is-stamping,
+  .washi-completion-hanko,
   .dictionary-tabs__glider,
   .dict-overlay-backdrop,
   .dict-overlay-drawer,

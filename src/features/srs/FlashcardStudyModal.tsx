@@ -1,6 +1,10 @@
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import { usePersistentState } from '../../lib/usePersistentState'
+import { usePaperCardPhysics } from '../../lib/usePaperCardPhysics'
+import { OutgoingPaperGhost, PaperStackUnderlay } from '../../components/PaperCardLayers'
+import { playPaperFlip, playSoftMiss, playStampSuccess } from '../vocabulary/soundEngine'
+import { sumiAudio } from '../dictionary/sumiAudio'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, Eye, RotateCcw, Sparkles, Volume2, X } from 'lucide-react'
 import { Badge, Button } from '../../components/ui'
@@ -53,12 +57,29 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
   const dialogRef = useRef<HTMLDivElement>(null)
   useDialogAccessibility(dialogRef, onClose)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
-  const [isFlipped, setIsFlipped] = useState(false)
+  const {
+    isFlipped,
+    hasFlippedCard,
+    instantCardSwap,
+    outgoingGhost,
+    stampTriggerSeq,
+    activeWrapRef,
+    flipperRef,
+    ghostRef,
+    stack1Ref,
+    stack2Ref,
+    animateFlipTo,
+    toggleFlip,
+    resetWithoutAnimation,
+    triggerStampInPlace,
+    triggerCardAdvance,
+  } = usePaperCardPhysics()
   const [showFurigana, setShowFurigana] = usePersistentState('kotodama.settings.furigana', true)
   const [autoPronounce] = usePersistentState('kotodama.settings.auto-pronounce', true)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [completedCount, setCompletedCount] = useState(0)
+  const [stampedCardId, setStampedCardId] = useState<string | null>(null)
 
   const currentCard = cards[currentIndex]
 
@@ -69,41 +90,87 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
   }, [autoPronounce, currentCard])
 
   const goToNext = useCallback(() => {
-    if (currentIndex < cards.length - 1) {
+    if (currentIndex < cards.length - 1 && currentCard) {
+      triggerCardAdvance('next', currentCard.term)
       setCurrentIndex((prev) => prev + 1)
     }
-  }, [currentIndex, cards.length])
+  }, [currentIndex, cards.length, currentCard, triggerCardAdvance])
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
+      triggerCardAdvance('prev', currentCard?.term ?? '')
       setCurrentIndex((prev) => prev - 1)
     }
-  }, [currentIndex])
+  }, [currentIndex, currentCard?.term, triggerCardAdvance])
+
+  const handleFlipToggle = useCallback(() => {
+    sumiAudio.initOnGesture()
+    sumiAudio.playBrushFriction()
+    playPaperFlip()
+    toggleFlip()
+  }, [toggleFlip])
 
   const handleRate = useCallback(
     async (rating: SrsRating) => {
-      if (!currentCard || isSubmitting) return
-      setIsSubmitting(true)
+      if (!currentCard) return
+      const ratedCard = currentCard
+      const ratedIndex = currentIndex
+      const isPositive = rating !== 'again'
+      const action = isPositive ? 'pass' : 'miss'
+
       setReviewError(null)
-      try {
-        await onReview(currentCard.id, rating)
+      if (isPositive) {
+        sumiAudio.initOnGesture()
+        sumiAudio.playHankoStamp()
+        playStampSuccess()
+        setStampedCardId(ratedCard.id)
+      } else {
+        playSoftMiss()
+      }
+
+      // Non-final card: transition immediately (0ms wait, 100% interruptible keyboard flow!)
+      if (ratedIndex < cards.length - 1) {
+        triggerCardAdvance(action, ratedCard.term)
         setCompletedCount((prev) => prev + 1)
-        if (currentIndex < cards.length - 1) {
-          setCurrentIndex((prev) => prev + 1)
-        } else {
-          setCurrentIndex(cards.length)
-          setIsFlipped(false)
+        setCurrentIndex((prev) => prev + 1)
+        try {
+          await onReview(ratedCard.id, rating)
+        } catch {
+          setCompletedCount((prev) => Math.max(0, prev - 1))
+          setCurrentIndex(ratedIndex)
+          setReviewError('Chưa lưu được kết quả ôn tập. Thẻ vẫn được giữ ở đây; hãy thử lại.')
         }
+        return
+      }
+
+      // Final card before completion screen: stamp in place & verify save before closing deck
+      if (isSubmitting) return
+      setIsSubmitting(true)
+      if (isPositive) triggerStampInPlace()
+      try {
+        await onReview(ratedCard.id, rating)
+        setCompletedCount((prev) => prev + 1)
+        setCurrentIndex(cards.length)
+        resetWithoutAnimation()
       } catch {
         setReviewError('Chưa lưu được kết quả ôn tập. Thẻ vẫn được giữ ở đây; hãy thử lại.')
       } finally {
         setIsSubmitting(false)
       }
     },
-    [currentCard, isSubmitting, onReview, currentIndex, cards.length]
+    [
+      currentCard,
+      currentIndex,
+      cards.length,
+      isSubmitting,
+      onReview,
+      triggerCardAdvance,
+      triggerStampInPlace,
+      resetWithoutAnimation,
+    ]
   )
 
-  // Keyboard navigation: Space = Flip, 1 = Again, 2 = Hard, 3 = Good, 4 = Easy
+  // Keyboard navigation: Space = Flip, 1 = Again, 2 = Hard, 3 = Good, 4 = Easy (100% interruptible)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -116,7 +183,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
         return
       if (e.code === 'Space') {
         e.preventDefault()
-        setIsFlipped((prev) => !prev)
+        handleFlipToggle()
       } else if (isFlipped && !isSubmitting && currentCard) {
         if (e.key === '1') void handleRate('again')
         else if (e.key === '2') void handleRate('hard')
@@ -133,12 +200,18 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFlipped, isSubmitting, currentCard, currentIndex, cards.length, handleRate, goToNext, goToPrev, onClose])
-
-  // Reset flipped state when card changes
-  useEffect(() => {
-    setIsFlipped(false)
-  }, [currentIndex])
+  }, [
+    isFlipped,
+    isSubmitting,
+    currentCard,
+    currentIndex,
+    cards.length,
+    handleRate,
+    handleFlipToggle,
+    goToNext,
+    goToPrev,
+    onClose,
+  ])
 
   if (!currentCard) {
     return (
@@ -155,7 +228,7 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
           className="modal-content srs-modal-shell washi-manuscript-card"
           style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}
         >
-          <span className="washi-hanko" style={{ margin: '0 auto 0.85rem' }} aria-hidden="true">
+          <span className="washi-completion-hanko" aria-hidden="true">
             完
           </span>
           <Check size={40} color="var(--color-success)" style={{ margin: '0 auto 0.75rem auto' }} />
@@ -268,485 +341,549 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
           </div>
         </div>
 
-        {/* Card Body - 3D Flip Area */}
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label={isFlipped ? 'Ẩn đáp án thẻ' : 'Lật thẻ xem đáp án'}
-          aria-expanded={isFlipped}
-          onKeyDown={(event) => {
-            if (event.target === event.currentTarget && event.key === 'Enter') {
-              event.preventDefault()
-              setIsFlipped((prev) => !prev)
-            }
-          }}
-          onClick={() => setIsFlipped((prev) => !prev)}
-          className={!isFlipped ? 'washi-genko-bg' : undefined}
-          style={{
-            minHeight: '340px',
-            padding: '2rem 1.5rem',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            position: 'relative',
-            backgroundColor: isFlipped ? 'color-mix(in srgb, var(--color-bg-subtle) 40%, transparent)' : 'transparent',
-            transition: 'background-color 0.2s ease',
-          }}
-        >
-          {/* FRONT FACE */}
-          {!isFlipped ? (
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-              {showFurigana && currentCard.reading && currentCard.reading !== currentCard.term && (
-                <div
-                  style={{
-                    fontSize: '1.25rem',
-                    fontFamily: 'var(--font-jp)',
-                    color: 'var(--color-accent-text)',
-                    fontWeight: 600,
-                  }}
-                >
-                  {currentCard.reading}
-                </div>
-              )}
+        {/* Card Body - Physical Paper Stack + 3D 180° Lift Area */}
+        <div className="srs-3d-stage">
+          <div className={`washi-3d-scene${cards.length - currentIndex - 1 > 0 ? ' washi-3d-scene--stacked' : ''}`}>
+            <PaperStackUnderlay
+              remainingCount={Math.max(0, cards.length - currentIndex - 1)}
+              variant="srs"
+              stack1Ref={stack1Ref}
+              stack2Ref={stack2Ref}
+            />
+            <OutgoingPaperGhost snapshot={outgoingGhost} variant="srs" ghostRef={ghostRef} />
 
+            <div ref={activeWrapRef} className="washi-3d-active-wrap">
               <div
-                style={{
-                  fontSize: currentCard.type === 'kanji' ? '5.25rem' : '3.15rem',
-                  fontFamily: 'var(--font-jp-serif)',
-                  fontWeight: 500,
-                  color: 'var(--color-text)',
-                  lineHeight: 1.1,
+                ref={flipperRef}
+                role="button"
+                tabIndex={0}
+                aria-label={isFlipped ? 'Ẩn đáp án thẻ' : 'Lật thẻ xem đáp án'}
+                aria-expanded={isFlipped}
+                className={`washi-3d-flipper washi-3d-flipper--gsap${isFlipped ? ' is-flipped' : ''}${instantCardSwap ? ' is-instant' : ''}`}
+                onKeyDown={(event) => {
+                  if (event.target === event.currentTarget && event.key === 'Enter') {
+                    event.preventDefault()
+                    handleFlipToggle()
+                  }
                 }}
+                onClick={handleFlipToggle}
               >
-                {currentCard.term}
-              </div>
-
-              {currentCard.hanViet && (
-                <div
-                  style={{
-                    fontSize: '1.1rem',
-                    fontWeight: 800,
-                    color: 'var(--color-danger-text)',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  [{currentCard.hanViet}]
-                </div>
-              )}
-
-              {currentCard.groups && currentCard.groups.length > 1 && (
-                <div style={{ marginTop: '0.25rem' }}>
-                  <span
-                    style={{
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      padding: '2px 10px',
-                      borderRadius: '999px',
-                      background: 'rgba(245, 158, 11, 0.15)',
-                      color: 'var(--color-warning)',
-                      border: '1px solid rgba(245, 158, 11, 0.3)',
-                    }}
-                  >
-                    Gồm {currentCard.groups.length} nghĩa & cách dùng
-                  </span>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="washi-audio-btn"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    speakJapanese(currentCard.term || currentCard.reading || '')
-                  }}
-                  title="Nghe phát âm"
-                >
-                  <Volume2 size={18} />
-                </button>
-              </div>
-
-              <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                Bấm vào thẻ hoặc phím{' '}
-                <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                  Space
-                </kbd>{' '}
-                để lật xem đáp án
-              </div>
-            </div>
-          ) : (
-            /* BACK FACE */
-            <div style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Header result */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  borderBottom: '1px solid var(--color-border)',
-                  paddingBottom: '0.5rem',
-                }}
-              >
-                <div>
-                  <span
-                    style={{
-                      fontSize: '2rem',
-                      fontFamily: 'var(--font-jp)',
-                      fontWeight: 800,
-                      color: 'var(--color-text)',
-                    }}
-                  >
-                    {currentCard.term}
-                  </span>
-                  {currentCard.reading && (
-                    <span
-                      style={{
-                        fontSize: '1.1rem',
-                        fontFamily: 'var(--font-jp)',
-                        color: 'var(--color-accent-text)',
-                        marginLeft: '0.75rem',
-                        fontWeight: 700,
-                      }}
-                    >
-                      【{currentCard.reading}】
-                    </span>
-                  )}
-                  {currentCard.hanViet && (
-                    <span
-                      style={{
-                        fontSize: '1rem',
-                        color: 'var(--color-danger-text)',
-                        fontWeight: 800,
-                        marginLeft: '0.5rem',
-                      }}
-                    >
-                      [{currentCard.hanViet}]
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="washi-audio-btn"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    speakJapanese(currentCard.term || currentCard.reading || '')
-                  }}
-                  title="Nghe phát âm từ"
-                >
-                  <Volume2 size={18} />
-                </button>
-              </div>
-
-              {/* Multi-group Grammar Support in SRS */}
-              {currentCard.groups && currentCard.groups.length > 1 ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem',
-                    maxHeight: '380px',
-                    overflowY: 'auto',
-                    paddingRight: '4px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span
-                      style={{
-                        fontSize: '0.78rem',
-                        fontWeight: 800,
-                        padding: '2px 10px',
-                        borderRadius: '999px',
-                        background: 'rgba(245, 158, 11, 0.2)',
-                        color: 'var(--color-warning)',
-                        border: '1px solid rgba(245, 158, 11, 0.3)',
-                      }}
-                    >
-                      Mẫu ngữ pháp gồm {currentCard.groups.length} nghĩa & cách dùng:
-                    </span>
-                  </div>
-
-                  {currentCard.groups.map((group, gIdx) => {
-                    const firstEx = group.examples && group.examples[0]
-                    return (
-                      <div
-                        key={gIdx}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.04)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                          borderRadius: '10px',
-                          padding: '0.75rem 0.9rem',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.35rem',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              background: 'var(--color-accent)',
-                              color: '#ffffff',
-                              borderRadius: '999px',
-                              padding: '1px 7px',
-                            }}
-                          >
-                            Nghĩa {group.group_no || gIdx + 1}
-                          </span>
-                          <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}>
-                            {group.meaning || group.usage || ''}
-                          </span>
-                        </div>
-
-                        {group.structure && (
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-jp)',
-                              fontSize: '0.86rem',
-                              color: 'var(--color-accent-text)',
-                              fontWeight: 600,
-                            }}
-                          >
-                            ✦ Cấu trúc: {group.structure}
-                          </div>
-                        )}
-
-                        {group.usage && group.usage !== group.meaning && (
-                          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.35 }}>
-                            ◎ {group.usage}
-                          </div>
-                        )}
-
-                        {firstEx && (
-                          <div
-                            style={{
-                              marginTop: '0.25rem',
-                              padding: '0.5rem 0.75rem',
-                              background: 'rgba(0, 0, 0, 0.25)',
-                              border: '1px solid rgba(255, 255, 255, 0.06)',
-                              borderRadius: '8px',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              gap: '0.5rem',
-                            }}
-                          >
-                            <div style={{ flex: 1 }}>
-                              <div
-                                style={{
-                                  fontFamily: 'var(--font-jp)',
-                                  fontSize: '0.95rem',
-                                  fontWeight: 600,
-                                  color: 'var(--color-text)',
-                                  lineHeight: 1.6,
-                                }}
-                              >
-                                {renderExampleJp(firstEx, showFurigana)}
-                              </div>
-                              {firstEx.vi && (
-                                <div
-                                  style={{
-                                    fontSize: '0.82rem',
-                                    color: 'var(--color-text-secondary)',
-                                    marginTop: '2px',
-                                  }}
-                                >
-                                  {firstEx.vi}
-                                </div>
-                              )}
-                            </div>
-
-                            <button
-                              type="button"
-                              className="washi-audio-btn"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (firstEx.audio) {
-                                  const a = new Audio(firstEx.audio)
-                                  a.play().catch(() => speakJapanese(firstEx.jp))
-                                } else {
-                                  speakJapanese(firstEx.jp)
-                                }
-                              }}
-                              title="Nghe phát âm ví dụ"
-                            >
-                              <Volume2 size={15} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                /* Single Meaning / Vocab / Kanji Rendering */
-                <>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        color: 'var(--color-text-muted)',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Ý NGHĨA:
-                    </div>
-                    <div
-                      style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-success)', marginTop: '2px' }}
-                    >
-                      {currentCard.meaning}
-                    </div>
-                    {currentCard.explanation && (
-                      <div
-                        style={{
-                          fontSize: '0.9rem',
-                          color: 'var(--color-text-secondary)',
-                          marginTop: '4px',
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {currentCard.explanation}
-                      </div>
+                {/* ── FRONT FACE (0deg) ── */}
+                <div className="washi-3d-face washi-3d-face--front" aria-hidden={isFlipped}>
+                  <div className="srs-3d-card-surface washi-genko-bg">
+                    {(currentCard.masteryPercentage >= 80 || stampedCardId === currentCard.id) && (
+                      <span
+                        key={stampTriggerSeq}
+                        className="washi-corner-hanko is-stamping"
+                        data-seal="済"
+                        aria-hidden="true"
+                      />
                     )}
-                  </div>
-
-                  {currentCard.structure && (
                     <div
                       style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '6px',
-                        border: '1px solid var(--color-border)',
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '1rem',
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          color: 'var(--color-text-muted)',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        Cấu trúc:
-                      </span>
-                      <div
-                        style={{
-                          fontFamily: 'var(--font-jp)',
-                          fontSize: '0.95rem',
-                          fontWeight: 600,
-                          color: 'var(--color-text)',
-                          marginTop: '2px',
-                        }}
-                      >
-                        {currentCard.structure}
-                      </div>
-                    </div>
-                  )}
-
-                  {currentCard.story && (
-                    <div
-                      style={{
-                        background: 'rgba(217, 119, 6, 0.12)',
-                        border: '1px solid rgba(217, 119, 6, 0.35)',
-                        padding: '0.65rem 0.85rem',
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          color: 'var(--color-warning)',
-                          fontWeight: 700,
-                          fontSize: '0.85rem',
-                        }}
-                      >
-                        <Sparkles size={14} /> Mẹo nhớ chiết tự (NhaiKanji):
-                      </div>
-                      <div
-                        style={{ color: 'var(--color-warning)', fontSize: '0.9rem', fontWeight: 600, marginTop: '2px' }}
-                      >
-                        {currentCard.story}
-                      </div>
-                    </div>
-                  )}
-
-                  {currentCard.examples && currentCard.examples.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <span
-                        style={{
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          color: 'var(--color-text-muted)',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        Ví dụ mẫu:
-                      </span>
-                      {currentCard.examples.slice(0, 2).map((ex, idx) => (
+                      {showFurigana && currentCard.reading && currentCard.reading !== currentCard.term && (
                         <div
-                          key={idx}
                           style={{
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            padding: '0.5rem 0.75rem',
-                            borderRadius: '6px',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            gap: '0.5rem',
+                            fontSize: '1.25rem',
+                            fontFamily: 'var(--font-jp)',
+                            color: 'var(--color-accent-text)',
+                            fontWeight: 600,
                           }}
                         >
-                          <div style={{ flex: 1 }}>
-                            <div
+                          {currentCard.reading}
+                        </div>
+                      )}
+
+                      <div
+                        style={{
+                          fontSize: currentCard.type === 'kanji' ? '5.25rem' : '3.15rem',
+                          fontFamily: 'var(--font-jp-serif)',
+                          fontWeight: 500,
+                          color: 'var(--color-text)',
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {currentCard.term}
+                      </div>
+
+                      {currentCard.hanViet && (
+                        <div
+                          style={{
+                            fontSize: '1.1rem',
+                            fontWeight: 800,
+                            color: 'var(--color-danger-text)',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          [{currentCard.hanViet}]
+                        </div>
+                      )}
+
+                      {currentCard.groups && currentCard.groups.length > 1 && (
+                        <div style={{ marginTop: '0.25rem' }}>
+                          <span
+                            style={{
+                              fontSize: '0.78rem',
+                              fontWeight: 800,
+                              padding: '2px 10px',
+                              borderRadius: '999px',
+                              background: 'rgba(245, 158, 11, 0.15)',
+                              color: 'var(--color-warning)',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                            }}
+                          >
+                            Gồm {currentCard.groups.length} nghĩa & cách dùng
+                          </span>
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className="washi-audio-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            speakJapanese(currentCard.term || currentCard.reading || '')
+                          }}
+                          title="Nghe phát âm"
+                        >
+                          <Volume2 size={18} />
+                        </button>
+                      </div>
+
+                      <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        Bấm vào thẻ hoặc phím{' '}
+                        <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
+                          Space
+                        </kbd>{' '}
+                        để lật xem đáp án
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── BACK FACE (180deg) ── */}
+                <div className="washi-3d-face washi-3d-face--back" aria-hidden={!isFlipped}>
+                  <div className="srs-3d-card-surface srs-3d-card-surface--back">
+                    {(currentCard.masteryPercentage >= 80 || stampedCardId === currentCard.id) && (
+                      <span
+                        key={stampTriggerSeq}
+                        className="washi-corner-hanko is-stamping"
+                        data-seal="済"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {(isFlipped || hasFlippedCard) && (
+                      <div
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '1rem',
+                        }}
+                      >
+                        {/* Header result */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            justifyContent: 'space-between',
+                            borderBottom: '1px solid var(--color-border)',
+                            paddingBottom: '0.5rem',
+                          }}
+                        >
+                          <div>
+                            <span
                               style={{
+                                fontSize: '2rem',
                                 fontFamily: 'var(--font-jp)',
-                                fontSize: '0.95rem',
-                                fontWeight: 600,
+                                fontWeight: 800,
                                 color: 'var(--color-text)',
-                                lineHeight: 1.6,
                               }}
                             >
-                              {renderExampleJp(ex, showFurigana)}
-                            </div>
-                            {ex.vi && (
-                              <div
-                                style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}
+                              {currentCard.term}
+                            </span>
+                            {currentCard.reading && (
+                              <span
+                                style={{
+                                  fontSize: '1.1rem',
+                                  fontFamily: 'var(--font-jp)',
+                                  color: 'var(--color-accent-text)',
+                                  marginLeft: '0.75rem',
+                                  fontWeight: 700,
+                                }}
                               >
-                                {ex.vi}
-                              </div>
+                                【{currentCard.reading}】
+                              </span>
+                            )}
+                            {currentCard.hanViet && (
+                              <span
+                                style={{
+                                  fontSize: '1rem',
+                                  color: 'var(--color-danger-text)',
+                                  fontWeight: 800,
+                                  marginLeft: '0.5rem',
+                                }}
+                              >
+                                [{currentCard.hanViet}]
+                              </span>
                             )}
                           </div>
-
                           <button
                             type="button"
                             className="washi-audio-btn"
                             onClick={(e) => {
                               e.stopPropagation()
-                              if (ex.audio) {
-                                const a = new Audio(ex.audio)
-                                a.play().catch(() => speakJapanese(ex.jp))
-                              } else {
-                                speakJapanese(ex.jp)
-                              }
+                              speakJapanese(currentCard.term || currentCard.reading || '')
                             }}
-                            title="Nghe phát âm ví dụ"
+                            title="Nghe phát âm từ"
                           >
-                            <Volume2 size={15} />
+                            <Volume2 size={18} />
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+
+                        {/* Multi-group Grammar Support in SRS */}
+                        {currentCard.groups && currentCard.groups.length > 1 ? (
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.75rem',
+                              maxHeight: '380px',
+                              overflowY: 'auto',
+                              paddingRight: '4px',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span
+                                style={{
+                                  fontSize: '0.78rem',
+                                  fontWeight: 800,
+                                  padding: '2px 10px',
+                                  borderRadius: '999px',
+                                  background: 'rgba(245, 158, 11, 0.2)',
+                                  color: 'var(--color-warning)',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                }}
+                              >
+                                Mẫu ngữ pháp gồm {currentCard.groups.length} nghĩa & cách dùng:
+                              </span>
+                            </div>
+
+                            {currentCard.groups.map((group, gIdx) => {
+                              const firstEx = group.examples && group.examples[0]
+                              return (
+                                <div
+                                  key={gIdx}
+                                  style={{
+                                    background: 'rgba(255, 255, 255, 0.04)',
+                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                    borderRadius: '10px',
+                                    padding: '0.75rem 0.9rem',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.35rem',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '0.72rem',
+                                        fontWeight: 800,
+                                        background: 'var(--color-accent)',
+                                        color: '#ffffff',
+                                        borderRadius: '999px',
+                                        padding: '1px 7px',
+                                      }}
+                                    >
+                                      Nghĩa {group.group_no || gIdx + 1}
+                                    </span>
+                                    <span
+                                      style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}
+                                    >
+                                      {group.meaning || group.usage || ''}
+                                    </span>
+                                  </div>
+
+                                  {group.structure && (
+                                    <div
+                                      style={{
+                                        fontFamily: 'var(--font-jp)',
+                                        fontSize: '0.86rem',
+                                        color: 'var(--color-accent-text)',
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      ✦ Cấu trúc: {group.structure}
+                                    </div>
+                                  )}
+
+                                  {group.usage && group.usage !== group.meaning && (
+                                    <div
+                                      style={{
+                                        fontSize: '0.82rem',
+                                        color: 'var(--color-text-secondary)',
+                                        lineHeight: 1.35,
+                                      }}
+                                    >
+                                      ◎ {group.usage}
+                                    </div>
+                                  )}
+
+                                  {firstEx && (
+                                    <div
+                                      style={{
+                                        marginTop: '0.25rem',
+                                        padding: '0.5rem 0.75rem',
+                                        background: 'rgba(0, 0, 0, 0.25)',
+                                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                      }}
+                                    >
+                                      <div style={{ flex: 1 }}>
+                                        <div
+                                          style={{
+                                            fontFamily: 'var(--font-jp)',
+                                            fontSize: '0.95rem',
+                                            fontWeight: 600,
+                                            color: 'var(--color-text)',
+                                            lineHeight: 1.6,
+                                          }}
+                                        >
+                                          {renderExampleJp(firstEx, showFurigana)}
+                                        </div>
+                                        {firstEx.vi && (
+                                          <div
+                                            style={{
+                                              fontSize: '0.82rem',
+                                              color: 'var(--color-text-secondary)',
+                                              marginTop: '2px',
+                                            }}
+                                          >
+                                            {firstEx.vi}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        className="washi-audio-btn"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          if (firstEx.audio) {
+                                            const a = new Audio(firstEx.audio)
+                                            a.play().catch(() => speakJapanese(firstEx.jp))
+                                          } else {
+                                            speakJapanese(firstEx.jp)
+                                          }
+                                        }}
+                                        title="Nghe phát âm ví dụ"
+                                      >
+                                        <Volume2 size={15} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          /* Single Meaning / Vocab / Kanji Rendering */
+                          <>
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  color: 'var(--color-text-muted)',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                Ý NGHĨA:
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '1.15rem',
+                                  fontWeight: 700,
+                                  color: 'var(--color-success)',
+                                  marginTop: '2px',
+                                }}
+                              >
+                                {currentCard.meaning}
+                              </div>
+                              {currentCard.explanation && (
+                                <div
+                                  style={{
+                                    fontSize: '0.9rem',
+                                    color: 'var(--color-text-secondary)',
+                                    marginTop: '4px',
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {currentCard.explanation}
+                                </div>
+                              )}
+                            </div>
+
+                            {currentCard.structure && (
+                              <div
+                                style={{
+                                  background: 'rgba(255, 255, 255, 0.03)',
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--color-border)',
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: '0.78rem',
+                                    fontWeight: 700,
+                                    color: 'var(--color-text-muted)',
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  Cấu trúc:
+                                </span>
+                                <div
+                                  style={{
+                                    fontFamily: 'var(--font-jp)',
+                                    fontSize: '0.95rem',
+                                    fontWeight: 600,
+                                    color: 'var(--color-text)',
+                                    marginTop: '2px',
+                                  }}
+                                >
+                                  {currentCard.structure}
+                                </div>
+                              </div>
+                            )}
+
+                            {currentCard.story && (
+                              <div
+                                style={{
+                                  background: 'rgba(217, 119, 6, 0.12)',
+                                  border: '1px solid rgba(217, 119, 6, 0.35)',
+                                  padding: '0.65rem 0.85rem',
+                                  borderRadius: '8px',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    color: 'var(--color-warning)',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                  }}
+                                >
+                                  <Sparkles size={14} /> Mẹo nhớ chiết tự (NhaiKanji):
+                                </div>
+                                <div
+                                  style={{
+                                    color: 'var(--color-warning)',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    marginTop: '2px',
+                                  }}
+                                >
+                                  {currentCard.story}
+                                </div>
+                              </div>
+                            )}
+
+                            {currentCard.examples && currentCard.examples.length > 0 && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <span
+                                  style={{
+                                    fontSize: '0.78rem',
+                                    fontWeight: 700,
+                                    color: 'var(--color-text-muted)',
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  Ví dụ mẫu:
+                                </span>
+                                {currentCard.examples.slice(0, 2).map((ex, idx) => (
+                                  <div
+                                    key={idx}
+                                    style={{
+                                      background: 'rgba(255, 255, 255, 0.02)',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: '6px',
+                                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                    }}
+                                  >
+                                    <div style={{ flex: 1 }}>
+                                      <div
+                                        style={{
+                                          fontFamily: 'var(--font-jp)',
+                                          fontSize: '0.95rem',
+                                          fontWeight: 600,
+                                          color: 'var(--color-text)',
+                                          lineHeight: 1.6,
+                                        }}
+                                      >
+                                        {renderExampleJp(ex, showFurigana)}
+                                      </div>
+                                      {ex.vi && (
+                                        <div
+                                          style={{
+                                            fontSize: '0.82rem',
+                                            color: 'var(--color-text-secondary)',
+                                            marginTop: '2px',
+                                          }}
+                                        >
+                                          {ex.vi}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      className="washi-audio-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (ex.audio) {
+                                          const a = new Audio(ex.audio)
+                                          a.play().catch(() => speakJapanese(ex.jp))
+                                        } else {
+                                          speakJapanese(ex.jp)
+                                        }
+                                      }}
+                                      title="Nghe phát âm ví dụ"
+                                    >
+                                      <Volume2 size={15} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Progress Bar under card */}
@@ -792,7 +929,12 @@ export function FlashcardStudyModal({ cards, initialIndex = 0, onClose, onReview
           {!isFlipped ? (
             <Button
               variant="primary"
-              onClick={() => setIsFlipped(true)}
+              onClick={() => {
+                sumiAudio.initOnGesture()
+                sumiAudio.playBrushFriction()
+                playPaperFlip()
+                animateFlipTo(true)
+              }}
               style={{ flex: 1, maxWidth: '280px', fontWeight: 700 }}
             >
               <RotateCcw size={16} /> Lật thẻ (Space)

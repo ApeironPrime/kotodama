@@ -22,6 +22,8 @@ import { srsApi } from '../srs/srsApi'
 import { useAuth } from '../auth/authContext'
 import { playPaperFlip, playStampSuccess } from '../vocabulary/soundEngine'
 import { playWashiPaperSound } from '../vocabulary/tactileAudio'
+import { usePaperCardPhysics } from '../../lib/usePaperCardPhysics'
+import { OutgoingPaperGhost, PaperStackUnderlay } from '../../components/PaperCardLayers'
 
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
 const KANJI_BOOK_FILTERS = [
@@ -68,12 +70,20 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
   const [onlySaved, setOnlySaved] = useState(false)
   const [studyMode, setStudyMode] = useState(false)
   const [studyIdx, setStudyIdx] = useState(0)
-  const [studyFlipped, setStudyFlipped] = useState(false)
-  const [studyHasFlipped, setStudyHasFlipped] = useState(false)
-  const [studyInstantSwap, setStudyInstantSwap] = useState(false)
-  const [studyDealTick, setStudyDealTick] = useState(0)
-  const [studyDealDir, setStudyDealDir] = useState<1 | -1>(1)
-  const studySceneRef = useRef<HTMLDivElement>(null)
+  const {
+    isFlipped: studyFlipped,
+    hasFlippedCard: studyHasFlipped,
+    instantCardSwap: studyInstantSwap,
+    outgoingGhost: studyOutgoingGhost,
+    activeWrapRef: studyActiveWrapRef,
+    flipperRef: studyFlipperRef,
+    ghostRef: studyGhostRef,
+    stack1Ref: studyStack1Ref,
+    stack2Ref: studyStack2Ref,
+    toggleFlip: toggleStudyFlip,
+    resetWithoutAnimation: resetStudyPhysics,
+    triggerCardAdvance: triggerStudyAdvance,
+  } = usePaperCardPhysics()
   const gridRef = useRef<HTMLDivElement>(null)
   const didMountGridRef = useRef(false)
   const [isHandwritingOpen, setIsHandwritingOpen] = useState(false)
@@ -251,9 +261,8 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
 
   useEffect(() => {
     setStudyIdx(0)
-    setStudyFlipped(false)
-    setStudyHasFlipped(false)
-  }, [selectedLevel, debouncedSearchQuery, onlySaved, page])
+    resetStudyPhysics()
+  }, [selectedLevel, debouncedSearchQuery, onlySaved, page, resetStudyPhysics])
 
   const activeStudyKanji = displayedItems[studyIdx] ?? displayedItems[0] ?? null
 
@@ -261,35 +270,11 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
     (dir: 1 | -1) => {
       if (dir < 0 && studyIdx <= 0) return
       if (dir > 0 && studyIdx >= displayedItems.length - 1) return
-      setStudyInstantSwap(true)
-      setStudyFlipped(false)
-      setStudyHasFlipped(false)
-      setStudyDealDir(dir)
-      setStudyDealTick((t) => t + 1)
+      triggerStudyAdvance(dir > 0 ? 'next' : 'prev', activeStudyKanji?.kanji ?? '')
       setStudyIdx((i) => Math.min(displayedItems.length - 1, Math.max(0, i + dir)))
-      if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-        window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => setStudyInstantSwap(false))
-        })
-      } else {
-        setStudyInstantSwap(false)
-      }
     },
-    [studyIdx, displayedItems.length]
+    [studyIdx, displayedItems.length, activeStudyKanji?.kanji, triggerStudyAdvance]
   )
-
-  useLayoutEffect(() => {
-    if (studyDealTick === 0) return
-    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-    const el = studySceneRef.current
-    if (!el) return
-    gsap.killTweensOf(el)
-    gsap.fromTo(
-      el,
-      { x: studyDealDir * 60, y: 3, rotationZ: studyDealDir * 1.2, scale: 0.985 },
-      { x: 0, y: 0, rotationZ: 0, scale: 1, duration: 0.38, ease: 'power3.out', clearProps: 'transform' }
-    )
-  }, [studyDealTick, studyDealDir])
 
   useLayoutEffect(() => {
     if (!didMountGridRef.current) {
@@ -318,9 +303,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
       if (e.key === ' ') {
         e.preventDefault()
         playPaperFlip()
-        setStudyInstantSwap(false)
-        setStudyHasFlipped(true)
-        setStudyFlipped((f) => !f)
+        toggleStudyFlip()
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault()
         stepStudyCard(-1)
@@ -331,7 +314,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [studyMode, viewMode, selectedKanji, displayedItems.length, stepStudyCard])
+  }, [studyMode, viewMode, selectedKanji, displayedItems.length, stepStudyCard, toggleStudyFlip])
 
   const hasActiveFilters =
     selectedLevel !== 'ALL' || selectedBook !== 'ALL' || onlySaved || Boolean(debouncedSearchQuery)
@@ -571,66 +554,75 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                 </span>
               </div>
 
-              <div ref={studySceneRef} className="washi-3d-scene">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className={`washi-3d-flipper${studyFlipped ? ' is-flipped' : ''}${studyInstantSwap ? ' is-instant' : ''}`}
-                  onClick={() => {
-                    playPaperFlip()
-                    setStudyInstantSwap(false)
-                    setStudyHasFlipped(true)
-                    setStudyFlipped((f) => !f)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault()
-                      playPaperFlip()
-                      setStudyInstantSwap(false)
-                      setStudyHasFlipped(true)
-                      setStudyFlipped((f) => !f)
-                    }
-                  }}
-                  aria-label={
-                    studyFlipped ? 'Mặt sau thẻ Hán tự — nhấn để lật lại' : 'Mặt trước thẻ Hán tự — nhấn để xem nghĩa'
-                  }
-                >
-                  <div
-                    className="washi-3d-face washi-3d-face--front kanji-flashcard-3d-face"
-                    aria-hidden={studyFlipped}
-                  >
-                    <div className="kanji-flashcard-front">
-                      <span className="kanji-flashcard-glyph">{activeStudyKanji.kanji}</span>
-                      <span className="kanji-flashcard-hint">
-                        Nhấn [Space] hoặc chạm để lật xem Hán-Việt &amp; Chiết tự
-                      </span>
-                    </div>
-                  </div>
+              <div
+                className={`washi-3d-scene${displayedItems.length - studyIdx - 1 > 0 ? ' washi-3d-scene--stacked' : ''}`}
+              >
+                <PaperStackUnderlay
+                  remainingCount={Math.max(0, displayedItems.length - studyIdx - 1)}
+                  variant="kanji"
+                  stack1Ref={studyStack1Ref}
+                  stack2Ref={studyStack2Ref}
+                />
+                <OutgoingPaperGhost snapshot={studyOutgoingGhost} variant="kanji" ghostRef={studyGhostRef} />
 
+                <div ref={studyActiveWrapRef} className="washi-3d-active-wrap">
                   <div
-                    className="washi-3d-face washi-3d-face--back kanji-flashcard-3d-face"
-                    aria-hidden={!studyFlipped}
+                    ref={studyFlipperRef}
+                    role="button"
+                    tabIndex={0}
+                    className={`washi-3d-flipper washi-3d-flipper--gsap${studyFlipped ? ' is-flipped' : ''}${studyInstantSwap ? ' is-instant' : ''}`}
+                    onClick={() => {
+                      playPaperFlip()
+                      toggleStudyFlip()
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        playPaperFlip()
+                        toggleStudyFlip()
+                      }
+                    }}
+                    aria-label={
+                      studyFlipped ? 'Mặt sau thẻ Hán tự — nhấn để lật lại' : 'Mặt trước thẻ Hán tự — nhấn để xem nghĩa'
+                    }
                   >
-                    {(studyFlipped || studyHasFlipped) && (
-                      <div className="kanji-flashcard-back">
-                        <div className="kanji-flashcard-back__top">
-                          <span className="kanji-flashcard-back__char">{activeStudyKanji.kanji}</span>
-                          <div>
-                            <div className="kanji-flashcard-back__hanzi">{activeStudyKanji.hanzi}</div>
-                            <div className="kanji-flashcard-back__meaning">{activeStudyKanji.meaning_vi}</div>
-                          </div>
-                        </div>
-                        <div className="kanji-flashcard-back__readings">
-                          <span>On: {activeStudyKanji.onyomi || '—'}</span>
-                          <span>Kun: {activeStudyKanji.kunyomi || '—'}</span>
-                        </div>
-                        {activeStudyKanji.story && (
-                          <blockquote className="kanji-flashcard-back__story">
-                            「 {activeStudyKanji.story} 」
-                          </blockquote>
-                        )}
+                    <div
+                      className="washi-3d-face washi-3d-face--front kanji-flashcard-3d-face"
+                      aria-hidden={studyFlipped}
+                    >
+                      <div className="kanji-flashcard-front">
+                        <span className="kanji-flashcard-glyph">{activeStudyKanji.kanji}</span>
+                        <span className="kanji-flashcard-hint">
+                          Nhấn [Space] hoặc chạm để lật xem Hán-Việt &amp; Chiết tự
+                        </span>
                       </div>
-                    )}
+                    </div>
+
+                    <div
+                      className="washi-3d-face washi-3d-face--back kanji-flashcard-3d-face"
+                      aria-hidden={!studyFlipped}
+                    >
+                      {(studyFlipped || studyHasFlipped) && (
+                        <div className="kanji-flashcard-back">
+                          <div className="kanji-flashcard-back__top">
+                            <span className="kanji-flashcard-back__char">{activeStudyKanji.kanji}</span>
+                            <div>
+                              <div className="kanji-flashcard-back__hanzi">{activeStudyKanji.hanzi}</div>
+                              <div className="kanji-flashcard-back__meaning">{activeStudyKanji.meaning_vi}</div>
+                            </div>
+                          </div>
+                          <div className="kanji-flashcard-back__readings">
+                            <span>On: {activeStudyKanji.onyomi || '—'}</span>
+                            <span>Kun: {activeStudyKanji.kunyomi || '—'}</span>
+                          </div>
+                          {activeStudyKanji.story && (
+                            <blockquote className="kanji-flashcard-back__story">
+                              「 {activeStudyKanji.story} 」
+                            </blockquote>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

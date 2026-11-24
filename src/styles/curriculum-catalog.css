@@ -5394,7 +5394,8 @@ input.dojo-typing-input:focus-visible {
   }
 
   .lesson-stage-wrapper,
-  .lesson-stage-wrapper :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll, .washi-3d-scene),
+  .lesson-stage-wrapper
+    :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll, .washi-3d-scene, .washi-3d-active-wrap),
   .lesson-stage-wrapper--game .lesson-game-panel {
     display: flex;
     flex-direction: column;
