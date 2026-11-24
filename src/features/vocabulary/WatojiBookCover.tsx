@@ -279,7 +279,6 @@ function WatojiDaisenSvg({
  */
 export function WatojiBookCover({
   kanjiTitle,
-  subtitle,
   volumeTag = '全',
   level,
   palette = 'aizumi',
@@ -290,7 +289,6 @@ export function WatojiBookCover({
   coverSrc,
   bookTitle,
 }: WatojiBookCoverProps) {
-  const isFeatured = size === 'featured'
   const [failedCover, setFailedCover] = useState<string>()
 
   if (coverSrc && failedCover !== coverSrc) {
@@ -333,13 +331,6 @@ export function WatojiBookCover({
 
         {/* Vertical Title Slip (Daisen 題簽) - Authentic Japanese Washi Label (Retina Vector SVG) */}
         <WatojiDaisenSvg kanjiTitle={kanjiTitle} volumeTag={volumeTag} level={level} size={size} />
-
-        {/* Subtitle / Edition note (if featured) */}
-        {isFeatured && subtitle && (
-          <div className="watoji-cover__footnote">
-            <span>{subtitle.split('·')[0]?.trim() || subtitle}</span>
-          </div>
-        )}
 
         {/* Cinnabar Vermilion Hanko Seal (Rakkan 落款印) */}
         <div className="watoji-cover__seal">

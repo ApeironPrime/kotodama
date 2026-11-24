@@ -106,6 +106,12 @@ const RAW_POS_MAP: Array<[RegExp, string]> = [
   [/慣用句/g, 'Quán dụng ngữ'],
 ]
 
+const VI_NUMBER = new Intl.NumberFormat('vi-VN')
+
+function formatViNumber(value: number): string {
+  return VI_NUMBER.format(value)
+}
+
 function normalizeFullWidthAscii(text: string): string {
   return text
     .replace(/\u3000/g, ' ')
@@ -129,13 +135,16 @@ function formatEditorialUnit(rawTitle?: string, ordinal?: number, topic?: string
   const chapter = title.match(/^Unit\s+(\d+)/i)?.[1] || String(ordinal || 1)
   const recap = title.startsWith('まとめ')
   const badge = recap ? '復' : chapter.padStart(2, '0')
-  if (!title) return { title: topic || `Bài ${chapter}`, japanese: '', badge, chapter, recap }
+  if (!title) {
+    const fallback = topic || `Bài ${chapter}`
+    return { title: fallback, tocTitle: fallback, japanese: '', badge, chapter, recap }
+  }
   const looksTechnical =
     /\|/.test(title) ||
     /_\s*\[[^\]]+\]/.test(title) ||
     /^(?:Unit\s+\d+|まとめ)/i.test(title) ||
     /(?:名詞|動詞|形容詞|副詞|接続詞|同じ漢字|Phó từ[A-Z]|Danh từ[A-Z])/.test(title)
-  if (!looksTechnical) return { title, japanese: '', badge, chapter, recap }
+  if (!looksTechnical) return { title, tocTitle: title, japanese: '', badge, chapter, recap }
 
   const prefix = recap ? 'Ôn tập' : `Bài ${chapter}`
   const japanese = title
@@ -160,8 +169,11 @@ function formatEditorialUnit(rawTitle?: string, ordinal?: number, topic?: string
     body = body.replace(/\s([A-Z])$/, ' (Phần $1)')
   }
   const resolvedBody = body === japanese ? topic?.trim() || body : body
+  const fullTitle = resolvedBody ? `${prefix} · ${resolvedBody}` : prefix
+  const tocTitle = recap ? fullTitle : resolvedBody || prefix
   return {
-    title: resolvedBody ? `${prefix} · ${resolvedBody}` : prefix,
+    title: fullTitle,
+    tocTitle,
     japanese: japanese === resolvedBody ? '' : japanese,
     badge,
     chapter,
@@ -825,7 +837,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         }
                       }}
                     >
-                      {isActive && <span className="curriculum-filter-dot" aria-hidden="true" />}
                       {tab.label}
                     </button>
                   )
@@ -858,7 +869,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     記
                   </span>
                   <span className="curriculum-hanko-srs-pill__text">
-                    Sổ tay SRS: <strong>{totalSavedCount}</strong> từ
+                    Sổ tay SRS: <strong>{formatViNumber(totalSavedCount)}</strong> từ
                   </span>
                   <span className="curriculum-hanko-srs-pill__action">Ôn tập ›</span>
                 </button>
@@ -938,12 +949,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       <span className="curriculum-track-count">({track.items.length} giáo trình)</span>
                     </div>
                     <p className="curriculum-track-desc">{track.description}</p>
-                    <div className="curriculum-roadmap-banner" role="note">
-                      <Sparkles size={14} className="curriculum-roadmap-banner__icon" aria-hidden="true" />
-                      <span>
-                        <strong>Định hướng học:</strong> {track.roadmapTip}
-                      </span>
-                    </div>
                   </div>
 
                   {/* 1. Master Featured Book Spread (Cuốn tiêu điểm khổ lớn nằm ngang) */}
@@ -981,8 +986,12 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
                       <div className="curriculum-featured-spread__content-pane">
                         <div className="curriculum-featured-spread__eyebrow-row">
-                          <span className="curriculum-featured-badge">★ Tác phẩm tiêu điểm</span>
-                          <span className="curriculum-featured-spread__publisher">{featuredItem.meta.publisher}</span>
+                          {track.items.length > 1 && (
+                            <span className="curriculum-featured-badge">★ Tác phẩm tiêu điểm</span>
+                          )}
+                          <span className="curriculum-featured-spread__publisher">
+                            {featuredItem.meta.publisher.split('·')[0]?.trim() || featuredItem.meta.publisher}
+                          </span>
                           <span className="curriculum-featured-spread__level">{featuredItem.meta.levelDisplay}</span>
                         </div>
 
@@ -1014,7 +1023,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             </span>
                             <span className="curriculum-featured-spread__stat-dot">·</span>
                             <span className="curriculum-featured-spread__stat-item">
-                              <strong>{featuredItem.course.term_count.toLocaleString()}</strong> từ trọng tâm
+                              <strong>{formatViNumber(featuredItem.course.term_count)}</strong> từ trọng tâm
                             </span>
                             <span className="curriculum-featured-spread__stat-dot">·</span>
                             <span className="curriculum-featured-spread__stat-pacing">
@@ -1177,8 +1186,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       <div className="curriculum-course-progress" aria-label="Tiến độ toàn bộ giáo trình">
                         <div className="curriculum-course-progress__meta">
                           <span>
-                            Đã thuộc <strong>{totalKnownInCourse.toLocaleString()}</strong> /{' '}
-                            {courseTermTotal.toLocaleString()} từ
+                            Đã thuộc <strong>{formatViNumber(totalKnownInCourse)}</strong> /{' '}
+                            {formatViNumber(courseTermTotal)} từ
                           </span>
                           <span>{courseProgressPct}%</span>
                         </div>
@@ -1196,7 +1205,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                             <Layers size={13} aria-hidden="true" /> {course.unit_count} chương
                           </span>
                           <span className="curriculum-stat-pill">
-                            <BookOpen size={13} aria-hidden="true" /> {courseTermTotal.toLocaleString()} từ vựng
+                            <BookOpen size={13} aria-hidden="true" /> {formatViNumber(courseTermTotal)} từ vựng
                           </span>
                         </div>
                         {resumeUnit && (
@@ -1215,14 +1224,14 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               className="curriculum-quick-mode-btn"
                               onClick={() => openUnit(resumeUnit.unit_key, 'karuta')}
                             >
-                              Đấu trường Karuta
+                              Karuta · Bài {resumeUnit.ordinal}
                             </button>
                             <button
                               type="button"
                               className="curriculum-quick-mode-btn"
                               onClick={() => openUnit(resumeUnit.unit_key, 'typing')}
                             >
-                              Gõ âm đọc
+                              Gõ âm · Bài {resumeUnit.ordinal}
                             </button>
                           </div>
                         )}
@@ -1240,18 +1249,19 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   Mục lục bài học
                 </h2>
                 <span className="curriculum-toc-meta">
-                  {units.length} chương · {courseTermTotal.toLocaleString()} từ
+                  {units.length} chương · {formatViNumber(courseTermTotal)} từ
                 </span>
               </div>
 
               <ol className="curriculum-toc-list">
                 {units.map((unit) => {
-                  const { title, japanese, badge, chapter, recap } = formatEditorialUnit(
+                  const { tocTitle, japanese, chapter, recap } = formatEditorialUnit(
                     unit.title,
                     unit.ordinal,
                     unit.topic
                   )
-                  const subtitle = japanese || (unit.topic && !title.includes(unit.topic) ? unit.topic : '')
+                  const subtitle =
+                    unit.topic && !tocTitle.includes(unit.topic) && unit.topic !== japanese ? unit.topic : ''
                   const known = Math.min(unitKnownCounts[unit.unit_key] || 0, unit.term_count)
                   const pct = unit.term_count > 0 ? Math.min(100, Math.round((known / unit.term_count) * 100)) : 0
                   const previews = unit.preview_terms?.slice(0, 3) || []
@@ -1263,35 +1273,26 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         onClick={() => openUnit(unit.unit_key, 'flashcard')}
                       >
                         <span className="curriculum-toc-row__index" aria-hidden="true">
-                          {recap ? '復' : `第${chapter}課`}
-                          <small>{badge}</small>
+                          {recap ? '復習' : `第${chapter}課`}
                         </span>
 
                         <span className="curriculum-toc-row__main">
-                          <span className="curriculum-toc-row__title">{title}</span>
-                          {subtitle && (
-                            <span className="curriculum-toc-row__subtitle" lang={japanese ? 'ja' : undefined}>
-                              {subtitle}
-                            </span>
-                          )}
+                          <span className="curriculum-toc-row__title">{tocTitle}</span>
+                          {subtitle && <span className="curriculum-toc-row__subtitle">{subtitle}</span>}
                           {previews.length > 0 && (
                             <span className="curriculum-toc-row__previews" lang="ja">
-                              {previews.map((word, idx) => (
-                                <span key={idx} className="curriculum-toc-preview-chip">
-                                  {word}
-                                </span>
-                              ))}
+                              {previews.join('  ·  ')}
                             </span>
                           )}
                         </span>
 
                         <span className="curriculum-toc-row__right">
                           <span className="curriculum-toc-progress">
-                            <span className="curriculum-toc-progress__label">
-                              {known > 0 ? `${known} / ${unit.term_count} từ` : `${unit.term_count} từ`}
-                            </span>
                             <span className="curriculum-toc-progress__bar" aria-hidden="true">
                               <span style={{ width: `${pct}%` }} />
+                            </span>
+                            <span className="curriculum-toc-progress__label">
+                              {formatViNumber(known)} / {formatViNumber(unit.term_count)} từ
                             </span>
                           </span>
                           <ChevronRight size={16} className="curriculum-toc-row__chevron" aria-hidden="true" />

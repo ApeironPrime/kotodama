@@ -89,14 +89,15 @@ export function TactileWatojiCard({ course, meta, onSelect }: TactileWatojiCardP
             <span className="curriculum-companion-card__publisher">
               {meta.publisher.split('·')[0]?.trim() || meta.publisher}
             </span>
-            <span className="curriculum-companion-card__level">{meta.levelDisplay}</span>
+            <span className="curriculum-companion-card__level">{course.level}</span>
           </div>
           <h4 className="curriculum-companion-card__title">{course.title}</h4>
+          <p className="curriculum-companion-card__subtitle">{meta.pedagogicalSubtitle}</p>
         </div>
 
         <div className="curriculum-companion-card__bottom">
           <span className="curriculum-companion-card__count">
-            {course.unit_count} bài · {course.term_count.toLocaleString()} từ
+            {course.unit_count} bài · {new Intl.NumberFormat('vi-VN').format(course.term_count)} từ
           </span>
           <span className="curriculum-companion-card__action">Mở sách ›</span>
         </div>

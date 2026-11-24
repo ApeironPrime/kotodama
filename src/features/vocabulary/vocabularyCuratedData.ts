@@ -260,9 +260,19 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     displayTitle = level ? `Mimi Kara Oboeru ${level}` : course.title
     kanjiTitle = '耳から覚える'
     volumeTag = level || '中級'
-    palette = 'matcha'
-    pattern = 'shippo'
-    sealChar = '得'
+    if (level === 'N1') {
+      palette = 'kokutan'
+      pattern = 'shippo'
+      sealChar = '極'
+    } else if (level === 'N2') {
+      palette = 'aizumi'
+      pattern = 'seigaiha'
+      sealChar = '進'
+    } else {
+      palette = 'matcha'
+      pattern = 'shippo'
+      sealChar = '得'
+    }
     publisher = 'ALC Press · アルク出版'
     pedagogicalSubtitle = 'Khắc sâu từ vựng qua phản xạ thính giác và cụm liên kết tự nhiên'
     methodQuote =
@@ -284,11 +294,22 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     isFeatured = true
   } else if (isTango) {
     displayTitle = `Tango ${level || 'N3'}`
-    kanjiTitle = '日本語単語'
     volumeTag = level || '中級'
-    palette = 'kuri'
-    pattern = 'kasumi'
-    sealChar = '語'
+    const tangoThemes: Record<
+      string,
+      { kanjiTitle: string; palette: WatojiPalette; pattern: WatojiPattern; sealChar: string }
+    > = {
+      N1: { kanjiTitle: '上級単語', palette: 'kokutan', pattern: 'kumiko', sealChar: '壱' },
+      N2: { kanjiTitle: '中上単語', palette: 'kuri', pattern: 'asanoha', sealChar: '弐' },
+      N3: { kanjiTitle: '中級単語', palette: 'aizumi', pattern: 'seigaiha', sealChar: '参' },
+      N4: { kanjiTitle: '初中単語', palette: 'benigara', pattern: 'shippo', sealChar: '四' },
+      N5: { kanjiTitle: '初級単語', palette: 'kon', pattern: 'kasumi', sealChar: '五' },
+    }
+    const theme = tangoThemes[level] || { kanjiTitle: '日本語単語', palette: 'kuri', pattern: 'kasumi', sealChar: '語' }
+    kanjiTitle = theme.kanjiTitle
+    palette = theme.palette
+    pattern = theme.pattern
+    sealChar = theme.sealChar
     publisher = 'Ask Publishing · アスク出版'
     pedagogicalSubtitle = 'Ghi nhớ bản chất qua 100% câu ví dụ ngữ cảnh thực tế'
     methodQuote =
