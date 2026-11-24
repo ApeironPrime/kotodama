@@ -751,7 +751,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(within(vocabSection).getByText('【たんご_105】')).toBeTruthy()
     expect(within(vocabSection).getByText('(KỲ BÍ)')).toBeTruthy()
     expect(within(vocabSection).getByText('Nghĩa của từ thứ 105')).toBeTruthy()
-    expect(screen.getByText('Danh Sách (1)')).toBeTruthy()
+    expect(screen.getByText('Mục lục từ vựng (1)')).toBeTruthy()
 
     // 5. In Flashcard stage: bottom counter shows total 121
     fireEvent.change(searchInput, { target: { value: '' } })
@@ -1082,7 +1082,7 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
 
     fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
     fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
-    fireEvent.click(await screen.findByRole('button', { name: 'Đã thuộc (Z)' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Đã thuộc' }))
     expect(screen.getByText(/Đã thuộc 1 \/ 3 từ/)).toBeTruthy()
     expect(screen.getByText(/SRS · 0 từ đã lưu/)).toBeTruthy()
 

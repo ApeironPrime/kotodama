@@ -2,7 +2,8 @@ import { usePersistentState } from '../../lib/usePersistentState'
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -101,30 +102,83 @@ function normalizeFullWidthAscii(text: string): string {
     .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
 }
 
-function formatEditorialUnitTitle(rawTitle?: string, ordinal?: number, topic?: string): string {
+function formatEditorialUnit(rawTitle?: string, ordinal?: number, topic?: string) {
   const title = normalizeFullWidthAscii((rawTitle || '').trim())
-  if (!title) return `Chương ${ordinal || 1}`
-  const looksTechnical = /\|/.test(title) || /_\s*\[[^\]]+\]/.test(title) || /^Unit\s+\d+/i.test(title)
-  if (!looksTechnical) return title
+  const chapter = title.match(/^Unit\s+(\d+)/i)?.[1] || String(ordinal || 1)
+  const recap = title.startsWith('まとめ')
+  const badge = recap ? '復' : chapter.padStart(2, '0')
+  if (!title) return { title: topic || `Bài ${chapter}`, japanese: '', badge, chapter, recap }
+  const looksTechnical = /\|/.test(title) || /_\s*\[[^\]]+\]/.test(title) || /^(?:Unit\s+\d+|まとめ)/i.test(title)
+  if (!looksTechnical) return { title, japanese: '', badge, chapter, recap }
 
-  const unitMatch = title.match(/^Unit\s+(\d+)/i)
-  const chapterNum = unitMatch?.[1] || String(ordinal || 1)
-  let body = title
-    .replace(/^Unit\s+\d+\s*\|?\s*/i, '')
-    .replace(/[_\s]*\[[^\]]+\]/g, '')
+  const prefix = recap ? 'Ôn tập' : `Bài ${chapter}`
+  const japanese = title
+    .replace(/^(?:Unit\s+\d+|まとめ)\s*\|?\s*/i, '')
+    .replace(/[_\s]*\[\d+\s*[-–〜～]\s*\d+\]\s*$/, '')
+    .replace(/\s*\|\s*/g, ' · ')
+    .replace(/\s{2,}/g, ' ')
     .trim()
-
+  let body = japanese
   for (const [pattern, viLabel] of RAW_POS_MAP) {
     body = body.replace(pattern, viLabel)
   }
-  body = body
-    .replace(/\s+([A-Z])$/, ' (Phần $1)')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
+  body = body.replace(/\s+([A-Z])$/, ' (Phần $1)')
+  const resolvedBody = body === japanese ? topic?.trim() || body : body
+  return {
+    title: resolvedBody ? `${prefix} · ${resolvedBody}` : prefix,
+    japanese: japanese === resolvedBody ? '' : japanese,
+    badge,
+    chapter,
+    recap,
+  }
+}
 
-  const fallbackTopic = topic ? topic.trim() : ''
-  const resolvedBody = body || fallbackTopic
-  return resolvedBody ? `Chương ${chapterNum} · ${resolvedBody}` : `Chương ${chapterNum}`
+const COMPACT_STUDY_QUERY = '(max-width: 767px)'
+
+function subscribeCompactStudy(callback: () => void) {
+  const media = window.matchMedia?.(COMPACT_STUDY_QUERY)
+  media?.addEventListener('change', callback)
+  return () => media?.removeEventListener('change', callback)
+}
+
+function VocabularyLedger({
+  compact,
+  onClose,
+  children,
+}: {
+  compact: boolean
+  onClose: () => void
+  children: ReactNode
+}) {
+  const railRef = useRef<HTMLElement>(null)
+  useDialogAccessibility(railRef, onClose, compact)
+  const rail = (
+    <section
+      id="lesson-vocabulary-list"
+      ref={railRef}
+      className="lesson-vocab-section lesson-vocab-rail"
+      role={compact ? 'dialog' : undefined}
+      aria-modal={compact ? true : undefined}
+      aria-label="Danh sách từ vựng bài học"
+      onKeyDown={compact ? (event) => event.stopPropagation() : undefined}
+      tabIndex={compact ? -1 : undefined}
+    >
+      {children}
+    </section>
+  )
+  return compact
+    ? createPortal(
+        <div
+          className="lesson-vocab-sheet"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) onClose()
+          }}
+        >
+          {rail}
+        </div>,
+        document.body
+      )
+    : rail
 }
 
 export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
@@ -156,6 +210,11 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [isFlipped, setIsFlipped] = useState(false)
   const [hideListAnswers, setHideListAnswers] = useState(true)
   const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true)
+  const isCompactStudy = useSyncExternalStore(
+    subscribeCompactStudy,
+    () => window.matchMedia?.(COMPACT_STUDY_QUERY)?.matches ?? false,
+    () => false
+  )
   const [stampBurstCount, setStampBurstCount] = useState(0)
   const [flipRippleCount, setFlipRippleCount] = useState(0)
   const [showStampFlash, setShowStampFlash] = useState(false)
@@ -985,9 +1044,19 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   if (selectedCourseCode && !selectedUnitKey) {
     const course = courseDetailData?.course
     const units = courseDetailData?.units || []
+    const openUnit = (unitKey: string) => {
+      setSelectedUnitKey(unitKey)
+      setCurrentIndex(0)
+      setIsFlipped(false)
+      setUnitSearchQuery('')
+      setUnitPage(1)
+      setSelectedDictWord(null)
+      setAuthNotice(null)
+      setSrsError(null)
+    }
 
     return (
-      <div className="curriculum-container washi-page">
+      <div className="curriculum-container washi-page curriculum-course-view">
         <div className="curriculum-paper-grid">
           <button
             type="button"
@@ -1065,7 +1134,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           'Chọn một bài học dưới đây để bắt đầu học Flashcard, luyện phản xạ Mini-Game hoặc xem danh sách từ vựng chi tiết.'}
                       </p>
                       <div className="curriculum-book-banner__footer">
-                        <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+                        <div className="curriculum-book-banner__stats">
                           <span className="curriculum-stat-pill">
                             <Layers size={13} aria-hidden="true" /> {course.unit_count} bài học
                           </span>
@@ -1074,20 +1143,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           </span>
                         </div>
                         {firstUnit && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedUnitKey(firstUnit.unit_key)
-                              setCurrentIndex(0)
-                              setIsFlipped(false)
-                              setUnitSearchQuery('')
-                              setUnitPage(1)
-                              setSelectedDictWord(null)
-                              setAuthNotice(null)
-                              setSrsError(null)
-                            }}
-                          >
+                          <Button variant="primary" size="sm" onClick={() => openUnit(firstUnit.unit_key)}>
                             Bắt đầu Bài {firstUnit.ordinal} →
                           </Button>
                         )}
@@ -1097,56 +1153,41 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 )
               })()}
 
-              <div className="curriculum-unit-grid" role="list">
-                {units.map((unit) => (
-                  <div
-                    key={unit.unit_id}
-                    className="curriculum-unit-card"
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`Bài ${unit.ordinal}: ${unit.title}, ${unit.term_count} từ`}
-                    onClick={() => {
-                      setSelectedUnitKey(unit.unit_key)
-                      setCurrentIndex(0)
-                      setIsFlipped(false)
-                      setUnitSearchQuery('')
-                      setUnitPage(1)
-                      setSelectedDictWord(null)
-                      setAuthNotice(null)
-                      setSrsError(null)
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        setSelectedUnitKey(unit.unit_key)
-                        setCurrentIndex(0)
-                        setIsFlipped(false)
-                        setUnitSearchQuery('')
-                        setUnitPage(1)
-                        setSelectedDictWord(null)
-                        setAuthNotice(null)
-                        setSrsError(null)
-                      }
-                    }}
-                  >
-                    <div className="curriculum-unit-card__left">
-                      <span className="curriculum-unit-card__seal" aria-hidden="true">
-                        {String(unit.ordinal).padStart(2, '0')}
-                      </span>
-                      <div>
-                        <div className="curriculum-unit-card__ordinal">BÀI {unit.ordinal}</div>
-                        <h4 className="curriculum-unit-card__title">{unit.title}</h4>
-                        {unit.topic && <div className="curriculum-unit-card__topic">{unit.topic}</div>}
-                      </div>
-                    </div>
+              <h2 className="curriculum-course-view__list-title">Danh sách bài học</h2>
+              <ul className="curriculum-unit-grid curriculum-course-view__list">
+                {units.map((unit) => {
+                  const { title, japanese, badge, recap } = formatEditorialUnit(unit.title, unit.ordinal, unit.topic)
+                  const subtitle = japanese || (unit.topic && !title.includes(unit.topic) ? unit.topic : '')
+                  return (
+                    <li key={unit.unit_id}>
+                      <button
+                        type="button"
+                        className={`curriculum-unit-card${recap ? ' is-recap' : ''}`}
+                        onClick={() => openUnit(unit.unit_key)}
+                      >
+                        <span className="curriculum-unit-card__left">
+                          <span className="curriculum-unit-card__seal" aria-hidden="true">
+                            {badge}
+                          </span>
+                          <span>
+                            <span className="curriculum-unit-card__title">{title}</span>
+                            {subtitle && (
+                              <span className="curriculum-unit-card__topic" lang={japanese ? 'ja' : undefined}>
+                                {subtitle}
+                              </span>
+                            )}
+                          </span>
+                        </span>
 
-                    <div className="curriculum-unit-card__meta">
-                      <Badge variant="primary">{unit.term_count} từ</Badge>
-                      <ChevronRight size={18} style={{ color: 'var(--color-text-muted)' }} aria-hidden="true" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <span className="curriculum-unit-card__meta">
+                          <Badge variant="primary">{unit.term_count} từ</Badge>
+                          <ChevronRight size={18} style={{ color: 'var(--color-text-muted)' }} aria-hidden="true" />
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
             </>
           )}
         </div>
@@ -1158,20 +1199,36 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // VIEW 3: IN-LESSON STUDY & FLASHCARD VIEW (Học từ vựng trong bài đã chọn)
   // =========================================================================
   const course = courseDetailData?.course
+  const studyUnit = formatEditorialUnit(currentUnitInfo?.title, currentUnitInfo?.ordinal, currentUnitInfo?.topic)
+  const studyBook = normalizeFullWidthAscii(course?.title?.replace(/\s*\([^)]*\)\s*$/, '') || '')
 
   return (
     <div className="washi-page curriculum-study-shell">
       {/* 3.1 Compact Single-Row Study Bar */}
       <header className="curriculum-study-bar">
         <div className="curriculum-study-bar__left">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedUnitKey(null)}>
-            <ArrowLeft size={16} /> Danh sách Bài học
+          <Button variant="ghost" size="sm" onClick={() => setSelectedUnitKey(null)} aria-label="Danh sách bài học">
+            <ArrowLeft size={16} aria-hidden="true" /> {isCompactStudy ? 'Các bài học' : 'Danh sách bài học'}
           </Button>
+
+          <button
+            type="button"
+            className="lesson-zen-shiori"
+            onClick={() => setIsLedgerCollapsed(false)}
+            aria-label="Mở danh sách từ vựng"
+            aria-controls="lesson-vocabulary-list"
+            aria-expanded={!isLedgerCollapsed}
+          >
+            <span className="lesson-zen-shiori__seal" aria-hidden="true">
+              録
+            </span>
+            <span>Mục lục ({totalTerms})</span>
+          </button>
 
           <span className="curriculum-study-bar__divider" aria-hidden="true" />
 
           <span className="curriculum-study-bar__seal" aria-hidden="true" lang="ja">
-            第{currentUnitInfo?.ordinal || 1}課
+            {studyUnit.recap ? '復習' : `第${studyUnit.chapter}課`}
           </span>
 
           <h2
@@ -1180,8 +1237,13 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               currentUnitInfo?.topic ? ` (${currentUnitInfo.topic})` : ''
             }`}
           >
-            {normalizeFullWidthAscii(course?.title?.replace(/\s*\([^)]*\)\s*$/, '') || '')} ·{' '}
-            {formatEditorialUnitTitle(currentUnitInfo?.title, currentUnitInfo?.ordinal, currentUnitInfo?.topic)}
+            {studyBook && (
+              <span className="curriculum-study-bar__book">
+                {studyBook}
+                <span className="curriculum-study-bar__book-divider"> · </span>
+              </span>
+            )}
+            {studyUnit.title}
           </h2>
         </div>
 
@@ -1206,7 +1268,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
           {onGoToSrs && (
             <Button variant="secondary" size="sm" onClick={onGoToSrs}>
-              <Layers size={14} /> Mở sổ tay ôn tập SRS
+              <Layers size={14} aria-hidden="true" /> {isCompactStudy ? 'Ôn SRS' : 'Mở sổ tay ôn tập SRS'}
             </Button>
           )}
         </div>
@@ -1324,7 +1386,9 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               aria-label="Phát âm (Phím R)"
                             >
                               <Volume2 size={14} aria-hidden="true" />
-                              <span className="curriculum-flashcard__audio-label">Nghe [R]</span>
+                              <span className="curriculum-flashcard__audio-label">
+                                Nghe<span className="curriculum-study-shortcut"> [R]</span>
+                              </span>
                             </button>
                           </div>
                         </div>
@@ -1490,7 +1554,9 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   className={`curriculum-flashcard__cue${unitPage === 1 && currentIndex === 0 ? ' is-first-card' : ''}`}
                                 >
                                   <span aria-hidden="true">◇</span>
-                                  <span>Nhấn [Space] hoặc chạm để lật xem nghĩa</span>
+                                  <span>
+                                    {isCompactStudy ? 'Chạm để xem nghĩa' : 'Nhấn [Space] hoặc chạm để lật xem nghĩa'}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -1520,7 +1586,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                   <span className="curriculum-flashcard__corner-seal" aria-hidden="true">
                                     済
                                   </span>
-                                  <span>{isCurrentCardSaved ? 'Đã lưu SRS' : 'Lưu SRS [C]'}</span>
+                                  <span>
+                                    {isCurrentCardSaved ? (
+                                      'Đã lưu SRS'
+                                    ) : (
+                                      <>
+                                        Lưu SRS<span className="curriculum-study-shortcut"> [C]</span>
+                                      </>
+                                    )}
+                                  </span>
                                 </button>
                               )}
                             </div>
@@ -1542,35 +1616,46 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           variant="ghost"
                           size="md"
                           className="curriculum-flashcard-controls__nav"
+                          aria-label="Từ trước"
                           onClick={handlePrevCard}
                           disabled={currentIndex === 0 && unitPage <= 1}
                         >
-                          <ChevronLeft size={18} /> Từ trước
+                          <ChevronLeft size={18} aria-hidden="true" /> <span>Từ trước</span>
                         </Button>
                         <Button
                           variant="danger"
                           size="md"
                           className="curriculum-flashcard-controls__miss"
+                          aria-label="Chưa thuộc"
+                          aria-keyshortcuts={isCompactStudy ? undefined : 'X'}
                           onClick={() => handleCardRecall(false)}
                         >
-                          Chưa thuộc (X)
+                          <span>
+                            Chưa thuộc<span className="curriculum-study-shortcut"> (X)</span>
+                          </span>
                         </Button>
                         <Button
                           variant="primary"
                           size="md"
                           className="curriculum-flashcard-controls__pass"
+                          aria-label="Đã thuộc"
+                          aria-keyshortcuts={isCompactStudy ? undefined : 'Z'}
                           onClick={() => handleCardRecall(true)}
                         >
-                          <Check size={16} aria-hidden="true" /> Đã thuộc (Z)
+                          <Check size={16} aria-hidden="true" />{' '}
+                          <span>
+                            Đã thuộc<span className="curriculum-study-shortcut"> (Z)</span>
+                          </span>
                         </Button>
                         <Button
                           variant="ghost"
                           size="md"
                           className="curriculum-flashcard-controls__nav"
+                          aria-label="Tiếp theo"
                           onClick={handleNextCard}
                           disabled={currentIndex >= words.length - 1 && unitPage >= totalPages}
                         >
-                          Tiếp theo <ChevronRight size={18} />
+                          <span>Tiếp theo</span> <ChevronRight size={18} aria-hidden="true" />
                         </Button>
                       </div>
                     </div>
@@ -1603,6 +1688,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               type="button"
               role="tab"
               id="tab-study-flashcard"
+              aria-label={isCompactStudy ? 'Flashcard Bài Học' : undefined}
               aria-controls="panel-study-flashcard"
               aria-selected={stageMode === 'flashcard'}
               className={`lesson-dock-card${stageMode === 'flashcard' ? ' is-active' : ''}`}
@@ -1612,8 +1698,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 札
               </span>
               <span className="lesson-dock-card__text">
-                <strong>Flashcard Bài Học</strong>
-                <small>Lật thẻ ghi nhớ</small>
+                <strong>{isCompactStudy ? 'Flashcard' : 'Flashcard Bài Học'}</strong>
+                {!isCompactStudy && <small>Lật thẻ ghi nhớ</small>}
               </span>
             </button>
 
@@ -1621,6 +1707,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               type="button"
               role="tab"
               id="tab-study-cloze"
+              aria-label={isCompactStudy ? 'Điền Từ Văn Cảnh' : undefined}
               aria-controls="panel-study-game"
               aria-selected={stageMode === 'cloze'}
               className={`lesson-dock-card${stageMode === 'cloze' ? ' is-active' : ''}`}
@@ -1630,8 +1717,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 文
               </span>
               <span className="lesson-dock-card__text">
-                <strong>Điền Từ Văn Cảnh</strong>
-                <small>Đục lỗ ngữ cảnh câu</small>
+                <strong>{isCompactStudy ? 'Điền từ' : 'Điền Từ Văn Cảnh'}</strong>
+                {!isCompactStudy && <small>Đục lỗ ngữ cảnh câu</small>}
               </span>
             </button>
 
@@ -1639,6 +1726,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               type="button"
               role="tab"
               id="tab-study-karuta"
+              aria-label={isCompactStudy ? 'Đấu Trường Karuta' : undefined}
               aria-controls="panel-study-game"
               aria-selected={stageMode === 'karuta'}
               className={`lesson-dock-card${stageMode === 'karuta' ? ' is-active' : ''}`}
@@ -1648,8 +1736,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 歌
               </span>
               <span className="lesson-dock-card__text">
-                <strong>Đấu Trường Karuta</strong>
-                <small>Nghe âm đập thẻ Kanji</small>
+                <strong>{isCompactStudy ? 'Karuta' : 'Đấu Trường Karuta'}</strong>
+                {!isCompactStudy && <small>Nghe âm đập thẻ Kanji</small>}
               </span>
             </button>
 
@@ -1657,6 +1745,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               type="button"
               role="tab"
               id="tab-study-typing"
+              aria-label={isCompactStudy ? 'Gõ Âm Đọc' : undefined}
               aria-controls="panel-study-game"
               aria-selected={stageMode === 'typing'}
               className={`lesson-dock-card${stageMode === 'typing' ? ' is-active' : ''}`}
@@ -1666,36 +1755,23 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 筆
               </span>
               <span className="lesson-dock-card__text">
-                <strong>Gõ Âm Đọc</strong>
-                <small>Tự gõ Kana / Romaji</small>
+                <strong>{isCompactStudy ? 'Gõ âm' : 'Gõ Âm Đọc'}</strong>
+                {!isCompactStudy && <small>Tự gõ Kana / Romaji</small>}
               </span>
             </button>
           </div>
         </div>
 
         {/* 3.5 RIGHT RAIL: STITCHED ORIHON MANUSCRIPT LEDGER OR ZEN SHIORI TAB */}
-        {isLedgerCollapsed ? (
-          <button
-            type="button"
-            className="lesson-zen-shiori"
-            onClick={() => setIsLedgerCollapsed(false)}
-            aria-label="Mở danh sách từ vựng"
-            title="Mở danh sách từ vựng"
-          >
-            <span className="lesson-zen-shiori__seal" aria-hidden="true">
-              録
-            </span>
-            <span>Mục lục ({totalTerms})</span>
-          </button>
-        ) : (
-          <section className="lesson-vocab-section lesson-vocab-rail" aria-label="Danh sách từ vựng bài học">
+        {!isLedgerCollapsed && (
+          <VocabularyLedger compact={isCompactStudy} onClose={() => setIsLedgerCollapsed(true)}>
             <div className="lesson-vocab-rail__header">
               <div className="lesson-vocab-rail__header-top">
                 <div className="lesson-vocab-section__title-group">
                   <span className="lesson-vocab-section__hanko" aria-hidden="true">
                     語
                   </span>
-                  <h3>Danh Sách ({totalTerms})</h3>
+                  <h3>Mục lục từ vựng ({totalTerms})</h3>
                 </div>
 
                 <div className="lesson-vocab-rail__header-tools">
@@ -1716,7 +1792,11 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     title="Thu gọn danh sách (Chế độ tập trung Zen)"
                     aria-label="Thu gọn danh sách"
                   >
-                    <PanelRightClose size={15} aria-hidden="true" />
+                    {isCompactStudy ? (
+                      <X size={18} aria-hidden="true" />
+                    ) : (
+                      <PanelRightClose size={15} aria-hidden="true" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -1779,6 +1859,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         setCurrentIndex(idx)
                         setIsFlipped(false)
                         setStageMode('flashcard')
+                        if (isCompactStudy) setIsLedgerCollapsed(true)
                       }
                       return (
                         <div
@@ -1843,7 +1924,10 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                               <button
                                 type="button"
                                 className="curriculum-term-row__icon-btn"
-                                onClick={() => setSelectedDictWord(item.word)}
+                                onClick={() => {
+                                  if (isCompactStudy) setIsLedgerCollapsed(true)
+                                  setSelectedDictWord(item.word)
+                                }}
                                 title="Chi tiết từ điển"
                                 aria-label="Chi tiết từ điển"
                               >
@@ -1927,7 +2011,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 </>
               )}
             </div>
-          </section>
+          </VocabularyLedger>
         )}
       </div>
 

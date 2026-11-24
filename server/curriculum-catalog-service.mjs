@@ -677,7 +677,7 @@ export class CurriculumCatalogService {
         LOWER(t.display_reading) LIKE $${p2} OR
         LOWER(t.normalized_key) LIKE $${p3} OR
         LOWER(COALESCE(t.han_viet, '')) LIKE $${p4} OR
-        LOWER(t.meanings) LIKE $${p5}
+        LOWER(t.meanings::text) LIKE $${p5}
       )`)
       conditionsSqlite.push(`(
         LOWER(t.display_word) LIKE ? OR

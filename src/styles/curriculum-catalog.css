@@ -1788,11 +1788,106 @@
   flex-wrap: wrap;
 }
 
+.curriculum-course-view .curriculum-book-banner {
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+  margin-bottom: 1.15rem;
+}
+
+.curriculum-course-view :is(.watoji-cover--featured, .published-book--featured) {
+  width: clamp(4rem, 11vw, 7rem);
+  height: auto;
+  aspect-ratio: 175 / 240;
+}
+
+.curriculum-course-view .curriculum-book-banner__title {
+  font-size: clamp(1.2rem, 2.5vw, 2.1rem);
+  overflow-wrap: anywhere;
+}
+
+.curriculum-book-banner__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+}
+
+.curriculum-course-view__list-title {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--color-text);
+}
+
+.curriculum-course-view__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 0.65rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .curriculum-course-view__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.curriculum-course-view__list .curriculum-unit-card {
+  width: 100%;
+  min-height: 100%;
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  font: inherit;
+}
+
+.curriculum-course-view__list :is(.curriculum-unit-card__title, .curriculum-unit-card__topic) {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.curriculum-course-view__list .curriculum-unit-card.is-recap .curriculum-unit-card__seal {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+
 @media (max-width: 767px) {
   .curriculum-book-banner {
     flex-direction: column;
     align-items: flex-start;
     padding: 1.25rem;
+  }
+
+  .curriculum-course-view {
+    padding-inline: 0;
+  }
+
+  .curriculum-course-view .curriculum-paper-grid {
+    padding: 0.65rem;
+  }
+
+  .curriculum-course-view .curriculum-paper-grid::before {
+    display: none;
+  }
+
+  .curriculum-course-view .curriculum-book-banner {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .curriculum-course-view .curriculum-book-banner__desc {
+    font-size: 0.82rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .curriculum-course-view .curriculum-book-banner__footer,
+  .curriculum-course-view__list .curriculum-unit-card__left,
+  .curriculum-course-view__list .curriculum-unit-card__meta {
+    gap: 0.45rem;
+  }
+
+  .curriculum-course-view__list .curriculum-unit-card__seal {
+    width: 1.75rem;
+    height: 1.75rem;
   }
 }
 
@@ -4608,10 +4703,20 @@ input.dojo-typing-input:focus-visible {
   font-weight: 800;
 }
 
-@media (max-width: 640px) {
+@media (min-width: 768px) {
+  .lesson-zen-shiori[aria-expanded='true'] {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .lesson-split-workspace.is-zen {
+    width: 100%;
+  }
+
   .lesson-zen-shiori {
     position: static;
-    justify-self: end;
+    margin-inline-start: auto;
     writing-mode: horizontal-tb;
     transform: none;
     min-height: 2.75rem;
@@ -4624,6 +4729,106 @@ input.dojo-typing-input:focus-visible {
   .lesson-zen-shiori:hover {
     transform: none;
   }
+
+  .curriculum-study-bar {
+    gap: 0.35rem;
+  }
+
+  .curriculum-study-bar__left {
+    gap: 0.3rem 0.55rem;
+  }
+
+  .curriculum-study-bar__title {
+    flex-basis: 100%;
+    padding-bottom: 0.2rem;
+  }
+
+  .curriculum-study-bar__book {
+    display: block;
+    margin-bottom: 0.15rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .curriculum-study-bar__book-divider,
+  .curriculum-study-bar__left > :is(.curriculum-study-bar__seal, .curriculum-study-bar__divider) {
+    display: none;
+  }
+
+  .curriculum-study-bar__right {
+    justify-content: flex-start;
+    gap: 0.3rem 0.4rem;
+  }
+
+  .curriculum-flashcard-controls {
+    display: grid;
+    grid-template-columns: 2.25rem repeat(2, minmax(0, 1fr)) 2.25rem;
+    gap: 0.35rem;
+  }
+
+  .curriculum-flashcard-controls > .ui-button {
+    min-height: 2.75rem;
+    padding-inline: 0.25rem;
+    font-size: 0.82rem;
+  }
+
+  .curriculum-flashcard-controls__nav span {
+    display: none;
+  }
+
+  .lesson-stage-wrapper:not(.lesson-stage-wrapper--game) {
+    min-height: 0;
+  }
+
+  .lesson-stage-wrapper .curriculum-flashcard {
+    min-height: clamp(13.75rem, calc(100dvh - 36.25rem), 16.5rem);
+  }
+}
+
+@media (max-width: 767px), (hover: none) {
+  .curriculum-study-shortcut {
+    display: none;
+  }
+}
+
+.lesson-vocab-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 40%);
+}
+
+.lesson-vocab-sheet > .lesson-vocab-section.lesson-vocab-rail {
+  width: min(100%, 35rem);
+  height: min(86dvh, 45rem);
+  padding: 0.9rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+  border: 1px solid var(--color-border);
+  border-radius: 1rem 1rem 0 0;
+  background: var(--color-surface);
+}
+
+.lesson-vocab-sheet .lesson-vocab-section__title-group {
+  min-width: 0;
+}
+
+.lesson-vocab-sheet .lesson-vocab-rail__header {
+  position: relative;
+}
+
+.lesson-vocab-sheet .lesson-vocab-rail__header-top {
+  padding-inline-end: 3rem;
+  min-height: 2.75rem;
+}
+
+.lesson-vocab-sheet .lesson-vocab-rail__collapse-btn {
+  position: absolute;
+  inset: 0 0 auto auto;
+  width: 2.75rem;
+  height: 2.75rem;
 }
 
 .lesson-split-workspace__stage {
@@ -4859,6 +5064,38 @@ input.dojo-typing-input:focus-visible {
   margin-top: 1.65rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 767px) {
+  .lesson-split-workspace .lesson-game-dock {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.2rem;
+  }
+
+  .lesson-game-dock .lesson-dock-card {
+    min-height: 3rem;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding-inline: 0.2rem;
+    text-align: center;
+  }
+
+  .lesson-game-dock .lesson-dock-card__text strong {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 760px) {
+  .lesson-stage-wrapper .curriculum-flashcard {
+    min-height: 12rem;
+  }
+
+  .lesson-game-dock .lesson-dock-card {
+    min-height: 2.75rem;
+    padding-block: 0.3rem;
+  }
 }
 
 .lesson-vocab-section.lesson-vocab-rail {
