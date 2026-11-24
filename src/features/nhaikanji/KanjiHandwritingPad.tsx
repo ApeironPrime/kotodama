@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
 import { RotateCcw, Eraser, Loader2 } from 'lucide-react'
 import { nhaikanjiApi } from './nhaikanjiApi'
 import type { KanjiSummary } from './nhaikanjiTypes'
@@ -268,12 +268,13 @@ export function KanjiHandwritingPad({ onSelectKanji, onClose }: KanjiHandwriting
           </p>
         ) : (
           <div className="kanji-handwriting-candidates" role="list" aria-label="Kết quả nhận diện chữ viết tay">
-            {candidates.map((cand) => (
+            {candidates.map((cand, idx) => (
               <button
                 key={cand.kanji}
                 type="button"
                 role="listitem"
                 className="kanji-handwriting-candidate"
+                style={{ '--cand-i': idx } as CSSProperties}
                 onClick={() => onSelectKanji(cand)}
                 title={`${cand.kanji} (${cand.hanzi}) — ${cand.meaning_vi}`}
               >

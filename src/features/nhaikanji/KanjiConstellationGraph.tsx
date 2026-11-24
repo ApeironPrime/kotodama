@@ -53,6 +53,7 @@ export function KanjiConstellationGraph({ kanji, components, descendants = [], m
   const nodesRef = useRef<ConstellationNode[]>([])
   const edgesRef = useRef<ConstellationEdge[]>([])
   const animRef = useRef<number>(0)
+  const spawnTimeRef = useRef<number>(0)
   const mouseRef = useRef<{ x: number; y: number }>({ x: -999, y: -999 })
   const hoveredRef = useRef<number>(-1)
   const [hoveredIdx, setHoveredIdx] = useState(-1)
@@ -229,6 +230,7 @@ export function KanjiConstellationGraph({ kanji, components, descendants = [], m
 
       nodesRef.current = nodes
       edgesRef.current = edges
+      spawnTimeRef.current = typeof performance !== 'undefined' ? performance.now() : 0
     },
     [kanji, visibleComponents, visibleDescendants, isThreeTierMode, isDescendantOnlyMode]
   )
@@ -340,6 +342,16 @@ export function KanjiConstellationGraph({ kanji, components, descendants = [], m
       ctx.save()
 
       if (n.role === 'center') {
+        if (!reducedMotion && spawnTimeRef.current > 0) {
+          const age = Math.min(1, (performance.now() - spawnTimeRef.current) / 560)
+          if (age < 1) {
+            ctx.beginPath()
+            ctx.arc(n.x, n.y, 18 + age * 20, 0, Math.PI * 2)
+            ctx.strokeStyle = `rgba(184, 46, 46, ${(1 - age) * 0.26})`
+            ctx.lineWidth = 1.25
+            ctx.stroke()
+          }
+        }
         ctx.font = '600 2.45rem "Shippori Mincho", "Noto Serif JP", serif'
         ctx.fillStyle = SUMI
         ctx.textAlign = 'center'
@@ -353,6 +365,12 @@ export function KanjiConstellationGraph({ kanji, components, descendants = [], m
         }
       } else {
         const isComp = n.role === 'component'
+        if (isHov) {
+          ctx.beginPath()
+          ctx.arc(n.x, n.y, 17, 0, Math.PI * 2)
+          ctx.fillStyle = isComp ? 'rgba(63, 94, 69, 0.09)' : 'rgba(184, 46, 46, 0.08)'
+          ctx.fill()
+        }
         const baseSize = isThreeTierMode ? 1.18 : 1.32
         const scale = isHov ? 1.18 : 1
         ctx.font = `500 ${baseSize * scale}rem "Shippori Mincho", "Noto Serif JP", serif`
@@ -373,7 +391,7 @@ export function KanjiConstellationGraph({ kanji, components, descendants = [], m
 
       ctx.restore()
     }
-  }, [hitTest, isThreeTierMode])
+  }, [hitTest, isThreeTierMode, reducedMotion])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -415,13 +433,18 @@ export function KanjiConstellationGraph({ kanji, components, descendants = [], m
 
     const tick = () => {
       draw()
+      const haloActive = !reducedMotion && spawnTimeRef.current > 0 && performance.now() - spawnTimeRef.current < 580
       const moving =
-        !reducedMotion &&
-        nodesRef.current.some(
-          (node) =>
-            Math.abs(node.x - node.targetX) + Math.abs(node.y - node.targetY) + Math.abs(node.vx) + Math.abs(node.vy) >
-            0.2
-        )
+        haloActive ||
+        (!reducedMotion &&
+          nodesRef.current.some(
+            (node) =>
+              Math.abs(node.x - node.targetX) +
+                Math.abs(node.y - node.targetY) +
+                Math.abs(node.vx) +
+                Math.abs(node.vy) >
+              0.2
+          ))
       animRef.current = moving ? requestAnimationFrame(tick) : 0
     }
     wakeRef.current = () => {

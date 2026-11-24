@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Library } from 'lucide-react'
 import type { CurriculumCourseCard } from '../../types/curriculum'
 import type { CuratedCourseMetadata } from './vocabularyCuratedData'
@@ -46,8 +47,13 @@ export function HorizontalBookshelf({
       </div>
 
       <div className="curriculum-standing-shelf-grid" role="list" aria-label={`Kệ sách đồng hành ${trackTitle}`}>
-        {displayedItems.map(({ course, meta }) => (
-          <div key={course.course_code} className="curriculum-standing-shelf-cell" role="listitem">
+        {displayedItems.map(({ course, meta }, idx) => (
+          <div
+            key={course.course_code}
+            className="curriculum-standing-shelf-cell"
+            role="listitem"
+            style={{ '--book-i': idx } as CSSProperties}
+          >
             <TactileWatojiCard
               course={course}
               meta={meta}

@@ -34,6 +34,7 @@ import { useAuth } from '../auth/authContext'
 import { DictionaryWordDetail } from './DictionaryWordDetail'
 import { DictionarySentenceDetail } from './DictionarySentenceDetail'
 import { DictionaryWordOfTheDay } from './DictionaryWordOfTheDay'
+import { playWashiPaperSound } from '../vocabulary/tactileAudio'
 
 const POPULAR_SEARCHES = ['学校', '先生', '桜', '儚い', '木漏れ日', 'もののあわれ', '幽玄', '勉強']
 
@@ -397,6 +398,9 @@ export default function DictionaryPage({
   }
 
   const selectTab = (tab: DictionaryTab) => {
+    if (tab !== activeTab) {
+      playWashiPaperSound()
+    }
     setActiveTab(tab)
   }
 
@@ -604,12 +608,13 @@ export default function DictionaryPage({
           <div className="dictionary-workspace__main">
             {/* 1. VIEW: TAB HÁN TỰ */}
             {activeTab === 'kanji' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div className="washi-tab-stage" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <Suspense fallback={<p role="status">Đang mở kho Hán tự…</p>}>
                   <KanjiPage
                     query={searchTerm}
                     viewMode={kanjiView}
                     onChangeViewMode={setKanjiView}
+                    {...(onReview ? { onGoToSrs: onReview } : {})}
                     inkContent={
                       kanjiView === 'ink' ? (
                         <>
@@ -646,9 +651,11 @@ export default function DictionaryPage({
 
             {/* 2. VIEW: TAB NGỮ PHÁP */}
             {activeTab === 'grammar' && !searchTerm && (
-              <Suspense fallback={<p role="status">Đang mở thư viện ngữ pháp…</p>}>
-                <BunpoPage {...(onReview ? { onGoToSrs: onReview } : {})} />
-              </Suspense>
+              <div className="washi-tab-stage">
+                <Suspense fallback={<p role="status">Đang mở thư viện ngữ pháp…</p>}>
+                  <BunpoPage {...(onReview ? { onGoToSrs: onReview } : {})} />
+                </Suspense>
+              </div>
             )}
             {activeTab === 'grammar' && Boolean(searchTerm) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -752,22 +759,24 @@ export default function DictionaryPage({
 
             {/* 3. VIEW: TAB TỦ SÁCH (THƯ VIỆN GIÁO TRÌNH WATOJI) */}
             {activeTab === 'vocabulary' && (
-              <Suspense
-                fallback={
-                  <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-                    <Loader2
-                      size={32}
-                      className="animate-spin"
-                      style={{ margin: '0 auto', color: 'var(--color-accent-text)' }}
-                    />
-                    <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
-                      Đang mở tủ sách Kotodama...
-                    </p>
-                  </div>
-                }
-              >
-                <VocabularyPage {...(onReview ? { onGoToSrs: onReview } : {})} />
-              </Suspense>
+              <div className="washi-tab-stage">
+                <Suspense
+                  fallback={
+                    <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+                      <Loader2
+                        size={32}
+                        className="animate-spin"
+                        style={{ margin: '0 auto', color: 'var(--color-accent-text)' }}
+                      />
+                      <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
+                        Đang mở tủ sách Kotodama...
+                      </p>
+                    </div>
+                  }
+                >
+                  <VocabularyPage {...(onReview ? { onGoToSrs: onReview } : {})} />
+                </Suspense>
+              </div>
             )}
 
             {/* 4. VIEW: TAB TỪ ĐIỂN, TẤT CẢ, HOẶC CÂU VÍ DỤ */}

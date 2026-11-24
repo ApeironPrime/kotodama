@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -343,11 +343,12 @@ export function DictionaryOverlay({ isOpen, onClose }: { isOpen: boolean; onClos
 
               {kanjiResults.length > 0 && (
                 <div className="dict-overlay-kanji-strip">
-                  {kanjiResults.map((k) => (
+                  {kanjiResults.map((k, idx) => (
                     <button
                       key={k.kanji}
                       type="button"
                       className="dict-overlay-kanji-card"
+                      style={{ '--stagger-i': idx } as CSSProperties}
                       onClick={() => openKanjiLookup(k.kanji)}
                     >
                       <span className="dict-overlay-kanji-card__char">{k.kanji}</span>
@@ -367,7 +368,11 @@ export function DictionaryOverlay({ isOpen, onClose }: { isOpen: boolean; onClos
                     const saveKey = `${word.word}:${word.reading ?? ''}`
                     const isSaved = Boolean(savedWordMap[saveKey])
                     return (
-                      <li key={`${word.word}-${word.reading ?? idx}`} className="dict-overlay-item">
+                      <li
+                        key={`${word.word}-${word.reading ?? idx}`}
+                        className="dict-overlay-item"
+                        style={{ '--stagger-i': idx } as CSSProperties}
+                      >
                         <div className="dict-overlay-item__top">
                           <div className="dict-overlay-item__headword">
                             <button

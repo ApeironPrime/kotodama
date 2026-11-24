@@ -1,5 +1,5 @@
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { type CSSProperties, useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -23,6 +23,7 @@ import { KanjiStrokePlayer } from './KanjiStrokePlayer'
 import { srsApi } from '../srs/srsApi'
 import { useAuth } from '../auth/authContext'
 import { sumiAudio } from '../dictionary/sumiAudio'
+import { playStampSuccess } from '../vocabulary/soundEngine'
 import { getKanjiDescendants } from '../dictionary/kanjiDescendantsData'
 import { getComponentLabel } from '../dictionary/kanjiEtymologyMap'
 import {
@@ -251,6 +252,9 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
         jlptLevel: (kanjiSummary.jlpt_level || 'N3').toUpperCase(),
       })
       setSavedSrs((prev) => ({ ...prev, [`vocab_${word}`]: true, [word]: true }))
+      sumiAudio.initOnGesture()
+      sumiAudio.playHankoStamp()
+      playStampSuccess()
       await queryClient.invalidateQueries({ queryKey: ['srs'] })
     } catch {
       setSaveError('Chưa lưu được từ. Kiểm tra kết nối rồi thử lại.')
@@ -287,6 +291,9 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
         story: kanjiSummary.story,
       })
       setSavedSrs((prev) => ({ ...prev, [`kanji_${kanjiSummary.kanji}`]: true, [kanjiSummary.kanji]: true }))
+      sumiAudio.initOnGesture()
+      sumiAudio.playHankoStamp()
+      playStampSuccess()
       await queryClient.invalidateQueries({ queryKey: ['srs'] })
     } catch {
       setSaveError('Chưa lưu được Hán tự. Kiểm tra kết nối rồi thử lại.')
@@ -436,7 +443,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
 
         {/* ─── 3-REALM MONOGRAPH BODY ──────────────────────────────────────── */}
         <div className="shodo-theater-body">
-          <div className="kanji-three-realms">
+          <div key={kanjiSummary.kanji} className="kanji-three-realms kanji-three-realms--animated">
             {/* ── REALM 1: Bút pháp / Tập viết & Âm đọc (Left) ─────────── */}
             <div className="kanji-realm kanji-realm--visual">
               <div className="kanji-realm-toggle" role="group" aria-label="Chế độ bảng chữ">
@@ -570,27 +577,33 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
                   )}
                 </div>
 
-                {kanjiSummary.radical_utf && kanjiSummary.radical_utf !== '—' && (
-                  <button
-                    type="button"
-                    className={`kanji-reading-chip kanji-reading-chip--radical${onFilterByRadical ? ' kanji-reading-chip--interactive' : ''}`}
-                    disabled={!onFilterByRadical}
-                    onClick={() => onFilterByRadical?.(kanjiSummary.radical_family || kanjiSummary.radical_utf)}
-                    title={
-                      onFilterByRadical
-                        ? `Lọc các chữ cùng bộ ${kanjiSummary.radical_utf}${radicalDisplayName ? ` (${radicalDisplayName})` : ''}`
-                        : undefined
-                    }
-                  >
-                    <span className="kanji-reading-chip-label">
-                      <Layers size={10} /> Bộ {radicalDisplayName || ''}
-                    </span>
-                    <span className="kanji-reading-chip-val kanji-reading-chip-val--large">
-                      {kanjiSummary.radical_utf}
-                    </span>
-                    {onFilterByRadical && <span className="kanji-reading-chip-romaji">Lọc bộ →</span>}
-                  </button>
-                )}
+                {kanjiSummary.radical_utf &&
+                  kanjiSummary.radical_utf !== '—' &&
+                  (onFilterByRadical ? (
+                    <button
+                      type="button"
+                      className="kanji-reading-chip kanji-reading-chip--radical kanji-reading-chip--interactive"
+                      onClick={() => onFilterByRadical(kanjiSummary.radical_family || kanjiSummary.radical_utf)}
+                      title={`Lọc các chữ cùng bộ ${kanjiSummary.radical_utf}${radicalDisplayName ? ` (${radicalDisplayName})` : ''}`}
+                    >
+                      <span className="kanji-reading-chip-label">
+                        <Layers size={10} /> Bộ {radicalDisplayName || ''}
+                      </span>
+                      <span className="kanji-reading-chip-val kanji-reading-chip-val--large">
+                        {kanjiSummary.radical_utf}
+                      </span>
+                      <span className="kanji-reading-chip-romaji">Lọc bộ →</span>
+                    </button>
+                  ) : (
+                    <div className="kanji-reading-chip kanji-reading-chip--radical">
+                      <span className="kanji-reading-chip-label">
+                        <Layers size={10} /> Bộ {radicalDisplayName || ''}
+                      </span>
+                      <span className="kanji-reading-chip-val kanji-reading-chip-val--large">
+                        {kanjiSummary.radical_utf}
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
 
@@ -733,7 +746,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
                     const otherKanji = onSelectKanji ? extractOtherKanjiChars(item.word, kanjiSummary.kanji) : []
 
                     return (
-                      <div key={idx} className="shodo-vocab-row">
+                      <div key={idx} className="shodo-vocab-row" style={{ '--vocab-i': idx } as CSSProperties}>
                         <div className="shodo-vocab-main">
                           <div className="shodo-vocab-word-line">
                             <span className="shodo-vocab-index">{String(idx + 1).padStart(2, '0')}</span>

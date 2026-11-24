@@ -1,6 +1,6 @@
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { type CSSProperties, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search, ChevronLeft, ChevronRight, X, Bookmark, BookmarkCheck, PenTool, RotateCcw } from 'lucide-react'
 import { nhaikanjiApi } from './nhaikanjiApi'
@@ -10,6 +10,8 @@ import { KanjiHandwritingPad } from './KanjiHandwritingPad'
 import { Button } from '../../components/ui'
 import { srsApi } from '../srs/srsApi'
 import { useAuth } from '../auth/authContext'
+import { playPaperFlip, playStampSuccess } from '../vocabulary/soundEngine'
+import { playWashiPaperSound } from '../vocabulary/tactileAudio'
 
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
 const KANJI_BOOK_FILTERS = [
@@ -38,9 +40,10 @@ interface KanjiPageProps {
   viewMode?: 'grid' | 'ink'
   onChangeViewMode?: (mode: 'grid' | 'ink') => void
   inkContent?: ReactNode
+  onGoToSrs?: () => void
 }
 
-export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkContent }: KanjiPageProps = {}) {
+export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkContent, onGoToSrs }: KanjiPageProps = {}) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const ledgerTopRef = useRef<HTMLDivElement>(null)
@@ -176,6 +179,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
     if (savedKanjiSet.has(item.kanji) || savingKanji === item.kanji) return
     setSavingKanji(item.kanji)
     setOptimisticSaved((prev) => ({ ...prev, [item.kanji]: true }))
+    playStampSuccess()
     try {
       await srsApi.addCard({
         type: 'kanji',
@@ -197,6 +201,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
   }
 
   const handleLevelChange = (level: string) => {
+    if (level !== selectedLevel) playWashiPaperSound()
     setSelectedLevel(level)
     setPage(1)
   }
@@ -411,6 +416,20 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                   <Bookmark size={14} aria-hidden="true" />
                   <span>Đã lưu{savedKanjiSet.size > 0 ? ` (${savedKanjiSet.size})` : ''}</span>
                 </button>
+
+                {onGoToSrs && savedKanjiSet.size > 0 && (
+                  <button
+                    type="button"
+                    className="curriculum-hanko-srs-pill"
+                    onClick={onGoToSrs}
+                    title="Mở Sổ tay ôn tập SRS"
+                  >
+                    <span className="curriculum-hanko-srs-pill__stamp" aria-hidden="true">
+                      記
+                    </span>
+                    <span className="curriculum-hanko-srs-pill__action">Ôn tập SRS ›</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -432,6 +451,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                       aria-selected={isActive}
                       className={`curriculum-series-btn${isActive ? ' is-active' : ''}`}
                       onClick={() => {
+                        if (book.id !== selectedBook) playWashiPaperSound()
                         setSelectedBook(book.id)
                         setPage(1)
                       }}
@@ -483,10 +503,14 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                 role="button"
                 tabIndex={0}
                 className={`kanji-flashcard-card${studyFlipped ? ' is-flipped' : ''}`}
-                onClick={() => setStudyFlipped((f) => !f)}
+                onClick={() => {
+                  playPaperFlip()
+                  setStudyFlipped((f) => !f)
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
+                    playPaperFlip()
                     setStudyFlipped((f) => !f)
                   }
                 }}
@@ -495,14 +519,14 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                 }
               >
                 {!studyFlipped ? (
-                  <div className="kanji-flashcard-front">
+                  <div key={`${activeStudyKanji.kanji}-front`} className="kanji-flashcard-front">
                     <span className="kanji-flashcard-glyph">{activeStudyKanji.kanji}</span>
                     <span className="kanji-flashcard-hint">
                       Nhấn [Space] hoặc chạm để lật xem Hán-Việt &amp; Chiết tự
                     </span>
                   </div>
                 ) : (
-                  <div className="kanji-flashcard-back">
+                  <div key={`${activeStudyKanji.kanji}-back`} className="kanji-flashcard-back">
                     <div className="kanji-flashcard-back__top">
                       <span className="kanji-flashcard-back__char">{activeStudyKanji.kanji}</span>
                       <div>
@@ -550,8 +574,11 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
               </div>
             </div>
           ) : (
-            <div className={`kanji-grid${displayedItems.length < 6 ? ' kanji-grid--compact' : ''}`}>
-              {displayedItems.map((k) => {
+            <div
+              key={`${selectedLevel}-${selectedBook}-${onlySaved ? 'saved' : page}`}
+              className={`kanji-grid${displayedItems.length < 6 ? ' kanji-grid--compact' : ''}`}
+            >
+              {displayedItems.map((k, idx) => {
                 const isSaved = savedKanjiSet.has(k.kanji)
                 const levelTag = (k.jlpt_level || 'N5').toLowerCase()
                 return (
@@ -559,6 +586,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                     key={k.kanji}
                     role="button"
                     tabIndex={0}
+                    style={{ '--kanji-i': idx } as CSSProperties}
                     onClick={() => openKanjiModal(k)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {

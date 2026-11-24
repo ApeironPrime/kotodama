@@ -6,6 +6,7 @@
 @import './styles/dictionary-washi.css';
 @import './styles/srs.css';
 @import './styles/editorial-washi.css';
+@import './styles/washi-motion.css';
 
 * {
   box-sizing: border-box;

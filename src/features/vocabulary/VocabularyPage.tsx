@@ -2,7 +2,16 @@ import { usePersistentState } from '../../lib/usePersistentState'
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -43,6 +52,7 @@ import { HorizontalBookshelf } from './HorizontalBookshelf'
 import { KaikaShokoModal } from './KaikaShokoModal'
 import { LessonMiniGame } from './LessonMiniGame'
 import { StudyInkAtmosphere } from './StudyInkAtmosphere'
+import { playWashiPaperSound } from './tactileAudio'
 import { sumiAudio } from '../dictionary/sumiAudio'
 import { splitSentenceByKeyword } from './kanaRomaji'
 import {
@@ -1001,14 +1011,15 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           {/* 4 Curated Editorial Tracks */}
           {!isCatalogLoading &&
             !isCatalogError &&
-            activeTracks.map((track) => {
+            activeTracks.map((track, trackIdx) => {
               const featuredItem = track.items.find((item) => item.meta.isFeatured) || track.items[0]
               const companionItems = track.items.filter((item) => item !== featuredItem)
 
               return (
                 <section
-                  key={track.id}
+                  key={`${track.id}-${selectedLevelFilter}-${selectedBookSeries}`}
                   className="curriculum-track-section"
+                  style={{ '--track-i': trackIdx } as CSSProperties}
                   aria-labelledby={`heading-track-${track.id}`}
                 >
                   <div className="curriculum-track-header">
@@ -1040,6 +1051,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           tabIndex={0}
                           role="button"
                           aria-label={`Khóa học ${featuredItem.course.title}, ${featuredItem.meta.levelDisplay}`}
+                          onMouseEnter={() => playWashiPaperSound()}
                           onClick={() => {
                             setSelectedCourseCode(featuredItem.course.course_code)
                             setSelectedUnitKey(null)
@@ -1356,7 +1368,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               </div>
 
               <ol className="curriculum-toc-list">
-                {units.map((unit) => {
+                {units.map((unit, idx) => {
                   const { tocTitle, japanese, chapter, recap } = formatEditorialUnit(
                     unit.title,
                     unit.ordinal,
@@ -1368,7 +1380,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   const pct = unit.term_count > 0 ? Math.min(100, Math.round((known / unit.term_count) * 100)) : 0
                   const previews = unit.preview_terms?.slice(0, 3) || []
                   return (
-                    <li key={unit.unit_id}>
+                    <li key={unit.unit_id} style={{ '--toc-i': idx } as CSSProperties}>
                       <button
                         type="button"
                         className={`curriculum-toc-row${recap ? ' is-recap' : ''}`}
@@ -1610,7 +1622,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         </div>
 
                         {/* Pure Kakejiku Hanging Scroll Frame */}
-                        <div className="kakejiku-scroll">
+                        <div key={selectedUnitKey ?? 'unit'} className="kakejiku-scroll">
                           <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true" />
 
                           <div

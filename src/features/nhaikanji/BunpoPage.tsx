@@ -2,7 +2,7 @@ import { usePersistentState } from '../../lib/usePersistentState'
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -708,15 +708,16 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           {activeTracks.length === 0 && !debouncedCatalogPatternQuery ? (
             <EmptyState title="Không có giáo trình phù hợp" description="Thử chọn lại cấp độ JLPT hoặc bộ sách khác." />
           ) : (
-            activeTracks.map((track) => {
+            activeTracks.map((track, trackIdx) => {
               const showFeatured = track.books.length === 1 || track.books.length >= 3
               const featuredBook = showFeatured ? (track.books.find((b) => b.isFeatured) ?? track.books[0]) : undefined
               const shelfBooks = featuredBook ? track.books.filter((b) => b.id !== featuredBook.id) : track.books
 
               return (
                 <section
-                  key={track.id}
+                  key={`${track.id}-${selectedGrammarLevel}-${selectedGrammarSeries}`}
                   className="curriculum-track-section"
+                  style={{ '--track-i': trackIdx } as CSSProperties}
                   aria-labelledby={`heading-bunpo-${track.id}`}
                 >
                   <div className="curriculum-track-header">
@@ -811,10 +812,15 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       )}
 
                       <div className="curriculum-standing-shelf-grid" role="list" aria-label={`Kệ sách ${track.title}`}>
-                        {shelfBooks.map((book) => {
+                        {shelfBooks.map((book, bookIdx) => {
                           const progress = renderBookProgress(book)
                           return (
-                            <div key={book.id} className="curriculum-standing-shelf-cell" role="listitem">
+                            <div
+                              key={book.id}
+                              className="curriculum-standing-shelf-cell"
+                              role="listitem"
+                              style={{ '--book-i': bookIdx } as CSSProperties}
+                            >
                               <article
                                 className="curriculum-standing-book"
                                 tabIndex={0}
@@ -1022,7 +1028,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               const known = lessonKnownMap[lesson.lesson_id] || 0
               const pct = lesson.count > 0 ? Math.min(100, Math.round((known / lesson.count) * 100)) : 0
               return (
-                <li key={lesson.lesson_id}>
+                <li key={lesson.lesson_id} style={{ '--toc-i': idx } as CSSProperties}>
                   <button
                     type="button"
                     className="curriculum-toc-row"
@@ -1328,7 +1334,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 </div>
               </div>
 
-              <div className="kakejiku-scroll">
+              <div key={selectedLesson ?? 'lesson'} className="kakejiku-scroll">
                 <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true" />
 
                 <div
