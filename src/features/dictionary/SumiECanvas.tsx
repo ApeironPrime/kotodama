@@ -78,6 +78,12 @@ const FONT_MEDIUM = '600 36px "Noto Serif JP", "Hiragino Mincho ProN", "Yu Minch
 const FONT_NUANCE = '600 28px "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif'
 const FONT_HANZI = '700 11px system-ui, -apple-system, sans-serif'
 const FONT_MEANING = '500 10.5px system-ui, -apple-system, sans-serif'
+const GLYPH_ROW_HEIGHT = 112
+
+function glyphEdgeOpacity(x: number, y: number, width: number, height: number, fontSize: number, scale: number) {
+  const clearance = Math.min(x, width - x, y, height - y) - (fontSize * 0.73 + 11) * scale
+  return Math.max(0, Math.min(1, (clearance - 8) / 16))
+}
 
 export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, onSelectLevel, onSelectKanji }) => {
   const reducedMotion = useReducedMotion()
@@ -85,6 +91,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const particlesRef = useRef<GlyphParticle[]>([])
+  const rowHeightRef = useRef(GLYPH_ROW_HEIGHT)
   const outgoingParticlesRef = useRef<OutgoingParticle[]>([])
   const ripplesRef = useRef<WaterRipple[]>([])
   const cameraParallaxRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -238,9 +245,10 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     const handleWindowMouseMove = (e: MouseEvent) => {
       const nx = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2)
       const ny = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2)
+      const strength = Math.min(1, (canvasRef.current?.clientWidth ?? window.innerWidth) / 960)
       targetParallaxRef.current = {
-        x: Math.max(-1, Math.min(1, nx)) * 36,
-        y: Math.max(-1, Math.min(1, ny)) * 22,
+        x: Math.max(-1, Math.min(1, nx)) * 36 * strength,
+        y: Math.max(-1, Math.min(1, ny)) * 22 * strength,
       }
     }
 
@@ -287,21 +295,25 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
           })
       }
 
-      const cols = width < 640 ? 4 : width < 960 ? 6 : 8
-      const colWidth = width / cols
-      const rowHeight = 112
-      const startY = 64
+      const cols = width < 480 ? 3 : width < 640 ? 4 : width < 960 ? 6 : 8
+      const insetX = Math.min(64, width * 0.12)
+      const colWidth = (width - insetX * 2) / cols
+      const insetY = 48
+      const innerHeight = viewportHeight - insetY * 2
+      const rowsInView = Math.max(1, Math.round(innerHeight / GLYPH_ROW_HEIGHT))
+      const rowHeight = innerHeight / rowsInView
+      rowHeightRef.current = rowHeight
 
       particlesRef.current = items.map((item, idx) => {
         const col = idx % cols
         const row = Math.floor(idx / cols)
 
         // Fluid organic waves & alternating river meander
-        const waveX = Math.sin(row * 0.95 + col * 0.4) * 26 + ((idx % 3) - 1) * 14
-        const waveY = Math.cos(col * 0.85 + row * 0.45) * 18 + (idx % 2 === 0 ? 8 : -8)
+        const waveX = (Math.sin(row * 0.95 + col * 0.4) * 0.65 + ((idx % 3) - 1) * 0.35) * Math.min(40, colWidth * 0.24)
+        const waveY = Math.cos(col * 0.85 + row * 0.45) * 13 + (idx % 2 === 0 ? 6 : -6)
 
-        const targetX = (col + 0.5) * colWidth + waveX
-        const targetY = startY + (row + 0.5) * rowHeight + waveY
+        const targetX = insetX + (col + 0.5) * colWidth + waveX
+        const targetY = insetY + (row + 0.5) * rowHeight + waveY
 
         // 3D Calligraphic Hierarchy & Parallax Depth Planes
         const isCore = idx % 5 === 0 || ['日', '一', '人', '大', '土', '心', '生', '木', '水'].includes(item.kanji)
@@ -361,9 +373,8 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     if (!canvas || !container) return
 
     const updateSize = () => {
-      const rect = container.getBoundingClientRect()
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-      const width = rect.width
+      const width = container.clientWidth
       const viewportHeight = Math.min(740, Math.max(520, window.innerHeight - 240))
 
       canvas.width = width * dpr
@@ -520,10 +531,12 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         for (let i = 0; i < outgoing.length; i++) {
           const op = outgoing[i]
           if (!op) continue
+          const edgeOpacity = glyphEdgeOpacity(op.x, op.y, width, height, op.baseFontSize, op.scale)
           const elapsed = time - op.dissolveStart
           if (elapsed < 0) {
             hasActiveOutgoing = true
             ctx.save()
+            ctx.globalAlpha = edgeOpacity
             ctx.translate(op.x, op.y)
             ctx.scale(op.scale, op.scale)
             ctx.font = op.baseFontSize >= 46 ? FONT_CORE : op.baseFontSize <= 28 ? FONT_NUANCE : FONT_MEDIUM
@@ -544,6 +557,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
           op.scale += 0.002
 
           ctx.save()
+          ctx.globalAlpha = edgeOpacity
           ctx.translate(op.x, op.y)
           ctx.scale(op.scale, op.scale)
           ctx.font = op.baseFontSize >= 46 ? FONT_CORE : op.baseFontSize <= 28 ? FONT_NUANCE : FONT_MEDIUM
@@ -563,9 +577,11 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       const mouse = mouseRef.current
       let newHoveredIndex: number | null = null
 
-      const rowHeight = 112
-      const minVisibleRow = Math.max(0, Math.floor((panY - 140) / rowHeight))
-      const maxVisibleRow = Math.ceil((panY + height / currentZoom + 140) / rowHeight)
+      const rowHeight = rowHeightRef.current
+      const visibleHeight = height / currentZoom
+      const visibleTop = panY + (height - visibleHeight) / 2
+      const minVisibleRow = Math.max(0, Math.floor((visibleTop - 140) / rowHeight))
+      const maxVisibleRow = Math.ceil((visibleTop + visibleHeight + 140) / rowHeight)
 
       // Active Hovered Particle for Radical Constellation Network (supports graceful smoke decay)
       let activeHoveredParticle = hoveredIndexRef.current !== null ? particles[hoveredIndexRef.current] : null
@@ -645,12 +661,13 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         const screenY = (worldY - height / 2) * currentZoom + height / 2
 
         // Spatial mouse interaction
+        const edgeOpacity = glyphEdgeOpacity(screenX, screenY, width, height, p.baseFontSize, p.scale)
         let isHover = false
         const dx = screenX - mouse.x
         const dy = screenY - mouse.y
-        const mouseDist = mouse.active ? Math.hypot(dx, dy) : 9999
+        const mouseDist = mouse.active && edgeOpacity > 0 ? Math.hypot(dx, dy) : 9999
 
-        if (mouse.active && !pointerDragRef.current.isDragging && deconstructProgress < 0.2) {
+        if (edgeOpacity > 0 && mouse.active && !pointerDragRef.current.isDragging && deconstructProgress < 0.2) {
           if (Math.abs(dx) <= 46 * currentZoom && dy >= -46 * currentZoom && dy <= 54 * currentZoom) {
             isHover = true
             newHoveredIndex = idx
@@ -753,7 +770,9 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         const zenStageDim = 1 - deconstructProgress * 0.92
 
         // Draw Entity at screen position
+        if (edgeOpacity === 0) continue
         ctx.save()
+        ctx.globalAlpha = edgeOpacity
         ctx.translate(screenX, screenY)
         ctx.rotate(p.rotation)
         ctx.scale(p.scale * entranceScale, p.scale * entranceScale)
@@ -1507,6 +1526,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       const worldY = p.y - panY + parallaxY + p.dispY
       const screenX = (worldX - rect.width / 2) * currentZoom + rect.width / 2
       const screenY = (worldY - rect.height / 2) * currentZoom + rect.height / 2
+      if (glyphEdgeOpacity(screenX, screenY, rect.width, rect.height, p.baseFontSize, p.scale) === 0) continue
       const dx = screenX - x
       const dy = screenY - y
 
@@ -1594,10 +1614,10 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     const pan = panRef.current
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      pan.targetY = Math.max(0, pan.targetY + 112)
+      pan.targetY += rowHeightRef.current
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      pan.targetY = Math.max(0, pan.targetY - 112)
+      pan.targetY = Math.max(0, pan.targetY - rowHeightRef.current)
     } else if (e.key === 'ArrowRight') {
       e.preventDefault()
       pan.targetX += 112

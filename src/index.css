@@ -6816,8 +6816,12 @@ body:has(.video-study-page) {
     opacity: 0.8;
   }
   .sumi-e-levels {
-    justify-content: center;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.2rem;
+  }
+  .sumi-e-level-item {
+    padding-inline: 0.25rem;
   }
   .sumi-e-controls {
     justify-content: space-between;
