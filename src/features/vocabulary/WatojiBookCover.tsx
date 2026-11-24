@@ -1,7 +1,20 @@
 import { useState } from 'react'
 
-export type WatojiPalette = 'aizumi' | 'shuiro' | 'matcha' | 'kokutan' | 'benigara' | 'kuri' | 'kon'
-export type WatojiPattern = 'seigaiha' | 'asanoha' | 'shippo' | 'kumiko' | 'kasumi'
+export type WatojiPalette =
+  | 'aizumi'
+  | 'shuiro'
+  | 'matcha'
+  | 'matsuba-n1'
+  | 'matsuba-n2'
+  | 'matsuba-n3'
+  | 'washi-light'
+  | 'kokutan'
+  | 'benigara'
+  | 'kuri'
+  | 'kon'
+export type WatojiPattern = 'seigaiha' | 'asanoha' | 'shippo' | 'kumiko' | 'kasumi' | 'soundwave' | 'blueprint'
+export type WatojiCoverVariant = 'classic' | 'mimikara' | 'tango' | 'blueprint'
+export type WatojiObiTone = 'ai' | 'shuiro' | 'uguisu' | 'benigara' | 'seiji'
 
 export interface WatojiBookCoverProps {
   kanjiTitle: string
@@ -10,6 +23,8 @@ export interface WatojiBookCoverProps {
   level?: string
   palette?: WatojiPalette
   pattern?: WatojiPattern
+  variant?: WatojiCoverVariant | undefined
+  obiTone?: WatojiObiTone | undefined
   size?: 'featured' | 'companion' | 'spine'
   sealChar?: string
   className?: string
@@ -79,6 +94,47 @@ function KarakamiPatternSvg({ pattern }: { pattern: WatojiPattern }) {
     )
   }
 
+  if (pattern === 'soundwave') {
+    // Harmonic acoustic waves (Mimi Kara Oboeru 耳から覚える)
+    return (
+      <svg className="watoji-cover__pattern-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="pat-soundwave" width="64" height="36" patternUnits="userSpaceOnUse">
+            <path
+              d="M 0,18 Q 16,6 32,18 T 64,18 M 0,27 Q 16,15 32,27 T 64,27 M 0,9 Q 16,-3 32,9 T 64,9"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="0.8"
+              opacity="0.16"
+            />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pat-soundwave)" />
+      </svg>
+    )
+  }
+
+  if (pattern === 'blueprint') {
+    // Technical coordinate blueprint grid (IT / Software Engineering)
+    return (
+      <svg className="watoji-cover__pattern-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="pat-blueprint" width="24" height="24" patternUnits="userSpaceOnUse">
+            <path d="M 24,0 L 0,0 0,24" fill="none" stroke="currentColor" strokeWidth="0.55" opacity="0.15" />
+            <path
+              d="M 11,12 L 13,12 M 12,11 L 12,13"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="0.6"
+              opacity="0.26"
+            />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pat-blueprint)" />
+      </svg>
+    )
+  }
+
   // Kumiko / Kasumi (Geometric lattice & Kyoto mist)
   return (
     <svg className="watoji-cover__pattern-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -108,15 +164,17 @@ function WatojiDaisenSvg({
   volumeTag = '全',
   level,
   size = 'companion',
+  compactForObi = false,
 }: {
   kanjiTitle: string
   volumeTag?: string | undefined
   level?: string | undefined
   size?: 'featured' | 'companion' | 'spine' | undefined
+  compactForObi?: boolean
 }) {
   const isFeatured = size === 'featured'
   const width = isFeatured ? 48 : 34
-  const height = isFeatured ? 164 : 112
+  const height = compactForObi ? (isFeatured ? 114 : 80) : isFeatured ? 164 : 112
   const chars = Array.from(kanjiTitle)
   const charCount = Math.max(chars.length, 1)
 
@@ -137,7 +195,7 @@ function WatojiDaisenSvg({
   const div1Y = isFeatured ? 22 : 15
   const divHalfWidth = isFeatured ? 10 : 7
 
-  const hasLevel = Boolean(level && level !== volumeTag)
+  const hasLevel = !compactForObi && Boolean(level && level !== volumeTag)
   const levelFontSize = isFeatured ? 9.5 : 6.5
   const levelY = isFeatured ? height - 12 : height - 8
   const div2Y = isFeatured ? height - 20 : height - 14
@@ -283,6 +341,8 @@ export function WatojiBookCover({
   level,
   palette = 'aizumi',
   pattern = 'seigaiha',
+  variant = 'classic',
+  obiTone = 'uguisu',
   size = 'companion',
   sealChar = '言',
   className = '',
@@ -305,8 +365,14 @@ export function WatojiBookCover({
     )
   }
 
+  const isTango = variant === 'tango'
+  const isMimikara = variant === 'mimikara'
+
   return (
-    <div className={`watoji-cover watoji-cover--${palette} watoji-cover--${size} ${className}`} aria-hidden="true">
+    <div
+      className={`watoji-cover watoji-cover--${palette} watoji-cover--${variant} watoji-cover--${size} ${className}`}
+      aria-hidden="true"
+    >
       {/* 3D Spine and Page Edge Deckle */}
       <div className="watoji-cover__edge-shadow" />
 
@@ -330,17 +396,34 @@ export function WatojiBookCover({
         <KarakamiPatternSvg pattern={pattern} />
 
         {/* Vertical Title Slip (Daisen 題簽) - Authentic Japanese Washi Label (Retina Vector SVG) */}
-        <WatojiDaisenSvg kanjiTitle={kanjiTitle} volumeTag={volumeTag} level={level} size={size} />
+        <WatojiDaisenSvg
+          kanjiTitle={kanjiTitle}
+          volumeTag={volumeTag}
+          level={level}
+          size={size}
+          compactForObi={isTango}
+        />
 
-        {/* Cinnabar Vermilion Hanko Seal (Rakkan 落款印) */}
-        <div className="watoji-cover__seal">
-          <span className="watoji-cover__seal-char">{sealChar}</span>
-        </div>
+        {isMimikara && level && <span className="watoji-cover__level-emblem">{level}</span>}
 
-        {/* Kotodama Bunko Insignia at Cover Base */}
-        <div className="watoji-cover__masthead">
-          <span className="watoji-cover__crest">言霊文庫</span>
-        </div>
+        {isTango ? (
+          <div className={`watoji-cover__obi watoji-cover__obi--${obiTone}`}>
+            <span className="watoji-cover__obi-level">{level || 'N3'}</span>
+            <span className="watoji-cover__obi-tag">単語帳</span>
+          </div>
+        ) : (
+          <>
+            {/* Cinnabar Vermilion Hanko Seal (Rakkan 落款印) */}
+            <div className="watoji-cover__seal">
+              <span className="watoji-cover__seal-char">{sealChar}</span>
+            </div>
+
+            {/* Kotodama Bunko Insignia at Cover Base */}
+            <div className="watoji-cover__masthead">
+              <span className="watoji-cover__crest">言霊文庫</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

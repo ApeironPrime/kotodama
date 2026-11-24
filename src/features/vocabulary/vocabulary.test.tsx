@@ -267,10 +267,10 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     })
   })
 
-  it('renders catalog filters and course cards without the intro banner', async () => {
+  it('renders unboxed library masthead, filters, and course cards cleanly', async () => {
     renderWithClient(<VocabularyPage />)
 
-    expect(screen.getByRole('heading', { name: 'Tủ sách', level: 1 })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Thư viện Kotodama', level: 1 })).toBeTruthy()
     expect(screen.queryByText('Học bản chất – không học vẹt')).toBeNull()
     expect(screen.getByRole('tab', { name: 'Tất cả' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'N5' })).toBeTruthy()
@@ -1127,9 +1127,20 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await panel.findByText(/Ôn từ yếu/)).toBeTruthy()
   })
 
-  it('uses 100% Watoji covers on bookshelf and renders clean Tango titles without inflated numbers', async () => {
+  it('uses 100% Watoji covers with distinct series identities (Mimikara Matsuba, Tango Obi, CNTT Blueprint) and hides 0% progress bars', async () => {
     vi.mocked(curriculumApi.fetchCatalog).mockResolvedValueOnce({
       items: [
+        {
+          course_code: 'mimi-n3',
+          title: 'Mimi Kara Oboeru N3',
+          level: 'N3',
+          provider_source: 'ALC Press',
+          visibility: 'public',
+          rights_status: 'verified',
+          description: 'Mimi N3',
+          unit_count: 12,
+          term_count: 880,
+        },
         {
           course_code: 'mazii-tango-n1',
           title: 'Tango N1 (3000 Từ)',
@@ -1141,15 +1152,45 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
           unit_count: 10,
           term_count: 1852,
         },
+        {
+          course_code: 'cntt-se',
+          title: 'Tiếng Nhật CNTT (SE IT)',
+          level: 'SE',
+          provider_source: 'Kotodama',
+          visibility: 'public',
+          rights_status: 'verified',
+          description: 'IT',
+          unit_count: 8,
+          term_count: 320,
+        },
       ],
-      pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+      pagination: { page: 1, limit: 100, total: 3, totalPages: 1 },
     })
 
     const { container } = renderWithClient(<VocabularyPage />)
     expect(await screen.findByText('Tango N1')).toBeTruthy()
     expect(screen.queryByText(/3\.000/)).toBeNull()
     expect(container.querySelectorAll('.published-book img').length).toBe(0)
-    expect(container.querySelectorAll('.watoji-cover').length).toBeGreaterThan(0)
+    expect(container.querySelector('.watoji-cover--mimikara.watoji-cover--matsuba-n3')).toBeTruthy()
+    expect(container.querySelector('.watoji-cover--tango .watoji-cover__obi--ai')).toBeTruthy()
+    expect(container.querySelector('.watoji-cover--blueprint.watoji-cover--kokutan')).toBeTruthy()
+    expect(container.querySelectorAll('.curriculum-book-progress-bar').length).toBe(0)
+  })
+
+  it('shows conditional progress bar only for courses with progress and updates Course Detail CTA to Tiếp tục Bài 2', async () => {
+    const storageKey = 'kotodama.known:user-test-123:minna-n5-standard:bai-01'
+    window.localStorage.setItem(storageKey, JSON.stringify(['t1', 't2']))
+
+    try {
+      const { container } = renderWithClient(<VocabularyPage />)
+      expect(await screen.findByText(/Đã thuộc 2 \/ 1\.000 từ/)).toBeTruthy()
+      expect(container.querySelectorAll('.curriculum-book-progress-bar').length).toBe(1)
+
+      fireEvent.click(screen.getByText('Minna no Nihongo N5 Chuẩn'))
+      expect(await screen.findByRole('button', { name: 'Tiếp tục Bài 2 →' })).toBeTruthy()
+    } finally {
+      window.localStorage.removeItem(storageKey)
+    }
   })
 
   it('renders printed Table of Contents with sanitized unit titles, preview words, and quick Karuta/Typing launch', async () => {

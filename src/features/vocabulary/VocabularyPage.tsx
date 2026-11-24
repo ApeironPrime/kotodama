@@ -128,6 +128,50 @@ function readUnitKnownCount(storageKey: string): number {
   }
 }
 
+function computeCatalogProgressMap(
+  userId: string,
+  savedTerms?: Array<{ courseCode?: string; sourceContext?: string; term?: string; termId?: string }>
+): Record<string, number> {
+  const localByCourse: Record<string, number> = {}
+  const prefix = `kotodama.known:${userId}:`
+  if (typeof window !== 'undefined') {
+    try {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (!key || !key.startsWith(prefix)) continue
+        const rest = key.slice(prefix.length)
+        const colonIdx = rest.indexOf(':')
+        if (colonIdx <= 0) continue
+        const courseCode = rest.slice(0, colonIdx)
+        const count = readUnitKnownCount(key)
+        if (count > 0) {
+          localByCourse[courseCode] = (localByCourse[courseCode] || 0) + count
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  const srsSets: Record<string, Set<string>> = {}
+  if (Array.isArray(savedTerms)) {
+    for (const item of savedTerms) {
+      const code = item.courseCode || (item.sourceContext ? item.sourceContext.split(':')[0] : '')
+      if (!code) continue
+      const key = item.termId || item.term || ''
+      if (!key) continue
+      if (!srsSets[code]) srsSets[code] = new Set<string>()
+      srsSets[code].add(key)
+    }
+  }
+
+  const merged: Record<string, number> = { ...localByCourse }
+  for (const [code, set] of Object.entries(srsSets)) {
+    merged[code] = Math.max(merged[code] || 0, set.size)
+  }
+  return merged
+}
+
 function formatEditorialUnit(rawTitle?: string, ordinal?: number, topic?: string) {
   const title = normalizeFullWidthAscii((rawTitle || '').trim())
   const chapter = title.match(/^Unit\s+(\d+)/i)?.[1] || String(ordinal || 1)
@@ -774,14 +818,40 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     const totalMatchingCourses = filteredItems.length
     const totalSavedCount = user && Array.isArray(savedTermsData) ? savedTermsData.length : Object.keys(savedSrs).length
+    const knownByCourseMap = computeCatalogProgressMap(user?.id ?? 'guest', savedTermsData)
 
     return (
       <div className="curriculum-container">
         {/* Washi Canvas Frame */}
         <div className="curriculum-paper-grid">
-          <h1 className="visually-hidden">Tủ sách</h1>
+          {/* 1. Compact Unboxed Masthead (~92px) */}
+          <header className="curriculum-masthead">
+            <div className="curriculum-masthead__copy">
+              <h1 className="curriculum-masthead__title">Thư viện Kotodama</h1>
+              <p className="curriculum-masthead__sub">
+                Tuyển tập giáo trình từ vựng chuẩn JLPT &amp; chuyên ngành — học qua ngữ cảnh, âm thanh và phản xạ.
+              </p>
+            </div>
+            {onGoToSrs && (
+              <button
+                type="button"
+                className="curriculum-hanko-srs-pill"
+                onClick={onGoToSrs}
+                title="Mở sổ tay và kho ôn tập SRS"
+                aria-label={`Sổ tay SRS: ${totalSavedCount} từ đã lưu. Nhấn để ôn tập.`}
+              >
+                <span className="curriculum-hanko-srs-pill__stamp" aria-hidden="true">
+                  記
+                </span>
+                <span className="curriculum-hanko-srs-pill__text">
+                  Sổ tay SRS: <strong>{formatViNumber(totalSavedCount)}</strong> từ
+                </span>
+                <span className="curriculum-hanko-srs-pill__action">Ôn tập ›</span>
+              </button>
+            )}
+          </header>
 
-          {/* Search, Level Filters & Hanko SRS Toolbar */}
+          {/* 2. Synchronized Hairline Filter Tabs & Search */}
           <div className="curriculum-toolbar">
             <div className="curriculum-toolbar__left">
               <div className="curriculum-level-filters" role="tablist" aria-label="Lọc theo cấp độ giáo trình">
@@ -822,24 +892,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   aria-label="Tìm kiếm giáo trình từ vựng"
                 />
               </div>
-
-              {onGoToSrs && (
-                <button
-                  type="button"
-                  className="curriculum-hanko-srs-pill"
-                  onClick={onGoToSrs}
-                  title="Mở sổ tay và kho ôn tập SRS"
-                  aria-label={`Sổ tay SRS: ${totalSavedCount} từ đã lưu. Nhấn để ôn tập.`}
-                >
-                  <span className="curriculum-hanko-srs-pill__stamp" aria-hidden="true">
-                    記
-                  </span>
-                  <span className="curriculum-hanko-srs-pill__text">
-                    Sổ tay SRS: <strong>{formatViNumber(totalSavedCount)}</strong> từ
-                  </span>
-                  <span className="curriculum-hanko-srs-pill__action">Ôn tập ›</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -917,102 +969,94 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     <p className="curriculum-track-desc">{track.description}</p>
                   </div>
 
-                  {/* 1. Master Featured Book Spread (Cuốn tiêu điểm khổ lớn nằm ngang) */}
-                  {featuredItem && (
-                    <article
-                      className="curriculum-featured-spread"
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`Khóa học ${featuredItem.course.title}, ${featuredItem.meta.levelDisplay}`}
-                      onClick={() => {
-                        setSelectedCourseCode(featuredItem.course.course_code)
-                        setSelectedUnitKey(null)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          setSelectedCourseCode(featuredItem.course.course_code)
-                          setSelectedUnitKey(null)
-                        }
-                      }}
-                    >
-                      <div className="curriculum-featured-spread__cover-pane">
-                        <WatojiBookCover
-                          bookTitle={featuredItem.course.title}
-                          size="featured"
-                          kanjiTitle={featuredItem.meta.kanjiTitle}
-                          subtitle={featuredItem.meta.publisher}
-                          volumeTag={featuredItem.meta.volumeTag}
-                          level={featuredItem.course.level}
-                          palette={featuredItem.meta.palette}
-                          pattern={featuredItem.meta.pattern}
-                          sealChar={featuredItem.meta.sealChar}
-                        />
-                      </div>
-
-                      <div className="curriculum-featured-spread__content-pane">
-                        <div className="curriculum-featured-spread__eyebrow-row">
-                          {track.items.length > 1 && (
-                            <span className="curriculum-featured-badge">★ Tác phẩm tiêu điểm</span>
-                          )}
-                          <span className="curriculum-featured-spread__publisher">
-                            {featuredItem.meta.publisher.split('·')[0]?.trim() || featuredItem.meta.publisher}
-                          </span>
-                          <span className="curriculum-featured-spread__level">{featuredItem.meta.levelDisplay}</span>
-                        </div>
-
-                        <h3 className="curriculum-featured-spread__title">{featuredItem.course.title}</h3>
-                        <p className="curriculum-featured-spread__subtitle">{featuredItem.meta.pedagogicalSubtitle}</p>
-
-                        <blockquote className="curriculum-featured-spread__quote">
-                          「 {featuredItem.meta.methodQuote} 」
-                        </blockquote>
-
-                        {featuredItem.meta.variants && (
-                          <div className="curriculum-featured-spread__variants">
-                            <span className="curriculum-featured-spread__variants-label">Phiên bản tích hợp:</span>
-                            <div className="curriculum-featured-spread__variants-list">
-                              {featuredItem.meta.variants.map((v, i) => (
-                                <span key={i} className="curriculum-variant-pill">
-                                  {v}
-                                </span>
-                              ))}
+                  {/* 1. Unboxed Master Featured Book Spread (4 info tiers on Washi paper) */}
+                  {featuredItem &&
+                    (() => {
+                      const featuredKnown = knownByCourseMap[featuredItem.course.course_code] || 0
+                      const hasFeaturedProgress = featuredKnown > 0 && featuredItem.course.term_count > 0
+                      const featuredPct = hasFeaturedProgress
+                        ? Math.min(100, Math.max(4, Math.round((featuredKnown / featuredItem.course.term_count) * 100)))
+                        : 0
+                      const shortFeaturedPublisher =
+                        featuredItem.meta.publisher.split('·')[0]?.trim() || featuredItem.meta.publisher
+                      return (
+                        <article
+                          className={`curriculum-featured-spread${companionItems.length > 0 ? ' has-companion-below' : ''}`}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Khóa học ${featuredItem.course.title}, ${featuredItem.meta.levelDisplay}`}
+                          onClick={() => {
+                            setSelectedCourseCode(featuredItem.course.course_code)
+                            setSelectedUnitKey(null)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setSelectedCourseCode(featuredItem.course.course_code)
+                              setSelectedUnitKey(null)
+                            }
+                          }}
+                        >
+                          <div className="curriculum-featured-spread__cover-pane">
+                            <div className="curriculum-featured-spread__cover-stack">
+                              <WatojiBookCover
+                                bookTitle={featuredItem.course.title}
+                                size="featured"
+                                variant={featuredItem.meta.coverVariant}
+                                obiTone={featuredItem.meta.obiTone}
+                                kanjiTitle={featuredItem.meta.kanjiTitle}
+                                subtitle={featuredItem.meta.publisher}
+                                volumeTag={featuredItem.meta.volumeTag}
+                                level={featuredItem.course.level}
+                                palette={featuredItem.meta.palette}
+                                pattern={featuredItem.meta.pattern}
+                                sealChar={featuredItem.meta.sealChar}
+                              />
+                              {hasFeaturedProgress && (
+                                <div className="curriculum-book-progress-bar" aria-hidden="true">
+                                  <span style={{ width: `${featuredPct}%` }} />
+                                </div>
+                              )}
                             </div>
                           </div>
-                        )}
 
-                        <div className="curriculum-featured-spread__footer">
-                          <div className="curriculum-featured-spread__stats">
-                            <span className="curriculum-featured-spread__stat-item">
-                              <Layers size={14} aria-hidden="true" />
-                              <strong>{featuredItem.course.unit_count}</strong> bài học
-                            </span>
-                            <span className="curriculum-featured-spread__stat-dot">·</span>
-                            <span className="curriculum-featured-spread__stat-item">
-                              <strong>{formatViNumber(featuredItem.course.term_count)}</strong> từ trọng tâm
-                            </span>
-                            <span className="curriculum-featured-spread__stat-dot">·</span>
-                            <span className="curriculum-featured-spread__stat-pacing">
-                              {featuredItem.meta.pacingBadge}
-                            </span>
+                          <div className="curriculum-featured-spread__content-pane">
+                            <div className="curriculum-featured-spread__eyebrow-row">
+                              <span className="curriculum-featured-spread__publisher">
+                                {shortFeaturedPublisher} · {featuredItem.meta.levelDisplay}
+                              </span>
+                            </div>
+
+                            <h3 className="curriculum-featured-spread__title">{featuredItem.course.title}</h3>
+                            <p className="curriculum-featured-spread__desc">{featuredItem.meta.pedagogicalSubtitle}</p>
+
+                            <div className="curriculum-featured-spread__footer">
+                              <div className="curriculum-featured-spread__stats">
+                                <span className="curriculum-featured-spread__stat-item">
+                                  {featuredItem.course.unit_count} bài ·{' '}
+                                  {formatViNumber(featuredItem.course.term_count)} từ
+                                </span>
+                                {hasFeaturedProgress && (
+                                  <span className="curriculum-featured-spread__progress-text">
+                                    · Đã thuộc {formatViNumber(Math.min(featuredKnown, featuredItem.course.term_count))}{' '}
+                                    / {formatViNumber(featuredItem.course.term_count)} từ
+                                  </span>
+                                )}
+                              </div>
+
+                              <span className="curriculum-featured-spread__cta">Mở sách học tập →</span>
+                            </div>
                           </div>
+                        </article>
+                      )
+                    })()}
 
-                          <div className="curriculum-featured-spread__action">
-                            <span>Mở sách học tập</span>
-                            <span className="curriculum-featured-spread__hanko-seal" aria-hidden="true">
-                              開本
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  )}
-
-                  {/* 2. Tactile Horizontal Bookshelf Carousel (Kệ sách đồng hành cuộn ngang mượt mà) */}
+                  {/* 2. Vertical Standing Bookshelf Grid */}
                   {companionItems.length > 0 && (
                     <HorizontalBookshelf
                       trackTitle={track.title}
                       items={companionItems}
+                      knownByCourse={knownByCourseMap}
                       onSelectCourse={(courseCode) => {
                         setSelectedCourseCode(courseCode)
                         setSelectedUnitKey(null)
@@ -1037,6 +1081,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             trackTitle={activeDrawerTrack?.title ?? ''}
             trackKanji={activeDrawerTrack?.kanji ?? ''}
             items={activeDrawerTrack?.items ?? []}
+            knownByCourse={knownByCourseMap}
             onClose={() => setActiveDrawerTrack(null)}
             onSelectCourse={(courseCode) => {
               setSelectedCourseCode(courseCode)
@@ -1066,17 +1111,51 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       setSrsError(null)
     }
 
+    const srsByUnit: Record<string, Set<string>> = {}
+    if (Array.isArray(savedTermsData)) {
+      for (const s of savedTermsData) {
+        const key = s.termId || s.term || ''
+        if (!key) continue
+        if (s.courseCode === selectedCourseCode && s.unitId) {
+          const set = srsByUnit[s.unitId] ?? new Set<string>()
+          set.add(key)
+          srsByUnit[s.unitId] = set
+        } else if (s.sourceContext && s.sourceContext.startsWith(`${selectedCourseCode}:`)) {
+          const parts = s.sourceContext.split(':')
+          const uId = parts.length >= 3 ? `${parts[0]}:${parts[1]}` : ''
+          if (uId) {
+            const set = srsByUnit[uId] ?? new Set<string>()
+            set.add(key)
+            srsByUnit[uId] = set
+          }
+        }
+      }
+    }
+
     const unitKnownCounts: Record<string, number> = {}
     let totalKnownInCourse = 0
+    let maxProgressedOrdinal = 0
     for (const u of units) {
-      const kCount = readUnitKnownCount(`kotodama.known:${user?.id ?? 'guest'}:${selectedCourseCode}:${u.unit_key}`)
+      const localCount = readUnitKnownCount(`kotodama.known:${user?.id ?? 'guest'}:${selectedCourseCode}:${u.unit_key}`)
+      const srsCount = srsByUnit[u.unit_id]?.size || 0
+      const kCount = Math.max(localCount, srsCount)
       unitKnownCounts[u.unit_key] = kCount
+      if (kCount > 0 && u.ordinal > maxProgressedOrdinal) {
+        maxProgressedOrdinal = u.ordinal
+      }
       totalKnownInCourse += Math.min(kCount, u.term_count || kCount)
     }
     const courseTermTotal = course?.term_count || units.reduce((acc, u) => acc + u.term_count, 0)
     const courseProgressPct =
       courseTermTotal > 0 ? Math.min(100, Math.round((totalKnownInCourse / courseTermTotal) * 100)) : 0
-    const resumeUnit = units.find((u) => (unitKnownCounts[u.unit_key] || 0) < u.term_count) || units[0]
+    const resumeUnit =
+      units.find((u) => {
+        const cnt = unitKnownCounts[u.unit_key] || 0
+        return cnt > 0 && cnt < u.term_count
+      }) ||
+      units.find((u) => u.ordinal > maxProgressedOrdinal && (unitKnownCounts[u.unit_key] || 0) < u.term_count) ||
+      units.find((u) => (unitKnownCounts[u.unit_key] || 0) < u.term_count) ||
+      units[0]
 
     return (
       <div className="curriculum-container washi-page curriculum-course-view">
@@ -1129,6 +1208,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                         <WatojiBookCover
                           bookTitle={displayTitle}
                           size="featured"
+                          variant={courseMeta.coverVariant}
+                          obiTone={courseMeta.obiTone}
                           kanjiTitle={courseMeta.kanjiTitle}
                           subtitle={courseMeta.publisher}
                           volumeTag={courseMeta.volumeTag}

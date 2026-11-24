@@ -1,5 +1,5 @@
 import type { CurriculumCourseCard } from '../../types/curriculum'
-import type { WatojiPalette, WatojiPattern } from './WatojiBookCover'
+import type { WatojiCoverVariant, WatojiObiTone, WatojiPalette, WatojiPattern } from './WatojiBookCover'
 
 export type CuratedTrackId = 'core' | 'sprinters' | 'immersion' | 'specialized'
 
@@ -76,6 +76,8 @@ export interface CuratedCourseMetadata {
   volumeTag: string
   palette: WatojiPalette
   pattern: WatojiPattern
+  coverVariant?: WatojiCoverVariant | undefined
+  obiTone?: WatojiObiTone | undefined
   sealChar: string
   publisher: string
   pedagogicalSubtitle: string
@@ -233,6 +235,8 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
   let volumeTag = level || '全'
   let palette: WatojiPalette = 'aizumi'
   let pattern: WatojiPattern = 'seigaiha'
+  let coverVariant: WatojiCoverVariant = 'classic'
+  let obiTone: WatojiObiTone | undefined = undefined
   let sealChar = '言'
   let publisher = 'Kotodama Bunko • 言霊文庫'
   let pedagogicalSubtitle = 'Giáo trình từ vựng tiêu chuẩn biên soạn theo chuẩn năng lực JLPT.'
@@ -260,17 +264,16 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     displayTitle = level ? `Mimi Kara Oboeru ${level}` : course.title
     kanjiTitle = '耳から覚える'
     volumeTag = level || '中級'
+    coverVariant = 'mimikara'
+    pattern = 'soundwave'
     if (level === 'N1') {
-      palette = 'kokutan'
-      pattern = 'shippo'
+      palette = 'matsuba-n1'
       sealChar = '極'
     } else if (level === 'N2') {
-      palette = 'aizumi'
-      pattern = 'seigaiha'
+      palette = 'matsuba-n2'
       sealChar = '進'
     } else {
-      palette = 'matcha'
-      pattern = 'shippo'
+      palette = 'matsuba-n3'
       sealChar = '得'
     }
     publisher = 'ALC Press · アルク出版'
@@ -295,20 +298,19 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
   } else if (isTango) {
     displayTitle = `Tango ${level || 'N3'}`
     volumeTag = level || '中級'
-    const tangoThemes: Record<
-      string,
-      { kanjiTitle: string; palette: WatojiPalette; pattern: WatojiPattern; sealChar: string }
-    > = {
-      N1: { kanjiTitle: '上級単語', palette: 'kokutan', pattern: 'kumiko', sealChar: '壱' },
-      N2: { kanjiTitle: '中上単語', palette: 'kuri', pattern: 'asanoha', sealChar: '弐' },
-      N3: { kanjiTitle: '中級単語', palette: 'aizumi', pattern: 'seigaiha', sealChar: '参' },
-      N4: { kanjiTitle: '初中単語', palette: 'benigara', pattern: 'shippo', sealChar: '四' },
-      N5: { kanjiTitle: '初級単語', palette: 'kon', pattern: 'kasumi', sealChar: '五' },
+    coverVariant = 'tango'
+    palette = 'washi-light'
+    pattern = 'kasumi'
+    const tangoThemes: Record<string, { kanjiTitle: string; obiTone: WatojiObiTone; sealChar: string }> = {
+      N1: { kanjiTitle: '上級単語', obiTone: 'ai', sealChar: '壱' },
+      N2: { kanjiTitle: '中上単語', obiTone: 'shuiro', sealChar: '弐' },
+      N3: { kanjiTitle: '中級単語', obiTone: 'uguisu', sealChar: '参' },
+      N4: { kanjiTitle: '初中単語', obiTone: 'benigara', sealChar: '四' },
+      N5: { kanjiTitle: '初級単語', obiTone: 'seiji', sealChar: '五' },
     }
-    const theme = tangoThemes[level] || { kanjiTitle: '日本語単語', palette: 'kuri', pattern: 'kasumi', sealChar: '語' }
+    const theme = tangoThemes[level] || { kanjiTitle: '日本語単語', obiTone: 'uguisu' as WatojiObiTone, sealChar: '語' }
     kanjiTitle = theme.kanjiTitle
-    palette = theme.palette
-    pattern = theme.pattern
+    obiTone = theme.obiTone
     sealChar = theme.sealChar
     publisher = 'Ask Publishing · アスク出版'
     pedagogicalSubtitle = 'Ghi nhớ bản chất qua 100% câu ví dụ ngữ cảnh thực tế'
@@ -838,6 +840,14 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     pacingBadge = `${course.term_count.toLocaleString()} từ • Trọng tâm rút gọn`
   }
 
+  if (isItCourse || track === 'specialized') {
+    coverVariant = 'blueprint'
+    pattern = 'blueprint'
+    palette = 'kokutan'
+  } else if (palette === 'kokutan') {
+    palette = 'aizumi'
+  }
+
   return {
     coverSrc: undefined,
     track,
@@ -846,6 +856,8 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     volumeTag,
     palette,
     pattern,
+    coverVariant,
+    obiTone,
     sealChar,
     publisher,
     pedagogicalSubtitle,

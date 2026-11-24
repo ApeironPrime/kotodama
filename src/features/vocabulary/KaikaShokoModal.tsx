@@ -13,6 +13,7 @@ interface KaikaShokoModalProps {
   items: Array<{ course: CurriculumCourseCard; meta: CuratedCourseMetadata }>
   onClose: () => void
   onSelectCourse: (courseCode: string) => void
+  knownByCourse?: Record<string, number>
 }
 
 export function KaikaShokoModal({
@@ -22,6 +23,7 @@ export function KaikaShokoModal({
   items,
   onClose,
   onSelectCourse,
+  knownByCourse,
 }: KaikaShokoModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   useDialogAccessibility(dialogRef, onClose, isOpen)
@@ -98,17 +100,19 @@ export function KaikaShokoModal({
               <p>Không tìm thấy đầu sách nào khớp với từ khóa "{keyword}".</p>
             </div>
           ) : (
-            <div className="curriculum-companion-grid" role="list">
+            <div className="curriculum-standing-shelf-grid curriculum-standing-shelf-grid--modal" role="list">
               {filteredItems.map(({ course, meta }) => (
-                <TactileWatojiCard
-                  key={course.course_code}
-                  course={course}
-                  meta={meta}
-                  onSelect={(code) => {
-                    onClose()
-                    onSelectCourse(code)
-                  }}
-                />
+                <div key={course.course_code} className="curriculum-standing-shelf-cell" role="listitem">
+                  <TactileWatojiCard
+                    course={course}
+                    meta={meta}
+                    knownCount={knownByCourse?.[course.course_code] ?? 0}
+                    onSelect={(code) => {
+                      onClose()
+                      onSelectCourse(code)
+                    }}
+                  />
+                </div>
               ))}
             </div>
           )}
