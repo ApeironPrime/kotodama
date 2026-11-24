@@ -4608,7 +4608,7 @@
 
 .dojo-karuta-card--fuda {
   position: relative;
-  container-type: size;
+  /* Avoid container-type: size with aspect-ratio: Blink blanks the study shell when switching from 3D Flashcard */
   inline-size: 100%;
   aspect-ratio: 3 / 4;
   min-height: 9.8rem;
@@ -4640,11 +4640,22 @@
   text-orientation: upright;
   white-space: nowrap;
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
-  font-size: min(1.85rem, calc(100cqh / var(--fuda-length) / 1.1));
+  font-size: clamp(0.82rem, calc(6.8rem / var(--fuda-length)), 1.85rem);
   font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1;
   color: #211d1a;
+}
+
+@media (max-width: 640px) {
+  .dojo-karuta-card--fuda {
+    min-height: 7.5rem;
+    padding: 0.7rem 0.45rem 1.65rem;
+  }
+
+  .dojo-karuta-card--fuda .dojo-karuta-card__primary {
+    font-size: clamp(0.72rem, calc(4.6rem / var(--fuda-length)), 1.35rem);
+  }
 }
 
 .dojo-karuta-card__key {

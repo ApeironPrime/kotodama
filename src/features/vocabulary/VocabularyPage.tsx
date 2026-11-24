@@ -1692,6 +1692,34 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       {/* 3.3 + 3.4 + 3.5: ZEN STUDIO WORKSPACE + ATTACHED SHIORI DRAWER */}
       <div className="lesson-split-workspace is-zen">
         <div className="lesson-split-workspace__stage">
+          {isTermsLoading ? (
+            <div style={{ padding: '4rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+              <p style={{ margin: 0 }}>Đang mở nội dung bài học...</p>
+            </div>
+          ) : isTermsError ? (
+            <RetryState
+              title="Không thể tải bài học"
+              description="Kiểm tra kết nối mạng rồi thử lại."
+              onRetry={() => void refetchTerms()}
+            />
+          ) : words.length === 0 ? (
+            <div style={{ padding: '4rem 1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+              <p style={{ margin: '0 0 1rem 0' }}>Chưa có từ vựng phù hợp để hiển thị.</p>
+              {unitSearchQuery && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setUnitSearchQuery('')
+                    setUnitPage(1)
+                  }}
+                >
+                  Bỏ lọc tìm kiếm
+                </Button>
+              )}
+            </div>
+          ) : null}
+
           {!isTermsLoading && !isTermsError && words.length > 0 && (
             <div className={`lesson-stage-wrapper${stageMode !== 'flashcard' ? ' lesson-stage-wrapper--game' : ''}`}>
               {stageMode === 'flashcard' &&
