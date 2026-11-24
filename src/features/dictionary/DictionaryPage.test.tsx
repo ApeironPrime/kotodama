@@ -210,7 +210,7 @@ describe('DictionaryPage Feature Suite', () => {
     vi.mocked(nhaikanjiApi.fetchKanjiDetail).mockResolvedValue(sampleNhaiKanjiDetail)
 
     const inputRef = { current: null }
-    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+    renderWithClient(<DictionaryPage inputRef={inputRef} mode="deep" />, '/dictionary')
 
     const input = screen.getByRole('textbox', { name: 'Từ cần tra' })
     fireEvent.change(input, { target: { value: '間' } })
@@ -233,7 +233,7 @@ describe('DictionaryPage Feature Suite', () => {
     vi.mocked(requestApi).mockResolvedValue(sampleSearchResult)
 
     const inputRef = { current: null }
-    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+    renderWithClient(<DictionaryPage inputRef={inputRef} mode="deep" />, '/dictionary')
 
     const input = screen.getByRole('textbox', { name: 'Từ cần tra' })
     fireEvent.change(input, { target: { value: '間' } })
@@ -263,7 +263,7 @@ describe('DictionaryPage Feature Suite', () => {
     })
 
     const inputRef = { current: null }
-    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+    renderWithClient(<DictionaryPage inputRef={inputRef} mode="deep" />, '/dictionary')
     fireEvent.change(screen.getByRole('textbox', { name: 'Từ cần tra' }), {
       target: { value: '授業の前に予習をします。' },
     })
@@ -286,15 +286,22 @@ describe('DictionaryPage Feature Suite', () => {
     })
 
     const inputRef = { current: null }
-    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+    renderWithClient(<DictionaryPage inputRef={inputRef} mode="library" />, '/tra-tu')
 
-    // Hán tự is now an internal dictionary tab, rather than a separate page.
+    const libraryTablist = screen.getByRole('tablist', { name: 'Danh mục thư viện' })
+    expect(libraryTablist).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Từ vựng' })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Ngữ pháp' })).toBeTruthy()
+    expect(screen.queryByRole('tab', { name: 'Từ điển' })).toBeNull()
+
+    // Hán tự is an internal library tab
     const kanjiTab = screen.getByRole('tab', { name: 'Hán tự' })
     fireEvent.click(kanjiTab)
 
     await waitFor(() => {
       expect(screen.getByText('Tất cả')).toBeTruthy()
       expect(screen.getByText('Kanji N5')).toBeTruthy()
+      expect(screen.getByRole('tab', { name: 'Hack Não Tập 1' })).toBeTruthy()
       expect(screen.getByText('GIAN')).toBeTruthy()
       expect(screen.getByText('Khoảng, thời gian')).toBeTruthy()
     })
@@ -302,7 +309,7 @@ describe('DictionaryPage Feature Suite', () => {
 
   it('renders extracted quick suggestion tags and calligraphic Word of the Day stage', async () => {
     const inputRef = { current: null }
-    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+    renderWithClient(<DictionaryPage inputRef={inputRef} mode="deep" />, '/dictionary')
 
     // Quick suggestions should be extracted below the search bar
     expect(screen.getByText('Tra cứu nhanh:')).toBeTruthy()
@@ -318,7 +325,7 @@ describe('DictionaryPage Feature Suite', () => {
 
   it('opens and closes the artisan sliding study drawer', async () => {
     const inputRef = { current: null }
-    renderWithClient(<DictionaryPage inputRef={inputRef} />)
+    renderWithClient(<DictionaryPage inputRef={inputRef} mode="deep" />, '/dictionary')
 
     const drawerTrigger = screen.getByRole('button', { name: 'Mở sổ tay học & lịch sử tra cứu' })
     expect(drawerTrigger).toBeTruthy()
@@ -397,7 +404,7 @@ describe('DictionaryPage Feature Suite', () => {
       },
     })
 
-    renderWithClient(<DictionaryPage inputRef={{ current: null }} />, '/tra-tu?tab=all&q=議')
+    renderWithClient(<DictionaryPage inputRef={{ current: null }} mode="deep" />, '/dictionary?tab=all&q=議')
 
     expect(await screen.findByText('Chữ Hán liên quan (1)')).toBeTruthy()
     expect(screen.getByText('議')).toBeTruthy()

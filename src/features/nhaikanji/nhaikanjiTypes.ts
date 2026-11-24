@@ -4,6 +4,7 @@ export type KanjiSummary = {
   meaning_vi: string
   meaning_en: string
   jlpt_level: string
+  tap?: number
   onyomi: string
   kunyomi: string
   stroke_count: string | number

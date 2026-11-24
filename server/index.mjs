@@ -741,6 +741,8 @@ async function route(request, response) {
   // --- NhaiKanji Endpoints ---
   if (request.method === 'GET' && path === '/api/v1/nhaikanji/kanji') {
     const level = url.searchParams.get('level') || 'ALL'
+    const rawTap = url.searchParams.get('tap')
+    const tap = rawTap ? Number.parseInt(rawTap, 10) : undefined
     const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
     const radical = url.searchParams.get('radical') || ''
     const rawStrokeMin = url.searchParams.get('strokeMin')
@@ -752,6 +754,7 @@ async function route(request, response) {
     const sort = url.searchParams.get('sort') || 'default'
     const result = nhaiKanjiService.getKanjiList({
       level,
+      tap: Number.isFinite(tap) ? tap : undefined,
       query,
       radical,
       strokeMin: Number.isFinite(strokeMin) ? strokeMin : undefined,

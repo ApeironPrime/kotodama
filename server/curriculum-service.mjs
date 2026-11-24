@@ -17,7 +17,11 @@ export class CurriculumService {
   constructor(options = {}) {
     this.nihongoDbPath = options.nihongoDbPath || 'd:/Tieng_Nhat/web/server/data/nihongo.db'
     this.mimiGrammarJsonPath = options.mimiGrammarJsonPath || path.join(rootDir, 'data', 'mimi_kara_n3_grammar.json')
-    this.bunpoJsonPath = options.bunpoJsonPath || path.join(rootDir, 'bunpo_data.json')
+    this.bunpoJsonPath =
+      options.bunpoJsonPath ||
+      (fs.existsSync(path.join(rootDir, 'data', 'bunpo_data.json'))
+        ? path.join(rootDir, 'data', 'bunpo_data.json')
+        : path.join(rootDir, 'bunpo_data.json'))
 
     this.nihongoDb = null
     this.mimiGrammarList = []
@@ -330,6 +334,54 @@ export class CurriculumService {
       }
     }
 
+    // 2b. Fallback / Minna N5-N4 from bunpo_data.json
+    const BUNPO_BOOK_MAP = {
+      minna_n5: 'mina-bunpo-n5',
+      minna_n4: 'mina-bunpo-n4',
+      shinkanzen_n3: 'shinkanzen-bunpo-n3',
+      shinkanzen_n2: 'shinkanzen-bunpo-n2',
+      shinkanzen_n1: 'shinkanzen-bunpo-n1',
+    }
+    const REVERSE_BOOK_MAP = Object.fromEntries(Object.entries(BUNPO_BOOK_MAP).map(([code, bid]) => [bid, code]))
+    const hasShinkanzenRows = combined.some((item) => item.source === 'shinkanzen')
+    if (this.bunpoList.length > 0 && curriculum !== 'mimikara_n3' && curriculum !== 'mimikara') {
+      const targetBookId = curriculum !== 'all' ? BUNPO_BOOK_MAP[curriculum] || curriculum : null
+      for (const b of this.bunpoList) {
+        if (targetBookId && b.bookId !== targetBookId) continue
+        if (!targetBookId && hasShinkanzenRows && b.bookId?.startsWith('shinkanzen-')) continue
+        if (hasShinkanzenRows && curriculum.startsWith('shinkanzen')) continue
+        if (level && level !== 'ALL' && b.level?.toUpperCase() !== level.toUpperCase()) continue
+        if (lesson && String(b.lessonId) !== String(lesson)) continue
+        const mappedCode = REVERSE_BOOK_MAP[b.bookId] || b.bookId || 'bunpo'
+        const isMinna = String(b.bookId || '').startsWith('mina-')
+        combined.push({
+          id: b.id,
+          source: isMinna ? 'minna' : 'shinkanzen',
+          curriculumCode: mappedCode,
+          lessonId: String(b.lessonId || '1'),
+          lessonTitle: b.lessonTitle || 'Bài 1',
+          title: b.pattern || b.id,
+          pattern: b.pattern || b.id,
+          structure: b.structure || '',
+          shortMeaning: b.shortMeaning || '',
+          explanation: b.shortMeaning || b.structure || '',
+          usageScope: b.bookName || '',
+          notes: '',
+          level: (b.level || 'N5').toUpperCase(),
+          groups: [
+            {
+              group_no: 1,
+              structure: b.structure || '',
+              meaning: b.shortMeaning || '',
+              usage: b.shortMeaning || '',
+              examples: [],
+            },
+          ],
+          examples: [],
+        })
+      }
+    }
+
     // 3. Filter by query if provided
     let filtered = combined
     if (query && query.trim()) {
@@ -432,6 +484,38 @@ export class CurriculumService {
           count: end - start + 1,
         })
       }
+    }
+
+    if (
+      lessons.length === 0 &&
+      this.bunpoList.length > 0 &&
+      curriculum !== 'mimikara_n3' &&
+      curriculum !== 'mimikara'
+    ) {
+      const BUNPO_BOOK_MAP = {
+        minna_n5: 'mina-bunpo-n5',
+        minna_n4: 'mina-bunpo-n4',
+        shinkanzen_n3: 'shinkanzen-bunpo-n3',
+        shinkanzen_n2: 'shinkanzen-bunpo-n2',
+        shinkanzen_n1: 'shinkanzen-bunpo-n1',
+      }
+      const targetBookId = curriculum !== 'all' ? BUNPO_BOOK_MAP[curriculum] || curriculum : null
+      const grouped = new Map()
+      for (const b of this.bunpoList) {
+        if (targetBookId && b.bookId !== targetBookId) continue
+        const lid = String(b.lessonId || '1')
+        const existing = grouped.get(lid)
+        if (existing) {
+          existing.count += 1
+        } else {
+          grouped.set(lid, {
+            lesson_id: lid,
+            lesson_title: b.lessonTitle || `Bài ${lid}`,
+            count: 1,
+          })
+        }
+      }
+      lessons.push(...grouped.values())
     }
 
     return lessons

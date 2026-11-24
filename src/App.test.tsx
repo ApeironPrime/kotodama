@@ -65,17 +65,38 @@ describe('application journeys', () => {
     expect(await screen.findByRole('heading', { name: 'Chào mừng trở lại' }, { timeout: 8000 })).toBeTruthy()
   })
 
-  it('renders the dictionary search interface for an authenticated learner', async () => {
+  it('renders the 3-tab library interface on /tra-tu and keeps deep lookup on /dictionary', async () => {
     renderApp('/tra-tu', { ...anonymousAuth, status: 'authenticated', user: learner })
 
-    const input = await screen.findByRole('textbox', { name: 'Từ cần tra' }, { timeout: 8000 })
-    expect(input).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Phân tích' })).toBeTruthy()
-    expect(screen.getByRole('tablist', { name: 'Loại nội dung từ điển' })).toBeTruthy()
+    const libraryTabs = await screen.findByRole('tablist', { name: 'Danh mục thư viện' }, { timeout: 8000 })
+    expect(libraryTabs).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Từ vựng' })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Hán tự' })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Ngữ pháp' })).toBeTruthy()
+    expect(screen.queryByRole('tab', { name: 'Từ điển' })).toBeNull()
+    expect(screen.getAllByRole('button', { name: 'Thư viện' }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'Tra từ điển (Ctrl+K)' })).toBeTruthy()
   })
 
-  it('keeps visitor on dictionary page without redirecting to login when session is expired', async () => {
-    renderApp('/tra-tu', { ...anonymousAuth, sessionExpired: true })
+  it('opens quick dictionary overlay without changing current route and navigates to /dictionary on deep lookup', async () => {
+    renderApp('/anime')
+
+    expect(await screen.findByRole('heading', { name: 'Học tiếng Nhật qua Anime' }, { timeout: 8000 })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Tra từ điển (Ctrl+K)' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Từ điển tra nhanh' }, { timeout: 8000 })
+    expect(dialog).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Học tiếng Nhật qua Anime' })).toBeTruthy()
+    expect(screen.getByText('Lịch sử tra gần đây')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Tra kho Hán tự/i })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: /Mở trang Từ điển chuyên sâu/i }))
+    expect(await screen.findByRole('textbox', { name: 'Từ cần tra' }, { timeout: 8000 })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Phân tích' })).toBeTruthy()
+  })
+
+  it('keeps visitor on library and deep dictionary pages without redirecting to login when session is expired', async () => {
+    renderApp('/dictionary', { ...anonymousAuth, sessionExpired: true })
 
     const input = await screen.findByRole('textbox', { name: 'Từ cần tra' }, { timeout: 8000 })
     expect(input).toBeTruthy()

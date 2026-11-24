@@ -1,9 +1,11 @@
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { useUrlState } from '../../lib/useUrlState'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, EmptyState, Input } from '../../components/ui'
 import {
+  ArrowLeft,
   ArrowRight,
   Bookmark,
   BookOpen,
@@ -32,7 +34,6 @@ import { useAuth } from '../auth/authContext'
 import { DictionaryWordDetail } from './DictionaryWordDetail'
 import { DictionarySentenceDetail } from './DictionarySentenceDetail'
 import { DictionaryWordOfTheDay } from './DictionaryWordOfTheDay'
-import { Link } from 'react-router-dom'
 
 const POPULAR_SEARCHES = ['学校', '先生', '桜', '儚い', '木漏れ日', 'もののあわれ', '幽玄', '勉強']
 
@@ -76,12 +77,11 @@ function grammarLink(item: BunpoItem) {
   return `?${params}`
 }
 
-// 4 chế độ khám phá khi chưa nhập từ khóa tìm kiếm (Explore Modes)
-const EXPLORE_TABS = [
-  { id: 'vocab' as const, label: 'Từ điển', icon: BookOpen },
-  { id: 'vocabulary' as const, label: 'Tủ sách', icon: Layers },
+// 3 tab cố định trong Thư viện (/tra-tu): Từ vựng | Hán tự | Ngữ pháp
+const LIBRARY_TABS = [
+  { id: 'vocabulary' as const, label: 'Từ vựng', icon: Layers },
   { id: 'kanji' as const, label: 'Hán tự', icon: Languages },
-  { id: 'grammar' as const, label: 'Ngữ pháp & Mẫu câu', icon: GraduationCap },
+  { id: 'grammar' as const, label: 'Ngữ pháp', icon: GraduationCap },
 ] as const
 
 type DictionaryTab = 'vocab' | 'vocabulary' | 'kanji' | 'grammar' | 'sentences' | 'all'
@@ -107,32 +107,38 @@ function speakJapanese(text: string) {
 export default function DictionaryPage({
   inputRef,
   onReview,
+  mode,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>
   onReview?: () => void
+  mode?: 'library' | 'deep'
 }) {
   const { user } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const drawerRef = useRef<HTMLElement>(null)
   useDialogAccessibility(drawerRef, () => setIsDrawerOpen(false), isDrawerOpen)
-  const [activeTab, setActiveTab] = useUrlState<DictionaryTab>('tab', 'vocab', [
-    'vocab',
-    'vocabulary',
-    'kanji',
-    'grammar',
-    'sentences',
-    'all',
-  ])
+  const effectiveMode: 'library' | 'deep' = mode ?? (location.pathname.startsWith('/tra-tu') ? 'library' : 'deep')
+  const [rawActiveTab, setActiveTab] = useUrlState<DictionaryTab>(
+    'tab',
+    effectiveMode === 'library' ? 'vocabulary' : 'vocab',
+    ['vocab', 'vocabulary', 'kanji', 'grammar', 'sentences', 'all']
+  )
   const [searchTerm, setSearchTerm] = useUrlState<string>('q', '')
+  const activeTab: DictionaryTab =
+    effectiveMode === 'library'
+      ? rawActiveTab === 'kanji' || rawActiveTab === 'grammar'
+        ? rawActiveTab
+        : 'vocabulary'
+      : rawActiveTab
   const [urlUnit] = useUrlState<string | null>('unit', null)
   const [urlLesson] = useUrlState<string | null>('lesson', null)
   const isLessonFocusMode =
     !searchTerm && ((activeTab === 'vocabulary' && Boolean(urlUnit)) || (activeTab === 'grammar' && Boolean(urlLesson)))
-  const showDictionarySearch =
-    !isLessonFocusMode && !((activeTab === 'vocabulary' || activeTab === 'kanji') && !searchTerm)
-  const showQuickSuggestions =
-    showDictionarySearch && (activeTab === 'vocab' || activeTab === 'all' || activeTab === 'sentences')
+  const showDictionarySearch = effectiveMode === 'deep' && !isLessonFocusMode
+  const showQuickSuggestions = showDictionarySearch
   const [input, setInput] = useState(searchTerm)
   useEffect(() => setInput(searchTerm), [searchTerm])
   const [translateSentence, setTranslateSentence] = useState(false)
@@ -440,7 +446,18 @@ export default function DictionaryPage({
         </div>
       )}
       <div className="dictionary-shell">
-        <h1 className="sr-only">Từ điển Nhật – Việt</h1>
+        <h1 className="sr-only">
+          {effectiveMode === 'library' ? 'Thư viện học liệu Kotodama' : 'Từ điển Nhật – Việt'}
+        </h1>
+
+        {effectiveMode === 'deep' && (
+          <div style={{ marginBottom: '0.65rem' }}>
+            <button type="button" className="dict-overlay-text-btn" onClick={() => navigate('/tra-tu')}>
+              <ArrowLeft size={14} aria-hidden="true" />
+              <span>Khám phá Thư viện (Từ vựng · Hán tự · Ngữ pháp)</span>
+            </button>
+          </div>
+        )}
 
         {showDictionarySearch && (
           <div className="dictionary-search-container">
@@ -513,8 +530,8 @@ export default function DictionaryPage({
           </div>
         )}
 
-        {/* Dynamic Navigation Bar: Explore Modes vs Search Scopes */}
-        {!isLessonFocusMode && (
+        {/* Dynamic Navigation Bar: 3 Fixed Library Tabs vs Deep Search Scopes */}
+        {!isLessonFocusMode && (effectiveMode === 'library' || Boolean(searchTerm)) && (
           <div
             className={`dictionary-tabs${!showDictionarySearch ? ' dictionary-tabs--flush' : ''}`}
             role="tablist"
@@ -532,10 +549,34 @@ export default function DictionaryPage({
               tabs[next]?.focus()
               tabs[next]?.click()
             }}
-            aria-label={searchTerm ? 'Phạm vi kết quả tìm kiếm' : 'Loại nội dung từ điển'}
+            aria-label={
+              effectiveMode === 'library'
+                ? 'Danh mục thư viện'
+                : searchTerm
+                  ? 'Phạm vi kết quả tìm kiếm'
+                  : 'Loại nội dung từ điển'
+            }
           >
-            {searchTerm
-              ? SEARCH_SCOPES.map((tab) => {
+            {effectiveMode === 'library'
+              ? LIBRARY_TABS.map((tab) => {
+                  const Icon = tab.icon
+                  const selected = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      tabIndex={selected ? 0 : -1}
+                      className={selected ? 'is-active' : ''}
+                      onClick={() => selectTab(tab.id)}
+                    >
+                      <Icon aria-hidden="true" size={17} />
+                      <span>{tab.label}</span>
+                    </button>
+                  )
+                })
+              : SEARCH_SCOPES.map((tab) => {
                   const Icon = tab.icon
                   const selected = activeTab === tab.id
                   return (
@@ -551,24 +592,6 @@ export default function DictionaryPage({
                       <Icon aria-hidden="true" size={17} />
                       <span>{tab.label}</span>
                       {tab.count > 0 && <span className="dictionary-tab-count">{tab.count}</span>}
-                    </button>
-                  )
-                })
-              : EXPLORE_TABS.map((tab) => {
-                  const Icon = tab.icon
-                  const selected = activeTab === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      tabIndex={selected ? 0 : -1}
-                      className={selected ? 'is-active' : ''}
-                      onClick={() => selectTab(tab.id)}
-                    >
-                      <Icon aria-hidden="true" size={17} />
-                      <span>{tab.label}</span>
                     </button>
                   )
                 })}

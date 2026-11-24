@@ -21,7 +21,7 @@ import { useAuth } from '../features/auth/authContext'
 const NAV_TABS: Array<{ id: Page; label: string; mobileLabel?: string; jp: string; icon: LucideIcon; badge?: string }> =
   [
     { id: 'home', label: 'Trang chủ', mobileLabel: 'Trang', jp: '始まり', icon: House },
-    { id: 'dictionary', label: 'Từ Điển', mobileLabel: 'Từ điển', jp: '辞書', icon: BookOpen },
+    { id: 'dictionary', label: 'Thư viện', mobileLabel: 'Thư viện', jp: '書庫', icon: BookOpen },
     { id: 'review', label: 'Ôn Tập SRS', mobileLabel: 'Ôn tập', jp: '復習', icon: Layers },
     { id: 'jlpt', label: 'Thi JLPT', mobileLabel: 'JLPT', jp: '試験', icon: Award },
     { id: 'anime', label: 'Anime', jp: 'アニメ', icon: Clapperboard },
@@ -72,12 +72,12 @@ export default function TopNav({
           <button
             type="button"
             className="nav-quick-search"
-            onClick={() => (onQuickSearch ? onQuickSearch() : navigate('dictionary'))}
-            aria-label="Tra từ nhanh (Ctrl+K)"
-            title="Tra từ nhanh (Ctrl+K)"
+            onClick={() => (onQuickSearch ? onQuickSearch() : navigate('dictionaryDeep'))}
+            aria-label="Tra từ điển (Ctrl+K)"
+            title="Tra từ điển (Ctrl+K)"
           >
             <Search aria-hidden="true" size={14} strokeWidth={1.9} />
-            <span>Tra nhanh</span>
+            <span>Tra từ điển...</span>
             <kbd>Ctrl K</kbd>
           </button>
           <button

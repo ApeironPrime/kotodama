@@ -65,6 +65,37 @@ const FILTER_TABS = [
   { id: 'SE', label: 'SE IT' },
 ]
 
+const BOOK_SERIES_FILTERS = [
+  { id: 'ALL', label: 'Tất cả sách' },
+  { id: 'mimikara', label: 'Mimi Kara Oboeru' },
+  { id: 'tango', label: 'Hajimete Tango' },
+  { id: 'minna', label: 'Minna no Nihongo' },
+  { id: 'soumatome', label: 'Soumatome' },
+  { id: 'speedmaster', label: 'Speed Master' },
+  { id: 'specialized', label: 'Chuyên ngành IT' },
+] as const
+
+function matchesBookSeries(course: CurriculumCourseCard, seriesId: string): boolean {
+  if (seriesId === 'ALL') return true
+  const hay = `${course.course_code || ''} ${course.title || ''} ${course.description || ''}`.toLowerCase()
+  switch (seriesId) {
+    case 'mimikara':
+      return /mimi/.test(hay)
+    case 'tango':
+      return /tango|hajimete/.test(hay)
+    case 'minna':
+      return /minna/.test(hay)
+    case 'soumatome':
+      return /soumatome|so-matome/.test(hay)
+    case 'speedmaster':
+      return /speed/.test(hay)
+    case 'specialized':
+      return (course.level || '').toUpperCase() === 'SE' || /\b(it|cntt|se|brse|engineering|kaigo|business)\b/.test(hay)
+    default:
+      return true
+  }
+}
+
 function speakJapanese(text: string) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
   window.speechSynthesis.cancel()
@@ -276,6 +307,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [selectedCourseCode, setSelectedCourseCode] = useUrlState<string | null>('course', null)
   const [selectedUnitKey, setSelectedUnitKey] = useUrlState<string | null>('unit', null)
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>('ALL')
+  const [selectedBookSeries, setSelectedBookSeries] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebouncedValue(searchQuery)
 
@@ -786,6 +818,8 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
         }
       }
 
+      if (!matchesBookSeries(course, selectedBookSeries)) return false
+
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase()
         const titleMatch = course.title.toLowerCase().includes(q)
@@ -892,6 +926,27 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                   aria-label="Tìm kiếm giáo trình từ vựng"
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="curriculum-series-bar" role="tablist" aria-label="Lọc theo bộ sách từ vựng">
+            <span className="curriculum-series-bar__label">Bộ sách:</span>
+            <div className="curriculum-series-bar__list">
+              {BOOK_SERIES_FILTERS.map((series) => {
+                const isActive = selectedBookSeries === series.id
+                return (
+                  <button
+                    key={series.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`curriculum-series-btn${isActive ? ' is-active' : ''}`}
+                    onClick={() => setSelectedBookSeries(series.id)}
+                  >
+                    {series.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 

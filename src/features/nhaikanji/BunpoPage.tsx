@@ -28,10 +28,31 @@ import { useAuth } from '../auth/authContext'
 
 const GRAMMAR_CATALOG = [
   {
+    id: 'minna_n5',
+    title: 'Minna no Nihongo I (みんなの日本語 初級 I)',
+    subtitle: 'Minna no Nihongo N5',
+    level: 'N5',
+    series: 'minna',
+    color: 'var(--color-accent-text)',
+    bg: 'var(--color-bg-surface)',
+    border: 'var(--color-border)',
+  },
+  {
+    id: 'minna_n4',
+    title: 'Minna no Nihongo II (みんなの日本語 初級 II)',
+    subtitle: 'Minna no Nihongo N4',
+    level: 'N4',
+    series: 'minna',
+    color: 'var(--color-accent-text)',
+    bg: 'var(--color-bg-surface)',
+    border: 'var(--color-border)',
+  },
+  {
     id: 'shinkanzen_n3',
     title: 'Shinkanzen Master N3 (新完全マスター)',
     subtitle: 'Shinkanzen Master N3',
     level: 'N3',
+    series: 'shinkanzen',
     color: 'var(--color-accent-text)',
     bg: 'var(--color-bg-surface)',
     border: 'var(--color-border)',
@@ -41,6 +62,7 @@ const GRAMMAR_CATALOG = [
     title: 'Mimikara Oboeru N3 (耳から覚える文法)',
     subtitle: 'Mimikara Oboeru N3',
     level: 'N3',
+    series: 'mimikara',
     color: 'var(--color-accent-text)',
     bg: 'var(--color-bg-surface)',
     border: 'var(--color-border)',
@@ -50,6 +72,7 @@ const GRAMMAR_CATALOG = [
     title: 'Shinkanzen Master N2 (新完全マスター)',
     subtitle: 'Shinkanzen Master N2',
     level: 'N2',
+    series: 'shinkanzen',
     color: 'var(--color-accent-text)',
     bg: 'var(--color-bg-surface)',
     border: 'var(--color-border)',
@@ -59,10 +82,19 @@ const GRAMMAR_CATALOG = [
     title: 'Shinkanzen Master N1 (新完全マスター)',
     subtitle: 'Shinkanzen Master N1',
     level: 'N1',
+    series: 'shinkanzen',
     color: 'var(--color-accent-text)',
     bg: 'var(--color-bg-surface)',
     border: 'var(--color-border)',
   },
+] as const
+
+const GRAMMAR_LEVEL_FILTERS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
+const GRAMMAR_BOOK_FILTERS = [
+  { id: 'ALL', label: 'Tất cả sách' },
+  { id: 'minna', label: 'Minna no Nihongo' },
+  { id: 'mimikara', label: 'Mimi Kara Oboeru' },
+  { id: 'shinkanzen', label: 'Shinkanzen Master' },
 ] as const
 
 function speakJapanese(text: string) {
@@ -144,8 +176,31 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebouncedValue(searchQuery)
+  const [selectedGrammarLevel, setSelectedGrammarLevel] = useState<string>('ALL')
+  const [selectedGrammarSeries, setSelectedGrammarSeries] = useState<string>('ALL')
+  const [catalogPatternQuery, setCatalogPatternQuery] = useState('')
+  const debouncedCatalogPatternQuery = useDebouncedValue(catalogPatternQuery.trim(), 220)
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const { data: catalogPatternSearchData } = useQuery({
+    queryKey: [
+      'curriculum',
+      'grammar-catalog-search',
+      selectedGrammarLevel,
+      selectedGrammarSeries,
+      debouncedCatalogPatternQuery,
+    ],
+    queryFn: () =>
+      srsApi.fetchCurriculumGrammar({
+        level: selectedGrammarLevel,
+        query: debouncedCatalogPatternQuery,
+        page: 1,
+        limit: 24,
+      }),
+    enabled: !selectedBook && debouncedCatalogPatternQuery.length > 0,
+    staleTime: 30_000,
+  })
 
   // 1. Fetch Lessons for the selected Book
   const {
@@ -359,14 +414,42 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     )
 
   // =========================================================================
-  // VIEW 1: CATALOG OVERVIEW (Chọn bộ giáo trình Ngữ Pháp - media_1788263283117.png)
+  // VIEW 1: CATALOG OVERVIEW (Chọn bộ giáo trình Ngữ Pháp)
   // =========================================================================
   if (!selectedBook) {
     const sections = [
+      { level: 'N5', title: 'Ngữ pháp Sơ cấp N5', subtitle: 'Minna no Nihongo I' },
+      { level: 'N4', title: 'Ngữ pháp Sơ trung cấp N4', subtitle: 'Minna no Nihongo II' },
       { level: 'N3', title: 'Ngữ pháp Chuyên sâu N3', subtitle: 'Shinkanzen & Mimikara N3' },
       { level: 'N2', title: 'Ngữ pháp Chuyên sâu N2', subtitle: 'Shinkanzen Master N2' },
       { level: 'N1', title: 'Ngữ pháp Chuyên sâu N1', subtitle: 'Shinkanzen Master N1' },
     ] as const
+
+    const matchingPatternItems = (catalogPatternSearchData?.items ?? []).filter((item) => {
+      if (selectedGrammarSeries === 'ALL') return true
+      const code = (item.curriculumCode || '').toLowerCase()
+      return code.includes(selectedGrammarSeries)
+    })
+
+    const visibleSections = sections
+      .filter((section) => selectedGrammarLevel === 'ALL' || section.level === selectedGrammarLevel)
+      .map((section) => ({
+        ...section,
+        books: GRAMMAR_CATALOG.filter((b) => {
+          if (b.level !== section.level) return false
+          if (selectedGrammarSeries !== 'ALL' && b.series !== selectedGrammarSeries) return false
+          if (catalogPatternQuery.trim()) {
+            const q = catalogPatternQuery.trim().toLowerCase()
+            return (
+              b.title.toLowerCase().includes(q) ||
+              b.subtitle.toLowerCase().includes(q) ||
+              b.level.toLowerCase().includes(q)
+            )
+          }
+          return true
+        }),
+      }))
+      .filter((section) => section.books.length > 0)
 
     return (
       <div className="nhaikanji-container washi-page">
@@ -378,17 +461,76 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           description="Học ngữ pháp theo từng bài: đọc giải thích, xem ví dụ và luyện ghi nhớ bằng thẻ ôn tập."
         />
 
-        {sections.map((section) => (
-          <section key={section.level} className="bunpo-section">
-            <div className="washi-section-head">
-              <h2>{section.title}</h2>
-              <span>{section.subtitle}</span>
+        <section className="kanji-ledger-controls" aria-label="Bộ lọc ngữ pháp" style={{ marginBottom: '1.5rem' }}>
+          <div
+            className="kanji-ledger-row-a"
+            style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}
+          >
+            <div className="nhaikanji-tab-group" role="tablist" aria-label="Lọc ngữ pháp theo cấp độ">
+              {GRAMMAR_LEVEL_FILTERS.map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedGrammarLevel === lvl}
+                  className={`nhaikanji-tab-btn${selectedGrammarLevel === lvl ? ' is-active' : ''}`}
+                  onClick={() => setSelectedGrammarLevel(lvl)}
+                >
+                  <span>{lvl === 'ALL' ? 'Tất cả' : lvl}</span>
+                </button>
+              ))}
             </div>
 
+            <div className="curriculum-search-box" style={{ minWidth: '15rem' }}>
+              <Search size={15} className="curriculum-search-box__icon" aria-hidden="true" />
+              <input
+                type="search"
+                className="curriculum-search-box__input"
+                placeholder="Tìm mẫu ngữ pháp hoặc tên sách..."
+                value={catalogPatternQuery}
+                onChange={(e) => setCatalogPatternQuery(e.target.value)}
+                aria-label="Tìm mẫu ngữ pháp"
+              />
+            </div>
+          </div>
+
+          <div
+            className="curriculum-series-bar"
+            role="tablist"
+            aria-label="Lọc ngữ pháp theo cuốn sách"
+            style={{ marginTop: '0.55rem', marginBottom: 0 }}
+          >
+            <span className="curriculum-series-bar__label">Cuốn sách:</span>
+            <div className="curriculum-series-bar__list">
+              {GRAMMAR_BOOK_FILTERS.map((book) => {
+                const isActive = selectedGrammarSeries === book.id
+                return (
+                  <button
+                    key={book.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`curriculum-series-btn${isActive ? ' is-active' : ''}`}
+                    onClick={() => setSelectedGrammarSeries(book.id)}
+                  >
+                    {book.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
+        {debouncedCatalogPatternQuery && matchingPatternItems.length > 0 && (
+          <section className="bunpo-section" aria-label="Mẫu ngữ pháp phù hợp">
+            <div className="washi-section-head">
+              <h2>Mẫu ngữ pháp khớp “{debouncedCatalogPatternQuery}”</h2>
+              <span>{matchingPatternItems.length} kết quả</span>
+            </div>
             <div className="bunpo-folio-grid">
-              {GRAMMAR_CATALOG.filter((b) => b.level === section.level).map((book) => (
+              {matchingPatternItems.map((item) => (
                 <div
-                  key={book.id}
+                  key={item.id}
                   role="button"
                   tabIndex={0}
                   className="bunpo-folio-card"
@@ -398,27 +540,74 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       event.currentTarget.click()
                     }
                   }}
-                  onClick={() => setSelectedBook(book.id)}
+                  onClick={() => {
+                    setSelectedBook(item.curriculumCode || 'shinkanzen_n3')
+                    setSelectedLesson(item.lessonId || '1')
+                  }}
                 >
                   <div className="bunpo-folio-card__head">
                     <div>
-                      <span className="bunpo-folio-card__sub">{book.subtitle}</span>
-                      <h3 className="bunpo-folio-card__title">{book.title}</h3>
+                      <span className="bunpo-folio-card__sub">
+                        {item.level} · {item.lessonTitle}
+                      </span>
+                      <h3 className="bunpo-folio-card__title">{item.pattern}</h3>
                     </div>
-                    <div className="bunpo-folio-card__seal" aria-hidden="true">
-                      <GraduationCap size={20} />
-                    </div>
+                    <Badge variant="primary">{item.level}</Badge>
                   </div>
-
-                  <div className="bunpo-folio-card__footer">
-                    <Badge variant="primary">{catalogBadge(book.id)}</Badge>
-                    <span className="bunpo-folio-card__cta">Vào học ngay →</span>
-                  </div>
+                  <p style={{ margin: '0.35rem 0 0', fontSize: '0.86rem', color: 'var(--color-text-secondary)' }}>
+                    {item.shortMeaning || item.structure}
+                  </p>
                 </div>
               ))}
             </div>
           </section>
-        ))}
+        )}
+
+        {visibleSections.length === 0 && !debouncedCatalogPatternQuery ? (
+          <EmptyState title="Không có giáo trình phù hợp" description="Thử chọn lại cấp độ JLPT hoặc bộ sách khác." />
+        ) : (
+          visibleSections.map((section) => (
+            <section key={section.level} className="bunpo-section">
+              <div className="washi-section-head">
+                <h2>{section.title}</h2>
+                <span>{section.subtitle}</span>
+              </div>
+
+              <div className="bunpo-folio-grid">
+                {section.books.map((book) => (
+                  <div
+                    key={book.id}
+                    role="button"
+                    tabIndex={0}
+                    className="bunpo-folio-card"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        event.currentTarget.click()
+                      }
+                    }}
+                    onClick={() => setSelectedBook(book.id)}
+                  >
+                    <div className="bunpo-folio-card__head">
+                      <div>
+                        <span className="bunpo-folio-card__sub">{book.subtitle}</span>
+                        <h3 className="bunpo-folio-card__title">{book.title}</h3>
+                      </div>
+                      <div className="bunpo-folio-card__seal" aria-hidden="true">
+                        <GraduationCap size={20} />
+                      </div>
+                    </div>
+
+                    <div className="bunpo-folio-card__footer">
+                      <Badge variant="primary">{catalogBadge(book.id)}</Badge>
+                      <span className="bunpo-folio-card__cta">Vào học ngay →</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
       </div>
     )
   }

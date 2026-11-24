@@ -1,5 +1,5 @@
 import { UrlStateProvider } from './components/UrlStateProvider'
-import { lazy, startTransition, Suspense, useEffect, useRef } from 'react'
+import { lazy, startTransition, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import TopNav from './components/TopNav'
 import AppErrorBoundary from './components/AppErrorBoundary'
@@ -11,6 +11,7 @@ import ArtisticPreloader from './components/ArtisticPreloader'
 import HomeInkCursor from './components/HomeInkCursor'
 import WashiPageTransition from './components/WashiPageTransition'
 import { sumiAudio } from './features/dictionary/sumiAudio'
+import { DictionaryOverlay } from './features/dictionary/DictionaryOverlay'
 import { getPageAccess, hasPermission } from './features/auth/permissions'
 import { getPageFromPath, getRoute, PAGE_PATHS, type Page } from './types/app'
 
@@ -54,6 +55,7 @@ function AppWithBoundary() {
 
 function AppContent() {
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const [isDictOverlayOpen, setIsDictOverlayOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { status, user, sessionExpired, signOut } = useAuth()
@@ -88,35 +90,23 @@ function AppContent() {
       })
     }
   }
-  const openQuickSearch = () => {
-    goTo('dictionary')
-    window.setTimeout(() => {
-      searchInputRef.current?.focus()
-    }, 80)
-  }
+  const openQuickSearch = useCallback(() => {
+    setIsDictOverlayOpen(true)
+  }, [])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
-      const active = document.activeElement
-      if (
-        active instanceof HTMLElement &&
-        (active.tagName === 'INPUT' ||
-          active.tagName === 'TEXTAREA' ||
-          active.tagName === 'SELECT' ||
-          active.isContentEditable)
-      ) {
-        return
-      }
       event.preventDefault()
-      openQuickSearch()
+      setIsDictOverlayOpen((prev) => !prev)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  })
+  }, [])
 
   const isAuthenticated = status === 'authenticated'
-  const canRenderBeforeSessionRestore = page === 'home' || page === 'dictionary' || page === 'jlpt' || page === 'anime'
+  const canRenderBeforeSessionRestore =
+    page === 'home' || page === 'dictionary' || page === 'dictionaryDeep' || page === 'jlpt' || page === 'anime'
   useEffect(() => {
     // Preload the primary destinations only after the first paint. The initial
     // screen remains fast, while navigation does not wait for a new chunk.
@@ -203,13 +193,18 @@ function AppContent() {
           <Suspense fallback={<PageSkeleton label="Đang tải trang…" compact />}>
             {page === 'home' && <HomePage setPage={goTo} isAuthenticated={isAuthenticated} userName={user?.name} />}
             {page === 'onboarding' && <OnboardingPage onNavigate={goTo} />}
-            {page === 'dictionary' && <DictionaryPage inputRef={searchInputRef} onReview={() => goTo('review')} />}
+            {page === 'dictionary' && (
+              <DictionaryPage inputRef={searchInputRef} mode="library" onReview={() => goTo('review')} />
+            )}
+            {page === 'dictionaryDeep' && (
+              <DictionaryPage inputRef={searchInputRef} mode="deep" onReview={() => goTo('review')} />
+            )}
             {page === 'jlpt' && <JlptPage />}
             {page === 'anime' && <AnimePage />}
             {page === 'review' && (
               <ReviewPage
                 onDictionary={(query) =>
-                  navigate(`${PAGE_PATHS.dictionary}${query ? `?q=${encodeURIComponent(query)}` : ''}`)
+                  navigate(`${PAGE_PATHS.dictionaryDeep}${query ? `?q=${encodeURIComponent(query)}` : ''}`)
                 }
               />
             )}
@@ -234,6 +229,7 @@ function AppContent() {
           </Suspense>
         )}
       </main>
+      <DictionaryOverlay isOpen={isDictOverlayOpen} onClose={() => setIsDictOverlayOpen(false)} />
     </div>
   )
 }

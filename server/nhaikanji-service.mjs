@@ -769,12 +769,15 @@ function normalizeHackNaoKanji(item, level, index, allInLevel) {
       ? allInLevel[index + 1].kanji
       : undefined
 
+  const tapNum = Number(item?.tap)
+
   const summary = {
     kanji,
     hanzi,
     meaning_vi: meaningVi,
     meaning_en: radicalMeaning,
     jlpt_level: jlptLevel,
+    ...(Number.isInteger(tapNum) && tapNum > 0 ? { tap: tapNum } : {}),
     onyomi,
     kunyomi,
     stroke_count: strokeCount,
@@ -1114,10 +1117,25 @@ export class NhaiKanjiService {
     return counts
   }
 
-  getKanjiList({ level, query = '', radical = '', strokeMin, strokeMax, page = 1, limit = 50, sort = 'default' } = {}) {
+  getKanjiList({
+    level,
+    tap,
+    query = '',
+    radical = '',
+    strokeMin,
+    strokeMax,
+    page = 1,
+    limit = 50,
+    sort = 'default',
+  } = {}) {
     this.ensureLoaded()
     const catalogCounts = this.computeLevelCounts(this.kanjiSummaryList)
     let results = this.kanjiSummaryList
+
+    const tapNum = Number(tap)
+    if (Number.isInteger(tapNum) && tapNum > 0) {
+      results = results.filter((k) => Number(k.tap) === tapNum)
+    }
 
     if (radical && String(radical).trim()) {
       const rawRad = String(radical).trim()

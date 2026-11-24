@@ -12,6 +12,12 @@ import { srsApi } from '../srs/srsApi'
 import { useAuth } from '../auth/authContext'
 
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
+const KANJI_BOOK_FILTERS = [
+  { id: 'ALL', label: 'Tất cả sách' },
+  { id: '1', label: 'Hack Não Tập 1' },
+  { id: '2', label: 'Hack Não Tập 2' },
+  { id: '3', label: 'Hack Não Tập 3' },
+] as const
 const DEFAULT_LIMIT = 48
 
 function getVisiblePages(currentPage: number, totalPages: number): (number | string)[] {
@@ -40,6 +46,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
   const ledgerTopRef = useRef<HTMLDivElement>(null)
 
   const [selectedLevel, setSelectedLevel] = useUrlState<string>('klevel', 'ALL', JLPT_LEVELS)
+  const [selectedBook, setSelectedBook] = useUrlState<string>('kbook', 'ALL', ['ALL', '1', '2', '3'])
   const [urlKanjiChar, setUrlKanjiChar] = useUrlState<string>('kanji', '')
 
   const [searchQuery, setSearchQuery] = useState(query ?? '')
@@ -62,12 +69,14 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
   }, [query])
 
   const effectiveLimit = onlySaved ? 3000 : DEFAULT_LIMIT
+  const selectedTap = selectedBook === 'ALL' ? undefined : Number(selectedBook)
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['nhaikanji', 'kanjiList', selectedLevel, debouncedSearchQuery, page, effectiveLimit],
+    queryKey: ['nhaikanji', 'kanjiList', selectedLevel, selectedBook, debouncedSearchQuery, page, effectiveLimit],
     queryFn: () =>
       nhaikanjiApi.fetchKanjiList({
         level: selectedLevel,
+        ...(selectedTap ? { tap: selectedTap } : {}),
         query: debouncedSearchQuery,
         page: onlySaved ? 1 : page,
         limit: effectiveLimit,
@@ -200,6 +209,7 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
   const resetAllFilters = () => {
     setSearchQuery('')
     setSelectedLevel('ALL')
+    setSelectedBook('ALL')
     setOnlySaved(false)
     setPage(1)
   }
@@ -246,7 +256,8 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
     return () => window.removeEventListener('keydown', onKey)
   }, [studyMode, viewMode, selectedKanji, displayedItems.length])
 
-  const hasActiveFilters = selectedLevel !== 'ALL' || onlySaved || Boolean(debouncedSearchQuery)
+  const hasActiveFilters =
+    selectedLevel !== 'ALL' || selectedBook !== 'ALL' || onlySaved || Boolean(debouncedSearchQuery)
 
   if (isError && viewMode !== 'ink') {
     return (
@@ -400,6 +411,35 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                   <Bookmark size={14} aria-hidden="true" />
                   <span>Đã lưu{savedKanjiSet.size > 0 ? ` (${savedKanjiSet.size})` : ''}</span>
                 </button>
+              </div>
+            </div>
+
+            <div
+              className="curriculum-series-bar"
+              role="tablist"
+              aria-label="Lọc Hán tự theo cuốn sách"
+              style={{ marginTop: '0.55rem', marginBottom: 0 }}
+            >
+              <span className="curriculum-series-bar__label">Cuốn sách:</span>
+              <div className="curriculum-series-bar__list">
+                {KANJI_BOOK_FILTERS.map((book) => {
+                  const isActive = selectedBook === book.id
+                  return (
+                    <button
+                      key={book.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`curriculum-series-btn${isActive ? ' is-active' : ''}`}
+                      onClick={() => {
+                        setSelectedBook(book.id)
+                        setPage(1)
+                      }}
+                    >
+                      {book.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </section>

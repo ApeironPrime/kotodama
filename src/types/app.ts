@@ -4,6 +4,7 @@ export type Page =
   | 'vocabulary'
   | 'bunpo'
   | 'dictionary'
+  | 'dictionaryDeep'
   | 'kanji'
   | 'jlpt'
   | 'anime'
@@ -37,7 +38,8 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { page: 'onboarding', path: '/bat-dau', title: 'Tạo lộ trình học' },
   { page: 'vocabulary', path: '/tu-vung', title: 'Từ vựng N5-N1' },
   { page: 'bunpo', path: '/bunpo', title: 'Ngữ pháp N5-N1' },
-  { page: 'dictionary', path: '/tra-tu', title: 'Tra từ điển tiếng Nhật' },
+  { page: 'dictionary', path: '/tra-tu', title: 'Thư viện học liệu' },
+  { page: 'dictionaryDeep', path: '/dictionary', title: 'Tra từ điển chuyên sâu' },
   { page: 'kanji', path: '/kanji', title: 'Hán tự & Chiết tự' },
   { page: 'jlpt', path: '/jlpt', title: 'Luyện thi JLPT' },
   { page: 'anime', path: '/anime', title: 'Học tiếng Nhật qua Anime' },

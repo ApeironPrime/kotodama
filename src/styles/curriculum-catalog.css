@@ -96,6 +96,58 @@
   flex-wrap: wrap;
 }
 
+.curriculum-series-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: calc(var(--space-6) * -0.5);
+  margin-bottom: var(--space-6);
+  padding: 0.25rem 0 0.65rem;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(215, 205, 190, 0.55));
+}
+
+.curriculum-series-bar__label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary, #6b6359);
+}
+
+.curriculum-series-bar__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.curriculum-series-btn {
+  padding: 0.28rem 0.65rem;
+  border: 1px solid var(--color-border, rgba(34, 29, 24, 0.14));
+  border-radius: 3px;
+  background: var(--color-bg-surface, #fdfbf7);
+  color: var(--color-text-secondary, #575249);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.curriculum-series-btn:hover {
+  border-color: rgba(184, 46, 46, 0.4);
+  color: var(--color-text, #1e1d1a);
+}
+
+.curriculum-series-btn.is-active {
+  border-color: #b82e2e;
+  background: rgba(184, 46, 46, 0.08);
+  color: #9f2626;
+  font-weight: 600;
+}
+
 /* Classical Woodblock Bookmark Tabs (Mokuhan Shiori 木版・栞) */
 .curriculum-level-filters {
   display: flex;

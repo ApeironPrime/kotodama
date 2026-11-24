@@ -67,10 +67,11 @@ export const apiPaths = {
       page = 1,
       limit = 50,
       sort?: string,
-      extra?: { radical?: string; strokeMin?: number; strokeMax?: number }
+      extra?: { radical?: string; strokeMin?: number; strokeMax?: number; tap?: number }
     ) => {
       let url = `/api/v1/nhaikanji/kanji?level=${encodeURIComponent(level)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`
       if (sort && sort !== 'default') url += `&sort=${encodeURIComponent(sort)}`
+      if (extra?.tap && extra.tap > 0) url += `&tap=${extra.tap}`
       if (extra?.radical) url += `&radical=${encodeURIComponent(extra.radical)}`
       if (extra?.strokeMin && extra.strokeMin > 0) url += `&strokeMin=${extra.strokeMin}`
       if (extra?.strokeMax && extra.strokeMax > 0) url += `&strokeMax=${extra.strokeMax}`

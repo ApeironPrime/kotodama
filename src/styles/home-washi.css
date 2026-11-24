@@ -203,10 +203,20 @@ html .showcase-home.showcase-home {
 .app-shell .nav-bar--home {
   --nav-sumi: var(--color-text);
   --nav-vermilion: var(--color-accent);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky, 200);
   background: color-mix(in srgb, var(--color-bg-canvas) 95%, var(--color-bg-subtle));
   border-bottom: 1px solid var(--color-border);
   box-shadow: none;
   backdrop-filter: blur(18px);
+  transition:
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+.app-shell .nav-bar--home.is-scrolled {
+  box-shadow: 0 4px 16px rgba(30, 29, 26, 0.06);
+  border-bottom-color: rgba(30, 29, 26, 0.14);
 }
 .app-shell .nav-bar--home::after {
   position: absolute;

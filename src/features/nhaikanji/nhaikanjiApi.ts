@@ -35,6 +35,7 @@ export const nhaikanjiApi = {
   async fetchKanjiList(
     params: {
       level?: string
+      tap?: number
       query?: string
       radical?: string
       strokeMin?: number
@@ -46,6 +47,7 @@ export const nhaikanjiApi = {
   ): Promise<KanjiListResponse> {
     const {
       level = 'ALL',
+      tap,
       query = '',
       radical = '',
       strokeMin,
@@ -55,8 +57,9 @@ export const nhaikanjiApi = {
       sort = 'default',
     } = params
     const extra =
-      radical || strokeMin || strokeMax
+      radical || strokeMin || strokeMax || (tap && tap > 0)
         ? {
+            ...(tap && tap > 0 ? { tap } : {}),
             ...(radical ? { radical } : {}),
             ...(strokeMin ? { strokeMin } : {}),
             ...(strokeMax ? { strokeMax } : {}),
