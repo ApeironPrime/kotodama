@@ -781,7 +781,10 @@ async function route(request, response) {
     const char = decodeURIComponent(nhaikanjiDetailMatch[1])
     const detail = nhaiKanjiService.getKanjiDetail(char)
     if (!detail) return fail(response, 404, 'Không tìm thấy Hán tự này.', 'KANJI_NOT_FOUND')
-    return respond(detail)
+    return respond({
+      ...detail,
+      hasIllustration: Boolean(getKanjiIllustrationFile(detail.kanji || char)),
+    })
   }
 
   // Illustration image endpoint: GET /api/v1/nhaikanji/illustration/:kanji

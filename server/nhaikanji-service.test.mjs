@@ -871,7 +871,16 @@ test('NhaiKanjiService supports radical family filtering, stroke bounds, romaji/
   assert.equal(waterRad.nameVi, 'Thủy')
   assert.equal(waterRad.count, 2)
 
-  // 5. Detail relatedByRadical & relatedByHanzi
+  // 5. Detail relatedByRadical, relatedByHanzi, phonetics, and Radical Monograph fallback
   const detailWater = service.getKanjiDetail('水')
   assert.ok(detailWater.relatedByRadical.some((k) => k.kanji === '海'))
+  assert.equal(detailWater.phonetics.onyomiRomaji, 'sui')
+  assert.equal(detailWater.phonetics.kunyomiRomaji, 'mizu')
+
+  const radicalDetail = service.getKanjiDetail('氵')
+  assert.ok(radicalDetail)
+  assert.equal(radicalDetail.isRadicalOnly, true)
+  assert.equal(radicalDetail.summary.jlpt_level, 'Bộ thủ')
+  assert.ok(radicalDetail.relatedByRadical.some((k) => k.kanji === '水' || k.kanji === '海'))
+  assert.equal(service.getKanjiDetail('NON_EXISTENT_KANJI'), null)
 })

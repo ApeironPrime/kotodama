@@ -191,11 +191,24 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
       return
     }
     try {
-      const res = await nhaikanjiApi.fetchKanjiList({ query: char, limit: 5 })
-      const exact = res.items.find((item) => item.kanji === char) ?? res.items[0]
-      if (exact) openKanjiModal(exact)
+      const res = await nhaikanjiApi.fetchKanjiList({ query: char, limit: 10 })
+      const exact = res.items.find((item) => item.kanji === char)
+      if (exact) {
+        openKanjiModal(exact)
+        return
+      }
     } catch {
-      // ignore
+      // ignore and fall back to detail lookup
+    }
+    if (typeof nhaikanjiApi.fetchKanjiDetail === 'function') {
+      try {
+        const detailRes = await nhaikanjiApi.fetchKanjiDetail(char)
+        if (detailRes?.summary) {
+          openKanjiModal(detailRes.summary)
+        }
+      } catch {
+        // ignore
+      }
     }
   }
 

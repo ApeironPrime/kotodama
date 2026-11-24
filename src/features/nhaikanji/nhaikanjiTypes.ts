@@ -86,6 +86,8 @@ export type KanjiVocabExample = {
 
 export type KanjiDetailData = {
   kanji: string
+  isRadicalOnly?: boolean
+  hasIllustration?: boolean
   summary: KanjiSummary | null
   detail: {
     kanji: string
@@ -107,6 +109,11 @@ export type KanjiDetailData = {
   } | null
   relatedByRadical?: KanjiSummary[]
   relatedByHanzi?: KanjiSummary[]
+  phonetics?: {
+    onyomiRomaji?: string
+    kunyomiRomaji?: string
+  }
+  secondaryMeanings?: string[]
 }
 
 export type BunpoItem = {

@@ -5,6 +5,7 @@ import {
   toCanonicalRadicalGlyph,
   toRadicalFamilyGlyph,
   getRadicalMetadata,
+  getRadicalMeaningByGlyph,
 } from './radical-dictionary.mjs'
 
 // Helper to remove Vietnamese diacritics for flexible search
@@ -22,6 +23,157 @@ function removeVietnameseTones(str) {
 function katakanaToHiragana(str) {
   if (!str) return ''
   return String(str).replace(/[\u30a1-\u30f6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+}
+
+const HIRA_TO_ROMAJI = {
+  きゃ: 'kya',
+  きゅ: 'kyu',
+  きょ: 'kyo',
+  しゃ: 'sha',
+  しゅ: 'shu',
+  しょ: 'sho',
+  ちゃ: 'cha',
+  ちゅ: 'chu',
+  ちょ: 'cho',
+  にゃ: 'nya',
+  にゅ: 'nyu',
+  にょ: 'nyo',
+  ひゃ: 'hya',
+  ひゅ: 'hyu',
+  ひょ: 'hyo',
+  みゃ: 'mya',
+  みゅ: 'myu',
+  みょ: 'myo',
+  りゃ: 'rya',
+  りゅ: 'ryu',
+  りょ: 'ryo',
+  ぎゃ: 'gya',
+  ぎゅ: 'gyu',
+  ぎょ: 'gyo',
+  じゃ: 'ja',
+  じゅ: 'ju',
+  じょ: 'jo',
+  びゃ: 'bya',
+  びゅ: 'byu',
+  びょ: 'byo',
+  ぴゃ: 'pya',
+  ぴゅ: 'pyu',
+  ぴょ: 'pyo',
+  あ: 'a',
+  い: 'i',
+  う: 'u',
+  え: 'e',
+  お: 'o',
+  か: 'ka',
+  き: 'ki',
+  く: 'ku',
+  け: 'ke',
+  こ: 'ko',
+  さ: 'sa',
+  し: 'shi',
+  す: 'su',
+  せ: 'se',
+  そ: 'so',
+  た: 'ta',
+  ち: 'chi',
+  つ: 'tsu',
+  て: 'te',
+  と: 'to',
+  な: 'na',
+  に: 'ni',
+  ぬ: 'nu',
+  ね: 'ne',
+  の: 'no',
+  は: 'ha',
+  ひ: 'hi',
+  ふ: 'fu',
+  へ: 'he',
+  ほ: 'ho',
+  ま: 'ma',
+  み: 'mi',
+  む: 'mu',
+  め: 'me',
+  も: 'mo',
+  や: 'ya',
+  ゆ: 'yu',
+  よ: 'yo',
+  ら: 'ra',
+  り: 'ri',
+  る: 'ru',
+  れ: 're',
+  ろ: 'ro',
+  わ: 'wa',
+  を: 'wo',
+  ん: 'n',
+  が: 'ga',
+  ぎ: 'gi',
+  ぐ: 'gu',
+  げ: 'ge',
+  ご: 'go',
+  ざ: 'za',
+  じ: 'ji',
+  ず: 'zu',
+  ぜ: 'ze',
+  ぞ: 'zo',
+  だ: 'da',
+  ぢ: 'ji',
+  づ: 'zu',
+  で: 'de',
+  ど: 'do',
+  ば: 'ba',
+  び: 'bi',
+  ぶ: 'bu',
+  べ: 'be',
+  ぼ: 'bo',
+  ぱ: 'pa',
+  ぴ: 'pi',
+  ぷ: 'pu',
+  ぺ: 'pe',
+  ぽ: 'po',
+  ぁ: 'a',
+  ぃ: 'i',
+  ぅ: 'u',
+  ぇ: 'e',
+  ぉ: 'o',
+}
+
+function kanaToRomaji(raw) {
+  if (!raw) return ''
+  const parts = String(raw)
+    .split(/[,、;；/\s]+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+
+  const convertOne = (token) => {
+    const clean = katakanaToHiragana(token).replace(/[.\-・（）()~〜]/g, '')
+    let out = ''
+    for (let i = 0; i < clean.length; i++) {
+      const ch = clean[i]
+      if (ch === 'っ' && i + 1 < clean.length) {
+        const nextTwo = clean.slice(i + 1, i + 3)
+        const nextRom = HIRA_TO_ROMAJI[nextTwo] || HIRA_TO_ROMAJI[clean[i + 1]] || ''
+        if (nextRom) out += nextRom[0]
+        continue
+      }
+      if (ch === 'ー' && out.length > 0) {
+        out += out[out.length - 1]
+        continue
+      }
+      const pair = clean.slice(i, i + 2)
+      if (HIRA_TO_ROMAJI[pair]) {
+        out += HIRA_TO_ROMAJI[pair]
+        i++
+        continue
+      }
+      if (HIRA_TO_ROMAJI[ch]) {
+        out += HIRA_TO_ROMAJI[ch]
+      }
+    }
+    return out
+  }
+
+  return parts.map(convertOne).filter(Boolean).join(', ')
 }
 
 const ROMAJI_TABLE = [
@@ -1058,12 +1210,101 @@ export class NhaiKanjiService {
     const summary = this.kanjiMap.get(kanjiChar)
     const fullData = this.loadFullKanjiJson()
     const detail = fullData[kanjiChar] || null
+    const jlptOrder = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 }
 
     if (!summary && !detail) {
-      return null
+      const trimmed = String(kanjiChar || '').trim()
+      const codePoints = [...trimmed]
+      const isSingleRadicalOrKanji =
+        this.kanjiSummaryList.length > 0 && codePoints.length === 1 && /^[\u2e80-\u2fd5\u3400-\u9fff]$/u.test(trimmed)
+      if (!isSingleRadicalOrKanji) {
+        return null
+      }
+
+      const canonChar = toCanonicalRadicalGlyph(trimmed)
+      const radMeta = getRadicalMetadata(canonChar)
+      const relatedByRadical = this.kanjiSummaryList
+        .filter(
+          (k) =>
+            k.radical_utf === canonChar ||
+            k.radical_utf === trimmed ||
+            (radMeta.family && k.radical_family === radMeta.family) ||
+            (Array.isArray(k.storyComponents) && k.storyComponents.includes(canonChar))
+        )
+        .sort(
+          (a, b) =>
+            (jlptOrder[(a.jlpt_level || '').toUpperCase()] || 99) -
+            (jlptOrder[(b.jlpt_level || '').toUpperCase()] || 99)
+        )
+        .slice(0, 10)
+
+      if (!radMeta.nameVi && relatedByRadical.length === 0) {
+        return null
+      }
+
+      const meaningVi =
+        getRadicalMeaningByGlyph(canonChar) ||
+        relatedByRadical.find((k) => k.radical_meaning)?.radical_meaning ||
+        'Bộ thủ cấu tạo chữ Hán'
+      const hanziTitle = radMeta.nameVi ? `BỘ ${radMeta.nameVi.toUpperCase()}` : 'BỘ THỦ'
+      const storyText = `Bộ ${radMeta.nameVi || canonChar} (${canonChar}) — ${meaningVi}. Thường dùng làm thành phần biểu ý hoặc chỉ loại trong chữ Hán.`
+      const sampleExamples = relatedByRadical.slice(0, 8).map((k, idx) => ({
+        id: `rad-${canonChar}-${idx}`,
+        word: k.kanji,
+        reading: k.onyomi || k.kunyomi || '',
+        meaning: k.meaning_vi,
+        yinHan: k.hanzi,
+      }))
+
+      const syntheticSummary = {
+        kanji: canonChar,
+        hanzi: hanziTitle,
+        meaning_vi: meaningVi,
+        meaning_en: meaningVi,
+        jlpt_level: 'Bộ thủ',
+        onyomi: '',
+        kunyomi: '',
+        stroke_count: radMeta.strokeCount || '—',
+        radical_utf: canonChar,
+        radical_family: radMeta.family || canonChar,
+        radical_vi_name: radMeta.nameVi || '',
+        radical_name_ja: '部首',
+        radical_meaning: meaningVi,
+        story: storyText,
+        num_vocab_examples: sampleExamples.length,
+      }
+
+      const syntheticDetail = {
+        kanji: canonChar,
+        kanjiInfo: {
+          id: `radical-${canonChar}`,
+          hanzi: hanziTitle,
+          meaning: meaningVi,
+          story: storyText,
+          jlptLevel: 'Bộ thủ',
+          kanjialiveData: {
+            rad_name_ja: '部首',
+            onyomi_ja: '',
+            kunyomi_ja: '',
+            rad_utf: canonChar,
+            rad_meaning: meaningVi,
+            examples: sampleExamples,
+          },
+        },
+      }
+
+      return {
+        kanji: canonChar,
+        isRadicalOnly: true,
+        summary: syntheticSummary,
+        detail: syntheticDetail,
+        relatedByRadical,
+        relatedByHanzi: [],
+        phonetics: { onyomiRomaji: '', kunyomiRomaji: '' },
+        secondaryMeanings: [],
+      }
     }
 
-    const jlptOrder = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 }
     const targetFamily = summary?.radical_family || toRadicalFamilyGlyph(summary?.radical_utf || '')
     const primaryHanzi = (summary?.hanzi || detail?.kanjiInfo?.hanzi || '').split(/[,;/]/)[0].trim().toUpperCase()
 
@@ -1097,12 +1338,33 @@ export class NhaiKanjiService {
           .slice(0, 6)
       : []
 
+    const onyomiRaw = summary?.onyomi || detail?.kanjiInfo?.kanjialiveData?.onyomi_ja || ''
+    const kunyomiRaw = summary?.kunyomi || detail?.kanjiInfo?.kanjialiveData?.kunyomi_ja || ''
+    const primaryMeaningNorm = removeVietnameseTones(summary?.meaning_vi || '')
+    const examples = detail?.kanjiInfo?.kanjialiveData?.examples || []
+    const secondaryMeanings = []
+    for (const ex of examples) {
+      const m = String(ex?.meaning || '').trim()
+      if (!m || m.length > 48) continue
+      const normM = removeVietnameseTones(m)
+      if (normM === primaryMeaningNorm || secondaryMeanings.some((s) => removeVietnameseTones(s) === normM)) continue
+      if (ex.word === kanjiChar || secondaryMeanings.length < 2) {
+        secondaryMeanings.push(m)
+      }
+      if (secondaryMeanings.length >= 2) break
+    }
+
     return {
       kanji: kanjiChar,
       summary: summary || null,
       detail: detail || null,
       relatedByRadical,
       relatedByHanzi,
+      phonetics: {
+        onyomiRomaji: kanaToRomaji(onyomiRaw),
+        kunyomiRomaji: kanaToRomaji(kunyomiRaw),
+      },
+      secondaryMeanings,
     }
   }
 

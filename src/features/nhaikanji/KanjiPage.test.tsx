@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UrlStateProvider } from '../../components/UrlStateProvider'
 import { KanjiPage } from './KanjiPage'
@@ -58,6 +58,7 @@ const sampleKanji: KanjiSummary[] = [
 
 const sampleDetailWater: KanjiDetailData = {
   kanji: '水',
+  hasIllustration: false,
   summary: sampleKanji[0] ?? null,
   detail: {
     kanji: '水',
@@ -80,6 +81,8 @@ const sampleDetailWater: KanjiDetailData = {
             reading: 'すいようび',
             meaning: 'Thứ Tư',
             yinHan: 'THỦY DIỆU NHẬT',
+            example: '水曜日に会いましょう。',
+            exampleVi: 'Hẹn gặp vào thứ Tư.',
           },
         ],
       },
@@ -87,6 +90,34 @@ const sampleDetailWater: KanjiDetailData = {
   },
   relatedByRadical: sampleKanji[1] ? [sampleKanji[1]] : [],
   relatedByHanzi: [],
+  phonetics: { onyomiRomaji: 'sui', kunyomiRomaji: 'mizu' },
+}
+
+const sampleDetailSea: KanjiDetailData = {
+  kanji: '海',
+  hasIllustration: false,
+  summary: sampleKanji[1] ?? null,
+  detail: {
+    kanji: '海',
+    kanjiInfo: {
+      id: '2',
+      hanzi: 'HẢI',
+      meaning: 'Biển',
+      story: 'Nước (氵) tụ thành biển',
+      jlptLevel: 'N4',
+      kanjialiveData: {
+        rad_name_ja: 'さんずい',
+        onyomi_ja: 'カイ',
+        kunyomi_ja: 'うみ',
+        rad_utf: '氵',
+        rad_meaning: 'Nước',
+        examples: [],
+      },
+    },
+  },
+  relatedByRadical: sampleKanji[0] ? [sampleKanji[0]] : [],
+  relatedByHanzi: [],
+  phonetics: { onyomiRomaji: 'kai', kunyomiRomaji: 'umi' },
 }
 
 function renderKanjiPage(path = '/tra-tu?tab=kanji') {
@@ -127,7 +158,9 @@ describe('KanjiPage Washi Ledger Suite', () => {
       ],
       totalRadicals: 1,
     })
-    vi.mocked(nhaikanjiApi.fetchKanjiDetail).mockResolvedValue(sampleDetailWater)
+    vi.mocked(nhaikanjiApi.fetchKanjiDetail).mockImplementation(async (char: string) =>
+      char === '海' ? sampleDetailSea : sampleDetailWater
+    )
     vi.mocked(nhaikanjiApi.fetchKanjiBrushData).mockResolvedValue(null)
     vi.mocked(nhaikanjiApi.fetchKanjiStrokes).mockResolvedValue({
       kanji: '水',
@@ -181,9 +214,21 @@ describe('KanjiPage Washi Ledger Suite', () => {
 
     // Open KanjiDetailModal
     fireEvent.click(screen.getByText('THỦY'))
-    expect(await screen.findByRole('dialog')).toBeTruthy()
-    expect(await screen.findByText('水曜日')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Nghe phát âm 水曜日' })).toBeTruthy()
-    expect(await screen.findByText('Cùng bộ 水 (Thủy)')).toBeTruthy()
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toBeTruthy()
+    expect(await within(dialog).findByText('水曜日')).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Nghe phát âm 水曜日' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Nghe câu 水曜日に会いましょう。' })).toBeTruthy()
+    expect(within(dialog).queryByRole('button', { name: /Minh họa/ })).toBeNull()
+    expect(await within(dialog).findByText('Cùng bộ 水 (Thủy)')).toBeTruthy()
+
+    // Navigate to peer 海 and verify Exploration Breadcrumb Trail
+    fireEvent.click(within(dialog).getByRole('button', { name: /海\s*HẢI/ }))
+    expect(await within(dialog).findByRole('button', { name: 'Quay lại 水' })).toBeTruthy()
+
+    // Switch to Practice Tab and verify dual dojo mode
+    fireEvent.click(within(dialog).getByRole('button', { name: /Luyện viết nét/i }))
+    expect(within(dialog).getByRole('button', { name: 'Chấm nét chuẩn' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Vung cọ tự do' })).toBeTruthy()
   })
 })

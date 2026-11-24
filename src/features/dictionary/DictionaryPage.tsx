@@ -1517,11 +1517,23 @@ export default function DictionaryPage({
             const target = kanjiListData?.items.find((item) => item.kanji === char)
             if (target) {
               setSelectedKanjiModal(target)
-            } else {
+              return
+            }
+            try {
+              const res = await nhaikanjiApi.fetchKanjiList({ query: char, limit: 10 })
+              const exact = res.items.find((item) => item.kanji === char)
+              if (exact) {
+                setSelectedKanjiModal(exact)
+                return
+              }
+            } catch {
+              // ignore and fall back to detail lookup
+            }
+            if (typeof nhaikanjiApi.fetchKanjiDetail === 'function') {
               try {
-                const res = await nhaikanjiApi.fetchKanjiList({ query: char, limit: 1 })
-                if (res.items && res.items.length > 0 && res.items[0]) {
-                  setSelectedKanjiModal(res.items[0])
+                const detailRes = await nhaikanjiApi.fetchKanjiDetail(char)
+                if (detailRes?.summary) {
+                  setSelectedKanjiModal(detailRes.summary)
                 }
               } catch {
                 // ignore

@@ -6896,16 +6896,55 @@ body:has(.video-study-page) {
 
 /* ─── Shodo Theater Modal (書の舞台・掛軸) ──────────────────────────────── */
 .shodo-theater-overlay {
+  --color-bg-canvas: #faf7f2;
+  --color-bg-subtle: #f5f1e9;
+  --color-bg-surface: #fdfbf7;
+  --color-surface: #fdfbf7;
+  --color-bg-hover: #efe9dd;
+  --color-text: #1e1d1a;
+  --color-text-secondary: #575249;
+  --color-text-muted: #857d72;
+  --color-accent: #b82e2e;
+  --color-accent-hover: #9f2626;
+  --color-accent-text: #9f2626;
+  --color-accent-subtle: rgba(184, 46, 46, 0.08);
+  --color-accent-border: rgba(184, 46, 46, 0.28);
+  --color-border: rgba(34, 29, 24, 0.12);
+  --color-border-subtle: rgba(34, 29, 24, 0.08);
+  --color-border-strong: rgba(34, 29, 24, 0.22);
+  --color-moegi: #3f5e45;
+
   position: fixed;
   inset: 0;
-  background: rgba(18, 16, 15, 0.76);
-  backdrop-filter: blur(10px);
+  background: rgba(18, 16, 15, 0.72);
+  backdrop-filter: blur(8px);
   z-index: 99999;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
   padding: 0;
-  animation: shodo-fade-in 0.25s ease-out;
+  color: var(--color-text);
+  animation: shodo-fade-in 0.2s ease-out;
+}
+
+[data-theme='dark'] .shodo-theater-overlay {
+  --color-bg-canvas: #0d0d15;
+  --color-bg-subtle: #141420;
+  --color-bg-surface: #171722;
+  --color-surface: #171722;
+  --color-bg-hover: #1e1e2c;
+  --color-text: #eaeae0;
+  --color-text-secondary: #b7b5aa;
+  --color-text-muted: #8a887d;
+  --color-accent: #d9534f;
+  --color-accent-hover: #e26b67;
+  --color-accent-text: #f08a86;
+  --color-accent-subtle: rgba(217, 83, 79, 0.16);
+  --color-accent-border: rgba(217, 83, 79, 0.35);
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.22);
+  --color-moegi: #6da378;
 }
 
 @keyframes shodo-fade-in {
@@ -6922,16 +6961,19 @@ body:has(.video-study-page) {
   width: 100%;
   max-width: 780px;
   max-height: 90vh;
-  background-color: #faf8f5;
-  border: 1px solid rgba(210, 195, 175, 0.8);
-  border-radius: 12px;
-  box-shadow:
-    0 20px 50px -10px rgba(0, 0, 0, 0.35),
-    inset 0 0 0 5px var(--color-bg-canvas),
-    inset 0 0 0 6px color-mix(in srgb, var(--color-border) 70%, transparent);
+  background-color: var(--color-bg-canvas);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.35);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+
+.shodo-theater-error-banner {
+  margin: 0;
+  padding: 0.5rem 1.4rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* Stage Header */
@@ -6939,9 +6981,9 @@ body:has(.video-study-page) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem 1.4rem;
-  border-bottom: 1px solid rgba(215, 205, 190, 0.6);
-  background: rgba(250, 248, 245, 0.95);
+  padding: 0.8rem 1.4rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-canvas);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -6949,7 +6991,7 @@ body:has(.video-study-page) {
 .shodo-theater-brand {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 .shodo-theater-hanko {
   display: inline-flex;
@@ -6957,34 +6999,132 @@ body:has(.video-study-page) {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1.5px solid #c23a2b;
-  border-radius: 4px;
-  background: rgba(194, 58, 43, 0.08);
-  color: #c23a2b;
-  font-family: 'Noto Serif JP', serif;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 3px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-family: var(--font-jp-serif);
   font-size: 1.05rem;
   font-weight: 800;
   line-height: 1;
 }
 .shodo-theater-eyebrow {
   display: block;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #78716c;
+  color: var(--color-text-muted);
+}
+.shodo-theater-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  flex-wrap: wrap;
 }
 .shodo-theater-title {
-  font-family: 'Noto Serif JP', serif;
+  font-family: var(--font-jp-serif);
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1c1917;
+  color: var(--color-text);
+}
+.shodo-theater-meta-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-bg-subtle);
 }
 
 .shodo-theater-actions {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 0.75rem;
+}
+
+.shodo-theater-nav-group {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+}
+.shodo-theater-nav-group .shodo-theater-hairline-btn + .shodo-theater-hairline-btn {
+  border-left: 1px solid var(--color-border-subtle);
+}
+.shodo-theater-hairline-btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+/* Exploration History Breadcrumb Bar */
+.shodo-history-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.42rem 1.4rem;
+  background: var(--color-bg-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 0.76rem;
+  overflow-x: auto;
+}
+.shodo-history-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.52rem;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.shodo-history-back:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+.shodo-history-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.shodo-history-crumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.shodo-history-sep {
+  color: var(--color-text-muted);
+}
+.shodo-history-crumb-btn {
+  border: 0;
+  background: transparent;
+  padding: 0.1rem 0.28rem;
+  font-family: var(--font-jp-serif);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 2px;
+}
+.shodo-history-crumb-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-accent-text);
+}
+.shodo-history-current {
+  font-family: var(--font-jp-serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-accent-text);
+  padding: 0 0.2rem;
 }
 
 /* Hairline Hanko Seal button */
@@ -7071,31 +7211,31 @@ body:has(.video-study-page) {
 /* Tabs */
 .shodo-theater-tabs {
   display: flex;
-  border-bottom: 1px solid rgba(215, 205, 190, 0.6);
+  border-bottom: 1px solid var(--color-border);
   padding: 0 1.4rem;
-  background: #faf8f5;
+  background: var(--color-bg-canvas);
   gap: 1.5rem;
 }
 .shodo-theater-tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0.75rem 0;
+  padding: 0.62rem 0;
   border: none;
   background: none;
   font-size: 0.84rem;
   font-weight: 600;
-  color: #78716c;
+  color: var(--color-text-secondary);
   cursor: pointer;
   position: relative;
   transition: color 0.18s ease;
 }
 .shodo-theater-tab:hover {
-  color: #1c1917;
+  color: var(--color-text);
 }
 .shodo-theater-tab.is-active {
-  color: #c23a2b;
-  font-weight: 750;
+  color: var(--color-accent-text);
+  font-weight: 700;
 }
 .shodo-theater-tab.is-active::after {
   content: '';
@@ -7104,13 +7244,13 @@ body:has(.video-study-page) {
   left: 0;
   right: 0;
   height: 2px;
-  background: #c23a2b;
-  border-radius: 1px;
+  background: var(--color-accent);
+  border-radius: 0;
 }
 
 /* Body */
 .shodo-theater-body {
-  padding: 1.5rem;
+  padding: 1.25rem 1.4rem;
   display: flex;
   flex-direction: column;
 }
@@ -7134,6 +7274,19 @@ body:has(.video-study-page) {
   align-items: center;
   justify-content: center;
   text-align: center;
+  margin-top: 0.45rem;
+}
+.shodo-hero-secondary {
+  margin-top: 0.2rem;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+.shodo-hero-meta-line {
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 @keyframes shodo-stroke-appear {
@@ -7379,29 +7532,29 @@ body:has(.video-study-page) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: none;
-  border: 1px solid rgba(215, 205, 190, 0.6);
-  border-radius: 9999px;
-  padding: 0.25rem 0.65rem;
-  color: #57534e;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0.26rem 0.65rem;
+  color: var(--color-text-secondary);
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.16s ease;
 }
 .kanji-stroke-ctrl-btn:hover {
-  border-color: #c23a2b;
-  color: #c23a2b;
-  background: rgba(194, 58, 43, 0.04);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
 }
 .kanji-stroke-ctrl-group {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  background: rgba(245, 240, 232, 0.7);
-  padding: 2px 4px;
-  border-radius: 9999px;
-  border: 1px solid rgba(215, 205, 190, 0.5);
+  gap: 2px;
+  background: var(--color-bg-subtle);
+  padding: 2px 3px;
+  border-radius: 3px;
+  border: 1px solid var(--color-border);
 }
 .kanji-stroke-mini-btn {
   display: inline-flex;
@@ -7687,13 +7840,217 @@ body:has(.video-study-page) {
   border-color: #c23a2b;
 }
 
-/* Practice View */
+.shodo-vocab-kanji-jumps {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+.shodo-vocab-kanji-pill {
+  padding: 0.08rem 0.36rem;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-jp-serif);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    color 0.14s ease,
+    background 0.14s ease;
+}
+.shodo-vocab-kanji-pill:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+.shodo-vocab-ex-jp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.shodo-sentence-audio-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.12rem 0.42rem;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    color 0.14s ease,
+    background 0.14s ease;
+}
+.shodo-sentence-audio-btn:hover,
+.shodo-sentence-audio-btn.is-playing {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+
+/* Practice View & Guided Stroke Quiz */
+.shodo-practice-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.75fr);
+  gap: 2rem;
+  align-items: start;
+  padding: 1.5rem 2rem;
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+}
+@media (max-width: 820px) {
+  .shodo-practice-layout {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+}
 .shodo-practice-view {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem 0;
+  padding: 0.5rem 0;
+}
+.shodo-practice-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+.shodo-practice-mode-switch {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.shodo-practice-mode-btn {
+  padding: 0.34rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.shodo-practice-mode-btn + .shodo-practice-mode-btn {
+  border-left: 1px solid var(--color-border);
+}
+.shodo-practice-mode-btn.is-active {
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+}
+.shodo-quiz-status {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--color-text-secondary);
+}
+.shodo-quiz-status strong {
+  color: var(--color-text);
+}
+.shodo-quiz-complete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.42rem 0.85rem;
+  border: 1px solid var(--color-moegi, #3f5e45);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-moegi, #3f5e45) 10%, transparent);
+  color: var(--color-moegi, #3f5e45);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.shodo-quiz-complete__seal {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-family: var(--font-jp-serif);
+  font-size: 0.74rem;
+}
+.shodo-practice-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--color-border);
+}
+@media (max-width: 820px) {
+  .shodo-practice-aside {
+    padding-left: 0;
+    padding-top: 1rem;
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+}
+.shodo-practice-aside__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.shodo-practice-aside__card:last-child {
+  border-bottom: 0;
+}
+.shodo-practice-aside__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.shodo-practice-aside__hanzi {
+  font-size: 1.1rem;
+  color: var(--color-accent-text);
+  letter-spacing: 0.06em;
+}
+.shodo-practice-aside__meaning {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--color-text);
+}
+.shodo-practice-aside__rad {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.shodo-practice-aside__rad > span {
+  font-family: var(--font-jp-serif);
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--color-accent-text);
+}
+.shodo-practice-aside__rad strong {
+  display: block;
+  font-size: 0.84rem;
+}
+.shodo-practice-aside__rad small {
+  font-size: 0.74rem;
+  color: var(--color-text-secondary);
+}
+.shodo-practice-aside__story {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  font-style: italic;
 }
 .shodo-practice-title {
   font-size: 1.05rem;
@@ -7785,17 +8142,31 @@ body:has(.video-study-page) {
 .shodo-theater-scroll--wide {
   max-width: 100%;
   width: 100%;
-  height: 100%;
-  max-height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   border-radius: 0;
   border: none;
   box-shadow: none;
-  animation: kanji-modal-slide-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overflow: hidden;
+  animation: kanji-modal-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (max-width: 960px) {
+  .shodo-theater-scroll--wide {
+    overflow-y: auto;
+  }
+}
+@media (min-width: 961px) {
+  .shodo-theater-scroll--wide .shodo-theater-body {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
 }
 @keyframes kanji-modal-slide-in {
   from {
     opacity: 0;
-    transform: scale(0.98) translateY(16px);
+    transform: scale(0.99) translateY(10px);
   }
   to {
     opacity: 1;
@@ -7806,26 +8177,24 @@ body:has(.video-study-page) {
 /* ─── 3-Realm Grid ───────────────────────────────────────────────────────── */
 .kanji-three-realms {
   display: grid;
-  grid-template-columns: 1fr 1.1fr 1fr;
-  gap: 1.1rem;
-  align-items: start;
-  min-height: 460px;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(340px, 1.15fr) minmax(320px, 1fr);
+  gap: 0;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
 }
 /* Primitive kanji: no upstream components — collapse to 2 columns */
 .kanji-three-realms--two-col {
-  grid-template-columns: 1.1fr 1fr;
-}
-/* Primitive kanji but has downstream compounds — keep 3 col but mark center */
-.kanji-three-realms--compound-only .kanji-realm--constellation {
-  border-left: 1px solid rgba(215, 205, 190, 0.4);
-  border-right: 1px solid rgba(215, 205, 190, 0.4);
+  grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.15fr);
 }
 
 .kanji-realm {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 420px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.15rem 1.35rem;
 }
 
 /* Realm label (section title) */
@@ -7835,76 +8204,78 @@ body:has(.video-study-page) {
   gap: 0.5rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.45rem;
-  border-bottom: 1px solid rgba(215, 205, 190, 0.55);
+  border-bottom: 1px solid var(--color-border);
+}
+.kanji-realm-label--between {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.kanji-realm-label-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 .kanji-realm-label-jp {
-  font-family: 'Noto Serif JP', serif;
+  font-family: var(--font-jp-serif);
   font-size: 0.72rem;
-  color: #c23a2b;
+  color: var(--color-accent-text);
   letter-spacing: 0.08em;
 }
+.kanji-realm-label-main > span:last-child,
 .kanji-realm-label > span:last-child {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #78716c;
+  color: var(--color-text-secondary);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 /* ─── Realm 1: Visual (Calligraphy / Illustration) ──────────────────────── */
 .kanji-realm--visual {
-  background-color: var(--color-surface);
-  background-image:
-    linear-gradient(
-      to right,
-      transparent calc(50% - 0.5px),
-      color-mix(in srgb, var(--color-border) 45%, transparent) 50%,
-      transparent calc(50% + 0.5px)
-    ),
-    linear-gradient(
-      to bottom,
-      transparent calc(50% - 0.5px),
-      color-mix(in srgb, var(--color-border) 45%, transparent) 50%,
-      transparent calc(50% + 0.5px)
-    );
-  border: 1px solid rgba(215, 205, 190, 0.6);
-  border-radius: 10px;
-  padding: 1.1rem;
-  gap: 0.75rem;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--color-border);
+  border-radius: 0;
+  gap: 0.65rem;
 }
 
 /* Toggle buttons */
 .kanji-realm-toggle {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.2rem;
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  overflow: hidden;
 }
 .kanji-realm-toggle-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 0.3rem 0.75rem;
-  border-radius: 20px;
-  border: 1px solid rgba(215, 205, 190, 0.8);
-  background: rgba(255, 255, 255, 0.7);
-  color: #78716c;
+  padding: 0.28rem 0.72rem;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
   font-size: 0.73rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.15s ease;
+}
+.kanji-realm-toggle-btn + .kanji-realm-toggle-btn {
+  border-left: 1px solid var(--color-border);
 }
 .kanji-realm-toggle-btn:hover {
-  border-color: #c23a2b;
-  color: #c23a2b;
+  color: var(--color-text);
+  background: var(--color-bg-hover);
 }
 .kanji-realm-toggle-btn.is-active {
-  background: rgba(194, 58, 43, 0.09);
-  border-color: #c23a2b;
-  color: #c23a2b;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
 }
 .kanji-realm-toggle-btn > span {
-  font-family: 'Noto Serif JP', serif;
-  font-size: 0.95rem;
+  font-family: var(--font-jp-serif);
+  font-size: 0.92rem;
   line-height: 1;
 }
 
@@ -8007,23 +8378,24 @@ body:has(.video-study-page) {
 
 /* Reading chips row */
 .kanji-realm-readings {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
-  flex-wrap: wrap;
   padding-top: 0.65rem;
-  border-top: 1px solid rgba(220, 210, 195, 0.4);
+  border-top: 1px solid var(--color-border);
   margin-top: auto;
 }
 .kanji-reading-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 0.35rem 0.6rem;
-  background: #fff;
-  border: 1px solid rgba(215, 205, 190, 0.7);
-  border-radius: 7px;
-  min-width: 52px;
+  padding: 0.42rem 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  min-width: 0;
 }
 .kanji-reading-chip-label {
   display: flex;
@@ -8033,57 +8405,91 @@ body:has(.video-study-page) {
   font-weight: 750;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #a8a29e;
+  color: var(--color-text-muted);
 }
 .kanji-reading-chip-val {
-  font-family: 'Noto Serif JP', serif;
+  font-family: var(--font-jp-serif);
   font-size: 0.78rem;
   font-weight: 600;
-  color: #1c1917;
+  color: var(--color-text);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.kanji-reading-chip-romaji {
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  color: var(--color-text-muted);
   text-align: center;
 }
 .kanji-reading-chip--radical {
-  background: rgba(194, 58, 43, 0.05);
-  border-color: rgba(194, 58, 43, 0.25);
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-border);
 }
 .kanji-reading-chip-val--large {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   line-height: 1;
-  color: #c23a2b;
+  color: var(--color-accent-text);
 }
 
 /* ─── Realm 2: Constellation Graph ──────────────────────────────────────── */
 .kanji-realm--constellation {
-  border-left: 1px solid rgba(215, 205, 190, 0.4);
-  border-right: 1px solid rgba(215, 205, 190, 0.4);
-  padding: 1.1rem 1rem;
+  border-left: 0;
+  border-right: 1px solid var(--color-border);
+}
+
+.kanji-constellation-mode-tabs {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.kanji-const-mode-btn {
+  padding: 0.16rem 0.46rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.66rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kanji-const-mode-btn + .kanji-const-mode-btn {
+  border-left: 1px solid var(--color-border-subtle);
+}
+.kanji-const-mode-btn.is-active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
 }
 
 .kanji-constellation-wrap {
   display: flex;
   flex-direction: column;
-  flex: 1;
   width: 100%;
-  height: 340px;
-  min-height: 320px;
-  max-height: 360px;
+  height: 310px;
+  min-height: 275px;
+  position: relative;
+}
+.kanji-constellation-stage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   position: relative;
   overflow: hidden;
 }
 .kanji-constellation-legend {
   display: flex;
   gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
   flex-wrap: wrap;
 }
 .kanji-const-legend-item {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 600;
-  color: #78716c;
-  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.03em;
 }
 .kanji-const-legend-dot {
   width: 6px;
@@ -8091,26 +8497,23 @@ body:has(.video-study-page) {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.kanji-const-legend--component .kanji-const-legend-dot {
-  background: #c23a2b;
+.kanji-const-legend--moegi .kanji-const-legend-dot--moegi {
+  background: var(--color-moegi, #3f5e45);
 }
+.kanji-const-legend--component .kanji-const-legend-dot,
 .kanji-const-legend--descendant .kanji-const-legend-dot {
-  background: #c23a2b;
-}
-.kanji-const-legend--compound .kanji-const-legend-dot {
-  background: #8a8175;
+  background: var(--color-accent);
 }
 .kanji-const-legend-dot--root,
 .kanji-const-legend--root .kanji-const-legend-dot {
-  background: #1c1917;
+  background: var(--color-text);
 }
 .kanji-const-legend--root {
-  color: #1c1917;
+  color: var(--color-text);
   font-weight: 700;
 }
 
 .kanji-constellation-canvas {
-  flex: 1;
   width: 100%;
   height: 100%;
   display: block;
@@ -8119,58 +8522,53 @@ body:has(.video-study-page) {
 .kanji-constellation-canvas.is-hovering {
   cursor: pointer;
 }
-.kanji-constellation-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 160px;
-  font-size: 0.74rem;
-  color: #a8a29e;
-  font-style: italic;
-}
 
 /* Story mnemonic below graph */
 .kanji-constellation-story {
-  margin: 0.8rem 0 0;
-  padding: 0.55rem 0.85rem;
-  border-left: 2px solid rgba(194, 58, 43, 0.4);
-  background: rgba(250, 248, 245, 0.7);
-  border-radius: 0 6px 6px 0;
-  font-size: 0.74rem;
+  margin: 0.55rem 0 0;
+  padding: 0.52rem 0.85rem;
+  border-left: 2px solid var(--color-accent);
+  background: var(--color-bg-subtle);
+  border-radius: 0 3px 3px 0;
+  font-size: 0.78rem;
   font-style: italic;
-  color: #57534e;
+  color: var(--color-text-secondary);
   line-height: 1.55;
 }
 
 /* ─── Realm 3: Vocabulary ────────────────────────────────────────────────── */
 .kanji-realm--vocab {
-  padding: 1.1rem 0;
+  padding: 1.15rem 1.35rem;
 }
 .kanji-realm-vocab-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  max-height: 380px;
-  padding-right: 2px;
+  padding-right: 4px;
 }
 
 /* ─── Responsive collapse ────────────────────────────────────────────────── */
-@media (max-width: 820px) {
-  .kanji-three-realms {
+@media (max-width: 960px) {
+  .kanji-three-realms,
+  .kanji-three-realms--two-col {
     grid-template-columns: 1fr;
-    min-height: unset;
+    height: auto;
+  }
+  .kanji-realm {
+    height: auto;
+    overflow-y: visible;
+    padding: 1rem 1.25rem;
+  }
+  .kanji-realm--visual {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
   }
   .kanji-realm--constellation {
-    border-left: none;
-    border-right: none;
-    border-top: 1px solid rgba(215, 205, 190, 0.4);
-    border-bottom: 1px solid rgba(215, 205, 190, 0.4);
-    padding: 1rem 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
   }
   .kanji-constellation-wrap {
-    height: 200px;
-  }
-  .kanji-realm--vocab {
-    padding: 0;
+    height: 250px;
   }
 }
 
