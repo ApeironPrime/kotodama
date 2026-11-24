@@ -13,6 +13,20 @@ import {
 import { hankoManager, drawHankoSeal, type KanjiHankoRecord, type CinnabarDustParticle } from './kanjiHankoSrs'
 import { getMeaningfulLinksForKanji, type KanjiLinkResult } from './kanjiRelationships'
 
+const hankoTierLabels: Record<KanjiHankoRecord['tier'], string> = {
+  tier1_initial: 'Sơ triện',
+  tier2_square: 'Phương ấn',
+  tier3_established: 'Thành ấn',
+  tier4_master: 'Bảo triện',
+}
+
+const hankoInkLabels: Record<KanjiHankoRecord['inkState'], string> = {
+  fresh: 'Mực tươi',
+  soaked: 'Mực thấm',
+  dry_due: 'Khô kiệt',
+  ash_decay: 'Hóa tro',
+}
+
 interface SumiECanvasProps {
   items: KanjiSummary[]
   activeLevel: string
@@ -129,6 +143,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const hudRef = useRef<HTMLElement | null>(null)
+  const closeStageRef = useRef<HTMLButtonElement | null>(null)
   const particlesRef = useRef<GlyphParticle[]>([])
   const rowHeightRef = useRef(GLYPH_ROW_HEIGHT)
   const outgoingParticlesRef = useRef<OutgoingParticle[]>([])
@@ -154,6 +169,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     item: KanjiSummary
   } | null>(null)
   const deconstructProgressRef = useRef<number>(0)
+  const stageInfo = deconstructionStage?.info
 
   // Drag physics state
   const pointerDragRef = useRef<{
@@ -176,6 +192,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
 
   // Hanko SRS Spaced Repetition States & Ink Decay
   const [hankoRecords, setHankoRecords] = useState<Record<string, KanjiHankoRecord>>(() => hankoManager.getAll())
+  const stageHanko = stageInfo ? hankoRecords[stageInfo.kanji] : undefined
   const hankoRecordsRef = useRef<Record<string, KanjiHankoRecord>>(hankoRecords)
   hankoRecordsRef.current = hankoRecords
 
@@ -207,6 +224,16 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
 
   const uiSound = useUiSound()
   const isMuted = !uiSound.enabled
+
+  useEffect(() => {
+    if (stageInfo) closeStageRef.current?.focus({ preventScroll: true })
+  }, [stageInfo])
+
+  const dismissStage = () => {
+    sumiAudio.playSuikinkutsu()
+    setDeconstructionStage(null)
+    canvasRef.current?.focus({ preventScroll: true })
+  }
 
   // Execute Hanko Stamp (Dập ấn nạp mực)
   const executeStampAction = useCallback((kanji: string, screenX: number, screenY: number) => {
@@ -263,6 +290,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     sumiAudio.playWindSwoosh()
     panRef.current.targetY = 0
     panRef.current.targetX = 0
+    setDeconstructionStage(null)
     onSelectLevel(lvl)
   }
 
@@ -1344,8 +1372,6 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
 
         const centerX = width / 2
         const centerY = height / 2 - 35
-        const info = deconstructionStage.info
-
         // 1. Central Halo
         const glow = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, 180 * prog)
         glow.addColorStop(0, 'rgba(250, 248, 245, 0.12)')
@@ -1355,92 +1381,6 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         ctx.beginPath()
         ctx.arc(centerX, centerY, 180 * prog, 0, Math.PI * 2)
         ctx.fill()
-
-        // 2. Render Exploded Constituent Radicals/Components
-        info.parts.forEach((part) => {
-          const partX = centerX + part.offsetX * prog
-          const partY = centerY + part.offsetY * prog
-
-          // Ethereal connection thread back to center
-          ctx.save()
-          ctx.beginPath()
-          ctx.moveTo(centerX, centerY)
-          ctx.lineTo(partX, partY)
-          ctx.strokeStyle = `rgba(194, 58, 43, ${0.35 * prog})`
-          ctx.lineWidth = 1.4
-          ctx.setLineDash([4, 4])
-          ctx.stroke()
-          ctx.restore()
-
-          // Component Glyph
-          ctx.save()
-          ctx.translate(partX, partY)
-          ctx.font = `600 52px "Noto Serif JP", serif`
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.fillStyle = part.role === 'radical' ? '#C23A2B' : '#FAF8F5'
-          ctx.fillText(part.glyph, 0, 0)
-
-          // Component Tag & Meaning
-          ctx.font = '700 12px system-ui, sans-serif'
-          ctx.fillStyle = '#C23A2B'
-          ctx.fillText(part.name.toUpperCase(), 0, 42)
-
-          ctx.font = '500 11px system-ui, sans-serif'
-          ctx.fillStyle = 'rgba(214, 211, 209, 0.9)'
-          ctx.fillText(part.meaning, 0, 58)
-          ctx.restore()
-        })
-
-        // 3. Poetic Mnemonic Scroll Inscription (Bottom)
-        ctx.save()
-        ctx.textAlign = 'center'
-        ctx.font = '700 24px "Noto Serif JP", serif'
-        ctx.fillStyle = '#FAF8F5'
-        ctx.fillText(`${info.kanji} • ${info.hanzi}`, centerX, height - 120)
-
-        // Draw Current Hanko Seal in Deconstruction Stage
-        const stageHanko = hankoRecordsRef.current[info.kanji]
-        if (stageHanko) {
-          drawHankoSeal(ctx, stageHanko, centerX + 115, height - 120, time, 1.35)
-          ctx.save()
-          ctx.font = '600 11.5px system-ui, sans-serif'
-          ctx.textAlign = 'left'
-          const tierLabel =
-            stageHanko.tier === 'tier4_master'
-              ? 'Bảo triện'
-              : stageHanko.tier === 'tier3_established'
-                ? 'Thành ấn'
-                : stageHanko.tier === 'tier2_square'
-                  ? 'Phương ấn'
-                  : 'Sơ triện'
-          const stateLabel =
-            stageHanko.inkState === 'fresh'
-              ? 'Mực tươi'
-              : stageHanko.inkState === 'soaked'
-                ? 'Mực thấm'
-                : stageHanko.inkState === 'dry_due'
-                  ? 'Khô kiệt (Kasure)'
-                  : 'Hóa tro'
-          ctx.fillStyle =
-            stageHanko.inkState === 'fresh' ? '#C23A2B' : stageHanko.inkState === 'dry_due' ? '#E0533C' : '#A8A29E'
-          ctx.fillText(`${tierLabel} • ${stageHanko.intervalDays}d (${stateLabel})`, centerX + 140, height - 116)
-          ctx.restore()
-        }
-
-        ctx.font = 'italic 14px "Noto Serif JP", serif'
-        ctx.fillStyle = 'rgba(230, 225, 218, 0.88)'
-        ctx.fillText(`“${info.story}”`, centerX, height - 90)
-
-        // Close instruction tip
-        ctx.font = '600 11px system-ui, sans-serif'
-        ctx.fillStyle = 'rgba(168, 162, 158, 0.75)'
-        ctx.fillText(
-          'Nhấp vào vùng trống để ghép các bộ thủ trở lại • Hoặc bấm Xem chi tiết bên dưới',
-          centerX,
-          height - 60
-        )
-        ctx.restore()
       }
 
       // Dynamic cursor feedback
@@ -1618,13 +1558,6 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
-    // If Deconstruction Stage is active, clicking closes it (fuses radicals back together)
-    if (deconstructionStage) {
-      sumiAudio.playSuikinkutsu()
-      setDeconstructionStage(null)
-      return
-    }
-
     // Add vibrant organic click ripple
     ripplesRef.current.push({
       x,
@@ -1649,11 +1582,6 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
-    if (e.key === 'Escape' && deconstructionStage) {
-      sumiAudio.playSuikinkutsu()
-      setDeconstructionStage(null)
-      return
-    }
     const pan = panRef.current
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -1769,82 +1697,144 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
         </div>
       </header>
 
-      {/* ─── INFINITE SUMI-E CANVAS (Thủy mặc vô cực) ────────────────────── */}
-      <canvas
-        ref={canvasRef}
-        className="sumi-e-canvas"
-        tabIndex={0}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={handlePointerLeave}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onKeyDown={handleKeyDown}
-        role="region"
-        aria-label="Không gian tương tác Hán tự Thủy Mặc Vô Cực"
-      />
+      <div className="sumi-e-viewport">
+        {/* ─── INFINITE SUMI-E CANVAS (Thủy mặc vô cực) ────────────────────── */}
+        <canvas
+          ref={canvasRef}
+          className="sumi-e-canvas"
+          tabIndex={stageInfo ? -1 : 0}
+          onPointerMove={handlePointerMove}
+          onPointerLeave={handlePointerLeave}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onKeyDown={handleKeyDown}
+          role="region"
+          aria-label="Không gian tương tác Hán tự Thủy Mặc Vô Cực"
+        />
 
-      {/* ─── 2D INFINITE ZOOM HUD (Bottom Right Floating Controls) ────────── */}
-      <div className="sumi-zoom-hud" aria-label="Điều hướng không gian vô cực">
-        <button
-          type="button"
-          onClick={handleZoomIn}
-          title="Phóng to lướt sâu vào Hán tự (+)"
-          className="sumi-zoom-hud__btn"
-        >
-          <ZoomIn size={15} />
-        </button>
-        <button type="button" onClick={handleZoomReset} title="Đưa về tỷ lệ chuẩn (0)" className="sumi-zoom-hud__btn">
-          <RotateCcw size={13} />
-        </button>
-        <button
-          type="button"
-          onClick={handleZoomOut}
-          title="Thu nhỏ ngắm thiên hà Hán tự (-)"
-          className="sumi-zoom-hud__btn"
-        >
-          <ZoomOut size={15} />
-        </button>
+        {/* ─── 2D INFINITE ZOOM HUD (Bottom Right Floating Controls) ────────── */}
+        {!stageInfo && (
+          <div className="sumi-zoom-hud" aria-label="Điều hướng không gian vô cực">
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              title="Phóng to lướt sâu vào Hán tự (+)"
+              className="sumi-zoom-hud__btn"
+            >
+              <ZoomIn size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomReset}
+              title="Đưa về tỷ lệ chuẩn (0)"
+              className="sumi-zoom-hud__btn"
+            >
+              <RotateCcw size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              title="Thu nhỏ ngắm thiên hà Hán tự (-)"
+              className="sumi-zoom-hud__btn"
+            >
+              <ZoomOut size={15} />
+            </button>
+          </div>
+        )}
+
+        {deconstructionStage && (
+          <section
+            className="sumi-stage"
+            aria-label={`Tách bộ thủ chữ ${deconstructionStage.info.kanji}`}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) dismissStage()
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') dismissStage()
+            }}
+          >
+            <div className="sumi-stage__content">
+              <header className="sumi-stage__header">
+                <h3>
+                  <span lang="ja">{deconstructionStage.info.kanji}</span> · {deconstructionStage.info.hanzi}
+                </h3>
+                <button
+                  ref={closeStageRef}
+                  type="button"
+                  className="sumi-stage__close"
+                  aria-label="Thu gọn bộ thủ"
+                  title="Thu gọn bộ thủ"
+                  onClick={dismissStage}
+                >
+                  <X size={18} />
+                </button>
+              </header>
+
+              <ul className="sumi-stage__parts">
+                {deconstructionStage.info.parts.map((part) => (
+                  <li
+                    key={`${part.glyph}-${part.offsetX}-${part.offsetY}`}
+                    className="sumi-stage__part"
+                    data-role={part.role}
+                  >
+                    <span className="sumi-stage__glyph" lang="ja">
+                      {part.glyph}
+                    </span>
+                    <strong>{part.name}</strong>
+                    <span>{part.meaning}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="sumi-stage__story">{deconstructionStage.info.story}</p>
+              {stageHanko && (
+                <p className="sumi-stage__stamp" role="status">
+                  <span aria-hidden="true">印</span> {hankoTierLabels[stageHanko.tier]} ·{' '}
+                  {hankoInkLabels[stageHanko.inkState]} · {stageHanko.intervalDays} ngày
+                </p>
+              )}
+              <div className="sumi-stage-actions">
+                {/* Hanko Direct Stamping in Stage */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const item = deconstructionStage.item
+                    const canvas = canvasRef.current
+                    if (!canvas) return
+                    const { width, height } = canvas.getBoundingClientRect()
+                    executeStampAction(item.kanji, width / 2, height / 2)
+                  }}
+                  className="sumi-stage-btn sumi-stage-btn--primary"
+                >
+                  <span
+                    style={{
+                      border: '1px solid currentColor',
+                      padding: '0 3px',
+                      borderRadius: '2px',
+                      fontSize: '10px',
+                    }}
+                  >
+                    印
+                  </span>
+                  <span>Dập ấn nạp mực</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const item = deconstructionStage.item
+                    setDeconstructionStage(null)
+                    onSelectKanji(item)
+                  }}
+                  className="sumi-stage-btn"
+                >
+                  <span>Luyện viết và xem chi tiết</span>
+                  <ExternalLink size={14} />
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
-
-      {/* ─── DECONSTRUCTION STAGE ACTION OVERLAY ──────────────────────────── */}
-      {deconstructionStage && (
-        <div className="sumi-stage-actions">
-          {/* Hanko Direct Stamping in Stage */}
-          <button
-            type="button"
-            onClick={() => {
-              const item = deconstructionStage.item
-              const canvas = canvasRef.current
-              const rect = canvas ? canvas.getBoundingClientRect() : { width: 800, height: 600 }
-              executeStampAction(item.kanji, rect.width / 2, rect.height / 2 - 35)
-            }}
-            className="sumi-stage-btn sumi-stage-btn--primary"
-          >
-            <span style={{ border: '1px solid currentColor', padding: '0 3px', borderRadius: '2px', fontSize: '10px' }}>
-              印
-            </span>
-            <span>Dập ấn nạp mực</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const item = deconstructionStage.item
-              setDeconstructionStage(null)
-              onSelectKanji(item)
-            }}
-            className="sumi-stage-btn"
-          >
-            <span>Luyện viết nét & Xem từ điển chi tiết</span>
-            <ExternalLink size={14} />
-          </button>
-
-          <button type="button" onClick={() => setDeconstructionStage(null)} className="sumi-stage-btn">
-            <X size={14} />
-            <span>Thu gọn bộ thủ</span>
-          </button>
-        </div>
-      )}
 
       {/* ─── ACCESSIBLE DOM OVERLAY FOR SCREEN READERS & TEST SUITES ──────── */}
       <div
