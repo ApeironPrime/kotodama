@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Flame,
   Gamepad2,
-  GraduationCap,
   Layers,
   ListTree,
   RotateCcw,
@@ -21,10 +20,14 @@ import {
   Volume2,
 } from 'lucide-react'
 import { Badge, Button, EmptyState } from '../../components/ui'
-import PageHeader from '../../components/PageHeader'
 import { srsApi } from '../srs/srsApi'
 import type { CurriculumGrammar } from '../srs/srsTypes'
 import { useAuth } from '../auth/authContext'
+import { WatojiBookCover } from '../vocabulary/WatojiBookCover'
+import { StudyInkAtmosphere } from '../vocabulary/StudyInkAtmosphere'
+import { playWashiPaperSound } from '../vocabulary/tactileAudio'
+import { playPaperFlip, playSoftMiss, playStampSuccess } from '../vocabulary/soundEngine'
+import { sumiAudio } from '../dictionary/sumiAudio'
 
 const GRAMMAR_CATALOG = [
   {
@@ -33,9 +36,16 @@ const GRAMMAR_CATALOG = [
     subtitle: 'Minna no Nihongo N5',
     level: 'N5',
     series: 'minna',
-    color: 'var(--color-accent-text)',
-    bg: 'var(--color-bg-surface)',
-    border: 'var(--color-border)',
+    track: 'foundation',
+    publisher: '3A Network',
+    kanjiTitle: '初級文法',
+    volumeTag: '壱',
+    sealChar: '礎',
+    palette: 'aizumi',
+    pattern: 'seigaiha',
+    variant: 'classic',
+    isFeatured: false,
+    description: 'Nền tảng ngữ pháp sơ cấp chuẩn mực từ Bài 1 đến Bài 25 — gắn liền mẫu câu hội thoại đời sống.',
   },
   {
     id: 'minna_n4',
@@ -43,9 +53,16 @@ const GRAMMAR_CATALOG = [
     subtitle: 'Minna no Nihongo N4',
     level: 'N4',
     series: 'minna',
-    color: 'var(--color-accent-text)',
-    bg: 'var(--color-bg-surface)',
-    border: 'var(--color-border)',
+    track: 'foundation',
+    publisher: '3A Network',
+    kanjiTitle: '初級文法',
+    volumeTag: '弐',
+    sealChar: '進',
+    palette: 'kon',
+    pattern: 'shippo',
+    variant: 'classic',
+    isFeatured: false,
+    description: 'Hoàn thiện tôn kính ngữ, khiêm nhường ngữ, thể sai khiến và bị động từ Bài 26 đến Bài 50.',
   },
   {
     id: 'shinkanzen_n3',
@@ -53,9 +70,17 @@ const GRAMMAR_CATALOG = [
     subtitle: 'Shinkanzen Master N3',
     level: 'N3',
     series: 'shinkanzen',
-    color: 'var(--color-accent-text)',
-    bg: 'var(--color-bg-surface)',
-    border: 'var(--color-border)',
+    track: 'mastery',
+    publisher: '3A Corporation',
+    kanjiTitle: '完全文法',
+    volumeTag: '参',
+    sealChar: '文',
+    palette: 'shuiro',
+    pattern: 'asanoha',
+    variant: 'classic',
+    isFeatured: true,
+    description:
+      'Phân tích chuyên sâu sắc thái ngữ nghĩa, cấu trúc nối câu và các bẫy ngữ pháp trọng tâm kỳ thi JLPT N3.',
   },
   {
     id: 'mimikara_n3',
@@ -63,9 +88,16 @@ const GRAMMAR_CATALOG = [
     subtitle: 'Mimikara Oboeru N3',
     level: 'N3',
     series: 'mimikara',
-    color: 'var(--color-accent-text)',
-    bg: 'var(--color-bg-surface)',
-    border: 'var(--color-border)',
+    track: 'mastery',
+    publisher: 'Alc Press',
+    kanjiTitle: '耳覚文法',
+    volumeTag: '音',
+    sealChar: '聴',
+    palette: 'matsuba-n3',
+    pattern: 'soundwave',
+    variant: 'mimikara',
+    isFeatured: false,
+    description: 'Thấm ngữ pháp qua thính giác và ngữ cảnh câu trọn vẹn — tách bạch rõ từng nhóm nghĩa đa dụng.',
   },
   {
     id: 'shinkanzen_n2',
@@ -73,9 +105,17 @@ const GRAMMAR_CATALOG = [
     subtitle: 'Shinkanzen Master N2',
     level: 'N2',
     series: 'shinkanzen',
-    color: 'var(--color-accent-text)',
-    bg: 'var(--color-bg-surface)',
-    border: 'var(--color-border)',
+    track: 'mastery',
+    publisher: '3A Corporation',
+    kanjiTitle: '完全文法',
+    volumeTag: '弐',
+    sealChar: '極',
+    palette: 'benigara',
+    pattern: 'kumiko',
+    variant: 'classic',
+    isFeatured: false,
+    description:
+      'Làm chủ hơn 150 cấu trúc trung – thượng cấp, văn phong trang trọng và liên kết mạch văn học thuật N2.',
   },
   {
     id: 'shinkanzen_n1',
@@ -83,11 +123,75 @@ const GRAMMAR_CATALOG = [
     subtitle: 'Shinkanzen Master N1',
     level: 'N1',
     series: 'shinkanzen',
-    color: 'var(--color-accent-text)',
-    bg: 'var(--color-bg-surface)',
-    border: 'var(--color-border)',
+    track: 'mastery',
+    publisher: '3A Corporation',
+    kanjiTitle: '完全文法',
+    volumeTag: '壱',
+    sealChar: '頂',
+    palette: 'kokutan',
+    pattern: 'kasumi',
+    variant: 'classic',
+    isFeatured: false,
+    description:
+      'Đỉnh cao ngữ pháp biểu đạt cổ điển, văn viết nghị luận và các cấu trúc sắc thái tinh tế bậc nhất JLPT N1.',
   },
 ] as const
+
+type GrammarBookEntry = (typeof GRAMMAR_CATALOG)[number]
+
+const GRAMMAR_TRACKS = [
+  {
+    id: 'mastery',
+    kanji: '突破',
+    title: 'Dòng Chuyên Sâu & Luyện Thi JLPT',
+    description: 'Hệ thống cấu trúc N3–N1 từ Shinkanzen Master & Mimikara, bóc tách sắc thái và bẫy đề thi.',
+  },
+  {
+    id: 'foundation',
+    kanji: '基盤',
+    title: 'Dòng Nền Tảng Sơ Cấp',
+    description: 'Xây dựng khung ngữ pháp căn bản N5–N4 vững chắc theo lộ trình Minna no Nihongo I & II.',
+  },
+] as const
+
+function readKnownGrammarIds(storageKey: string): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(storageKey)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function readKnownGrammarByBook(userId: string): Record<string, number> {
+  const counts: Record<string, number> = {}
+  if (typeof window === 'undefined') return counts
+  const prefix = `kotodama.known-grammar:${userId}:`
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (!key || !key.startsWith(prefix)) continue
+      const rest = key.slice(prefix.length)
+      const colonIdx = rest.indexOf(':')
+      if (colonIdx <= 0) continue
+      const bookId = rest.slice(0, colonIdx)
+      const count = readKnownGrammarIds(key).length
+      if (count > 0) counts[bookId] = (counts[bookId] || 0) + count
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return counts
+}
+
+function formatGrammarLessonIndex(lessonTitle: string, idx: number): string {
+  const numMatch = lessonTitle.match(/(?:Bài|第)\s*(\d+)|^(\d+)\s*課/i)
+  const num = numMatch?.[1] || numMatch?.[2] || String(idx + 1)
+  return `第${num.padStart(2, '0')}課`
+}
 
 const GRAMMAR_LEVEL_FILTERS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
 const GRAMMAR_BOOK_FILTERS = [
@@ -129,6 +233,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // In-Lesson Flashcard state
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [stampBurstCount, setStampBurstCount] = useState(0)
+  const [flipRippleCount, setFlipRippleCount] = useState(0)
+  const [showStampFlash, setShowStampFlash] = useState(false)
+  const stampTimerRef = useRef<number | null>(null)
   const [, setKnownGrammars] = usePersistentState<string[]>(
     `kotodama.known-grammar:${user?.id ?? 'guest'}:${selectedBook}:${selectedLesson}`,
     []
@@ -136,6 +244,12 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
   const [activePointId, setActivePointId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+
+  useEffect(() => {
+    return () => {
+      if (stampTimerRef.current) window.clearTimeout(stampTimerRef.current)
+    }
+  }, [])
   const catalogQueries = useQueries({
     queries: GRAMMAR_CATALOG.map((book) => ({
       queryKey: ['curriculum', 'lessons', book.id],
@@ -144,12 +258,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       staleTime: 60_000,
     })),
   })
-  const catalogBadge = (bookId: string) => {
+  const getBookStats = (bookId: string) => {
     const query = catalogQueries[GRAMMAR_CATALOG.findIndex((book) => book.id === bookId)]
-    if (query?.isError) return 'Chưa tải được dữ liệu'
-    if (!query?.data) return 'Đang tải nội dung…'
-    if (!query.data.length) return 'Chưa có nội dung'
-    return `${query.data.reduce((total, lesson) => total + lesson.count, 0)} mẫu · ${query.data.length} bài`
+    if (!query?.data || !query.data.length) return { lessons: 0, patterns: 0, loaded: Boolean(query?.data) }
+    return {
+      lessons: query.data.length,
+      patterns: query.data.reduce((total, lesson) => total + lesson.count, 0),
+      loaded: true,
+    }
   }
 
   // Fetch saved SRS terms from server to know which items are already saved
@@ -414,16 +530,13 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     )
 
   // =========================================================================
-  // VIEW 1: CATALOG OVERVIEW (Chọn bộ giáo trình Ngữ Pháp)
+  // VIEW 1: CATALOG OVERVIEW (Tủ sách Ngữ Pháp chuẩn Watoji)
   // =========================================================================
   if (!selectedBook) {
-    const sections = [
-      { level: 'N5', title: 'Ngữ pháp Sơ cấp N5', subtitle: 'Minna no Nihongo I' },
-      { level: 'N4', title: 'Ngữ pháp Sơ trung cấp N4', subtitle: 'Minna no Nihongo II' },
-      { level: 'N3', title: 'Ngữ pháp Chuyên sâu N3', subtitle: 'Shinkanzen & Mimikara N3' },
-      { level: 'N2', title: 'Ngữ pháp Chuyên sâu N2', subtitle: 'Shinkanzen Master N2' },
-      { level: 'N1', title: 'Ngữ pháp Chuyên sâu N1', subtitle: 'Shinkanzen Master N1' },
-    ] as const
+    const knownByBook = readKnownGrammarByBook(user?.id ?? 'guest')
+    const savedGrammarCount = Array.isArray(savedTermsData)
+      ? savedTermsData.filter((t) => t?.type === 'grammar').length
+      : Object.keys(savedSrs).length
 
     const matchingPatternItems = (catalogPatternSearchData?.items ?? []).filter((item) => {
       if (selectedGrammarSeries === 'ALL') return true
@@ -431,75 +544,109 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       return code.includes(selectedGrammarSeries)
     })
 
-    const visibleSections = sections
-      .filter((section) => selectedGrammarLevel === 'ALL' || section.level === selectedGrammarLevel)
-      .map((section) => ({
-        ...section,
-        books: GRAMMAR_CATALOG.filter((b) => {
-          if (b.level !== section.level) return false
-          if (selectedGrammarSeries !== 'ALL' && b.series !== selectedGrammarSeries) return false
-          if (catalogPatternQuery.trim()) {
-            const q = catalogPatternQuery.trim().toLowerCase()
-            return (
-              b.title.toLowerCase().includes(q) ||
-              b.subtitle.toLowerCase().includes(q) ||
-              b.level.toLowerCase().includes(q)
-            )
-          }
-          return true
-        }),
-      }))
-      .filter((section) => section.books.length > 0)
+    const filteredCatalog = GRAMMAR_CATALOG.filter((b) => {
+      if (selectedGrammarLevel !== 'ALL' && b.level !== selectedGrammarLevel) return false
+      if (selectedGrammarSeries !== 'ALL' && b.series !== selectedGrammarSeries) return false
+      if (catalogPatternQuery.trim()) {
+        const q = catalogPatternQuery.trim().toLowerCase()
+        return (
+          b.title.toLowerCase().includes(q) ||
+          b.subtitle.toLowerCase().includes(q) ||
+          b.level.toLowerCase().includes(q) ||
+          b.description.toLowerCase().includes(q)
+        )
+      }
+      return true
+    })
+
+    const activeTracks = GRAMMAR_TRACKS.map((track) => ({
+      ...track,
+      books: filteredCatalog.filter((b) => b.track === track.id),
+    })).filter((track) => track.books.length > 0)
+
+    const renderGrammarStatsText = (book: GrammarBookEntry) => {
+      const stats = getBookStats(book.id)
+      if (!stats.loaded) return 'Đang tải mục lục…'
+      if (stats.lessons === 0) return 'Chưa có nội dung'
+      return `${stats.lessons} bài · ${stats.patterns} mẫu`
+    }
+
+    const renderBookProgress = (book: GrammarBookEntry) => {
+      const stats = getBookStats(book.id)
+      const known = knownByBook[book.id] || 0
+      if (!stats.loaded || stats.patterns === 0 || known <= 0) return null
+      const pct = Math.min(100, Math.max(4, Math.round((known / stats.patterns) * 100)))
+      return { known: Math.min(known, stats.patterns), total: stats.patterns, pct }
+    }
 
     return (
-      <div className="nhaikanji-container washi-page">
-        <PageHeader
-          hanko="文"
-          jpVertical="日本語文法"
-          eyebrow="NGỮ PHÁP TIẾNG NHẬT CHUẨN JLPT"
-          title="Kho Giáo Trình Ngữ Pháp (Shinkanzen Master & Mimikara)"
-          description="Học ngữ pháp theo từng bài: đọc giải thích, xem ví dụ và luyện ghi nhớ bằng thẻ ôn tập."
-        />
+      <div className="curriculum-container">
+        <div className="curriculum-paper-grid">
+          <header className="curriculum-masthead">
+            <div className="curriculum-masthead__copy">
+              <h1 className="curriculum-masthead__title">
+                Kho Giáo Trình Ngữ Pháp <span className="sr-only">(Shinkanzen Master &amp; Mimikara)</span>
+              </h1>
+              <p className="curriculum-masthead__sub">
+                Tuyển tập giáo trình ngữ pháp chuẩn JLPT N5–N1 — phân tích sắc thái, cấu trúc nối câu và ví dụ ngữ cảnh.
+              </p>
+            </div>
+            {onGoToSrs && (
+              <button
+                type="button"
+                className="curriculum-hanko-srs-pill"
+                onClick={onGoToSrs}
+                title="Mở sổ tay và kho ôn tập SRS"
+                aria-label={`Sổ tay SRS: ${savedGrammarCount} mẫu ngữ pháp đã lưu. Nhấn để ôn tập.`}
+              >
+                <span className="curriculum-hanko-srs-pill__stamp" aria-hidden="true">
+                  記
+                </span>
+                <span className="curriculum-hanko-srs-pill__text">
+                  Sổ tay SRS: <strong>{savedGrammarCount}</strong> mẫu
+                </span>
+                <span className="curriculum-hanko-srs-pill__action">Ôn tập ›</span>
+              </button>
+            )}
+          </header>
 
-        <section className="kanji-ledger-controls" aria-label="Bộ lọc ngữ pháp" style={{ marginBottom: '1.5rem' }}>
-          <div
-            className="kanji-ledger-row-a"
-            style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}
-          >
-            <div className="nhaikanji-tab-group" role="tablist" aria-label="Lọc ngữ pháp theo cấp độ">
-              {GRAMMAR_LEVEL_FILTERS.map((lvl) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  role="tab"
-                  aria-selected={selectedGrammarLevel === lvl}
-                  className={`nhaikanji-tab-btn${selectedGrammarLevel === lvl ? ' is-active' : ''}`}
-                  onClick={() => setSelectedGrammarLevel(lvl)}
-                >
-                  <span>{lvl === 'ALL' ? 'Tất cả' : lvl}</span>
-                </button>
-              ))}
+          <div className="curriculum-toolbar">
+            <div className="curriculum-toolbar__left">
+              <div className="curriculum-level-filters" role="tablist" aria-label="Lọc ngữ pháp theo cấp độ">
+                {GRAMMAR_LEVEL_FILTERS.map((lvl) => {
+                  const isActive = selectedGrammarLevel === lvl
+                  return (
+                    <button
+                      key={lvl}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`curriculum-filter-pill${isActive ? ' curriculum-filter-pill--active' : ''}`}
+                      onClick={() => setSelectedGrammarLevel(lvl)}
+                    >
+                      {lvl === 'ALL' ? 'Tất cả' : lvl}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            <div className="curriculum-search-box" style={{ minWidth: '15rem' }}>
-              <Search size={15} className="curriculum-search-box__icon" aria-hidden="true" />
-              <input
-                type="search"
-                className="curriculum-search-box__input"
-                placeholder="Tìm mẫu ngữ pháp hoặc tên sách..."
-                value={catalogPatternQuery}
-                onChange={(e) => setCatalogPatternQuery(e.target.value)}
-                aria-label="Tìm mẫu ngữ pháp"
-              />
+            <div className="curriculum-toolbar__actions">
+              <div className="curriculum-search-box">
+                <Search size={15} className="curriculum-search-box__icon" aria-hidden="true" />
+                <input
+                  type="search"
+                  className="curriculum-search-box__input"
+                  placeholder="Tìm mẫu ngữ pháp hoặc tên sách..."
+                  value={catalogPatternQuery}
+                  onChange={(e) => setCatalogPatternQuery(e.target.value)}
+                  aria-label="Tìm mẫu ngữ pháp"
+                />
+              </div>
             </div>
           </div>
 
-          <div
-            className="curriculum-series-bar"
-            role="tablist"
-            aria-label="Lọc ngữ pháp theo cuốn sách"
-            style={{ marginTop: '0.55rem', marginBottom: 0 }}
-          >
+          <div className="curriculum-series-bar" role="tablist" aria-label="Lọc ngữ pháp theo cuốn sách">
             <span className="curriculum-series-bar__label">Cuốn sách:</span>
             <div className="curriculum-series-bar__list">
               {GRAMMAR_BOOK_FILTERS.map((book) => {
@@ -519,153 +666,349 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               })}
             </div>
           </div>
-        </section>
 
-        {debouncedCatalogPatternQuery && matchingPatternItems.length > 0 && (
-          <section className="bunpo-section" aria-label="Mẫu ngữ pháp phù hợp">
-            <div className="washi-section-head">
-              <h2>Mẫu ngữ pháp khớp “{debouncedCatalogPatternQuery}”</h2>
-              <span>{matchingPatternItems.length} kết quả</span>
-            </div>
-            <div className="bunpo-folio-grid">
-              {matchingPatternItems.map((item) => (
-                <div
-                  key={item.id}
-                  role="button"
-                  tabIndex={0}
-                  className="bunpo-folio-card"
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      event.currentTarget.click()
-                    }
-                  }}
-                  onClick={() => {
-                    setSelectedBook(item.curriculumCode || 'shinkanzen_n3')
-                    setSelectedLesson(item.lessonId || '1')
-                  }}
-                >
-                  <div className="bunpo-folio-card__head">
-                    <div>
-                      <span className="bunpo-folio-card__sub">
+          {debouncedCatalogPatternQuery && matchingPatternItems.length > 0 && (
+            <section className="curriculum-track-section" aria-label="Mẫu ngữ pháp phù hợp">
+              <div className="curriculum-track-header">
+                <div className="curriculum-track-header__meta">
+                  <span className="curriculum-track-stamp" aria-hidden="true">
+                    検
+                  </span>
+                  <h2 className="curriculum-track-title">Mẫu ngữ pháp khớp “{debouncedCatalogPatternQuery}”</h2>
+                  <span className="curriculum-track-count">({matchingPatternItems.length} kết quả)</span>
+                </div>
+              </div>
+              <div className="bunpo-pattern-hit-list">
+                {matchingPatternItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="bunpo-pattern-hit"
+                    onClick={() => {
+                      setSelectedBook(item.curriculumCode || 'shinkanzen_n3')
+                      setSelectedLesson(item.lessonId || '1')
+                    }}
+                  >
+                    <div className="bunpo-pattern-hit__main">
+                      <span className="bunpo-pattern-hit__meta">
                         {item.level} · {item.lessonTitle}
                       </span>
-                      <h3 className="bunpo-folio-card__title">{item.pattern}</h3>
+                      <strong className="bunpo-pattern-hit__pattern" lang="ja">
+                        {item.pattern}
+                      </strong>
+                      <span className="bunpo-pattern-hit__meaning">{item.shortMeaning || item.structure}</span>
                     </div>
-                    <Badge variant="primary">{item.level}</Badge>
-                  </div>
-                  <p style={{ margin: '0.35rem 0 0', fontSize: '0.86rem', color: 'var(--color-text-secondary)' }}>
-                    {item.shortMeaning || item.structure}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {visibleSections.length === 0 && !debouncedCatalogPatternQuery ? (
-          <EmptyState title="Không có giáo trình phù hợp" description="Thử chọn lại cấp độ JLPT hoặc bộ sách khác." />
-        ) : (
-          visibleSections.map((section) => (
-            <section key={section.level} className="bunpo-section">
-              <div className="washi-section-head">
-                <h2>{section.title}</h2>
-                <span>{section.subtitle}</span>
-              </div>
-
-              <div className="bunpo-folio-grid">
-                {section.books.map((book) => (
-                  <div
-                    key={book.id}
-                    role="button"
-                    tabIndex={0}
-                    className="bunpo-folio-card"
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        event.currentTarget.click()
-                      }
-                    }}
-                    onClick={() => setSelectedBook(book.id)}
-                  >
-                    <div className="bunpo-folio-card__head">
-                      <div>
-                        <span className="bunpo-folio-card__sub">{book.subtitle}</span>
-                        <h3 className="bunpo-folio-card__title">{book.title}</h3>
-                      </div>
-                      <div className="bunpo-folio-card__seal" aria-hidden="true">
-                        <GraduationCap size={20} />
-                      </div>
-                    </div>
-
-                    <div className="bunpo-folio-card__footer">
-                      <Badge variant="primary">{catalogBadge(book.id)}</Badge>
-                      <span className="bunpo-folio-card__cta">Vào học ngay →</span>
-                    </div>
-                  </div>
+                    <ChevronRight size={16} className="bunpo-pattern-hit__arrow" aria-hidden="true" />
+                  </button>
                 ))}
               </div>
             </section>
-          ))
-        )}
+          )}
+
+          {activeTracks.length === 0 && !debouncedCatalogPatternQuery ? (
+            <EmptyState title="Không có giáo trình phù hợp" description="Thử chọn lại cấp độ JLPT hoặc bộ sách khác." />
+          ) : (
+            activeTracks.map((track) => {
+              const showFeatured = track.books.length === 1 || track.books.length >= 3
+              const featuredBook = showFeatured ? (track.books.find((b) => b.isFeatured) ?? track.books[0]) : undefined
+              const shelfBooks = featuredBook ? track.books.filter((b) => b.id !== featuredBook.id) : track.books
+
+              return (
+                <section
+                  key={track.id}
+                  className="curriculum-track-section"
+                  aria-labelledby={`heading-bunpo-${track.id}`}
+                >
+                  <div className="curriculum-track-header">
+                    <div className="curriculum-track-header__meta">
+                      <span className="curriculum-track-stamp" aria-hidden="true">
+                        {track.kanji}
+                      </span>
+                      <h2 id={`heading-bunpo-${track.id}`} className="curriculum-track-title">
+                        {track.title}
+                      </h2>
+                      <span className="curriculum-track-count">({track.books.length} giáo trình)</span>
+                    </div>
+                    <p className="curriculum-track-desc">{track.description}</p>
+                  </div>
+
+                  {featuredBook &&
+                    (() => {
+                      const progress = renderBookProgress(featuredBook)
+                      return (
+                        <article
+                          className={`curriculum-featured-spread${shelfBooks.length > 0 ? ' has-companion-below' : ''}`}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Giáo trình ${featuredBook.title}, ${featuredBook.level}`}
+                          onClick={() => setSelectedBook(featuredBook.id)}
+                          onMouseEnter={() => playWashiPaperSound()}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              setSelectedBook(featuredBook.id)
+                            }
+                          }}
+                        >
+                          <div className="curriculum-featured-spread__cover-pane">
+                            <div className="curriculum-featured-spread__cover-stack">
+                              <WatojiBookCover
+                                bookTitle={featuredBook.title}
+                                size="featured"
+                                variant={featuredBook.variant}
+                                kanjiTitle={featuredBook.kanjiTitle}
+                                subtitle={featuredBook.publisher}
+                                volumeTag={featuredBook.volumeTag}
+                                level={featuredBook.level}
+                                palette={featuredBook.palette}
+                                pattern={featuredBook.pattern}
+                                sealChar={featuredBook.sealChar}
+                              />
+                              {progress && (
+                                <div className="curriculum-book-progress-bar" aria-hidden="true">
+                                  <span style={{ width: `${progress.pct}%` }} />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="curriculum-featured-spread__content-pane">
+                            <div className="curriculum-featured-spread__eyebrow-row">
+                              <span className="curriculum-featured-spread__publisher">{featuredBook.subtitle}</span>
+                            </div>
+
+                            <h3 className="curriculum-featured-spread__title">{featuredBook.title}</h3>
+                            <p className="curriculum-featured-spread__desc">{featuredBook.description}</p>
+
+                            <div className="curriculum-featured-spread__footer">
+                              <div className="curriculum-featured-spread__stats">
+                                <span className="curriculum-featured-spread__stat-item">
+                                  {renderGrammarStatsText(featuredBook)}
+                                </span>
+                                {progress && (
+                                  <span className="curriculum-featured-spread__progress-text">
+                                    · Đã thuộc {progress.known} / {progress.total} mẫu
+                                  </span>
+                                )}
+                              </div>
+
+                              <span className="curriculum-featured-spread__cta">Mở sách học tập →</span>
+                            </div>
+                          </div>
+                        </article>
+                      )
+                    })()}
+
+                  {shelfBooks.length > 0 && (
+                    <div className="curriculum-standing-shelf-wrap">
+                      {featuredBook && (
+                        <div className="curriculum-horizontal-shelf-header">
+                          <div className="curriculum-horizontal-shelf-header__left">
+                            <span className="curriculum-companion-shelf__label">KỆ SÁCH ĐỒNG HÀNH · 同行書架</span>
+                            <span className="curriculum-companion-shelf__count">({shelfBooks.length} đầu sách)</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="curriculum-standing-shelf-grid" role="list" aria-label={`Kệ sách ${track.title}`}>
+                        {shelfBooks.map((book) => {
+                          const progress = renderBookProgress(book)
+                          return (
+                            <div key={book.id} className="curriculum-standing-shelf-cell" role="listitem">
+                              <article
+                                className="curriculum-standing-book"
+                                tabIndex={0}
+                                role="button"
+                                aria-label={`Giáo trình ${book.title}, ${book.level}`}
+                                onClick={() => setSelectedBook(book.id)}
+                                onMouseEnter={() => playWashiPaperSound()}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault()
+                                    setSelectedBook(book.id)
+                                  }
+                                }}
+                              >
+                                <div className="curriculum-standing-book__shelf">
+                                  <div className="curriculum-standing-book__cover-wrap">
+                                    <WatojiBookCover
+                                      bookTitle={book.title}
+                                      size="companion"
+                                      variant={book.variant}
+                                      kanjiTitle={book.kanjiTitle}
+                                      volumeTag={book.volumeTag}
+                                      level={book.level}
+                                      palette={book.palette}
+                                      pattern={book.pattern}
+                                      sealChar={book.sealChar}
+                                    />
+                                    {progress && (
+                                      <div className="curriculum-book-progress-bar" aria-hidden="true">
+                                        <span style={{ width: `${progress.pct}%` }} />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="curriculum-standing-book__meta">
+                                  <span className="curriculum-standing-book__eyebrow">{book.subtitle}</span>
+                                  <h4 className="curriculum-standing-book__title">{book.title}</h4>
+                                  <span className="curriculum-standing-book__count">
+                                    {renderGrammarStatsText(book)}
+                                  </span>
+                                  {progress && (
+                                    <span className="curriculum-standing-book__progress-text">
+                                      Đã thuộc {progress.known} / {progress.total} mẫu
+                                    </span>
+                                  )}
+                                </div>
+                              </article>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )
+            })
+          )}
+        </div>
       </div>
     )
   }
 
   // =========================================================================
-  // VIEW 2: LESSONS GRID (Danh sách bài học - media_1788263395027.png)
+  // VIEW 2: LESSONS TOC (Chi tiết giáo trình & Mục lục in 目次)
   // =========================================================================
   if (selectedBook && selectedLesson === null) {
+    const lessons = lessonsList ?? []
+    const totalBookPatterns = lessons.reduce((acc, l) => acc + l.count, 0)
+    const userId = user?.id ?? 'guest'
+    const lessonKnownMap: Record<string, number> = {}
+    let totalKnownInBook = 0
+    for (const l of lessons) {
+      const cnt = readKnownGrammarIds(`kotodama.known-grammar:${userId}:${selectedBook}:${l.lesson_id}`).length
+      const clamped = Math.min(cnt, l.count || cnt)
+      lessonKnownMap[l.lesson_id] = clamped
+      totalKnownInBook += clamped
+    }
+    const bookProgressPct =
+      totalBookPatterns > 0 ? Math.min(100, Math.round((totalKnownInBook / totalBookPatterns) * 100)) : 0
+    const resumeLesson =
+      lessons.find((l) => {
+        const cnt = lessonKnownMap[l.lesson_id] || 0
+        return cnt > 0 && cnt < l.count
+      }) ||
+      lessons.find((l) => (lessonKnownMap[l.lesson_id] || 0) < l.count) ||
+      lessons[0]
+    const resumeIdx = resumeLesson ? lessons.indexOf(resumeLesson) + 1 : 1
+
+    const openLesson = (lessonId: string, initialMode: 'flashcard' | 'game' = 'flashcard') => {
+      setSelectedLesson(lessonId)
+      setStageMode(initialMode)
+      setCurrentIndex(0)
+      setIsFlipped(false)
+      resetGrammarQuiz()
+    }
+
     return (
-      <div className="washi-page bunpo-view-shell">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedBook(null)}>
-            <ArrowLeft size={16} /> Quay lại danh sách sách
-          </Button>
-        </div>
+      <div className="curriculum-container washi-page curriculum-course-view">
+        <div className="curriculum-paper-grid">
+          <button
+            type="button"
+            className="curriculum-unit-view__back-btn"
+            onClick={() => setSelectedBook(null)}
+            aria-label="Quay lại danh mục giáo trình"
+          >
+            <ArrowLeft size={16} aria-hidden="true" /> Quay lại danh sách sách
+          </button>
 
-        <header className="bunpo-book-banner">
-          <div className="bunpo-book-banner__left">
-            <span className="bunpo-book-banner__hanko" aria-hidden="true">
-              文
-            </span>
-            <div>
-              <span className="washi-masthead__eyebrow" style={{ color: currentBookInfo?.color }}>
-                {currentBookInfo?.subtitle}
-              </span>
-              <h1 className="bunpo-book-title">{currentBookInfo?.title}</h1>
-              <p style={{ color: 'var(--color-text-secondary)', margin: '0.35rem 0 0' }}>
-                {lessonsList?.length || 0} bài học · Chọn một bài học để bắt đầu ôn tập ngữ pháp, Flashcard hoặc
-                Mini-Game.
-              </p>
-            </div>
-          </div>
-          {lessonsList?.[0] && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                const firstLesson = lessonsList[0]
-                if (!firstLesson) return
-                setSelectedLesson(firstLesson.lesson_id)
-                setCurrentIndex(0)
-                setIsFlipped(false)
-                resetGrammarQuiz()
-              }}
-            >
-              Bắt đầu Bài 1 →
-            </Button>
+          {currentBookInfo && (
+            <header className="curriculum-book-banner">
+              <div className="curriculum-book-banner__cover">
+                <WatojiBookCover
+                  bookTitle={currentBookInfo.title}
+                  size="featured"
+                  variant={currentBookInfo.variant}
+                  kanjiTitle={currentBookInfo.kanjiTitle}
+                  subtitle={currentBookInfo.publisher}
+                  volumeTag={currentBookInfo.volumeTag}
+                  level={currentBookInfo.level}
+                  palette={currentBookInfo.palette}
+                  pattern={currentBookInfo.pattern}
+                  sealChar={currentBookInfo.sealChar}
+                />
+              </div>
+
+              <div className="curriculum-book-banner__body">
+                <div className="curriculum-book-banner__eyebrow">
+                  <span className="curriculum-level-badge" data-level={currentBookInfo.level}>
+                    {currentBookInfo.level}
+                  </span>
+                  <span className="curriculum-book-banner__publisher">{currentBookInfo.publisher}</span>
+                </div>
+
+                <h1 className="curriculum-book-banner__title">{currentBookInfo.title}</h1>
+                <p className="curriculum-book-banner__desc">{currentBookInfo.description}</p>
+
+                <div className="curriculum-course-progress" aria-label="Tiến độ toàn bộ giáo trình">
+                  <div className="curriculum-course-progress__meta">
+                    <span>
+                      Đã thuộc <strong>{totalKnownInBook}</strong> / {totalBookPatterns} mẫu
+                    </span>
+                    <span>{bookProgressPct}%</span>
+                  </div>
+                  <div className="curriculum-course-progress__track">
+                    <div className="curriculum-course-progress__fill" style={{ width: `${bookProgressPct}%` }} />
+                  </div>
+                </div>
+
+                <div className="curriculum-book-banner__footer">
+                  <div className="curriculum-book-banner__stats">
+                    <span className="curriculum-stat-pill">
+                      <Layers size={13} aria-hidden="true" /> {lessons.length} bài học
+                    </span>
+                    <span className="curriculum-stat-pill">
+                      <BookOpen size={13} aria-hidden="true" /> {totalBookPatterns} mẫu ngữ pháp
+                    </span>
+                  </div>
+
+                  {resumeLesson && (
+                    <div className="curriculum-book-banner__actions">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => openLesson(resumeLesson.lesson_id, 'flashcard')}
+                      >
+                        {totalKnownInBook > 0 ? `Tiếp tục Bài ${resumeIdx} →` : `Bắt đầu Bài ${resumeIdx} →`}
+                      </Button>
+                      <button
+                        type="button"
+                        className="curriculum-quick-mode-btn"
+                        onClick={() => openLesson(resumeLesson.lesson_id, 'game')}
+                      >
+                        Phản xạ · Bài {resumeIdx}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </header>
           )}
-        </header>
 
-        {/* Lesson Cards Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 360px), 1fr))',
-            gap: '1rem',
-          }}
-        >
+          <div className="curriculum-toc-header">
+            <h2 className="curriculum-course-view__list-title">
+              <span className="curriculum-toc-kanji" aria-hidden="true">
+                目次
+              </span>
+              Mục lục bài học
+            </h2>
+            <span className="curriculum-toc-meta">
+              {lessons.length} bài · {totalBookPatterns} mẫu
+            </span>
+          </div>
+
           {lessonsList && !lessonsList.length && (
             <EmptyState
               title="Giáo trình này chưa có bài học"
@@ -673,53 +1016,80 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
               action={<Button onClick={() => void refetchLessons()}>Thử tải lại</Button>}
             />
           )}
-          {lessonsList?.map((lesson, idx) => (
-            <div
-              key={lesson.lesson_id}
-              className="bunpo-lesson-card"
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  event.currentTarget.click()
-                }
-              }}
-              onClick={() => {
-                setSelectedLesson(lesson.lesson_id)
-                setCurrentIndex(0)
-                setIsFlipped(false)
-                resetGrammarQuiz()
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
-                <span className="curriculum-unit-card__seal" aria-hidden="true">
-                  {String(idx + 1).padStart(2, '0')}
-                </span>
-                <div style={{ minWidth: 0 }}>
-                  <div className="bunpo-lesson-card__eyebrow">BÀI HỌC {idx + 1}</div>
-                  <h4 className="bunpo-lesson-card__title">{lesson.lesson_title}</h4>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
-                <span className="srs-card-level">{lesson.count} mẫu</span>
-                <ChevronRight size={18} style={{ color: 'var(--color-text-muted)' }} />
-              </div>
-            </div>
-          ))}
+          <ol className="curriculum-toc-list">
+            {lessons.map((lesson, idx) => {
+              const known = lessonKnownMap[lesson.lesson_id] || 0
+              const pct = lesson.count > 0 ? Math.min(100, Math.round((known / lesson.count) * 100)) : 0
+              return (
+                <li key={lesson.lesson_id}>
+                  <button
+                    type="button"
+                    className="curriculum-toc-row"
+                    onClick={() => openLesson(lesson.lesson_id, 'flashcard')}
+                  >
+                    <span className="curriculum-toc-row__index" aria-hidden="true">
+                      {formatGrammarLessonIndex(lesson.lesson_title, idx)}
+                    </span>
+
+                    <span className="curriculum-toc-row__main">
+                      <span className="curriculum-toc-row__title">{lesson.lesson_title}</span>
+                    </span>
+
+                    <span className="curriculum-toc-row__right">
+                      <span className="curriculum-toc-progress">
+                        <span className="curriculum-toc-progress__bar" aria-hidden="true">
+                          <span style={{ width: `${pct}%` }} />
+                        </span>
+                        <span className="curriculum-toc-progress__label">
+                          {known} / {lesson.count} mẫu
+                        </span>
+                      </span>
+                      <ChevronRight size={16} className="curriculum-toc-row__chevron" aria-hidden="true" />
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
         </div>
       </div>
     )
   }
 
   // =========================================================================
-  // VIEW 3: IN-LESSON STUDY & FLASHCARD VIEW
+  // VIEW 3: IN-LESSON STUDY & KAKEJIKU FLASHCARD VIEW
   // =========================================================================
   const currentLessonInfo = lessonsList?.find((l) => l.lesson_id === selectedLesson)
+  const currentLessonBadge = formatGrammarLessonIndex(currentLessonInfo?.lesson_title || '', 0)
+
+  const toggleGrammarCardFlip = () => {
+    sumiAudio.initOnGesture()
+    sumiAudio.playBrushFriction()
+    playPaperFlip()
+    setFlipRippleCount((c) => c + 1)
+    setIsFlipped((f) => !f)
+  }
+
+  const handleGrammarRecall = (known: boolean) => {
+    if (!currentCard) return
+    if (known) {
+      setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
+      sumiAudio.initOnGesture()
+      sumiAudio.playHankoStamp()
+      playStampSuccess()
+      setStampBurstCount((c) => c + 1)
+      setShowStampFlash(true)
+      if (stampTimerRef.current) window.clearTimeout(stampTimerRef.current)
+      stampTimerRef.current = window.setTimeout(() => setShowStampFlash(false), 650)
+    } else {
+      playSoftMiss()
+    }
+    handleNextCard()
+  }
 
   return (
-    <div className="washi-page bunpo-view-shell">
+    <div className="washi-page curriculum-study-shell bunpo-study-shell">
       {saveError && (
         <p role="alert" className="ui-error-text">
           {saveError}
@@ -729,10 +1099,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       <header className="curriculum-study-bar">
         <div className="curriculum-study-bar__left">
           <Button variant="ghost" size="sm" onClick={() => setSelectedLesson(null)}>
-            <ArrowLeft size={16} /> Danh sách bài học
+            <ArrowLeft size={16} aria-hidden="true" /> Danh sách bài học
           </Button>
 
           <span className="curriculum-study-bar__divider" aria-hidden="true" />
+
+          <span className="curriculum-study-bar__seal" aria-hidden="true" lang="ja">
+            {currentLessonBadge}
+          </span>
 
           <h2
             className="curriculum-study-bar__title"
@@ -744,9 +1118,18 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
         <div className="curriculum-study-bar__right">
           {onGoToSrs && (
-            <Button variant="secondary" size="sm" onClick={onGoToSrs}>
-              <Layers size={14} /> Mở Sổ Tay Ôn Tập SRS
-            </Button>
+            <button
+              type="button"
+              className="curriculum-hanko-srs-pill"
+              onClick={onGoToSrs}
+              title="Mở Sổ Tay Ôn Tập SRS"
+            >
+              <span className="curriculum-hanko-srs-pill__stamp" aria-hidden="true">
+                記
+              </span>
+              <span className="curriculum-hanko-srs-pill__text">Sổ tay SRS</span>
+              <span className="curriculum-hanko-srs-pill__action">Ôn tập ›</span>
+            </button>
           )}
         </div>
       </header>
@@ -909,165 +1292,197 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           )}
         </section>
       ) : (
-        /* 3.3 LAYER 1: IN-LESSON FLASHCARD FOR GRAMMAR */
+        /* 3.3 LAYER 1: KAKEJIKU HANGING SCROLL STAGE FOR GRAMMAR */
         currentCard && (
-          <div style={{ marginBottom: '0.85rem' }}>
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label="Lật thẻ ngữ pháp"
-              aria-expanded={isFlipped}
-              className={`bunpo-flashcard washi-manuscript-card${!isFlipped ? ' washi-genko-bg' : ''}`}
-              onKeyDown={(event) => {
-                if (event.target === event.currentTarget && event.key === 'Enter') {
-                  event.preventDefault()
-                  setIsFlipped((f) => !f)
-                }
-              }}
-              onClick={() => setIsFlipped((f) => !f)}
-            >
-              {/* Top Bar */}
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Badge variant="primary">{currentCard.level}</Badge>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="lesson-stage-wrapper">
+            <div className="kakejiku-stage">
+              <div className="kakejiku-toolbar">
+                <div className="curriculum-flashcard__topbar-right">
+                  <span className="curriculum-level-badge" data-level={currentCard.level}>
+                    {currentCard.level}
+                  </span>
                   <button
                     type="button"
-                    className="washi-audio-btn"
-                    onClick={(e) => {
-                      e.stopPropagation()
+                    className={`curriculum-flashcard__icon-btn${isGrammarSaved(currentCard) ? ' is-saved' : ''}`}
+                    onClick={() => void handleSaveToSrs(currentCard)}
+                    title={isGrammarSaved(currentCard) ? 'Đã lưu trong SRS' : 'Lưu vào sổ tay ôn tập (Phím C)'}
+                    aria-label={isGrammarSaved(currentCard) ? 'Đã lưu trong SRS' : 'Lưu vào sổ tay ôn tập (Phím C)'}
+                  >
+                    {isGrammarSaved(currentCard) ? <Check size={15} /> : <BookmarkPlus size={15} />}
+                  </button>
+                  <button
+                    type="button"
+                    className="curriculum-flashcard__icon-btn curriculum-flashcard__icon-btn--audio"
+                    onClick={() => {
                       const firstAudio = currentCard.examples?.find((ex) => ex.audio)?.audio
                       playAudio(firstAudio, currentCard.pattern)
                     }}
                     title="Nghe phát âm"
+                    aria-label="Nghe phát âm"
                   >
-                    <Volume2 size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`washi-srs-btn${isGrammarSaved(currentCard) ? ' is-saved' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void handleSaveToSrs(currentCard)
-                    }}
-                    title="Lưu vào sổ tay ôn tập"
-                  >
-                    {isGrammarSaved(currentCard) ? '✓ Đã vào SRS' : '+ Thêm SRS (C)'}
+                    <Volume2 size={14} aria-hidden="true" />
+                    <span className="curriculum-flashcard__audio-label">
+                      Nghe<span className="curriculum-study-shortcut"> [R]</span>
+                    </span>
                   </button>
                 </div>
               </div>
 
-              {/* Center Content */}
-              <div style={{ margin: 'auto 0', width: '100%' }}>
-                {!isFlipped ? (
-                  // FRONT SIDE
-                  <div>
-                    <div className="bunpo-flashcard__pattern">{currentCard.pattern}</div>
-                    {currentCard.structure && (
-                      <div className="bunpo-flashcard__structure">✦ Cấu trúc: {currentCard.structure}</div>
-                    )}
+              <div className="kakejiku-scroll">
+                <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true" />
 
-                    {currentCard.groups && currentCard.groups.length > 1 && (
-                      <div style={{ marginTop: '0.65rem' }}>
-                        <span className="bunpo-multi-pill">Gồm {currentCard.groups.length} nghĩa & cách dùng</span>
-                      </div>
-                    )}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Lật thẻ ngữ pháp"
+                  aria-expanded={isFlipped}
+                  className={`curriculum-flashcard bunpo-kakejiku-card${isFlipped ? ' is-flipped' : ''}`}
+                  onKeyDown={(event) => {
+                    if (event.target === event.currentTarget && event.key === 'Enter') {
+                      event.preventDefault()
+                      toggleGrammarCardFlip()
+                    }
+                  }}
+                  onClick={toggleGrammarCardFlip}
+                >
+                  <img src="/assets/study-scroll-sumie.jpg" alt="" aria-hidden="true" className="kakejiku-art-bg" />
+                  <StudyInkAtmosphere burstTrigger={stampBurstCount} rippleTrigger={flipRippleCount} />
 
-                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.9rem' }}>
-                      Nhấn [Space] hoặc chạm để lật xem ý nghĩa & 1 ví dụ mỗi nghĩa
+                  {showStampFlash && (
+                    <div className="kakejiku-stamp-flash" aria-hidden="true">
+                      済
                     </div>
-                  </div>
-                ) : (
-                  // BACK SIDE
-                  <div style={{ width: '100%' }}>
-                    <div className="bunpo-flashcard__pattern--back">{currentCard.pattern}</div>
+                  )}
 
-                    {currentCard.groups && currentCard.groups.length > 1 ? (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.75rem',
-                          maxHeight: '400px',
-                          overflowY: 'auto',
-                          paddingRight: '4px',
-                          textAlign: 'left',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.2rem' }}>
-                          <span className="bunpo-multi-pill">
-                            Mẫu ngữ pháp có {currentCard.groups.length} nghĩa & cách dùng
-                          </span>
+                  <div className="kakejiku-colophon" aria-hidden="true" lang="ja">
+                    {currentCard.level} · {currentLessonBadge} ·{' '}
+                    {currentCard.groups && currentCard.groups.length > 1 ? `${currentCard.groups.length}義` : '文法'}
+                  </div>
+
+                  <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
+                    <span>文法墨蹟</span>
+                    <span className="curriculum-flashcard__hanko">{isFlipped ? '裏' : '表'}</span>
+                  </div>
+
+                  <div
+                    key={`${currentCard.id}-${isFlipped ? 'back' : 'front'}`}
+                    className="curriculum-flashcard__center curriculum-flashcard__flip-stage"
+                  >
+                    {!isFlipped ? (
+                      <div className="bunpo-kakejiku__front">
+                        <div className="bunpo-kakejiku__pattern" lang="ja">
+                          {currentCard.pattern}
+                        </div>
+                        <div className="curriculum-flashcard__brush-rule" aria-hidden="true" />
+                        {currentCard.structure && (
+                          <div className="bunpo-kakejiku__structure">✦ Cấu trúc: {currentCard.structure}</div>
+                        )}
+                        {currentCard.groups && currentCard.groups.length > 1 && (
+                          <div className="bunpo-kakejiku__multi-row">
+                            <span className="bunpo-multi-tag">
+                              Gồm {currentCard.groups.length} nghĩa &amp; cách dùng
+                            </span>
+                          </div>
+                        )}
+                        <div className="curriculum-flashcard__cue is-first-card">
+                          <span aria-hidden="true">◇</span>
+                          <span>Nhấn [Space] hoặc chạm để lật xem ý nghĩa &amp; 1 ví dụ mỗi nghĩa</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bunpo-kakejiku__back">
+                        <div className="bunpo-kakejiku__pattern--back" lang="ja">
+                          {currentCard.pattern}
                         </div>
 
-                        {currentCard.groups.map((group, gIdx) => {
-                          const firstEx = group.examples && group.examples[0]
-                          return (
-                            <div key={gIdx} className="bunpo-group-card">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
-                                <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--color-success)' }}>
-                                  {group.meaning || group.usage || ''}
-                                </span>
-                              </div>
+                        {currentCard.groups && currentCard.groups.length > 1 ? (
+                          <div className="bunpo-kakejiku__back-groups">
+                            <div className="bunpo-kakejiku__multi-row">
+                              <span className="bunpo-multi-tag">
+                                Mẫu ngữ pháp có {currentCard.groups.length} nghĩa &amp; cách dùng
+                              </span>
+                            </div>
 
-                              {group.structure && (
-                                <div
-                                  style={{
-                                    fontFamily: 'var(--font-jp-serif)',
-                                    fontSize: '0.88rem',
-                                    color: 'var(--color-accent-text)',
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  ✦ {group.structure}
-                                </div>
-                              )}
+                            {currentCard.groups.map((group, gIdx) => {
+                              const firstEx = group.examples && group.examples[0]
+                              return (
+                                <div key={gIdx} className="bunpo-group-card">
+                                  <div className="bunpo-group-card__head">
+                                    <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
+                                    <span className="bunpo-group-card__meaning">
+                                      {group.meaning || group.usage || ''}
+                                    </span>
+                                  </div>
 
-                              {group.usage && group.usage !== group.meaning && (
-                                <div
-                                  style={{
-                                    fontSize: '0.84rem',
-                                    color: 'var(--color-text-secondary)',
-                                    lineHeight: 1.4,
-                                  }}
-                                >
-                                  ◎ {group.usage}
-                                </div>
-                              )}
+                                  {group.structure && (
+                                    <div className="bunpo-group-card__structure">✦ {group.structure}</div>
+                                  )}
 
-                              {/* Exactly 1 Example per sub-meaning with clean Furigana Ruby & Audio */}
-                              {firstEx && (
-                                <div
-                                  className="bunpo-example-box"
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    gap: '0.75rem',
-                                  }}
-                                >
-                                  <div style={{ flex: 1 }}>
-                                    <div
-                                      style={{
-                                        fontFamily: 'var(--font-jp)',
-                                        fontSize: '0.98rem',
-                                        color: 'var(--color-text)',
-                                        lineHeight: 1.6,
-                                      }}
-                                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp) }}
-                                    />
-                                    {firstEx.vi && (
-                                      <div
-                                        style={{
-                                          color: 'var(--color-text-secondary)',
-                                          fontSize: '0.84rem',
-                                          marginTop: '3px',
-                                        }}
-                                      >
-                                        {firstEx.vi}
+                                  {group.usage && group.usage !== group.meaning && (
+                                    <div className="bunpo-group-card__usage">◎ {group.usage}</div>
+                                  )}
+
+                                  {firstEx && (
+                                    <div className="bunpo-example-box bunpo-example-box--inline">
+                                      <div className="bunpo-example-box__body">
+                                        <div
+                                          className="bunpo-example-box__jp"
+                                          lang="ja"
+                                          dangerouslySetInnerHTML={{
+                                            __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
+                                          }}
+                                        />
+                                        {firstEx.vi && <div className="bunpo-example-box__vi">{firstEx.vi}</div>}
                                       </div>
-                                    )}
+
+                                      <button
+                                        type="button"
+                                        className="washi-audio-btn"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          playAudio(firstEx.audio, firstEx.jp)
+                                        }}
+                                        title="Nghe đọc câu ví dụ"
+                                      >
+                                        <Volume2 size={16} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div className="bunpo-kakejiku__back-single">
+                            <div className="bunpo-kakejiku__single-meaning">
+                              {currentCard.shortMeaning || currentCard.explanation}
+                            </div>
+
+                            {currentCard.structure && (
+                              <div className="bunpo-kakejiku__structure">✦ Cấu trúc: {currentCard.structure}</div>
+                            )}
+
+                            {currentCard.explanation && currentCard.explanation !== currentCard.shortMeaning && (
+                              <div className="bunpo-kakejiku__single-explain">{currentCard.explanation}</div>
+                            )}
+
+                            {(() => {
+                              const firstEx = currentCard.examples?.[0]
+                              if (!firstEx) return null
+                              return (
+                                <div
+                                  className="bunpo-example-box bunpo-example-box--inline"
+                                  style={{ marginTop: '0.85rem' }}
+                                >
+                                  <div className="bunpo-example-box__body">
+                                    <div
+                                      className="bunpo-example-box__jp"
+                                      lang="ja"
+                                      dangerouslySetInnerHTML={{
+                                        __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
+                                      }}
+                                    />
+                                    {firstEx.vi && <div className="bunpo-example-box__vi">{firstEx.vi}</div>}
                                   </div>
 
                                   <button
@@ -1082,167 +1497,71 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                     <Volume2 size={16} />
                                   </button>
                                 </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      // Single Group Case
-                      <div>
-                        <div
-                          style={{
-                            fontSize: '1.25rem',
-                            fontWeight: 700,
-                            color: 'var(--color-success)',
-                            marginTop: '0.5rem',
-                          }}
-                        >
-                          {currentCard.shortMeaning || currentCard.explanation}
-                        </div>
-
-                        {currentCard.structure && (
-                          <div className="bunpo-flashcard__structure" style={{ fontSize: '0.96rem' }}>
-                            ✦ Cấu trúc: {currentCard.structure}
+                              )
+                            })()}
                           </div>
                         )}
-
-                        {currentCard.explanation && currentCard.explanation !== currentCard.shortMeaning && (
-                          <div
-                            style={{
-                              fontSize: '0.9rem',
-                              color: 'var(--color-text-secondary)',
-                              marginTop: '0.5rem',
-                              lineHeight: 1.45,
-                            }}
-                          >
-                            {currentCard.explanation}
-                          </div>
-                        )}
-
-                        {(() => {
-                          const firstEx = currentCard.examples?.[0]
-                          if (!firstEx) return null
-                          return (
-                            <div
-                              className="bunpo-example-box"
-                              style={{
-                                marginTop: '1rem',
-                                textAlign: 'left',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                gap: '0.75rem',
-                              }}
-                            >
-                              <div style={{ flex: 1 }}>
-                                <div
-                                  style={{
-                                    fontFamily: 'var(--font-jp)',
-                                    fontSize: '1.02rem',
-                                    color: 'var(--color-text)',
-                                    lineHeight: 1.6,
-                                  }}
-                                  dangerouslySetInnerHTML={{
-                                    __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
-                                  }}
-                                />
-                                {firstEx.vi && (
-                                  <div
-                                    style={{
-                                      color: 'var(--color-text-secondary)',
-                                      fontSize: '0.88rem',
-                                      marginTop: '4px',
-                                    }}
-                                  >
-                                    {firstEx.vi}
-                                  </div>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                className="washi-audio-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  playAudio(firstEx.audio, firstEx.jp)
-                                }}
-                                title="Nghe đọc câu ví dụ"
-                              >
-                                <Volume2 size={16} />
-                              </button>
-                            </div>
-                          )
-                        })()}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Bottom Bar */}
-              <div className="bunpo-flashcard__footer">
-                <span>Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)</span>
-                <span style={{ fontWeight: 700 }}>
-                  {currentIndex + 1} / {grammars.length}
-                </span>
+                  <div className="curriculum-flashcard__footer">
+                    <span className="curriculum-flashcard__footer-meta">
+                      Mẫu {currentIndex + 1} / {grammars.length}
+                    </span>
+                    <span className="curriculum-flashcard__footer-keys">
+                      Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)
+                    </span>
+                  </div>
+                  <div className="curriculum-flashcard__rail" aria-hidden="true">
+                    <span
+                      style={{
+                        width: `${grammars.length > 0 ? ((currentIndex + 1) / grammars.length) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="kakejiku-rod kakejiku-rod--bottom" aria-hidden="true" />
               </div>
             </div>
 
-            {/* Flashcard Buttons */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '1rem',
-                marginTop: '1.25rem',
-              }}
-            >
+            <div className="curriculum-flashcard-controls">
               <Button
-                variant="secondary"
-                size="lg"
+                variant="ghost"
+                size="md"
+                className="curriculum-flashcard-controls__nav"
                 onClick={handlePrevCard}
                 disabled={currentIndex === 0}
-                style={{ minWidth: '120px' }}
               >
-                <ChevronLeft size={18} /> Trước
+                <ChevronLeft size={18} aria-hidden="true" /> <span>Trước</span>
               </Button>
 
               <Button
                 variant="danger"
-                size="lg"
-                onClick={() => handleNextCard()}
-                style={{ minWidth: '130px', fontWeight: 700 }}
+                size="md"
+                className="curriculum-flashcard-controls__miss"
+                onClick={() => handleGrammarRecall(false)}
               >
-                Chưa biết (X)
+                <span>Chưa biết (X)</span>
               </Button>
 
               <Button
                 variant="primary"
-                size="lg"
-                onClick={() => {
-                  setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
-                  handleNextCard()
-                }}
-                style={{
-                  minWidth: '130px',
-                  fontWeight: 700,
-                  background: 'var(--color-accent)',
-                  borderColor: 'var(--color-accent)',
-                }}
+                size="md"
+                className="curriculum-flashcard-controls__pass"
+                onClick={() => handleGrammarRecall(true)}
               >
-                ✓ Đã biết (Z)
+                <Check size={16} aria-hidden="true" /> <span>Đã biết (Z)</span>
               </Button>
 
               <Button
-                variant="secondary"
-                size="lg"
+                variant="ghost"
+                size="md"
+                className="curriculum-flashcard-controls__nav"
                 onClick={handleNextCard}
-                disabled={currentIndex === grammars.length - 1}
-                style={{ minWidth: '120px' }}
+                disabled={currentIndex >= grammars.length - 1}
               >
-                Sau <ChevronRight size={18} />
+                <span>Sau</span> <ChevronRight size={18} aria-hidden="true" />
               </Button>
             </div>
           </div>

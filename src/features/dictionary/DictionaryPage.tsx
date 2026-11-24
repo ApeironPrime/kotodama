@@ -599,7 +599,7 @@ export default function DictionaryPage({
         )}
 
         <div
-          className={`dictionary-workspace ${activeTab === 'kanji' || activeTab === 'vocabulary' ? 'is-kanji-art-mode' : ''}`}
+          className={`dictionary-workspace ${activeTab === 'kanji' || activeTab === 'vocabulary' || activeTab === 'grammar' ? 'is-kanji-art-mode' : ''}`}
         >
           <div className="dictionary-workspace__main">
             {/* 1. VIEW: TAB HÁN TỰ */}
@@ -1373,8 +1373,8 @@ export default function DictionaryPage({
         </div>
       </div>
 
-      {/* Floating Artisan Drawer Tab Handle (Right Edge) */}
-      {activeTab !== 'kanji' && activeTab !== 'vocabulary' && (
+      {/* Floating Artisan Drawer Tab Handle (Right Edge — only in deep lookup mode) */}
+      {effectiveMode === 'deep' && activeTab !== 'kanji' && activeTab !== 'vocabulary' && activeTab !== 'grammar' && (
         <button
           type="button"
           className="dictionary-drawer-trigger"

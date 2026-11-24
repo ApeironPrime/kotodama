@@ -3162,42 +3162,69 @@
   margin-top: 1.25rem;
 }
 
-.bunpo-multi-pill {
+.bunpo-multi-pill,
+.bunpo-multi-tag {
   display: inline-block;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  padding: 0.2rem 0.75rem;
-  border-radius: 999px;
-  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.14));
-  color: var(--color-warning);
-  border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.32));
+  padding: 0.22rem 0.65rem;
+  border-radius: 3px;
+  background: rgba(184, 46, 46, 0.08);
+  color: var(--color-accent-text, #9f2626);
+  border: 1px solid rgba(184, 46, 46, 0.28);
 }
 
 .bunpo-group-card {
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: 0.45rem;
-  padding: 0.9rem 1.05rem;
+  border-radius: 3px;
+  padding: 0.85rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.5rem;
   text-align: left;
 }
 
+.bunpo-group-card__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bunpo-group-card__meaning {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.bunpo-group-card__structure {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 0.88rem;
+  color: var(--color-accent-text);
+  font-weight: 600;
+}
+
+.bunpo-group-card__usage {
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
 .bunpo-group-badge {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
   background: var(--color-accent);
   color: var(--color-text-inverse);
-  border-radius: 999px;
-  padding: 0.15rem 0.6rem;
+  border-radius: 2px;
+  padding: 0.14rem 0.5rem;
 }
 
 .bunpo-meaning-box {
-  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-border));
   border-left: 3px solid var(--color-accent);
-  border-radius: 0.35rem;
+  border-radius: 3px;
   padding: 0.65rem 1rem;
 }
 
@@ -3210,24 +3237,49 @@
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   padding: 0.45rem 0.8rem;
-  border-radius: 0.35rem;
+  border-radius: 3px;
 }
 
 .bunpo-example-box {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-left: 2px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
-  border-radius: 0.35rem;
+  border-radius: 3px;
   padding: 0.65rem 0.9rem;
+}
+
+.bunpo-example-box--inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bunpo-example-box__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.bunpo-example-box__jp {
+  font-family: var(--font-jp);
+  font-size: 0.98rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.bunpo-example-box__vi {
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  margin-top: 3px;
 }
 
 .bunpo-note-box {
   font-size: 0.86rem;
   color: var(--color-text-secondary);
   line-height: 1.5;
-  background: var(--color-danger-subtle, rgba(239, 68, 68, 0.06));
-  border: 1px solid var(--color-danger-border, rgba(239, 68, 68, 0.2));
-  border-radius: 0.35rem;
+  background: var(--color-danger-subtle, rgba(184, 46, 46, 0.05));
+  border: 1px solid var(--color-danger-border, rgba(184, 46, 46, 0.2));
+  border-radius: 3px;
   padding: 0.65rem 0.9rem;
   white-space: pre-line;
 }
@@ -3236,12 +3288,12 @@
   scroll-margin-top: 85px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0.45rem;
-  padding: 1.5rem;
+  border-radius: 3px;
+  padding: 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  box-shadow: 0 2px 12px -8px rgb(28 27 32 / 8%);
+  gap: 0.85rem;
+  box-shadow: 0 2px 10px -8px rgb(28 27 32 / 8%);
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out);
@@ -3281,14 +3333,14 @@
 
 .bunpo-toc {
   position: sticky;
-  top: 80px;
+  top: 84px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-top: 2px solid color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
-  border-radius: 0.45rem;
+  border-radius: 3px;
   padding: 1rem;
   box-shadow: 0 2px 14px -8px rgb(28 27 32 / 8%);
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 104px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -3302,8 +3354,8 @@
   color: var(--color-text-muted);
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
 }
 
 .bunpo-toc__item {
@@ -3313,7 +3365,7 @@
   width: 100%;
   text-align: left;
   padding: 0.4rem 0.55rem;
-  border-radius: 0.35rem;
+  border-radius: 3px;
   border: 0;
   background: transparent;
   color: var(--color-text);
@@ -3333,4 +3385,140 @@
   background: var(--color-accent-subtle);
   color: var(--color-accent-text);
   font-weight: 700;
+}
+
+/* Synchronized Washi Pattern Search Hits & Kakejiku Grammar Stage */
+.bunpo-pattern-hit-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: 0.75rem;
+}
+
+.bunpo-pattern-hit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.bunpo-pattern-hit:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.bunpo-pattern-hit__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.bunpo-pattern-hit__meta {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-accent-text);
+}
+
+.bunpo-pattern-hit__pattern {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.bunpo-pattern-hit__meaning {
+  font-size: 0.83rem;
+  color: var(--color-text-secondary);
+}
+
+.bunpo-pattern-hit__arrow {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.bunpo-kakejiku-card {
+  min-height: 292px;
+}
+
+.bunpo-kakejiku__front {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.bunpo-kakejiku__pattern {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: clamp(2rem, 3.8vw, 2.75rem);
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.bunpo-kakejiku__pattern--back {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  font-size: 1.65rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.bunpo-kakejiku__structure {
+  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
+  color: var(--color-accent-text);
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.bunpo-kakejiku__multi-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+.bunpo-kakejiku__back {
+  width: 100%;
+}
+
+.bunpo-kakejiku__back-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  text-align: left;
+}
+
+.bunpo-kakejiku__back-single {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bunpo-kakejiku__single-meaning {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.bunpo-kakejiku__single-explain {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  line-height: 1.48;
+  max-width: 58ch;
 }
