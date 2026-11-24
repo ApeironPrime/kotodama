@@ -1894,6 +1894,9 @@
   max-width: none;
   margin: 0 auto;
   padding: 0 0 var(--space-3);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 /* Compact Single-Row Study Bar */
@@ -2526,7 +2529,7 @@
 
 .curriculum-flashcard {
   perspective: 1400px;
-  min-height: clamp(265px, calc(100dvh - 23.5rem), 355px);
+  min-height: clamp(245px, calc(100dvh - 24.75rem), 335px);
   background-color: var(--color-surface);
   background-image: linear-gradient(
     180deg,
@@ -2824,15 +2827,40 @@
   border-bottom-color: var(--color-accent);
 }
 
+.curriculum-flashcard__back-audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.14rem 0.42rem;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.curriculum-flashcard__back-audio:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+
 .curriculum-flashcard__example-plate {
-  margin: 0.65rem auto 0;
+  margin: 0.4rem auto 0;
   width: 100%;
   max-width: 34rem;
-  padding: 0.7rem 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
-  border-left: 3px solid var(--color-accent);
-  border-radius: 0 8px 8px 0;
-  background: color-mix(in srgb, var(--color-bg-subtle) 65%, var(--color-surface));
+  padding: 0.55rem 0.85rem;
+  border: none;
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-bg-subtle) 42%, transparent);
   text-align: left;
   font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
   font-size: 0.94rem;
@@ -2844,6 +2872,21 @@
   gap: 0.75rem;
 }
 
+.curriculum-flashcard__example-plate small {
+  display: block;
+  margin-top: 0.22rem;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.curriculum-flashcard__example-kw {
+  background: transparent;
+  color: inherit;
+  border-bottom: 1.5px solid var(--color-accent);
+  padding-bottom: 1px;
+}
+
 .curriculum-flashcard__example-plate-text {
   min-width: 0;
   flex: 1;
@@ -2853,12 +2896,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
   border: 1px solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-surface);
+  border-radius: 2px;
+  background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
 }
@@ -2874,7 +2917,7 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.45rem;
-  margin-top: 0.55rem;
+  margin-top: 0.4rem;
 }
 
 .curriculum-flashcard__kanji-label {
@@ -2887,14 +2930,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.9rem;
+  height: 1.9rem;
   border: 1px solid color-mix(in srgb, var(--color-accent) 32%, var(--color-border));
-  border-radius: 6px;
+  border-radius: 2px;
   background: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-jp-serif, 'Shippori Mincho', serif);
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -2909,6 +2952,64 @@
   background: var(--color-accent-subtle);
   color: var(--color-accent-text);
   transform: translateY(-1px);
+}
+
+@keyframes srsCornerPop {
+  0% {
+    transform: scale(0.92);
+  }
+  55% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.curriculum-flashcard__corner-srs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-text) 20%, transparent);
+  border-radius: 2px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.curriculum-flashcard__corner-srs:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.curriculum-flashcard__corner-srs.is-saved {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+
+.curriculum-flashcard__corner-srs.is-popping {
+  animation: srsCornerPop 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.curriculum-flashcard__corner-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-family: var(--font-jp-serif, serif);
+  font-size: 0.64rem;
+  font-weight: 800;
 }
 
 .curriculum-flashcard__brush-rule {
@@ -3077,29 +3178,6 @@
     );
 }
 
-.curriculum-flashcard__example-plate {
-  margin: 1rem auto 0;
-  max-width: 34rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
-  border-left: 3px solid var(--color-accent);
-  border-radius: 0 8px 8px 0;
-  background: color-mix(in srgb, var(--color-bg-subtle) 65%, var(--color-surface));
-  text-align: left;
-  font-family: var(--font-jp-serif, 'Noto Serif JP', serif);
-  font-size: 0.96rem;
-  color: var(--color-text);
-  line-height: 1.5;
-}
-
-.curriculum-flashcard__example-plate small {
-  display: block;
-  margin-top: 0.25rem;
-  font-family: var(--font-sans);
-  font-size: 0.84rem;
-  color: var(--color-text-secondary);
-}
-
 .curriculum-flashcard-controls {
   display: flex;
   justify-content: center;
@@ -3107,6 +3185,31 @@
   gap: 0.65rem;
   flex-wrap: wrap;
   margin-top: 0.65rem;
+}
+
+.curriculum-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.curriculum-sound-toggle:hover,
+.curriculum-sound-toggle.is-on {
+  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-border));
+  color: var(--color-accent-text);
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
 }
 
 .curriculum-flashcard-controls button,
@@ -3119,7 +3222,7 @@
 .curriculum-term-row__icon-btn,
 .curriculum-term-row__index-btn,
 .lesson-vocab-rail .ui-btn {
-  border-radius: 2px !important;
+  border-radius: 3px !important;
 }
 
 .curriculum-flashcard-controls__miss {
@@ -3330,10 +3433,10 @@
 }
 
 .dojo-timed-toggle {
-  min-height: 2rem;
-  padding-inline: 0.55rem;
+  min-height: 1.9rem;
+  padding-inline: 0.58rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
+  border-radius: 3px;
 }
 
 .dojo-timed-toggle[aria-pressed='true'] {
@@ -3490,17 +3593,48 @@
 }
 
 .dojo-option-btn.is-correct {
-  border-bottom: 2px solid var(--color-success, #2b7a4b);
-  background: color-mix(in srgb, var(--color-success, #2b7a4b) 8%, transparent);
+  border-bottom: 2px solid #3f5e45;
+  background: color-mix(in srgb, #3f5e45 9%, transparent);
+}
+
+.dojo-option-btn.is-correct .dojo-option-btn__key {
+  border-color: #3f5e45;
+  background: color-mix(in srgb, #3f5e45 14%, transparent);
+  color: #2f4934;
 }
 
 .dojo-option-btn.is-wrong {
   border-bottom: 2px solid var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+}
+
+.dojo-option-btn.is-wrong .dojo-option-btn__text {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-accent);
+  text-decoration-thickness: 1.5px;
+  color: var(--color-accent-text);
 }
 
 .dojo-option-btn.is-dim {
   opacity: 0.45;
+}
+
+.dojo-cloze-post-vi {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.dojo-key-hint {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0.04rem 0.3rem;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: 2px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.78;
 }
 
 .dojo-feedback-bar {
@@ -3759,10 +3893,24 @@
   color: var(--color-accent-text);
   font-weight: 800;
   letter-spacing: 0.04em;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
-.dojo-cloze-blank.is-filled {
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+.dojo-cloze-blank.is-filled.is-correct,
+.dojo-cloze-blank.is-filled.is-auto-filled {
+  border-bottom-color: #3f5e45;
+  color: #2f4934;
+  background: color-mix(in srgb, #3f5e45 10%, transparent);
+}
+
+.dojo-cloze-ruby rt {
+  font-size: 0.56em;
+  font-weight: 600;
+  color: #3f5e45;
+  letter-spacing: 0.02em;
 }
 
 .dojo-cloze-meaning-prompt {
@@ -3915,24 +4063,77 @@
   opacity: 0.92;
 }
 
+@keyframes hankoSpringIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.75) rotate(-14deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(0.92) rotate(-7deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-8deg);
+  }
+}
+
+@keyframes karutaShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  55% {
+    transform: translateX(5px);
+  }
+  80% {
+    transform: translateX(-3px);
+  }
+}
+
 .dojo-karuta-card--fuda.is-matched {
-  opacity: 0.42;
-  transform: translateY(-4px) rotate(-1.5deg);
+  opacity: 0.48;
+  transform: translate(5px, -7px) rotate(4deg);
   border-color: #cfc6b6;
   background: #f5f0e5;
+  transition:
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.24s ease;
 }
 
-.dojo-karuta-card--fuda.is-matched .dojo-karuta-card__seal {
-  top: 0.65rem;
-  right: 0.65rem;
-  border-width: 1.5px;
-  transform: rotate(-8deg);
+.dojo-karuta-seal-svg {
+  position: absolute;
+  top: 0.58rem;
+  right: 0.58rem;
+  width: 1.65rem;
+  height: 1.65rem;
+  color: var(--color-accent);
+  animation: hankoSpringIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.dojo-karuta-card--fuda.is-mismatch,
-.dojo-karuta-card--fuda.is-missed-reveal {
+.dojo-karuta-card--fuda.is-mismatch {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 16%, #fcf9f3);
+  background: color-mix(in srgb, var(--color-accent) 14%, #fcf9f3);
+  animation: karutaShake 0.26s ease;
+}
+
+.dojo-karuta-card--fuda.is-missed-reveal {
+  border-color: #3f5e45;
+  background: color-mix(in srgb, #3f5e45 11%, #fcf9f3);
+  box-shadow:
+    inset 0 0 0 5px #fcf9f3,
+    inset 0 0 0 6.5px #3f5e45,
+    0 0 0 2px color-mix(in srgb, #3f5e45 28%, transparent);
+}
+
+.dojo-karuta-card__reveal-kana {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2f4934;
 }
 
 @media (max-width: 640px) {
@@ -3969,10 +4170,10 @@
 }
 
 .dojo-typing-line {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
   border-bottom: 1.5px solid color-mix(in srgb, var(--color-text) 32%, transparent);
   transition: border-color 0.16s ease;
 }
@@ -3982,7 +4183,7 @@
 }
 
 .dojo-typing-line.is-correct {
-  border-bottom-color: var(--color-success, #2b7a4b);
+  border-bottom-color: #3f5e45;
 }
 
 .dojo-typing-line.is-wrong {
@@ -3990,10 +4191,10 @@
 }
 
 input.dojo-typing-input {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   appearance: none;
-  padding: 0.5rem 0.35rem;
+  padding: 0.5rem 5.5rem;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -4013,7 +4214,7 @@ input.dojo-typing-input:focus-visible {
 }
 
 .dojo-typing-line.is-correct input.dojo-typing-input {
-  color: var(--color-success, #2b7a4b);
+  color: #2f4934;
 }
 
 .dojo-typing-line.is-wrong input.dojo-typing-input {
@@ -4021,29 +4222,33 @@ input.dojo-typing-input:focus-visible {
 }
 
 .dojo-typing-inline-enter {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.75rem;
-  padding-inline: 0.85rem;
-  flex-shrink: 0;
+  min-height: 2.25rem;
+  padding: 0 0.35rem;
   border: none;
-  border-radius: 4px;
-  background: var(--color-accent-subtle);
+  border-radius: 2px;
+  background: transparent;
   color: var(--color-accent-text);
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.82rem;
+  font-weight: 650;
   cursor: pointer;
   transition:
-    color 0.16s ease,
-    background 0.16s ease;
+    opacity 0.16s ease,
+    color 0.16s ease;
 }
 
 .dojo-typing-inline-enter:hover,
 .dojo-typing-inline-enter:focus-visible {
   outline: none;
-  color: var(--color-accent-text);
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .dojo-typing-actions {
@@ -4056,18 +4261,257 @@ input.dojo-typing-input:focus-visible {
 }
 
 .dojo-typing-preview {
-  margin-top: -0.3rem;
-  display: grid;
-  gap: 0.3rem;
+  margin-top: -0.25rem;
+  min-height: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   font-size: 0.84rem;
   color: var(--color-text-secondary);
 }
 
-.dojo-typing-preview strong {
+.dojo-typing-placeholder-hint {
+  color: color-mix(in srgb, var(--color-text-muted) 82%, transparent);
+}
+
+.dojo-typing-live-kana {
   font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--color-text);
-  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+
+/* Typing Nijuumaru SVG & Tensaku Grading */
+@keyframes drawCircle {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.dojo-typing-correct-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.dojo-nijuumaru-svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.dojo-nijuumaru-outer,
+.dojo-nijuumaru-inner {
+  stroke-dasharray: 100;
+  animation: drawCircle 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dojo-tensaku {
+  border-left-color: var(--color-accent);
+}
+
+.dojo-tensaku__grade-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+}
+
+.dojo-tensaku__target {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dojo-tensaku__char.is-diff {
+  color: var(--color-accent-text);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.dojo-tensaku__strike {
+  font-family: var(--font-jp, sans-serif);
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-accent);
+  text-decoration-thickness: 1.5px;
+}
+
+.dojo-tensaku__meaning {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.dojo-tensaku__hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent-text);
+}
+
+/* Phiếu Chấm Đạo Trường Summary Sheet */
+.dojo-summary-sheet {
+  width: min(100%, 38rem);
+  margin-inline: auto;
+  padding: 1.15rem 0.25rem;
+  gap: 1.15rem;
+}
+
+.dojo-summary-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: left;
+}
+
+.dojo-rank-seal {
+  width: 3.4rem;
+  height: 3.4rem;
+  flex-shrink: 0;
+  color: var(--color-accent);
+  transform: rotate(-4deg);
+}
+
+.dojo-summary-sheet__kicker {
+  display: block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+}
+
+.dojo-summary-sheet__title-group h3 {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', serif);
+  font-size: 1.4rem;
+}
+
+.dojo-summary-metrics {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dojo-summary-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.7rem 0.5rem;
+  gap: 0.2rem;
+}
+
+.dojo-summary-metric + .dojo-summary-metric {
+  border-left: 1px solid var(--color-border);
+}
+
+.dojo-summary-metric__label {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.dojo-summary-metric__value {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', serif);
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.dojo-summary-metric__value small {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.dojo-summary__missed-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.dojo-summary__missed-meaning {
+  color: var(--color-text-secondary);
+}
+
+.dojo-summary__srs-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #2f4934;
+}
+
+.dojo-summary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.dojo-summary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.dojo-summary-btn--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.dojo-summary-btn--srs {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  color: var(--color-accent-text);
+}
+
+.dojo-summary-btn--srs.is-done {
+  border-color: #3f5e45;
+  color: #2f4934;
+  cursor: default;
+}
+
+.dojo-summary-btn--ghost:hover {
+  border-color: var(--color-text);
+}
+
+@media (hover: none) {
+  .dojo-key-hint,
+  .dojo-karuta-card__key,
+  .curriculum-flashcard__footer-keys {
+    display: none;
+  }
+
+  .dojo-option-btn,
+  .dojo-summary-btn,
+  .curriculum-flashcard__corner-srs {
+    min-height: 2.75rem;
+  }
 }
 
 .dojo-typing-reveal {
@@ -4223,7 +4667,12 @@ input.dojo-typing-input:focus-visible {
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (min-height: 680px) {
+  .lesson-split-workspace.is-zen {
+    flex: 1;
+    width: 100%;
+  }
+
   .lesson-split-workspace__stage {
     display: flex;
     flex-direction: column;
@@ -4231,7 +4680,14 @@ input.dojo-typing-input:focus-visible {
   }
 
   .lesson-stage-wrapper,
-  .lesson-stage-wrapper :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll) {
+  .lesson-stage-wrapper--game {
+    flex: 1;
+    min-height: clamp(22.5rem, calc(100dvh - 15.75rem), 29.5rem);
+  }
+
+  .lesson-stage-wrapper,
+  .lesson-stage-wrapper :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll),
+  .lesson-stage-wrapper--game .lesson-game-panel {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -4243,6 +4699,11 @@ input.dojo-typing-input:focus-visible {
 
   .lesson-stage-wrapper .kakejiku-rod {
     flex-shrink: 0;
+  }
+
+  .lesson-game-dock {
+    margin-top: auto;
+    padding-bottom: 0.35rem;
   }
 }
 

@@ -1,8 +1,8 @@
 import { type CSSProperties, type FormEvent, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { BookmarkPlus, Check, Clock, Eye, Gamepad2, RotateCcw, Volume2 } from 'lucide-react'
 import type { CurriculumWord } from '../srs/srsTypes'
-import { sumiAudio } from '../dictionary/sumiAudio'
-import { buildClozeSentence, type ClozeSentence, isReadingMatch, romajiToHiragana } from './kanaRomaji'
+import { buildClozeSentence, type ClozeSentence, diffKanaReading, isReadingMatch, romajiToHiragana } from './kanaRomaji'
+import { playKarutaSlap, playSoftMiss, playStampSuccess } from './soundEngine'
 
 export type DojoGameMode = 'cloze' | 'karuta' | 'typing'
 
@@ -25,14 +25,37 @@ const KARUTA_TURN_MS = 8000
 const TYPING_TURN_MS = 10000
 const KARUTA_KEYS = ['Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F'] as const
 const GENERIC_IDENTITY_QUESTION = /^[「『]?あの\s*(.+?)\s*は\s*(?:だれ|誰)ですか[。？?」』]*$/u
-const CLOZE_ALTERNATIVES = [
+
+const CLOZE_ALTERNATIVES: ReadonlyArray<ReadonlyArray<string>> = [
   ['先輩', '後輩', '同僚', '上司', '部下'],
   ['男性', '女性', '男', '女'],
+  ['年上', '年下', '同い年'],
+  ['長所', '短所', '利点', '欠点', '強み', '弱み'],
   ['賛成', '反対'],
+  ['敵', '味方'],
+  ['過去', '現在', '将来', '未来', '昔', '今'],
+  ['長男', '次男', '長女', '兄', '弟', '姉', '妹', '父', '母', '夫', '妻', '主人'],
+  ['原因', '結果', '理由', '目的'],
+  ['輸出', '輸入'],
+  ['生産', '消費'],
+  ['需要', '供給'],
+  ['収入', '支出'],
+  ['成功', '失敗'],
+  ['合格', '不合格'],
+  ['増加', '減少'],
+  ['上昇', '下降', '低下'],
+  ['出発', '到着'],
+  ['開始', '終了'],
+  ['入学', '卒業'],
+  ['表', '裏'],
+  ['右', '左'],
+  ['東', '西', '南', '北'],
+  ['春', '夏', '秋', '冬'],
+  ['朝', '昼', '晩', '夜'],
   ['友人', '友達', '知り合い', '知人'],
   ['故郷', 'ふるさと', '出身地'],
-  ['合格', '不合格'],
 ]
+
 const PERSON_MEANING_RE =
   /người|con trai|con gái|cha|mẹ|anh|em|chị|chủ nhân|tác giả|họ hàng|nhân viên|học sinh|giáo viên|bạn bè|tha nhân|trưởng nam|sinh đôi|trẻ lạc/i
 
@@ -112,9 +135,9 @@ function scoreDistractorSimilarity(target: CurriculumWord, candidate: Curriculum
   return score
 }
 
-function buildClozeQuestions(words: CurriculumWord[]): ClozeQuestion[] {
-  if (words.length < 2) return []
-  const withCloze: Array<{ word: CurriculumWord; cloze: ClozeSentence | null }> = words.map((w) => ({
+function buildClozeQuestions(targetPool: CurriculumWord[], distractorPool: CurriculumWord[]): ClozeQuestion[] {
+  if (distractorPool.length < 2 || targetPool.length === 0) return []
+  const withCloze: Array<{ word: CurriculumWord; cloze: ClozeSentence | null }> = targetPool.map((w) => ({
     word: w,
     cloze: buildClozeSentence(
       w.word,
@@ -124,10 +147,12 @@ function buildClozeQuestions(words: CurriculumWord[]): ClozeQuestion[] {
 
   const clozeReady = shuffleArray(withCloze.filter((item) => item.cloze !== null))
   const fallbackOnly = shuffleArray(withCloze.filter((item) => item.cloze === null))
-  const targets = [...clozeReady, ...fallbackOnly].slice(0, Math.min(10, words.length))
+  const targets = [...clozeReady, ...fallbackOnly].slice(0, Math.min(10, targetPool.length))
 
   return targets.flatMap(({ word: target, cloze }) => {
-    const pool = words.filter((candidate) => candidate.word !== target.word && candidate.meaning !== target.meaning)
+    const pool = distractorPool.filter(
+      (candidate) => candidate.word !== target.word && candidate.meaning !== target.meaning
+    )
     const alternatives = CLOZE_ALTERNATIVES.filter((group) => group.includes(target.word))
     const contextualPool = pool.filter((candidate) => !alternatives.some((group) => group.includes(candidate.word)))
     const useContext = cloze !== null && contextualPool.length > 0
@@ -141,30 +166,182 @@ function buildClozeQuestions(words: CurriculumWord[]): ClozeQuestion[] {
   })
 }
 
-function buildKarutaArena(words: CurriculumWord[]): { board: CurriculumWord[]; queue: CurriculumWord[] } {
+function buildKarutaArena(
+  targetPool: CurriculumWord[],
+  distractorPool: CurriculumWord[]
+): { board: CurriculumWord[]; queue: CurriculumWord[] } {
   const readings = new Set<string>()
   const spellings = new Set<string>()
-  const board = shuffleArray(words)
-    .filter((word) => {
-      const reading = word.reading || word.word
-      if (readings.has(reading) || spellings.has(word.word)) return false
-      readings.add(reading)
-      spellings.add(word.word)
-      return true
-    })
-    .slice(0, KARUTA_KEYS.length)
-  const queue = shuffleArray(board)
+  const pickedTargets = shuffleArray(targetPool).filter((word) => {
+    const reading = word.reading || word.word
+    if (readings.has(reading) || spellings.has(word.word)) return false
+    readings.add(reading)
+    spellings.add(word.word)
+    return true
+  })
+  const fillers = shuffleArray(distractorPool).filter((word) => {
+    const reading = word.reading || word.word
+    if (readings.has(reading) || spellings.has(word.word)) return false
+    readings.add(reading)
+    spellings.add(word.word)
+    return true
+  })
+
+  const combined = [...pickedTargets, ...fillers].slice(0, KARUTA_KEYS.length)
+  const targetSet = new Set(pickedTargets.map((w) => w.word))
+  const queuePool = combined.filter((w) => targetSet.has(w.word))
+  const queue = shuffleArray(queuePool.length > 0 ? queuePool : combined)
+  const board = shuffleArray(combined)
   return { board, queue }
 }
 
-function buildTypingDeck(words: CurriculumWord[]): CurriculumWord[] {
-  if (words.length < 2) return []
-  const withReading = words.filter((w) => Boolean((w.reading || w.word).trim()))
+function buildTypingDeck(targetPool: CurriculumWord[]): CurriculumWord[] {
+  const withReading = targetPool.filter((w) => Boolean((w.reading || w.word).trim()))
   return shuffleArray(withReading).slice(0, Math.min(10, withReading.length))
 }
 
 function padTwo(n: number): string {
   return String(Math.max(0, n)).padStart(2, '0')
+}
+
+function getRankSeal(accuracyPct: number): { kanji: string; title: string } {
+  if (accuracyPct >= 100) return { kanji: '極', title: 'Đạt chuẩn Tuyệt đối' }
+  if (accuracyPct >= 80) return { kanji: '優', title: 'Xuất sắc' }
+  if (accuracyPct >= 60) return { kanji: '良', title: 'Khá vững' }
+  return { kanji: '練', title: 'Cần rèn thêm' }
+}
+
+interface DojoSummarySheetProps {
+  modeLabel: string
+  correctCount: number
+  totalCount: number
+  reactionTimesMs: number[]
+  bestCombo: number
+  missedWords: CurriculumWord[]
+  isTermSaved: (item: CurriculumWord) => boolean
+  onSaveAllWeakToSrs: (items: CurriculumWord[]) => void
+  onRetryWeakWords: (items: CurriculumWord[]) => void
+  onNewFullRound: () => void
+}
+
+function DojoSummarySheet({
+  modeLabel,
+  correctCount,
+  totalCount,
+  reactionTimesMs,
+  bestCombo,
+  missedWords,
+  isTermSaved,
+  onSaveAllWeakToSrs,
+  onRetryWeakWords,
+  onNewFullRound,
+}: DojoSummarySheetProps) {
+  const accuracyPct = Math.round((correctCount / Math.max(1, totalCount)) * 100)
+  const rank = getRankSeal(accuracyPct)
+  const avgSec =
+    reactionTimesMs.length > 0
+      ? `${(reactionTimesMs.reduce((sum, ms) => sum + ms, 0) / reactionTimesMs.length / 1000).toFixed(1)}s`
+      : '—'
+  const unsavedWeakCount = missedWords.filter((item) => !isTermSaved(item)).length
+
+  return (
+    <div className="dojo-summary dojo-summary-sheet" aria-label="Phiếu chấm Đạo trường">
+      <div className="dojo-summary-sheet__header">
+        <svg className="dojo-rank-seal" viewBox="0 0 64 64" aria-hidden="true">
+          <rect x="4" y="4" width="56" height="56" rx="4" fill="none" stroke="currentColor" strokeWidth="2.4" />
+          <rect x="8.5" y="8.5" width="47" height="47" rx="2" fill="none" stroke="currentColor" strokeWidth="0.9" />
+          <text x="32" y="43" textAnchor="middle" fill="currentColor" fontSize="30" fontWeight="800">
+            {rank.kanji}
+          </text>
+        </svg>
+        <div className="dojo-summary-sheet__title-group">
+          <span className="dojo-summary-sheet__kicker">PHIẾU CHẤM ĐẠO TRƯỜNG · {modeLabel.toUpperCase()}</span>
+          <h3>{rank.title}</h3>
+        </div>
+      </div>
+
+      <div className="dojo-summary-metrics">
+        <div className="dojo-summary-metric">
+          <span className="dojo-summary-metric__label">Tỷ lệ chính xác</span>
+          <strong className="dojo-summary-metric__value">
+            {accuracyPct}%{' '}
+            <small>
+              ({correctCount}/{totalCount})
+            </small>
+          </strong>
+        </div>
+        <div className="dojo-summary-metric">
+          <span className="dojo-summary-metric__label">Tốc độ trung bình</span>
+          <strong className="dojo-summary-metric__value">{avgSec}/từ</strong>
+        </div>
+        <div className="dojo-summary-metric">
+          <span className="dojo-summary-metric__label">Chuỗi đúng cao nhất</span>
+          <strong className="dojo-summary-metric__value">{bestCombo}</strong>
+        </div>
+      </div>
+
+      {missedWords.length > 0 && (
+        <div className="dojo-summary__missed">
+          <h4>Từ vừa vấp cần củng cố ({missedWords.length})</h4>
+          <div className="dojo-summary__missed-list">
+            {missedWords.map((item) => (
+              <div key={item.word} className="dojo-summary__missed-row">
+                <div className="dojo-summary__missed-main">
+                  <strong lang="ja">{item.word}</strong>
+                  {item.reading && <span lang="ja">【{item.reading}】</span>}
+                  <span className="dojo-summary__missed-meaning">· {item.meaning}</span>
+                </div>
+                {isTermSaved(item) && (
+                  <span className="dojo-summary__srs-tag">
+                    <Check size={12} aria-hidden="true" /> Đã vào SRS
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="dojo-summary-actions">
+        {missedWords.length > 0 && (
+          <>
+            <button
+              type="button"
+              className={`dojo-summary-btn dojo-summary-btn--srs${unsavedWeakCount === 0 ? ' is-done' : ''}`}
+              disabled={unsavedWeakCount === 0}
+              onClick={() => onSaveAllWeakToSrs(missedWords)}
+            >
+              {unsavedWeakCount === 0 ? (
+                <>
+                  <Check size={14} aria-hidden="true" />
+                  <span>Đã lưu {missedWords.length} từ yếu vào Sổ tay SRS</span>
+                </>
+              ) : (
+                <>
+                  <BookmarkPlus size={14} aria-hidden="true" />
+                  <span>Lưu {unsavedWeakCount} từ yếu vào Sổ tay SRS</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              className="dojo-summary-btn dojo-summary-btn--primary"
+              onClick={() => onRetryWeakWords(missedWords)}
+            >
+              <RotateCcw size={14} aria-hidden="true" />
+              <span>Luyện lại ngay {missedWords.length} từ này</span>
+            </button>
+          </>
+        )}
+
+        <button type="button" className="dojo-summary-btn dojo-summary-btn--ghost" onClick={onNewFullRound}>
+          <RotateCcw size={14} aria-hidden="true" />
+          <span>Ván mới toàn bài</span>
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function LessonMiniGame({
@@ -176,12 +353,14 @@ export function LessonMiniGame({
   onSpeak,
 }: LessonMiniGameProps) {
   const [mode, setMode] = useState<DojoGameMode>(activeMode ?? 'cloze')
+  const [practicePool, setPracticePool] = useState<CurriculumWord[] | null>(null)
 
   // Cloze State
-  const [clozeQuestions, setClozeQuestions] = useState<ClozeQuestion[]>(() => buildClozeQuestions(words))
+  const [clozeQuestions, setClozeQuestions] = useState<ClozeQuestion[]>(() => buildClozeQuestions(words, words))
   const [qIndex, setQIndex] = useState(0)
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   const [clozeShowHint, setClozeShowHint] = useState(false)
+  const [clozeReactionTimes, setClozeReactionTimes] = useState<number[]>([])
   const [score, setScore] = useState(0)
   const [combo, setCombo] = useState(0)
   const [bestCombo, setBestCombo] = useState(0)
@@ -190,7 +369,7 @@ export function LessonMiniGame({
   const [clozeFinished, setClozeFinished] = useState(false)
 
   // Audio Karuta Arena State
-  const [{ board: karutaBoard, queue: karutaQueue }, setKarutaArena] = useState(() => buildKarutaArena(words))
+  const [{ board: karutaBoard, queue: karutaQueue }, setKarutaArena] = useState(() => buildKarutaArena(words, words))
   const [karutaTurnIdx, setKarutaTurnIdx] = useState(0)
   const [karutaMatched, setKarutaMatched] = useState<Record<string, boolean>>({})
   const [karutaMismatchWord, setKarutaMismatchWord] = useState<string | null>(null)
@@ -213,6 +392,7 @@ export function LessonMiniGame({
   const [typingShowHint, setTypingShowHint] = useState(false)
   const [typingTimedMode, setTypingTimedMode] = useState(false)
   const [typingTimeLeftMs, setTypingTimeLeftMs] = useState(TYPING_TURN_MS)
+  const [typingReactionTimes, setTypingReactionTimes] = useState<number[]>([])
   const [typingScore, setTypingScore] = useState(0)
   const [typingCombo, setTypingCombo] = useState(0)
   const [typingBestCombo, setTypingBestCombo] = useState(0)
@@ -244,15 +424,18 @@ export function LessonMiniGame({
   )
 
   const resetRound = useCallback(
-    (nextMode?: DojoGameMode) => {
+    (nextMode?: DojoGameMode, customTargets?: CurriculumWord[] | null) => {
       clearPendingTimers()
       if (nextMode) setMode(nextMode)
+      const activeTargets = customTargets && customTargets.length > 0 ? customTargets : words
+      setPracticePool(customTargets && customTargets.length > 0 ? customTargets : null)
 
       // Reset Cloze
-      setClozeQuestions(buildClozeQuestions(words))
+      setClozeQuestions(buildClozeQuestions(activeTargets, words))
       setQIndex(0)
       setSelectedWord(null)
       setClozeShowHint(false)
+      setClozeReactionTimes([])
       setScore(0)
       setCombo(0)
       setBestCombo(0)
@@ -261,7 +444,7 @@ export function LessonMiniGame({
       setClozeFinished(false)
 
       // Reset Karuta Arena
-      setKarutaArena(buildKarutaArena(words))
+      setKarutaArena(buildKarutaArena(activeTargets, words))
       setKarutaTurnIdx(0)
       setKarutaMatched({})
       setKarutaMismatchWord(null)
@@ -277,12 +460,13 @@ export function LessonMiniGame({
       setKarutaFinished(false)
 
       // Reset Typing
-      setTypingDeck(buildTypingDeck(words))
+      setTypingDeck(buildTypingDeck(activeTargets))
       setTypingIndex(0)
       setTypingInput('')
       setTypingSubmitted(null)
       setTypingShowHint(false)
       setTypingTimeLeftMs(TYPING_TURN_MS)
+      setTypingReactionTimes([])
       setTypingScore(0)
       setTypingCombo(0)
       setTypingBestCombo(0)
@@ -297,12 +481,24 @@ export function LessonMiniGame({
   useEffect(() => {
     if (roundInputsRef.current.words === words && roundInputsRef.current.activeMode === activeMode) return
     roundInputsRef.current = { words, activeMode }
-    resetRound(activeMode ?? 'cloze')
+    resetRound(activeMode ?? 'cloze', null)
   }, [activeMode, resetRound, words])
 
   const currentQ = clozeQuestions[qIndex] || null
   const currentKarutaTarget = karutaQueue[karutaTurnIdx] || null
   const currentTypingCard = typingDeck[typingIndex] || null
+
+  const saveAllWeakToSrs = useCallback(
+    (items: CurriculumWord[]) => {
+      for (const item of items) {
+        if (!isTermSaved(item)) {
+          void onSaveToSrs(item)
+        }
+      }
+      playStampSuccess()
+    },
+    [isTermSaved, onSaveToSrs]
+  )
 
   const srsButton = (item: CurriculumWord, savedLabel = 'Đã lưu SRS') => {
     const saved = isTermSaved(item)
@@ -311,7 +507,10 @@ export function LessonMiniGame({
         type="button"
         className={`dojo-srs-chip${saved ? ' is-saved' : ''}`}
         disabled={saved}
-        onClick={() => void onSaveToSrs(item)}
+        onClick={() => {
+          playStampSuccess()
+          void onSaveToSrs(item)
+        }}
       >
         {saved ? <Check size={14} /> : <BookmarkPlus size={14} />}
         <span>{saved ? savedLabel : 'Lưu vào SRS'}</span>
@@ -322,23 +521,27 @@ export function LessonMiniGame({
   // ---------------------------------------------------------------------------
   // MODE 1: CLOZE HANDLERS
   // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (mode !== 'cloze' || clozeFinished || !currentQ || selectedWord !== null) return
+    turnStartRef.current = Date.now()
+  }, [mode, clozeFinished, currentQ, selectedWord])
+
   const handleSelectOption = useCallback(
     (option: CurriculumWord) => {
       if (!currentQ || selectedWord !== null) return
+      const elapsed = Math.max(150, Date.now() - turnStartRef.current)
+      setClozeReactionTimes((prev) => [...prev, elapsed])
       setSelectedWord(option.word)
       const isCorrect = option.word === currentQ.target.word
       if (isCorrect) {
-        try {
-          sumiAudio.playSuikinkutsu()
-        } catch {
-          // ignore audio error
-        }
+        playStampSuccess()
         const nextCombo = combo + 1
         setCombo(nextCombo)
         setBestCombo((prev) => Math.max(prev, nextCombo))
         setCorrectCount((c) => c + 1)
         setScore((s) => s + 100 + Math.min(nextCombo - 1, 5) * 20)
       } else {
+        playSoftMiss()
         setCombo(0)
         onMissedWord(currentQ.target)
         setMissedWords((prev) =>
@@ -404,11 +607,8 @@ export function LessonMiniGame({
       if (!currentKarutaTarget || karutaFinished || karutaMatched[card.word] || karutaMissedRevealWord) return
 
       if (card.word === currentKarutaTarget.word) {
-        try {
-          sumiAudio.playHankoStamp()
-        } catch {
-          // ignore audio error
-        }
+        playKarutaSlap()
+        playStampSuccess()
         const elapsed = Math.max(150, Date.now() - turnStartRef.current)
         const speedBonus = Math.max(0, Math.round((KARUTA_TURN_MS - elapsed) / 100))
         const nextCombo = karutaCombo + 1
@@ -422,10 +622,11 @@ export function LessonMiniGame({
         setKarutaMissedRevealWord(card.word)
         const tid = setTimeout(() => {
           advanceKarutaTurn()
-        }, 600)
+        }, 680)
         timersRef.current.push(tid)
       } else {
         if (karutaMismatchWord) return
+        playSoftMiss()
         setKarutaCombo(0)
         setKarutaMismatchWord(card.word)
         setKarutaLastFeedback(null)
@@ -435,7 +636,7 @@ export function LessonMiniGame({
         )
         const tid = setTimeout(() => {
           setKarutaMismatchWord(null)
-        }, 420)
+        }, 360)
         timersRef.current.push(tid)
       }
     },
@@ -453,23 +654,24 @@ export function LessonMiniGame({
 
   const playKarutaPrompt = useEffectEvent(speakWord)
   const recordKarutaTimeout = useEffectEvent((word: CurriculumWord) => {
+    playSoftMiss()
     onMissedWord(word)
     setKarutaCombo(0)
     setKarutaMissedRevealWord(word.word)
     setKarutaLastFeedback({ ok: false, word })
     setKarutaMissedWords((prev) => (prev.some((item) => item.word === word.word) ? prev : [...prev, word]))
-    timersRef.current.push(setTimeout(advanceKarutaTurn, 900))
+    timersRef.current.push(setTimeout(advanceKarutaTurn, 950))
   })
 
   useEffect(() => {
-    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget || karutaQueue.length < 2) return
+    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget || karutaQueue.length < 1) return
     turnStartRef.current = Date.now()
     setKarutaTimeLeftMs(KARUTA_TURN_MS)
     playKarutaPrompt(currentKarutaTarget)
   }, [mode, karutaFinished, currentKarutaTarget, karutaQueue])
 
   useEffect(() => {
-    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget || karutaQueue.length < 2 || karutaMissedRevealWord)
+    if (mode !== 'karuta' || karutaFinished || !currentKarutaTarget || karutaQueue.length < 1 || karutaMissedRevealWord)
       return
     const intervalId = setInterval(() => {
       const elapsed = Date.now() - turnStartRef.current
@@ -510,6 +712,9 @@ export function LessonMiniGame({
   // ---------------------------------------------------------------------------
   const handleTypingFailure = useCallback(
     (card: CurriculumWord, reason: 'wrong' | 'timeout') => {
+      playSoftMiss()
+      const elapsed = Math.max(150, Date.now() - turnStartRef.current)
+      setTypingReactionTimes((prev) => [...prev, elapsed])
       setTypingSubmitted(reason)
       setTypingCombo(0)
       setTypingMissedWords((prev) => (prev.some((w) => w.word === card.word) ? prev : [...prev, card]))
@@ -568,11 +773,9 @@ export function LessonMiniGame({
 
     const ok = isReadingMatch(typingInput, currentTypingCard.reading, currentTypingCard.word)
     if (ok) {
-      try {
-        sumiAudio.playSuikinkutsu()
-      } catch {
-        // ignore audio error
-      }
+      const elapsed = Math.max(150, Date.now() - turnStartRef.current)
+      setTypingReactionTimes((prev) => [...prev, elapsed])
+      playStampSuccess()
       speakWord(currentTypingCard)
       const nextCombo = typingCombo + 1
       setTypingSubmitted('correct')
@@ -584,6 +787,19 @@ export function LessonMiniGame({
       handleTypingFailure(currentTypingCard, 'wrong')
     }
   }
+
+  // Enter advances when typing card has been graded (even if focus left input)
+  useEffect(() => {
+    if (mode !== 'typing' || typingFinished || typingSubmitted === null) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') return
+      if (event.target instanceof Element && event.target.closest('button')) return
+      event.preventDefault()
+      handleNextTypingCard()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mode, typingFinished, typingSubmitted, handleNextTypingCard])
 
   if (
     words.length < 2 ||
@@ -600,33 +816,35 @@ export function LessonMiniGame({
     )
   }
 
-  const avgReactionSec =
-    karutaReactionTimes.length > 0
-      ? (karutaReactionTimes.reduce((sum, ms) => sum + ms, 0) / karutaReactionTimes.length / 1000).toFixed(2)
-      : '—'
   const liveRomajiPreview = romajiToHiragana(typingInput)
+  const typingDiff =
+    typingSubmitted !== null && typingSubmitted !== 'correct' && currentTypingCard
+      ? diffKanaReading(typingInput, currentTypingCard.reading, currentTypingCard.word)
+      : null
 
   return (
     <section className="dojo-game" aria-label="Võ Đường Mini-Game Kotodama">
-      {/* Minimal Editorial HUD Line (no pills, no redundant mode title) */}
+      {/* Minimal Editorial HUD Line */}
       <header className="dojo-hud">
         <div className="dojo-hud__editorial">
           {mode === 'cloze' && (
             <span>
-              Câu <strong>{padTwo(Math.min(qIndex + 1, clozeQuestions.length))}</strong> /{' '}
-              {padTwo(clozeQuestions.length)} · Chuỗi đúng <strong>{combo}</strong> · <strong>{score}</strong> điểm
+              {practicePool ? 'Ôn từ yếu · ' : ''}Câu{' '}
+              <strong>{padTwo(Math.min(qIndex + 1, clozeQuestions.length))}</strong> / {padTwo(clozeQuestions.length)} ·
+              Chuỗi đúng <strong>{combo}</strong> · <strong>{score}</strong> điểm
             </span>
           )}
           {mode === 'karuta' && (
             <span>
-              Lá <strong>{padTwo(Math.min(karutaTurnIdx + 1, karutaQueue.length))}</strong> /{' '}
-              {padTwo(karutaQueue.length)} · Chuỗi đúng <strong>{karutaCombo}</strong> · <strong>{karutaScore}</strong>{' '}
-              điểm
+              {practicePool ? 'Ôn từ yếu · ' : ''}Lá{' '}
+              <strong>{padTwo(Math.min(karutaTurnIdx + 1, karutaQueue.length))}</strong> / {padTwo(karutaQueue.length)}{' '}
+              · Chuỗi đúng <strong>{karutaCombo}</strong> · <strong>{karutaScore}</strong> điểm
             </span>
           )}
           {mode === 'typing' && (
             <span>
-              Từ <strong>{padTwo(Math.min(typingIndex + 1, typingDeck.length))}</strong> / {padTwo(typingDeck.length)} ·
+              {practicePool ? 'Ôn từ yếu · ' : ''}Từ{' '}
+              <strong>{padTwo(Math.min(typingIndex + 1, typingDeck.length))}</strong> / {padTwo(typingDeck.length)} ·
               Chuỗi đúng <strong>{typingCombo}</strong> · <strong>{typingScore}</strong> điểm
             </span>
           )}
@@ -637,7 +855,17 @@ export function LessonMiniGame({
             <button
               type="button"
               className={`dojo-editorial-btn${clozeShowHint ? ' is-active' : ''}`}
-              onClick={() => setClozeShowHint((v) => !v)}
+              onClick={() => {
+                setClozeShowHint((v) => {
+                  const next = !v
+                  if (next && currentQ) {
+                    setMissedWords((prev) =>
+                      prev.some((w) => w.word === currentQ.target.word) ? prev : [...prev, currentQ.target]
+                    )
+                  }
+                  return next
+                })
+              }}
               aria-pressed={clozeShowHint}
             >
               <Eye size={13} aria-hidden="true" />
@@ -653,7 +881,9 @@ export function LessonMiniGame({
               aria-label="Nghe lại âm đọc (Phím Space)"
             >
               <Volume2 size={13} aria-hidden="true" />
-              <span>Nghe lại [Space]</span>
+              <span>
+                Nghe lại <kbd className="dojo-key-hint">Space</kbd>
+              </span>
             </button>
           )}
 
@@ -662,7 +892,17 @@ export function LessonMiniGame({
               <button
                 type="button"
                 className={`dojo-editorial-btn${typingShowHint ? ' is-active' : ''}`}
-                onClick={() => setTypingShowHint((v) => !v)}
+                onClick={() => {
+                  setTypingShowHint((v) => {
+                    const next = !v
+                    if (next && currentTypingCard) {
+                      setTypingMissedWords((prev) =>
+                        prev.some((w) => w.word === currentTypingCard.word) ? prev : [...prev, currentTypingCard]
+                      )
+                    }
+                    return next
+                  })
+                }}
                 aria-pressed={typingShowHint}
               >
                 <Eye size={13} aria-hidden="true" />
@@ -682,14 +922,19 @@ export function LessonMiniGame({
             </>
           )}
 
-          <button type="button" className="dojo-editorial-btn" onClick={() => resetRound()} title="Chơi ván mới">
+          <button
+            type="button"
+            className="dojo-editorial-btn"
+            onClick={() => resetRound(undefined, null)}
+            title="Chơi ván mới"
+          >
             <RotateCcw size={13} aria-hidden="true" />
             <span>Ván mới</span>
           </button>
         </div>
       </header>
 
-      {/* MODE 1: CONTEXTUAL CLOZE TEST (Direct on Washi) */}
+      {/* MODE 1: CONTEXTUAL CLOZE TEST */}
       {mode === 'cloze' && !clozeFinished && currentQ && (
         <div className="dojo-quiz-stage">
           <div className="dojo-quiz-card">
@@ -712,12 +957,27 @@ export function LessonMiniGame({
               <div className="dojo-cloze-prompt">
                 <p className="dojo-cloze-sentence" lang="ja">
                   <span>{currentQ.cloze.before}</span>
-                  <span className={`dojo-cloze-blank${selectedWord !== null ? ' is-filled' : ''}`}>
-                    {selectedWord !== null ? currentQ.cloze.matchedText : '（　　）'}
+                  <span
+                    className={`dojo-cloze-blank${
+                      selectedWord !== null
+                        ? selectedWord === currentQ.target.word
+                          ? ' is-filled is-correct'
+                          : ' is-filled is-auto-filled'
+                        : ''
+                    }`}
+                  >
+                    {selectedWord !== null ? (
+                      <ruby className="dojo-cloze-ruby">
+                        {currentQ.cloze.matchedText}
+                        {currentQ.target.reading && <rt>{currentQ.target.reading}</rt>}
+                      </ruby>
+                    ) : (
+                      '（　　）'
+                    )}
                   </span>
                   <span>{currentQ.cloze.after}</span>
                 </p>
-                {(clozeShowHint || selectedWord !== null) && currentQ.cloze.vi && (
+                {clozeShowHint && selectedWord === null && currentQ.cloze.vi && (
                   <p className="dojo-cloze-vi">{currentQ.cloze.vi}</p>
                 )}
               </div>
@@ -773,6 +1033,7 @@ export function LessonMiniGame({
                 selectedWord !== currentQ.target.word
                   ? currentQ.options.find((opt) => opt.word === selectedWord)
                   : undefined
+              const nextBtnLabel = qIndex + 1 >= clozeQuestions.length ? 'Xem tổng kết →' : 'Câu tiếp theo →'
               return (
                 <div className="dojo-feedback-bar" role="status">
                   <div className="dojo-feedback-bar__info">
@@ -781,17 +1042,26 @@ export function LessonMiniGame({
                         ? `✓ Chính xác! ${currentQ.target.word}${currentQ.target.hanViet ? ` (${currentQ.target.hanViet})` : ''} — ${currentQ.target.meaning}`
                         : `✕ Đáp án đúng: ${currentQ.target.word}${currentQ.target.hanViet ? ` (${currentQ.target.hanViet})` : ''} — ${currentQ.target.meaning}`}
                     </strong>
+                    {currentQ.cloze?.vi && <p className="dojo-cloze-post-vi">Dịch câu: “{currentQ.cloze.vi}”</p>}
                     {pickedOption && (
                       <p className="dojo-cloze-contrast">
-                        Bạn chọn <strong lang="ja">{pickedOption.word}</strong>
-                        {pickedOption.hanViet ? ` (${pickedOption.hanViet})` : ''} · {pickedOption.meaning}
+                        Bạn chọn nhầm <strong lang="ja">{pickedOption.word}</strong>
+                        {pickedOption.hanViet ? ` (${pickedOption.hanViet})` : ''}: {pickedOption.meaning}.
                       </p>
                     )}
                   </div>
                   <div className="dojo-feedback-bar__actions">
                     {srsButton(currentQ.target)}
-                    <button type="button" className="dojo-next-btn" onClick={handleNextQuestion}>
-                      {qIndex + 1 >= clozeQuestions.length ? 'Xem tổng kết →' : 'Câu tiếp theo →'}
+                    <button
+                      type="button"
+                      className="dojo-next-btn"
+                      aria-label={nextBtnLabel}
+                      onClick={handleNextQuestion}
+                    >
+                      <span>{nextBtnLabel}</span>
+                      <kbd className="dojo-key-hint" aria-hidden="true">
+                        Space
+                      </kbd>
                     </button>
                   </div>
                 </div>
@@ -800,45 +1070,19 @@ export function LessonMiniGame({
         </div>
       )}
 
-      {/* MODE 1 SUMMARY */}
       {mode === 'cloze' && clozeFinished && (
-        <div className="dojo-summary">
-          <div className="dojo-summary__seal" aria-hidden="true">
-            文
-          </div>
-          <h3>Hoàn thành Điền Từ Văn Cảnh</h3>
-          <p className="dojo-summary__subtitle">
-            Đúng{' '}
-            <strong>
-              {correctCount} / {clozeQuestions.length}
-            </strong>{' '}
-            câu ({Math.round((correctCount / Math.max(1, clozeQuestions.length)) * 100)}%) · Điểm{' '}
-            <strong>{score}</strong> · Combo cao nhất <strong>x{bestCombo}</strong>
-          </p>
-
-          {missedWords.length > 0 && (
-            <div className="dojo-summary__missed">
-              <h4>Từ cần ôn lại ({missedWords.length})</h4>
-              <div className="dojo-summary__missed-list">
-                {missedWords.map((item) => (
-                  <div key={item.word} className="dojo-summary__missed-row">
-                    <div>
-                      <strong lang="ja">{item.word}</strong>
-                      {item.reading && <span lang="ja"> 【{item.reading}】</span>}
-                      <p>{item.meaning}</p>
-                    </div>
-                    {srsButton(item)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button type="button" className="dojo-next-btn" onClick={() => resetRound('cloze')}>
-            <RotateCcw size={15} aria-hidden="true" />
-            <span>Chơi ván mới</span>
-          </button>
-        </div>
+        <DojoSummarySheet
+          modeLabel="Điền Từ Văn Cảnh"
+          correctCount={correctCount}
+          totalCount={clozeQuestions.length}
+          reactionTimesMs={clozeReactionTimes}
+          bestCombo={bestCombo}
+          missedWords={missedWords}
+          isTermSaved={isTermSaved}
+          onSaveAllWeakToSrs={saveAllWeakToSrs}
+          onRetryWeakWords={(weak) => resetRound('cloze', weak)}
+          onNewFullRound={() => resetRound('cloze', null)}
+        />
       )}
 
       {/* MODE 2: AUTHENTIC VERTICAL UTA-GARUTA ARENA */}
@@ -853,11 +1097,12 @@ export function LessonMiniGame({
             </div>
             <div className="dojo-karuta-caller__meta">
               <span className="dojo-karuta-caller__eyebrow">
-                NGHE ÂM ĐỌC · ĐẬP THẺ BÀI ({KARUTA_KEYS.slice(0, karutaBoard.length).join(' · ')})
+                NGHE ÂM ĐỌC · ĐẬP THẺ BÀI
+                <span className="dojo-key-hint"> ({KARUTA_KEYS.slice(0, karutaBoard.length).join(' · ')})</span>
               </span>
               {karutaMismatchWord && !karutaLastFeedback && (
                 <span className="dojo-karuta-status is-miss" role="status">
-                  Chọn nhầm thẻ. Thử lại!
+                  Chọn nhầm thẻ — thử lại nhanh!
                 </span>
               )}
               {karutaLastFeedback && (
@@ -890,9 +1135,21 @@ export function LessonMiniGame({
                   aria-label={`${card.word}${shortcutKey ? ` (Phím ${shortcutKey})` : ''}`}
                 >
                   {isMatched && (
-                    <span className="dojo-karuta-card__seal" aria-hidden="true">
-                      取
-                    </span>
+                    <svg className="dojo-karuta-seal-svg" viewBox="0 0 36 36" aria-hidden="true">
+                      <rect
+                        x="2"
+                        y="2"
+                        width="32"
+                        height="32"
+                        rx="3"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <text x="18" y="25" textAnchor="middle" fill="currentColor" fontSize="19" fontWeight="800">
+                        正
+                      </text>
+                    </svg>
                   )}
                   <span
                     className="dojo-karuta-card__primary"
@@ -901,6 +1158,11 @@ export function LessonMiniGame({
                   >
                     {card.word}
                   </span>
+                  {isMissedReveal && card.reading && (
+                    <span className="dojo-karuta-card__reveal-kana" lang="ja">
+                      {card.reading}
+                    </span>
+                  )}
                   {shortcutKey && (
                     <span className="dojo-karuta-card__key" aria-hidden="true">
                       {shortcutKey}
@@ -914,46 +1176,21 @@ export function LessonMiniGame({
       )}
 
       {mode === 'karuta' && karutaFinished && (
-        <div className="dojo-summary">
-          <div className="dojo-summary__seal" aria-hidden="true">
-            取
-          </div>
-          <h3>Hoàn tất Đấu Trường Karuta!</h3>
-          <p className="dojo-summary__subtitle">
-            Đập chuẩn{' '}
-            <strong>
-              {karutaCorrectCount} / {karutaQueue.length}
-            </strong>{' '}
-            lá · Tốc độ trung bình <strong>{avgReactionSec}s</strong> · Điểm <strong>{karutaScore}</strong> · Combo cao
-            nhất <strong>x{karutaBestCombo}</strong>
-          </p>
-
-          {karutaMissedWords.length > 0 && (
-            <div className="dojo-summary__missed">
-              <h4>Từ đập trượt / hết giờ ({karutaMissedWords.length})</h4>
-              <div className="dojo-summary__missed-list">
-                {karutaMissedWords.map((item) => (
-                  <div key={item.word} className="dojo-summary__missed-row">
-                    <div>
-                      <strong lang="ja">{item.word}</strong>
-                      {item.reading && <span lang="ja"> 【{item.reading}】</span>}
-                      <p>{item.meaning}</p>
-                    </div>
-                    {srsButton(item)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button type="button" className="dojo-next-btn" onClick={() => resetRound('karuta')}>
-            <RotateCcw size={15} aria-hidden="true" />
-            <span>Xáo bài đấu lại</span>
-          </button>
-        </div>
+        <DojoSummarySheet
+          modeLabel="Đấu Trường Karuta"
+          correctCount={karutaCorrectCount}
+          totalCount={karutaQueue.length}
+          reactionTimesMs={karutaReactionTimes}
+          bestCombo={karutaBestCombo}
+          missedWords={karutaMissedWords}
+          isTermSaved={isTermSaved}
+          onSaveAllWeakToSrs={saveAllWeakToSrs}
+          onRetryWeakWords={(weak) => resetRound('karuta', weak)}
+          onNewFullRound={() => resetRound('karuta', null)}
+        />
       )}
 
-      {/* MODE 3: CALM HAIRLINE TYPING RECALL */}
+      {/* MODE 3: CALM HAIRLINE TYPING RECALL + TENSAKU GRADING */}
       {mode === 'typing' && !typingFinished && currentTypingCard && (
         <div className="dojo-typing-stage">
           {typingTimedMode && (
@@ -1015,16 +1252,19 @@ export function LessonMiniGame({
                   title="Kiểm tra (Enter)"
                   aria-label="Kiểm tra (Enter)"
                 >
-                  Kiểm tra
+                  Kiểm tra ↵
                 </button>
               )}
             </div>
 
             <div className="dojo-typing-preview">
-              <span id="dojo-typing-help">Ví dụ: jinsei hoặc じんせい</span>
-              {liveRomajiPreview && (
-                <span>
-                  Chuyển Kana · <strong lang="ja">{liveRomajiPreview}</strong>
+              {typingInput.trim() === '' ? (
+                <span id="dojo-typing-help" className="dojo-typing-placeholder-hint">
+                  Ví dụ: jinsei hoặc じんせい
+                </span>
+              ) : (
+                <span id="dojo-typing-help" className="dojo-typing-live-kana" lang="ja">
+                  {liveRomajiPreview}
                 </span>
               )}
             </div>
@@ -1046,19 +1286,64 @@ export function LessonMiniGame({
             </div>
           </form>
 
-          {typingSubmitted !== null && (
-            <div className="dojo-feedback-bar" role="status">
-              <div className="dojo-feedback-bar__info">
+          {typingSubmitted === 'correct' && (
+            <div className="dojo-feedback-bar dojo-feedback-bar--correct" role="status">
+              <div className="dojo-feedback-bar__info dojo-typing-correct-row">
+                <svg className="dojo-nijuumaru-svg" viewBox="0 0 36 36" aria-hidden="true">
+                  <circle
+                    className="dojo-nijuumaru-outer"
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                  />
+                  <circle
+                    className="dojo-nijuumaru-inner"
+                    cx="18"
+                    cy="18"
+                    r="9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                </svg>
                 <strong>
-                  {typingSubmitted === 'correct'
-                    ? `✓ Chính xác! ${currentTypingCard.word} 【${currentTypingCard.reading || currentTypingCard.word}】`
-                    : typingSubmitted === 'timeout'
-                      ? `⏱ Hết giờ! Đáp án: ${currentTypingCard.reading || currentTypingCard.word}`
-                      : `✕ Chưa khớp! Đáp án: ${currentTypingCard.reading || currentTypingCard.word}`}
+                  ✓ Chính xác! {currentTypingCard.word} 【{currentTypingCard.reading || currentTypingCard.word}】
                 </strong>
               </div>
               <div className="dojo-feedback-bar__actions">
-                {typingSubmitted !== 'correct' && srsButton(currentTypingCard)}
+                <button type="button" className="dojo-editorial-btn" onClick={() => speakWord(currentTypingCard)}>
+                  <Volume2 size={14} aria-hidden="true" />
+                  <span>Nghe âm</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {typingSubmitted !== null && typingSubmitted !== 'correct' && typingDiff && (
+            <div className="dojo-feedback-bar dojo-tensaku" role="status">
+              <div className="dojo-feedback-bar__info">
+                <div className="dojo-tensaku__grade-row">
+                  <span className="dojo-tensaku__target" lang="ja">
+                    {typingDiff.tokens.map((tok, i) => (
+                      <span key={`${tok.char}-${i}`} className={`dojo-tensaku__char${tok.isDiff ? ' is-diff' : ''}`}>
+                        {tok.char}
+                      </span>
+                    ))}
+                  </span>
+                  {typingDiff.userHira && (
+                    <span className="dojo-tensaku__strike" lang="ja">
+                      {typingDiff.userHira}
+                    </span>
+                  )}
+                  <span className="dojo-tensaku__meaning">— {currentTypingCard.meaning}</span>
+                </div>
+                {typingDiff.hintNote && <p className="dojo-tensaku__hint">{typingDiff.hintNote}</p>}
+              </div>
+              <div className="dojo-feedback-bar__actions">
+                {srsButton(currentTypingCard)}
                 <button type="button" className="dojo-editorial-btn" onClick={() => speakWord(currentTypingCard)}>
                   <Volume2 size={14} aria-hidden="true" />
                   <span>Nghe âm</span>
@@ -1070,43 +1355,18 @@ export function LessonMiniGame({
       )}
 
       {mode === 'typing' && typingFinished && (
-        <div className="dojo-summary">
-          <div className="dojo-summary__seal" aria-hidden="true">
-            筆
-          </div>
-          <h3>Hoàn thành Gõ Âm Đọc!</h3>
-          <p className="dojo-summary__subtitle">
-            Nhớ chuẩn âm đọc{' '}
-            <strong>
-              {typingCorrectCount} / {typingDeck.length}
-            </strong>{' '}
-            từ ({Math.round((typingCorrectCount / Math.max(1, typingDeck.length)) * 100)}%) · Điểm{' '}
-            <strong>{typingScore}</strong> · Combo cao nhất <strong>x{typingBestCombo}</strong>
-          </p>
-
-          {typingMissedWords.length > 0 && (
-            <div className="dojo-summary__missed">
-              <h4>Từ cần ôn lại ({typingMissedWords.length})</h4>
-              <div className="dojo-summary__missed-list">
-                {typingMissedWords.map((item) => (
-                  <div key={item.word} className="dojo-summary__missed-row">
-                    <div>
-                      <strong lang="ja">{item.word}</strong>
-                      {item.reading && <span lang="ja"> 【{item.reading}】</span>}
-                      <p>{item.meaning}</p>
-                    </div>
-                    {srsButton(item)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button type="button" className="dojo-next-btn" onClick={() => resetRound('typing')}>
-            <RotateCcw size={15} aria-hidden="true" />
-            <span>Luyện ván mới</span>
-          </button>
-        </div>
+        <DojoSummarySheet
+          modeLabel="Gõ Âm Đọc"
+          correctCount={typingCorrectCount}
+          totalCount={typingDeck.length}
+          reactionTimesMs={typingReactionTimes}
+          bestCombo={typingBestCombo}
+          missedWords={typingMissedWords}
+          isTermSaved={isTermSaved}
+          onSaveAllWeakToSrs={saveAllWeakToSrs}
+          onRetryWeakWords={(weak) => resetRound('typing', weak)}
+          onNewFullRound={() => resetRound('typing', null)}
+        />
       )}
     </section>
   )

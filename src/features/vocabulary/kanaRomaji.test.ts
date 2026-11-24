@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildClozeSentence,
+  diffKanaReading,
   isReadingMatch,
   katakanaToHiragana,
   normalizeReading,
   romajiToHiragana,
+  splitSentenceByKeyword,
 } from './kanaRomaji'
 
 describe('kanaRomaji utilities', () => {
@@ -49,5 +51,23 @@ describe('kanaRomaji utilities', () => {
 
     const none = buildClozeSentence('宇宙', [{ jp: '今日はいい天気だ。', vi: 'Hôm nay trời đẹp.' }])
     expect(none).toBeNull()
+  })
+
+  it('highlights missed long vowels, sokuon, and splits example keywords for Tensaku grading', () => {
+    const longVowelDiff = diffKanaReading('chonan', 'ちょうなん')
+    expect(longVowelDiff.userHira).toBe('ちょなん')
+    expect(longVowelDiff.targetHira).toBe('ちょうなん')
+    expect(longVowelDiff.tokens.find((t) => t.char === 'う')?.isDiff).toBe(true)
+    expect(longVowelDiff.hintNote).toBe('Chú ý trường âm (う / い)')
+
+    const sokuonDiff = diffKanaReading('gako', 'がっこう')
+    expect(sokuonDiff.tokens.find((t) => t.char === 'っ')?.isDiff).toBe(true)
+    expect(sokuonDiff.hintNote).toBe('Chú ý âm ngắt (っ)')
+
+    expect(splitSentenceByKeyword('理想の男性と結婚する。', '男性')).toEqual({
+      before: '理想の',
+      match: '男性',
+      after: 'と結婚する。',
+    })
   })
 })

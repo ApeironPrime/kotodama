@@ -85,6 +85,24 @@
   margin-top: 0;
 }
 
+@media (min-width: 1024px) and (min-height: 680px) {
+  .dictionary-page--focus:has(.curriculum-study-shell) {
+    min-height: calc(100dvh - 4.25rem);
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0.5rem;
+  }
+
+  .dictionary-page--focus:has(.curriculum-study-shell) .dictionary-shell,
+  .dictionary-page--focus:has(.curriculum-study-shell) .dictionary-workspace,
+  .dictionary-page--focus:has(.curriculum-study-shell) .dictionary-workspace__main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
 .dictionary-shell {
   width: min(100%, 76rem);
   margin: 0 auto;

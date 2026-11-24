@@ -1098,4 +1098,36 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     expect(await screen.findByText(/SRS · 1 từ đã lưu/)).toBeTruthy()
     expect(srsApi.addCard).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ term: '先輩', termId: 'term-01' }))
   })
+
+  it('renders Tensaku grading on wrong typing and completes Phiếu chấm Đạo trường with weak-word retry', async () => {
+    renderWithClient(<VocabularyPage />)
+
+    fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
+    fireEvent.click(await screen.findByText('Bài 1: Chào hỏi & Làm quen'))
+    fireEvent.click(await screen.findByRole('tab', { name: /Gõ Âm Đọc/i }))
+
+    const panel = within(await screen.findByRole('tabpanel', { name: /Gõ Âm Đọc/i }))
+
+    // Card 1: intentionally submit wrong reading -> Tensaku grading
+    const input1 = panel.getByLabelText('Nhập cách đọc Hiragana hoặc Romaji')
+    fireEvent.change(input1, { target: { value: 'aka' } })
+    fireEvent.click(panel.getByRole('button', { name: /Kiểm tra/i }))
+    expect((await panel.findByRole('status')).textContent).toMatch(/あか/)
+    fireEvent.click(panel.getByRole('button', { name: /Từ tiếp theo/i }))
+
+    // Card 2: submit correct reading
+    const studyPanel = document.getElementById('panel-study-game')
+    const secondPrompt = studyPanel?.querySelector('.dojo-quiz-card__prompt')?.textContent?.trim()
+    const input2 = panel.getByLabelText('Nhập cách đọc Hiragana hoặc Romaji')
+    fireEvent.change(input2, { target: { value: secondPrompt === '本' ? 'hon' : 'watashi' } })
+    fireEvent.click(panel.getByRole('button', { name: /Kiểm tra/i }))
+    fireEvent.click(await panel.findByRole('button', { name: /Xem tổng kết/i }))
+
+    // Summary Sheet "Phiếu chấm Đạo trường" appears with retry button for 1 weak word
+    expect(await panel.findByLabelText('Phiếu chấm Đạo trường')).toBeTruthy()
+    expect(panel.getByText('50%')).toBeTruthy()
+    const retryWeakBtn = panel.getByRole('button', { name: /Luyện lại ngay 1 từ này/i })
+    fireEvent.click(retryWeakBtn)
+    expect(await panel.findByText(/Ôn từ yếu/)).toBeTruthy()
+  })
 })
