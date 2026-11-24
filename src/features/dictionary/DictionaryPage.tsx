@@ -84,10 +84,10 @@ function grammarLink(item: BunpoItem) {
   return `?${params}`
 }
 
-// 3 tab cố định trong Thư viện (/tra-tu): Từ vựng | Hán tự | Ngữ pháp
+// 3 tab cố định trong Thư viện (/tra-tu): Hán tự | Từ vựng | Ngữ pháp
 const LIBRARY_TABS = [
-  { id: 'vocabulary' as const, label: 'Từ vựng', icon: Layers },
   { id: 'kanji' as const, label: 'Hán tự', icon: Languages },
+  { id: 'vocabulary' as const, label: 'Từ vựng', icon: Layers },
   { id: 'grammar' as const, label: 'Ngữ pháp', icon: GraduationCap },
 ] as const
 
@@ -407,7 +407,7 @@ export default function DictionaryPage({
     if (tab === activeTab) return
     playWashiPaperSound()
     if (effectiveMode === 'library') {
-      const order: DictionaryTab[] = ['vocabulary', 'kanji', 'grammar']
+      const order: DictionaryTab[] = ['kanji', 'vocabulary', 'grammar']
       const prevIdx = order.indexOf(activeTab)
       const nextIdx = order.indexOf(tab)
       const dir = nextIdx >= prevIdx ? 'forward' : 'back'
