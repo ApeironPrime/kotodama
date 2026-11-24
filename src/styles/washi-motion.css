@@ -156,17 +156,43 @@
   -webkit-perspective: 1650px;
   width: 100%;
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .lesson-stage-wrapper :where(#panel-study-flashcard, .kakejiku-stage, .kakejiku-scroll, .washi-3d-scene) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
 }
 
 .washi-3d-flipper {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr;
   width: 100%;
+  flex: 1;
   position: relative;
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
   transform: translate3d(0, 0, 0) rotateY(0deg);
   transition: transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
+  cursor: pointer;
+}
+
+.washi-3d-flipper:focus-visible {
+  outline: none;
+}
+
+.washi-3d-flipper:focus-visible .washi-3d-face--front .curriculum-flashcard,
+.washi-3d-flipper:focus-visible .washi-3d-face--back .curriculum-flashcard,
+.washi-3d-flipper:focus-visible .kanji-flashcard-3d-face {
+  box-shadow:
+    0 0 0 2px var(--color-accent, #b82e2e),
+    0 18px 34px -10px rgba(30, 29, 26, 0.14);
 }
 
 .washi-3d-flipper.is-flipped {
@@ -180,6 +206,8 @@
 .washi-3d-face {
   grid-area: 1 / 1;
   width: 100%;
+  min-height: 100%;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -213,6 +241,11 @@
 
 .washi-3d-face .curriculum-flashcard {
   flex: 1;
+  perspective: none;
+}
+
+.washi-3d-face > .kakejiku-rod {
+  flex-shrink: 0;
 }
 
 .kakejiku-stamp-flash {
@@ -490,16 +523,41 @@
 }
 
 /* Kanji Inline 3D Flashcard */
+.kanji-flashcard-stage > .washi-3d-scene {
+  width: min(100%, 480px);
+}
+
 .kanji-flashcard-3d-face {
-  min-height: 250px;
-  border: 1px solid var(--color-border);
+  min-height: 270px;
+  border: 1px solid var(--color-border-strong, var(--color-border));
   border-radius: 3px;
-  background: var(--color-surface);
-  padding: 1.75rem 1.5rem;
+  background-color: var(--color-surface);
+  padding: 1.5rem 1.75rem;
   justify-content: center;
   align-items: center;
   text-align: center;
   cursor: pointer;
+  user-select: none;
+}
+
+.kanji-flashcard-3d-face.washi-3d-face--front {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 42%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      color-mix(in srgb, var(--color-border) 42%, transparent) 50%,
+      transparent calc(50% + 0.5px)
+    );
+}
+
+.kanji-flashcard-stage .washi-3d-flipper:hover .kanji-flashcard-3d-face {
+  border-color: var(--color-accent-border, rgba(184, 46, 46, 0.36));
 }
 
 /* ─── 7. Shodo Calligraphy & Genealogy Modal (/tra-tu?tab=kanji&kanji=三) ── */
