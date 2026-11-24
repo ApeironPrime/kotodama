@@ -61,10 +61,23 @@ export const apiPaths = {
     attempt: (id: string) => `/api/v1/shadowing/attempts/${encodeURIComponent(id)}`,
   },
   nhaikanji: {
-    kanjiList: (level = 'ALL', query = '', page = 1, limit = 50, sort?: string) => {
-      const base = `/api/v1/nhaikanji/kanji?level=${encodeURIComponent(level)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`
-      return sort && sort !== 'default' ? `${base}&sort=${encodeURIComponent(sort)}` : base
+    kanjiList: (
+      level = 'ALL',
+      query = '',
+      page = 1,
+      limit = 50,
+      sort?: string,
+      extra?: { radical?: string; strokeMin?: number; strokeMax?: number }
+    ) => {
+      let url = `/api/v1/nhaikanji/kanji?level=${encodeURIComponent(level)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`
+      if (sort && sort !== 'default') url += `&sort=${encodeURIComponent(sort)}`
+      if (extra?.radical) url += `&radical=${encodeURIComponent(extra.radical)}`
+      if (extra?.strokeMin && extra.strokeMin > 0) url += `&strokeMin=${extra.strokeMin}`
+      if (extra?.strokeMax && extra.strokeMax > 0) url += `&strokeMax=${extra.strokeMax}`
+      return url
     },
+    kanjiRadicals: (level = 'ALL', query = '') =>
+      `/api/v1/nhaikanji/radicals?level=${encodeURIComponent(level)}&q=${encodeURIComponent(query)}`,
     kanjiDetail: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}`,
     kanjiStrokes: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}/strokes`,
     kanjiBrush: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}/brush`,

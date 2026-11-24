@@ -584,41 +584,68 @@ export default function DictionaryPage({
           <div className="dictionary-workspace__main">
             {/* 1. VIEW: TAB HÁN TỰ */}
             {activeTab === 'kanji' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="dictionary-view-switch" role="group" aria-label="Cách xem Hán tự">
-                  <Button variant="secondary" aria-pressed={kanjiView === 'grid'} onClick={() => setKanjiView('grid')}>
-                    Danh sách
-                  </Button>
-                  <Button variant="secondary" aria-pressed={kanjiView === 'ink'} onClick={() => setKanjiView('ink')}>
-                    Thủy mặc
-                  </Button>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 {kanjiView === 'grid' ? (
                   <Suspense fallback={<p role="status">Đang mở kho Hán tự…</p>}>
-                    <KanjiPage query={searchTerm} />
+                    <KanjiPage query={searchTerm} viewMode={kanjiView} onChangeViewMode={setKanjiView} />
                   </Suspense>
-                ) : !kanjiListData && isKanjiListLoading ? (
-                  <SumiDropOpening />
-                ) : kanjiListData && kanjiListData.items.length > 0 ? (
-                  <SumiECanvas
-                    items={kanjiListData.items}
-                    activeLevel={kanjiLevel}
-                    onSelectLevel={(lvl) => setKanjiLevel(lvl)}
-                    onSelectKanji={(k) => setSelectedKanjiModal(k)}
-                  />
                 ) : (
-                  <EmptyState
-                    title={`Không tìm thấy Hán tự cho “${searchTerm || kanjiLevel}”`}
-                    description="Hãy thử tìm bằng chữ Hán khác, âm Hán Việt (như gian, nhật, học) hoặc chọn cấp độ khác."
-                  />
-                )}
-                {kanjiView === 'ink' && (kanjiListData?.total ?? 0) > 120 && (
-                  <p>
-                    Đang hiển thị 120 chữ.{' '}
-                    <Button variant="ghost" onClick={() => setKanjiView('grid')}>
-                      Xem toàn bộ trong danh sách
-                    </Button>
-                  </p>
+                  <>
+                    <header className="kanji-ledger-masthead">
+                      <div className="kanji-ledger-masthead__title">
+                        <span className="kanji-ledger-hanko" aria-hidden="true">
+                          漢
+                        </span>
+                        <div>
+                          <h1>Kho Hán Tự (Kanji) & Chiết Tự</h1>
+                          <p className="kanji-ledger-masthead__sub">
+                            水墨画 · Không gian Thủy mặc tương tác · {kanjiListData?.total ?? 0} chữ hiển thị
+                          </p>
+                        </div>
+                      </div>
+                      <div className="kanji-view-segmented" role="group" aria-label="Cách xem Hán tự">
+                        <button
+                          type="button"
+                          className="kanji-view-segmented__btn"
+                          aria-pressed={false}
+                          onClick={() => setKanjiView('grid')}
+                        >
+                          Danh sách
+                        </button>
+                        <button
+                          type="button"
+                          className="kanji-view-segmented__btn is-active"
+                          aria-pressed={true}
+                          onClick={() => setKanjiView('ink')}
+                        >
+                          Thủy mặc
+                        </button>
+                      </div>
+                    </header>
+                    {!kanjiListData && isKanjiListLoading ? (
+                      <SumiDropOpening />
+                    ) : kanjiListData && kanjiListData.items.length > 0 ? (
+                      <SumiECanvas
+                        items={kanjiListData.items}
+                        activeLevel={kanjiLevel}
+                        onSelectLevel={(lvl) => setKanjiLevel(lvl)}
+                        onSelectKanji={(k) => setSelectedKanjiModal(k)}
+                      />
+                    ) : (
+                      <EmptyState
+                        title={`Không tìm thấy Hán tự cho “${searchTerm || kanjiLevel}”`}
+                        description="Hãy thử tìm bằng chữ Hán khác, âm Hán Việt (như gian, nhật, học) hoặc chọn cấp độ khác."
+                      />
+                    )}
+                    {kanjiView === 'ink' && (kanjiListData?.total ?? 0) > 120 && (
+                      <p className="kanji-ink-overflow-note">
+                        Đang hiển thị 120 chữ.{' '}
+                        <Button variant="ghost" onClick={() => setKanjiView('grid')}>
+                          Xem toàn bộ trong danh sách
+                        </Button>
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}

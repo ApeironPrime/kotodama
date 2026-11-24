@@ -35,6 +35,7 @@ interface KanjiDetailModalProps {
   kanjiSummary: KanjiSummary
   onClose: () => void
   onSelectKanji?: (kanji: string) => void
+  onFilterByRadical?: (radicalGlyph: string) => void
 }
 
 // ─── Extract kanji chars from story text ──────────────────────────────────────
@@ -64,7 +65,7 @@ function extractStoryComponents(story: string, focalKanji: string): Array<{ char
   return results
 }
 
-export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: KanjiDetailModalProps) {
+export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilterByRadical }: KanjiDetailModalProps) {
   const { user } = useAuth()
   const [saveError, setSaveError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'info' | 'practice'>('info')
@@ -80,9 +81,35 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
   useEffect(
     () => () => {
       audioRef.current?.pause()
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
     },
     []
   )
+
+  // Keyboard shortcuts: Left/Right for prev/next kanji, 1/2 for tabs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return
+      }
+      if (e.key === 'ArrowLeft' && kanjiSummary.prev_kanji && onSelectKanji) {
+        e.preventDefault()
+        onSelectKanji(kanjiSummary.prev_kanji)
+      } else if (e.key === 'ArrowRight' && kanjiSummary.next_kanji && onSelectKanji) {
+        e.preventDefault()
+        onSelectKanji(kanjiSummary.next_kanji)
+      } else if (e.key === '1') {
+        setActiveTab('info')
+      } else if (e.key === '2') {
+        setActiveTab('practice')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [kanjiSummary.prev_kanji, kanjiSummary.next_kanji, onSelectKanji])
 
   // Reset illustration error when kanji changes
   useEffect(() => {
@@ -127,17 +154,32 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
     setSavedSrs(map)
   }, [savedTermsData])
 
-  const playAudio = (url?: string) => {
-    if (!url) return
+  const speakJapanese = (text: string, audioUrl?: string, key?: string) => {
+    const token = key || audioUrl || text
     if (audioRef.current) {
       audioRef.current.pause()
     }
-    const audio = new Audio(url)
-    audioRef.current = audio
-    setPlayingAudio(url)
-    audio.play().catch(() => setPlayingAudio(null))
-    audio.onended = () => setPlayingAudio(null)
-    audio.onerror = () => setPlayingAudio(null)
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+    if (audioUrl) {
+      const audio = new Audio(audioUrl)
+      audioRef.current = audio
+      setPlayingAudio(token)
+      audio.play().catch(() => setPlayingAudio(null))
+      audio.onended = () => setPlayingAudio(null)
+      audio.onerror = () => setPlayingAudio(null)
+      return
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && text.trim()) {
+      const utter = new SpeechSynthesisUtterance(text.replace(/[-.、,]/g, ' '))
+      utter.lang = 'ja-JP'
+      utter.rate = 0.92
+      setPlayingAudio(token)
+      utter.onend = () => setPlayingAudio(null)
+      utter.onerror = () => setPlayingAudio(null)
+      window.speechSynthesis.speak(utter)
+    }
   }
 
   const handleSaveToSrs = async (word: string, meaning: string, reading: string) => {
@@ -436,23 +478,47 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
 
                 {/* Readings & Radical — always visible below visual */}
                 <div className="kanji-realm-readings">
-                  <div className="kanji-reading-chip">
+                  <button
+                    type="button"
+                    className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_on' ? ' is-playing' : ''}`}
+                    disabled={!kanjiSummary.onyomi}
+                    onClick={() => kanjiSummary.onyomi && speakJapanese(kanjiSummary.onyomi, undefined, 'reading_on')}
+                    title={kanjiSummary.onyomi ? 'Nghe âm On' : 'Không có âm On'}
+                  >
                     <span className="kanji-reading-chip-label">On</span>
                     <span className="kanji-reading-chip-val">{kanjiSummary.onyomi || '—'}</span>
-                  </div>
-                  <div className="kanji-reading-chip">
+                  </button>
+                  <button
+                    type="button"
+                    className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_kun' ? ' is-playing' : ''}`}
+                    disabled={!kanjiSummary.kunyomi}
+                    onClick={() =>
+                      kanjiSummary.kunyomi && speakJapanese(kanjiSummary.kunyomi, undefined, 'reading_kun')
+                    }
+                    title={kanjiSummary.kunyomi ? 'Nghe âm Kun' : 'Không có âm Kun'}
+                  >
                     <span className="kanji-reading-chip-label">Kun</span>
                     <span className="kanji-reading-chip-val">{kanjiSummary.kunyomi || '—'}</span>
-                  </div>
-                  {kanjiSummary.radical_utf && (
-                    <div className="kanji-reading-chip kanji-reading-chip--radical">
+                  </button>
+                  {kanjiSummary.radical_utf && kanjiSummary.radical_utf !== '—' && (
+                    <button
+                      type="button"
+                      className={`kanji-reading-chip kanji-reading-chip--radical${onFilterByRadical ? ' kanji-reading-chip--interactive' : ''}`}
+                      disabled={!onFilterByRadical}
+                      onClick={() => onFilterByRadical?.(kanjiSummary.radical_family || kanjiSummary.radical_utf)}
+                      title={
+                        onFilterByRadical
+                          ? `Lọc các chữ cùng bộ ${kanjiSummary.radical_utf}${kanjiSummary.radical_vi_name ? ` (${kanjiSummary.radical_vi_name})` : ''}`
+                          : undefined
+                      }
+                    >
                       <span className="kanji-reading-chip-label">
                         <Layers size={10} /> Bộ
                       </span>
                       <span className="kanji-reading-chip-val kanji-reading-chip-val--large">
                         {kanjiSummary.radical_utf}
                       </span>
-                    </div>
+                    </button>
                   )}
                 </div>
               </div>
@@ -485,6 +551,54 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
                       </blockquote>
                     </div>
                   )}
+
+                  {/* Related peers by Hanzi & Radical */}
+                  {((detailData?.relatedByHanzi?.length ?? 0) > 0 || (detailData?.relatedByRadical?.length ?? 0) > 0) &&
+                    onSelectKanji && (
+                      <div className="kanji-related-peers">
+                        {(detailData?.relatedByHanzi?.length ?? 0) > 0 && (
+                          <div className="kanji-related-peers__group">
+                            <span className="kanji-related-peers__label">Cùng âm {kanjiSummary.hanzi}</span>
+                            <div className="kanji-related-peers__list">
+                              {detailData?.relatedByHanzi?.map((peer) => (
+                                <button
+                                  key={peer.kanji}
+                                  type="button"
+                                  className="kanji-related-peer-btn"
+                                  onClick={() => onSelectKanji(peer.kanji)}
+                                  title={`${peer.kanji} (${peer.hanzi}) — ${peer.meaning_vi}`}
+                                >
+                                  <strong>{peer.kanji}</strong>
+                                  <span>{peer.meaning_vi}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {(detailData?.relatedByRadical?.length ?? 0) > 0 && (
+                          <div className="kanji-related-peers__group">
+                            <span className="kanji-related-peers__label">
+                              Cùng bộ {kanjiSummary.radical_utf}
+                              {kanjiSummary.radical_vi_name ? ` (${kanjiSummary.radical_vi_name})` : ''}
+                            </span>
+                            <div className="kanji-related-peers__list">
+                              {detailData?.relatedByRadical?.map((peer) => (
+                                <button
+                                  key={peer.kanji}
+                                  type="button"
+                                  className="kanji-related-peer-btn"
+                                  onClick={() => onSelectKanji(peer.kanji)}
+                                  title={`${peer.kanji} (${peer.hanzi}) — ${peer.meaning_vi}`}
+                                >
+                                  <strong>{peer.kanji}</strong>
+                                  <span>{peer.hanzi}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                 </div>
               )}
 
@@ -503,7 +617,8 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
                   <div className="shodo-vocab-list kanji-realm-vocab-list">
                     {examples.map((item, idx) => {
                       const isSaved = Boolean(savedSrs[`vocab_${item.word}`] || savedSrs[item.word])
-                      const isPlaying = playingAudio === item.audio
+                      const audioToken = item.audio || `vocab_${idx}_${item.word}`
+                      const isPlaying = playingAudio === audioToken
 
                       return (
                         <div key={idx} className="shodo-vocab-row">
@@ -526,21 +641,21 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji }: Kanji
                           </div>
 
                           <div className="shodo-vocab-row-actions">
-                            {item.audio && (
-                              <button
-                                type="button"
-                                className={`shodo-audio-play-btn ${isPlaying ? 'is-playing' : ''}`}
-                                onClick={() => playAudio(item.audio)}
-                                title="Nghe phát âm chuẩn"
-                              >
-                                <Volume2 size={15} />
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              className={`shodo-audio-play-btn ${isPlaying ? 'is-playing' : ''}`}
+                              onClick={() => speakJapanese(item.reading || item.word, item.audio, audioToken)}
+                              title={`Nghe phát âm ${item.word}`}
+                              aria-label={`Nghe phát âm ${item.word}`}
+                            >
+                              <Volume2 size={15} />
+                            </button>
                             <button
                               type="button"
                               className={`shodo-vocab-save-btn ${isSaved ? 'is-saved' : ''}`}
                               onClick={() => handleSaveToSrs(item.word, item.meaning, item.reading)}
                               title={isSaved ? 'Đã lưu vào SRS' : 'Lưu từ vào sổ tay SRS'}
+                              aria-label={isSaved ? `Đã lưu ${item.word}` : `Lưu ${item.word} vào SRS`}
                             >
                               {isSaved ? <Check size={14} /> : <BookmarkPlus size={14} />}
                             </button>

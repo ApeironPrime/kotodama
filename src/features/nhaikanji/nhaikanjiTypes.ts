@@ -8,12 +8,37 @@ export type KanjiSummary = {
   kunyomi: string
   stroke_count: string | number
   radical_utf: string
+  radical_family?: string
+  radical_vi_name?: string
   radical_name_ja: string
   radical_meaning: string
   story: string
   num_vocab_examples: string | number
   prev_kanji?: string
   next_kanji?: string
+}
+
+export type KanjiLevelCounts = {
+  ALL: number
+  N5: number
+  N4: number
+  N3: number
+  N2: number
+  N1: number
+}
+
+export type KanjiRadicalFacet = {
+  glyph: string
+  variants: string[]
+  nameVi: string
+  meaningVi: string
+  strokeCount: number
+  count: number
+}
+
+export type KanjiRadicalsResponse = {
+  radicals: KanjiRadicalFacet[]
+  totalRadicals: number
 }
 
 export interface KanjiStrokePath {
@@ -41,7 +66,6 @@ export interface KanjiBrushData {
   medians: number[][][]
   radStrokes?: number[]
 }
-
 
 export type KanjiVocabExample = {
   id?: number | string
@@ -81,6 +105,8 @@ export type KanjiDetailData = {
       }
     }
   } | null
+  relatedByRadical?: KanjiSummary[]
+  relatedByHanzi?: KanjiSummary[]
 }
 
 export type BunpoItem = {

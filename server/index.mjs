@@ -84,7 +84,9 @@ async function tryServeStatic(request, response, requestPath) {
     response.writeHead(200, {
       'content-type': contentType,
       'content-length': fileStat.size,
-      ...(ext === '.html' ? { 'cache-control': 'no-cache' } : { 'cache-control': 'public, max-age=31536000, immutable' }),
+      ...(ext === '.html'
+        ? { 'cache-control': 'no-cache' }
+        : { 'cache-control': 'public, max-age=31536000, immutable' }),
     })
     if (request.method === 'HEAD') {
       response.end()
@@ -119,7 +121,8 @@ const animeCatalogService = new AnimeCatalogService({
   storage: animeStorage,
   pool: animeStorage === 'postgres' || animeStorage === 'postgresql' ? database : null,
   sqlitePath: process.env.ANIME_SQLITE_PATH || resolve(projectRoot, 'tmp/anime/anime.db'),
-  dictionaryDir: process.env.ANIME_DICTIONARY_DIR || resolve('D:/Project/data/aanime_scraper/dictionary/shards'),
+  dictionaryDir:
+    process.env.ANIME_DICTIONARY_DIR || resolve('D:/student/Languages/Japanese/aanime_scraper/dictionary/shards'),
 })
 const srsStore = database ? new SrsStore(database) : null
 const srsService = srsStore ? new SrsService(srsStore) : null
@@ -136,19 +139,21 @@ function getKanjiIllustrationFile(char) {
       const dir = p.endsWith('.json') ? resolve(p, '..') : p
       dataRoot = resolve(dir, 'kanji_illustrations')
     }
-    if (!existsSync(dataRoot) && existsSync('D:/Project/data/kanji_illustrations')) {
-      dataRoot = 'D:/Project/data/kanji_illustrations'
+    if (!existsSync(dataRoot) && existsSync('D:/student/Languages/Japanese/kanji_illustrations')) {
+      dataRoot = 'D:/student/Languages/Japanese/kanji_illustrations'
     }
 
     const sttLevelMap = new Map()
-    const jsonPath = existsSync('D:/Project/data/kanji_hack_nao_n1_n5.json')
-      ? 'D:/Project/data/kanji_hack_nao_n1_n5.json'
-      : (process.env.KANJI_DATA_PATH && existsSync(process.env.KANJI_DATA_PATH) ? process.env.KANJI_DATA_PATH : null)
+    const jsonPath = existsSync('D:/student/Languages/Japanese/kanji_hack_nao_n1_n5.json')
+      ? 'D:/student/Languages/Japanese/kanji_hack_nao_n1_n5.json'
+      : process.env.KANJI_DATA_PATH && existsSync(process.env.KANJI_DATA_PATH)
+        ? process.env.KANJI_DATA_PATH
+        : null
     if (jsonPath) {
       try {
         const rawJson = JSON.parse(readFileSync(jsonPath, 'utf8'))
         for (const lvl of ['N5', 'N4', 'N3', 'N2', 'N1']) {
-          for (const item of (rawJson[lvl] || [])) {
+          for (const item of rawJson[lvl] || []) {
             if (item.stt && item.kanji) {
               sttLevelMap.set(`${item.stt}_${lvl.toUpperCase()}`, item.kanji)
             }
@@ -211,8 +216,8 @@ function getKanjiIllustrationFile(char) {
 
   // 2. Fallback: search by substring in all taps
   let dataRoot = resolve(projectRoot, '..', 'data', 'kanji_illustrations')
-  if (!existsSync(dataRoot) && existsSync('D:/Project/data/kanji_illustrations')) {
-    dataRoot = 'D:/Project/data/kanji_illustrations'
+  if (!existsSync(dataRoot) && existsSync('D:/student/Languages/Japanese/kanji_illustrations')) {
+    dataRoot = 'D:/student/Languages/Japanese/kanji_illustrations'
   }
   for (const tapDir of ['Tap_1', 'Tap_2', 'Tap_3']) {
     const dirPath = join(dataRoot, tapDir)
@@ -239,7 +244,9 @@ const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
 const allowedOrigins = configuredOrigins?.length
   ? configuredOrigins
   : production
-    ? (process.env.RENDER || process.env.RENDER_EXTERNAL_URL ? ['*'] : [])
+    ? process.env.RENDER || process.env.RENDER_EXTERNAL_URL
+      ? ['*']
+      : []
     : [
         'http://127.0.0.1:5173',
         'http://127.0.0.1:5174',
@@ -725,10 +732,31 @@ async function route(request, response) {
   if (request.method === 'GET' && path === '/api/v1/nhaikanji/kanji') {
     const level = url.searchParams.get('level') || 'ALL'
     const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
+    const radical = url.searchParams.get('radical') || ''
+    const rawStrokeMin = url.searchParams.get('strokeMin')
+    const rawStrokeMax = url.searchParams.get('strokeMax')
+    const strokeMin = rawStrokeMin ? Number.parseInt(rawStrokeMin, 10) : undefined
+    const strokeMax = rawStrokeMax ? Number.parseInt(rawStrokeMax, 10) : undefined
     const page = Number.parseInt(url.searchParams.get('page') || '1', 10) || 1
     const limit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
     const sort = url.searchParams.get('sort') || 'default'
-    const result = nhaiKanjiService.getKanjiList({ level, query, page, limit, sort })
+    const result = nhaiKanjiService.getKanjiList({
+      level,
+      query,
+      radical,
+      strokeMin: Number.isFinite(strokeMin) ? strokeMin : undefined,
+      strokeMax: Number.isFinite(strokeMax) ? strokeMax : undefined,
+      page,
+      limit,
+      sort,
+    })
+    return respond(result)
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/nhaikanji/radicals') {
+    const level = url.searchParams.get('level') || 'ALL'
+    const query = url.searchParams.get('q') || url.searchParams.get('query') || ''
+    const result = nhaiKanjiService.getKanjiRadicals({ level, query })
     return respond(result)
   }
 
@@ -1238,11 +1266,9 @@ async function route(request, response) {
 
     try {
       const isLocalLoopback = isRequestLocalLoopback(request)
-      const result = await animeCatalogService.saveProgress(
-        { episodeId, position, duration },
-        user.id,
-        { isLocalLoopback }
-      )
+      const result = await animeCatalogService.saveProgress({ episodeId, position, duration }, user.id, {
+        isLocalLoopback,
+      })
       return respond(result)
     } catch (err) {
       if (err instanceof AnimeApiError) {
@@ -1313,7 +1339,8 @@ async function route(request, response) {
   if (request.method === 'GET' && path === '/api/v1/srs/deck') {
     const user = await requireUser(request, response)
     if (!user) return
-    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    if (!srsService)
+      return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
     const type = url.searchParams.get('type') || 'all'
     const status = url.searchParams.get('status') || 'all'
     const level = url.searchParams.get('level') || 'ALL'
@@ -1331,7 +1358,8 @@ async function route(request, response) {
   if (request.method === 'GET' && path === '/api/v1/srs/stats') {
     const user = await requireUser(request, response)
     if (!user) return
-    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    if (!srsService)
+      return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
     const type = url.searchParams.get('type') || 'all'
     try {
       const stats = await srsService.getStats(user.id, { type })
@@ -1344,7 +1372,8 @@ async function route(request, response) {
   if (request.method === 'POST' && path === '/api/v1/srs/review') {
     const user = await requireUser(request, response)
     if (!user) return
-    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    if (!srsService)
+      return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
     const { cardId, rating } = body
     if (!cardId || !rating) return fail(response, 400, 'Thiếu cardId hoặc rating.', 'MISSING_PARAMS')
     if (!['again', 'hard', 'good', 'easy'].includes(rating)) {
@@ -1362,7 +1391,8 @@ async function route(request, response) {
   if (request.method === 'POST' && path === '/api/v1/srs/add') {
     const user = await requireUser(request, response)
     if (!user) return
-    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    if (!srsService)
+      return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
     const cardData = body
     if (!cardData || (!cardData.term && !cardData.word)) {
       return fail(response, 400, 'Thiếu dữ liệu từ vựng/Hán tự/ngữ pháp.', 'MISSING_TERM')
@@ -1378,7 +1408,8 @@ async function route(request, response) {
   if (request.method === 'GET' && path === '/api/v1/srs/saved-terms') {
     const user = await requireUser(request, response)
     if (!user) return
-    if (!srsService) return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
+    if (!srsService)
+      return fail(response, 503, 'Dịch vụ SRS hiện không khả dụng (yêu cầu Database).', 'SERVICE_UNAVAILABLE')
     try {
       const terms = await srsService.getSavedTerms(user.id)
       return respond(terms)
@@ -2101,8 +2132,8 @@ const host = process.env.HOST ?? '0.0.0.0'
 
 const isMain = Boolean(
   process.argv[1] &&
-    (resolve(process.argv[1]) === fileURLToPath(import.meta.url) ||
-      resolve(process.argv[1]) === resolve('server/index.mjs'))
+  (resolve(process.argv[1]) === fileURLToPath(import.meta.url) ||
+    resolve(process.argv[1]) === resolve('server/index.mjs'))
 )
 
 if (isMain) {

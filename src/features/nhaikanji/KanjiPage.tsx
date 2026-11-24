@@ -1,14 +1,46 @@
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
-import { useEffect, useState } from 'react'
+import { useUrlState } from '../../lib/useUrlState'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Sparkles, Layers, BookOpen, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Search, Layers, ChevronLeft, ChevronRight, X, Bookmark, RotateCcw } from 'lucide-react'
 import { nhaikanjiApi } from './nhaikanjiApi'
-import type { KanjiSummary } from './nhaikanjiTypes'
+import type { KanjiRadicalFacet, KanjiSummary } from './nhaikanjiTypes'
 import { KanjiDetailModal } from './KanjiDetailModal'
-import { Badge, Button } from '../../components/ui'
-import PageHeader from '../../components/PageHeader'
+import { Button } from '../../components/ui'
+import { srsApi } from '../srs/srsApi'
+import { useAuth } from '../auth/authContext'
 
 const JLPT_LEVELS = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const
+const SORT_OPTIONS = [
+  { id: 'default', label: 'Lộ trình' },
+  { id: 'stroke_asc', label: 'Ít → Nhiều nét' },
+  { id: 'stroke_desc', label: 'Nhiều → Ít nét' },
+  { id: 'hanzi_az', label: 'Hán-Việt A–Z' },
+] as const
+
+const LIMIT_OPTIONS = [48, 96, 192] as const
+
+const STROKE_PRESETS = [
+  { id: 'all', label: 'Mọi nét', min: undefined, max: undefined },
+  { id: '1-4', label: '1–4 nét', min: 1, max: 4 },
+  { id: '5-8', label: '5–8 nét', min: 5, max: 8 },
+  { id: '9-12', label: '9–12 nét', min: 9, max: 12 },
+  { id: '13-16', label: '13–16 nét', min: 13, max: 16 },
+  { id: '17+', label: '17+ nét', min: 17, max: undefined },
+] as const
+
+const RADICAL_STROKE_GROUPS = [
+  { id: 'all', label: 'Tất cả' },
+  { id: '1-2', label: '1–2 nét' },
+  { id: '3', label: '3 nét' },
+  { id: '4', label: '4 nét' },
+  { id: '5-6', label: '5–6 nét' },
+  { id: '7+', label: '7+ nét' },
+] as const
+
+type SortId = (typeof SORT_OPTIONS)[number]['id']
+type StrokePresetId = (typeof STROKE_PRESETS)[number]['id']
+type RadicalStrokeGroupId = (typeof RADICAL_STROKE_GROUPS)[number]['id']
 
 function getVisiblePages(currentPage: number, totalPages: number): (number | string)[] {
   if (totalPages <= 7) {
@@ -23,27 +55,149 @@ function getVisiblePages(currentPage: number, totalPages: number): (number | str
   return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages]
 }
 
-export function KanjiPage({ query }: { query?: string } = {}) {
-  const [selectedLevel, setSelectedLevel] = useState<string>('ALL')
+interface KanjiPageProps {
+  query?: string
+  viewMode?: 'grid' | 'ink'
+  onChangeViewMode?: (mode: 'grid' | 'ink') => void
+}
+
+export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps = {}) {
+  const { user } = useAuth()
+  const ledgerTopRef = useRef<HTMLDivElement>(null)
+
+  const [selectedLevel, setSelectedLevel] = useUrlState<string>('klevel', 'ALL', JLPT_LEVELS)
+  const [selectedRadical, setSelectedRadical] = useUrlState<string>('rad', '')
+  const [strokePreset, setStrokePreset] = useUrlState<StrokePresetId>(
+    'strokes',
+    'all',
+    STROKE_PRESETS.map((s) => s.id)
+  )
+  const [sortBy, setSortBy] = useUrlState<SortId>(
+    'ksort',
+    'default',
+    SORT_OPTIONS.map((s) => s.id)
+  )
+  const [urlKanjiChar, setUrlKanjiChar] = useUrlState<string>('kanji', '')
+
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebouncedValue(query ?? searchQuery)
   const [page, setPage] = useState(1)
-  useEffect(() => setPage(1), [query])
-  const [selectedKanji, setSelectedKanji] = useState<KanjiSummary | null>(null)
-  const [sortBy, setSortBy] = useState<'default' | 'stroke_asc' | 'stroke_desc' | 'hanzi_az'>('default')
   const [limit, setLimit] = useState<number>(48)
+  const [onlySaved, setOnlySaved] = useState(false)
+  const [isRadicalOpen, setIsRadicalOpen] = useState(false)
+  const [radicalSearch, setRadicalSearch] = useState('')
+  const [radicalStrokeGroup, setRadicalStrokeGroup] = useState<RadicalStrokeGroupId>('all')
+  const [selectedKanji, setSelectedKanji] = useState<KanjiSummary | null>(null)
+
+  useEffect(() => setPage(1), [query])
+
+  const activeStrokeRange = useMemo(
+    () => STROKE_PRESETS.find((p) => p.id === strokePreset) ?? STROKE_PRESETS[0],
+    [strokePreset]
+  )
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['nhaikanji', 'kanjiList', selectedLevel, debouncedSearchQuery, page, sortBy, limit],
+    queryKey: [
+      'nhaikanji',
+      'kanjiList',
+      selectedLevel,
+      debouncedSearchQuery,
+      selectedRadical,
+      activeStrokeRange.min ?? 0,
+      activeStrokeRange.max ?? 0,
+      page,
+      sortBy,
+      limit,
+    ],
     queryFn: () =>
       nhaikanjiApi.fetchKanjiList({
         level: selectedLevel,
         query: debouncedSearchQuery,
+        ...(selectedRadical ? { radical: selectedRadical } : {}),
+        ...(activeStrokeRange.min ? { strokeMin: activeStrokeRange.min } : {}),
+        ...(activeStrokeRange.max ? { strokeMax: activeStrokeRange.max } : {}),
         page,
         limit,
         sort: sortBy,
       }),
+    placeholderData: (prev) => prev,
   })
+
+  const { data: radicalsData, isLoading: isRadicalsLoading } = useQuery({
+    queryKey: ['nhaikanji', 'radicals', selectedLevel],
+    queryFn: () => nhaikanjiApi.fetchKanjiRadicals({ level: selectedLevel }),
+    enabled: isRadicalOpen && typeof nhaikanjiApi.fetchKanjiRadicals === 'function',
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const { data: savedTermsData } = useQuery({
+    queryKey: ['srs', user?.id ?? 'me', 'saved-terms'],
+    queryFn: () => srsApi.fetchSavedTerms(),
+    enabled: Boolean(user) && typeof srsApi?.fetchSavedTerms === 'function',
+    staleTime: 30_000,
+  })
+
+  const savedKanjiSet = useMemo(() => {
+    const set = new Set<string>()
+    if (!Array.isArray(savedTermsData)) return set
+    for (const entry of savedTermsData) {
+      if (entry?.term && (entry.type === 'kanji' || entry.term.length === 1)) {
+        set.add(entry.term)
+      }
+    }
+    return set
+  }, [savedTermsData])
+
+  // Sync deep-linked ?kanji=漢 param with modal state
+  useEffect(() => {
+    if (!urlKanjiChar) {
+      setSelectedKanji(null)
+      return
+    }
+    if (selectedKanji?.kanji === urlKanjiChar) return
+    const inList = data?.items.find((item) => item.kanji === urlKanjiChar)
+    if (inList) {
+      setSelectedKanji(inList)
+      return
+    }
+    let cancelled = false
+    void nhaikanjiApi
+      .fetchKanjiList({ query: urlKanjiChar, limit: 5 })
+      .then((res) => {
+        if (cancelled) return
+        const exact = res.items.find((item) => item.kanji === urlKanjiChar) ?? res.items[0]
+        if (exact) setSelectedKanji(exact)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [urlKanjiChar, data?.items, selectedKanji?.kanji])
+
+  const openKanjiModal = (item: KanjiSummary) => {
+    setSelectedKanji(item)
+    setUrlKanjiChar(item.kanji)
+  }
+
+  const closeKanjiModal = () => {
+    setSelectedKanji(null)
+    setUrlKanjiChar('')
+  }
+
+  const handleKanjiSelectByChar = async (char: string) => {
+    const target = data?.items.find((item) => item.kanji === char)
+    if (target) {
+      openKanjiModal(target)
+      return
+    }
+    try {
+      const res = await nhaikanjiApi.fetchKanjiList({ query: char, limit: 5 })
+      const exact = res.items.find((item) => item.kanji === char) ?? res.items[0]
+      if (exact) openKanjiModal(exact)
+    } catch {
+      // ignore
+    }
+  }
 
   const handleLevelChange = (level: string) => {
     setSelectedLevel(level)
@@ -55,23 +209,80 @@ export function KanjiPage({ query }: { query?: string } = {}) {
     setPage(1)
   }
 
-  const handleKanjiSelectByChar = async (char: string) => {
-    const target = data?.items.find((item) => item.kanji === char)
-    if (target) {
-      setSelectedKanji(target)
-    } else {
-      try {
-        const res = await nhaikanjiApi.fetchKanjiList({ query: char, limit: 1 })
-        if (res.items && res.items.length > 0 && res.items[0]) {
-          setSelectedKanji(res.items[0])
-        }
-      } catch {
-        // ignore
-      }
+  const handleSelectRadical = (glyph: string) => {
+    setSelectedRadical((prev) => (prev === glyph ? '' : glyph))
+    setPage(1)
+  }
+
+  const handleFilterByRadicalFromModal = (glyph: string) => {
+    closeKanjiModal()
+    setSelectedRadical(glyph)
+    setPage(1)
+    setIsRadicalOpen(false)
+  }
+
+  const handleStrokePresetChange = (presetId: StrokePresetId) => {
+    setStrokePreset(presetId)
+    setPage(1)
+  }
+
+  const resetAllFilters = () => {
+    setSearchQuery('')
+    setSelectedLevel('ALL')
+    setSelectedRadical('')
+    setStrokePreset('all')
+    setSortBy('default')
+    setOnlySaved(false)
+    setPage(1)
+  }
+
+  const goToPage = (nextPage: number) => {
+    setPage(nextPage)
+    if (ledgerTopRef.current && typeof ledgerTopRef.current.scrollIntoView === 'function') {
+      ledgerTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
 
-  if (isError)
+  const filteredRadicals = useMemo(() => {
+    const list: KanjiRadicalFacet[] = radicalsData?.radicals ?? []
+    const q = radicalSearch.trim().toLowerCase()
+    return list.filter((r) => {
+      if (radicalStrokeGroup === '1-2' && (r.strokeCount < 1 || r.strokeCount > 2)) return false
+      if (radicalStrokeGroup === '3' && r.strokeCount !== 3) return false
+      if (radicalStrokeGroup === '4' && r.strokeCount !== 4) return false
+      if (radicalStrokeGroup === '5-6' && (r.strokeCount < 5 || r.strokeCount > 6)) return false
+      if (radicalStrokeGroup === '7+' && r.strokeCount < 7) return false
+      if (!q) return true
+      return (
+        r.glyph.includes(radicalSearch.trim()) ||
+        r.nameVi.toLowerCase().includes(q) ||
+        r.meaningVi.toLowerCase().includes(q) ||
+        r.variants.some((v) => v.includes(radicalSearch.trim()))
+      )
+    })
+  }, [radicalsData?.radicals, radicalSearch, radicalStrokeGroup])
+
+  const selectedRadicalMeta = useMemo(
+    () => (radicalsData?.radicals ?? []).find((r) => r.glyph === selectedRadical),
+    [radicalsData?.radicals, selectedRadical]
+  )
+
+  const displayedItems = useMemo(() => {
+    const items = data?.items ?? []
+    if (!onlySaved) return items
+    return items.filter((item) => savedKanjiSet.has(item.kanji))
+  }, [data?.items, onlySaved, savedKanjiSet])
+
+  const hasActiveFilters =
+    selectedLevel !== 'ALL' ||
+    Boolean(selectedRadical) ||
+    strokePreset !== 'all' ||
+    onlySaved ||
+    Boolean(debouncedSearchQuery)
+
+  const totalCatalog = data?.catalogCounts?.ALL ?? data?.levelCounts?.ALL ?? data?.total ?? 2517
+
+  if (isError) {
     return (
       <section className="ui-status-panel" role="alert">
         <h1>Chưa tải được Hán tự</h1>
@@ -79,200 +290,347 @@ export function KanjiPage({ query }: { query?: string } = {}) {
         <Button onClick={() => void refetch()}>Thử lại</Button>
       </section>
     )
+  }
+
   return (
-    <div className="nhaikanji-container washi-page">
-      <PageHeader
-        hanko="漢"
-        jpVertical="漢字大辞典"
-        eyebrow="KHO HÁN TỰ & CHIẾT TỰ"
-        title="Kho Hán Tự (Kanji) & Chiết Tự"
-        description="2500+ Chữ Hán phân loại N5→N1 với đầy đủ Âm Hán-Việt, câu chuyện gợi nhớ, nét viết và phát âm chuẩn"
-      />
-
-      {/* Control Bar: Filters & Search */}
-      <div className="nhaikanji-filter-card">
-        <div className="nhaikanji-filter-row">
-          {/* Level Filter Tabs */}
-          <div className="nhaikanji-tab-group">
-            {JLPT_LEVELS.map((lvl) => (
-              <button
-                key={lvl}
-                type="button"
-                className={`nhaikanji-tab-btn${selectedLevel === lvl ? ' is-active' : ''}`}
-                onClick={() => handleLevelChange(lvl)}
-              >
-                {lvl === 'ALL' ? 'Tất cả (2500+)' : `Kanji ${lvl}`}
-              </button>
-            ))}
+    <div className="kanji-ledger-root" ref={ledgerTopRef}>
+      {/* 1. Compact Editorial Masthead Strip */}
+      <header className="kanji-ledger-masthead">
+        <div className="kanji-ledger-masthead__title">
+          <span className="kanji-ledger-hanko" aria-hidden="true">
+            漢
+          </span>
+          <div>
+            <h1>Kho Hán Tự (Kanji) & Chiết Tự</h1>
+            <p className="kanji-ledger-masthead__sub">
+              漢字大辞典 · {totalCatalog} chữ N5–N1 · Bút thuận, bộ thủ &amp; âm Hán-Việt
+            </p>
           </div>
+        </div>
 
-          {/* Search Box */}
+        <div className="kanji-ledger-masthead__actions">
           {query === undefined && (
             <div className="nhaikanji-search-box">
-              <Search size={18} className="nhaikanji-search-icon" />
+              <Search size={16} className="nhaikanji-search-icon" aria-hidden="true" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Tìm Kanji, Âm Hán Việt (thổ, nhật...), nghĩa..."
+                placeholder="Tìm Kanji, Hán-Việt, On/Kun, nghĩa..."
+                aria-label="Tìm kiếm Hán tự"
               />
               {searchQuery && (
-                <button type="button" onClick={() => handleSearchChange('')} className="nhaikanji-search-clear">
-                  <X size={16} />
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  className="nhaikanji-search-clear"
+                  aria-label="Xóa từ khóa Hán tự"
+                >
+                  <X size={15} />
                 </button>
               )}
             </div>
           )}
+
+          {onChangeViewMode && (
+            <div className="kanji-view-segmented" role="group" aria-label="Cách xem Hán tự">
+              <button
+                type="button"
+                className={`kanji-view-segmented__btn${viewMode === 'grid' ? ' is-active' : ''}`}
+                aria-pressed={viewMode === 'grid'}
+                onClick={() => onChangeViewMode('grid')}
+              >
+                Danh sách
+              </button>
+              <button
+                type="button"
+                className={`kanji-view-segmented__btn${viewMode === 'ink' ? ' is-active' : ''}`}
+                aria-pressed={viewMode === 'ink'}
+                onClick={() => onChangeViewMode('ink')}
+              >
+                Thủy mặc
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* 2. Open Hairline Filter Ledger (Zero SaaS Box) */}
+      <section className="kanji-ledger-controls" aria-label="Bộ lọc Hán tự">
+        {/* Row A: JLPT Hairline Tabs + Radical Drawer Trigger + Saved SRS Toggle */}
+        <div className="kanji-ledger-row-a">
+          <div className="nhaikanji-tab-group" role="tablist" aria-label="Cấp độ JLPT">
+            {JLPT_LEVELS.map((lvl) => {
+              const count = data?.levelCounts?.[lvl]
+              return (
+                <button
+                  key={lvl}
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedLevel === lvl}
+                  className={`nhaikanji-tab-btn${selectedLevel === lvl ? ' is-active' : ''}`}
+                  onClick={() => handleLevelChange(lvl)}
+                >
+                  <span>{lvl === 'ALL' ? 'Tất cả' : `Kanji ${lvl}`}</span>
+                  {typeof count === 'number' && <small className="kanji-tab-count">{count}</small>}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="kanji-ledger-triggers">
+            <button
+              type="button"
+              className={`kanji-trigger-btn${isRadicalOpen || selectedRadical ? ' is-active' : ''}`}
+              aria-expanded={isRadicalOpen}
+              onClick={() => setIsRadicalOpen((open) => !open)}
+            >
+              <Layers size={14} aria-hidden="true" />
+              <span>{selectedRadical ? `Bộ: ${selectedRadical}` : 'Bộ thủ (部首)'}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`kanji-trigger-btn${onlySaved ? ' is-active' : ''}`}
+              aria-pressed={onlySaved}
+              onClick={() => {
+                setOnlySaved((prev) => !prev)
+                setPage(1)
+              }}
+              title="Lọc các chữ Hán đã lưu vào Sổ tay SRS"
+            >
+              <Bookmark size={14} aria-hidden="true" />
+              <span>Đã lưu{savedKanjiSet.size > 0 ? ` (${savedKanjiSet.size})` : ''}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Feature quick badges */}
-        <div className="nhaikanji-badge-line">
-          <span>
-            <Sparkles size={14} className="kanji-icon--amber" /> Chiết tự & Mẹo nhớ
-          </span>
-          <span>
-            <Layers size={14} className="kanji-icon--indigo" /> 214 Bộ thủ liên kết
-          </span>
-          <span>
-            <BookOpen size={14} className="kanji-icon--emerald" /> Luyện viết nét tay
-          </span>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+        {/* Collapsible 214 Radicals Drawer */}
+        {isRadicalOpen && (
+          <div className="kanji-radical-drawer" role="region" aria-label="Bảng tra cứu Bộ thủ">
+            <div className="kanji-radical-drawer__head">
+              <div className="kanji-radical-drawer__search">
+                <Search size={14} aria-hidden="true" />
+                <input
+                  type="text"
+                  value={radicalSearch}
+                  onChange={(e) => setRadicalSearch(e.target.value)}
+                  placeholder="Tìm bộ thủ (thủy, nhân, tâm, 水...)"
+                  aria-label="Tìm bộ thủ"
+                />
+                {radicalSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setRadicalSearch('')}
+                    className="kanji-radical-drawer__clear"
+                    aria-label="Xóa tìm bộ thủ"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div className="kanji-stroke-pills" role="group" aria-label="Số nét bộ thủ">
+                {RADICAL_STROKE_GROUPS.map((grp) => (
+                  <button
+                    key={grp.id}
+                    type="button"
+                    className={`kanji-pill-btn${radicalStrokeGroup === grp.id ? ' is-active' : ''}`}
+                    onClick={() => setRadicalStrokeGroup(grp.id)}
+                  >
+                    {grp.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {isRadicalsLoading ? (
+              <p className="kanji-radical-drawer__status">Đang lập mục lục bộ thủ…</p>
+            ) : filteredRadicals.length === 0 ? (
+              <p className="kanji-radical-drawer__status">Không tìm thấy bộ thủ phù hợp.</p>
+            ) : (
+              <div className="kanji-radical-grid">
+                {filteredRadicals.map((rad) => {
+                  const isActive = selectedRadical === rad.glyph
+                  return (
+                    <button
+                      key={rad.glyph}
+                      type="button"
+                      className={`kanji-radical-tile${isActive ? ' is-active' : ''}`}
+                      onClick={() => handleSelectRadical(rad.glyph)}
+                      title={`${rad.glyph} — Bộ ${rad.nameVi || rad.glyph} (${rad.meaningVi})`}
+                    >
+                      <span className="kanji-radical-tile__glyph">{rad.glyph}</span>
+                      <span className="kanji-radical-tile__name">{rad.nameVi || 'Bộ'}</span>
+                      <span className="kanji-radical-tile__count">{rad.count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Row B: Stroke Range Pills + Active Chips + Editorial Sort & Limit */}
+        <div className="kanji-ledger-row-b">
+          <div className="kanji-ledger-row-b__left">
+            <div className="kanji-stroke-pills" role="group" aria-label="Lọc theo số nét">
+              {STROKE_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={`kanji-pill-btn${strokePreset === preset.id ? ' is-active' : ''}`}
+                  aria-pressed={strokePreset === preset.id}
+                  onClick={() => handleStrokePresetChange(preset.id)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            {selectedRadical && (
+              <button
+                type="button"
+                className="kanji-active-chip"
+                onClick={() => {
+                  setSelectedRadical('')
+                  setPage(1)
+                }}
+              >
+                <span>
+                  Bộ {selectedRadical}
+                  {selectedRadicalMeta?.nameVi ? ` · ${selectedRadicalMeta.nameVi}` : ''}
+                </span>
+                <X size={12} aria-hidden="true" />
+              </button>
+            )}
+
+            {hasActiveFilters && (
+              <button type="button" className="kanji-reset-link" onClick={resetAllFilters}>
+                <RotateCcw size={12} aria-hidden="true" />
+                <span>Đặt lại</span>
+              </button>
+            )}
+          </div>
+
+          <div className="kanji-ledger-row-b__right">
             {data && (
-              <span style={{ fontWeight: 600 }}>
-                Tổng cộng: <b>{data.total}</b> chữ Hán
+              <span className="kanji-ledger-total">
+                <strong>{onlySaved ? displayedItems.length : data.total}</strong> chữ
               </span>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                Sắp xếp:
-              </span>
-              <select
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value as 'default' | 'stroke_asc' | 'stroke_desc' | 'hanzi_az')
-                  setPage(1)
-                }}
-                aria-label="Sắp xếp danh sách Hán tự"
-                style={{
-                  fontSize: '0.78rem',
-                  padding: '3px 8px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface, #ffffff)',
-                  color: 'var(--color-text, #0f172a)',
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="default">Lộ trình học logic</option>
-                <option value="stroke_asc">Số nét (Ít → Nhiều)</option>
-                <option value="stroke_desc">Số nét (Nhiều → Ít)</option>
-                <option value="hanzi_az">Âm Hán-Việt (A → Z)</option>
-              </select>
+
+            <div className="kanji-segmented-control" role="group" aria-label="Sắp xếp danh sách Hán tự">
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={`kanji-seg-btn${sortBy === opt.id ? ' is-active' : ''}`}
+                  aria-pressed={sortBy === opt.id}
+                  onClick={() => {
+                    setSortBy(opt.id)
+                    setPage(1)
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                Hiển thị:
-              </span>
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value))
-                  setPage(1)
-                }}
-                aria-label="Số lượng chữ Hán hiển thị mỗi trang"
-                style={{
-                  fontSize: '0.78rem',
-                  padding: '3px 8px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface, #ffffff)',
-                  color: 'var(--color-text, #0f172a)',
-                  cursor: 'pointer',
-                }}
-              >
-                <option value={48}>48 / trang</option>
-                <option value={96}>96 / trang</option>
-                <option value={192}>192 / trang</option>
-                <option value={3000}>Tất cả</option>
-              </select>
+
+            <div className="kanji-segmented-control" role="group" aria-label="Số lượng hiển thị mỗi trang">
+              {LIMIT_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={`kanji-seg-btn${limit === opt ? ' is-active' : ''}`}
+                  aria-pressed={limit === opt}
+                  onClick={() => {
+                    setLimit(opt)
+                    setPage(1)
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Grid of Kanji Cards */}
-      {isLoading ? (
-        <div className="kanji-grid">
+      {/* 3. Kanji Specimen Grid */}
+      {isLoading && !data ? (
+        <div className="kanji-grid" aria-busy="true" aria-label="Đang tải danh sách Hán tự">
           {Array.from({ length: 24 }).map((_, i) => (
-            <div
-              key={i}
-              className="kanji-card"
-              style={{ minHeight: '140px', background: 'var(--color-bg-subtle, #f1f5f9)' }}
-            />
+            <div key={i} className="kanji-card kanji-card--skeleton" />
           ))}
         </div>
-      ) : data?.items?.length === 0 ? (
-        <div className="nhaikanji-filter-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-          <p style={{ fontWeight: 500, color: 'var(--color-text-secondary, #64748b)' }}>
-            Không tìm thấy Hán tự nào phù hợp với từ khóa "{searchQuery}"
+      ) : displayedItems.length === 0 ? (
+        <div className="kanji-empty-ledger">
+          <span className="kanji-empty-ledger__glyph" aria-hidden="true">
+            無
+          </span>
+          <p>
+            {onlySaved
+              ? 'Chưa có chữ Hán nào trong trang hiện tại được lưu vào Sổ tay SRS.'
+              : `Không tìm thấy Hán tự nào phù hợp${debouncedSearchQuery ? ` với “${debouncedSearchQuery}”` : ''}.`}
           </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            style={{ marginTop: '0.75rem' }}
-            onClick={() => {
-              setSearchQuery('')
-              setSelectedLevel('ALL')
-            }}
-          >
+          <Button variant="secondary" size="sm" onClick={resetAllFilters}>
             Đặt lại bộ lọc
           </Button>
         </div>
       ) : (
         <div className="kanji-grid">
-          {(data?.items || []).map((k) => (
-            <div
-              key={k.kanji}
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelectedKanji(k)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setSelectedKanji(k)
-                }
-              }}
-              className="kanji-card"
-            >
-              {/* JLPT Badge top right */}
-              <div className="kanji-card__header">
-                <Badge variant="outline" className="kanji-badge-compact">
-                  {k.jlpt_level || 'N5'}
-                </Badge>
-                <span>{k.stroke_count} nét</span>
+          {displayedItems.map((k) => {
+            const isSaved = savedKanjiSet.has(k.kanji)
+            return (
+              <div
+                key={k.kanji}
+                role="button"
+                tabIndex={0}
+                onClick={() => openKanjiModal(k)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    openKanjiModal(k)
+                  }
+                }}
+                className="kanji-card"
+              >
+                <div className="kanji-card__header">
+                  <span className="kanji-card__jlpt">{k.jlpt_level || 'N5'}</span>
+                  <span className="kanji-card__meta-right">
+                    {k.radical_utf && k.radical_utf !== '—' && (
+                      <span
+                        className="kanji-card__radical"
+                        title={k.radical_vi_name ? `Bộ ${k.radical_vi_name}` : 'Bộ thủ'}
+                      >
+                        {k.radical_utf}
+                      </span>
+                    )}
+                    <span>{k.stroke_count} nét</span>
+                    {isSaved && (
+                      <span className="kanji-card__hanko" title="Đã lưu vào Sổ tay SRS" aria-label="Đã lưu SRS">
+                        済
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="kanji-card__char">{k.kanji}</div>
+                <div className="kanji-card__hanzi">{k.hanzi}</div>
+                <div className="kanji-card__meaning">{k.meaning_vi}</div>
+                {(k.onyomi || k.kunyomi) && <div className="kanji-card__onyomi">{k.onyomi || k.kunyomi}</div>}
               </div>
-
-              {/* Big Kanji */}
-              <div className="kanji-card__char">{k.kanji}</div>
-
-              {/* Hanzi / Âm Hán Việt */}
-              <div className="kanji-card__hanzi">{k.hanzi}</div>
-
-              {/* Meaning */}
-              <div className="kanji-card__meaning">{k.meaning_vi}</div>
-
-              {/* Onyomi Preview */}
-              {k.onyomi && <div className="kanji-card__onyomi">{k.onyomi}</div>}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      {/* Pagination Controls */}
+      {/* 4. Editorial Hairline Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="kanji-pagination">
-          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            <ChevronLeft size={16} /> Trang trước
+        <nav className="kanji-pagination" aria-label="Phân trang Hán tự">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => goToPage(Math.max(1, page - 1))}>
+            <ChevronLeft size={15} /> Trang trước
           </Button>
           <div className="kanji-pagination__pages">
             {getVisiblePages(page, data.totalPages).map((pNum, idx) =>
@@ -280,25 +638,15 @@ export function KanjiPage({ query }: { query?: string } = {}) {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setPage(pNum)}
-                  style={{
-                    minWidth: '32px',
-                    height: '32px',
-                    padding: '0 6px',
-                    borderRadius: '6px',
-                    border: page === pNum ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
-                    background: page === pNum ? 'var(--color-accent)' : 'var(--color-surface)',
-                    color: page === pNum ? 'var(--color-text-inverse)' : 'var(--color-text)',
-                    fontWeight: page === pNum ? 700 : 500,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                  }}
+                  onClick={() => goToPage(pNum)}
+                  className={`kanji-page-btn${page === pNum ? ' is-active' : ''}`}
+                  aria-current={page === pNum ? 'page' : undefined}
                 >
                   {pNum}
                 </button>
               ) : (
-                <span key={idx} style={{ padding: '0 4px', color: 'var(--color-text-muted)' }}>
-                  ...
+                <span key={idx} className="kanji-page-ellipsis" aria-hidden="true">
+                  …
                 </span>
               )
             )}
@@ -307,29 +655,28 @@ export function KanjiPage({ query }: { query?: string } = {}) {
             variant="secondary"
             size="sm"
             disabled={page >= data.totalPages}
-            onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
+            onClick={() => goToPage(Math.min(data.totalPages, page + 1))}
           >
-            Trang sau <ChevronRight size={16} />
+            Trang sau <ChevronRight size={15} />
           </Button>
           <span className="kanji-pagination__summary">
-            Trang {page} / {data.totalPages} (Tổng {data.total} chữ)
+            Trang {page} / {data.totalPages} · {data.total} chữ
           </span>
-        </div>
+        </nav>
       )}
       {data && data.totalPages === 1 && data.total > 0 && (
-        <div
-          style={{ textAlign: 'center', paddingTop: '1rem', fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}
-        >
-          Đang hiển thị toàn bộ <b>{data.total}</b> chữ Hán
+        <div className="kanji-pagination__footer-note">
+          Đang hiển thị toàn bộ <strong>{data.total}</strong> chữ Hán
         </div>
       )}
 
-      {/* Kanji Detail Modal */}
+      {/* 5. Shodo Detail Modal */}
       {selectedKanji && (
         <KanjiDetailModal
           kanjiSummary={selectedKanji}
-          onClose={() => setSelectedKanji(null)}
+          onClose={closeKanjiModal}
           onSelectKanji={handleKanjiSelectByChar}
+          onFilterByRadical={handleFilterByRadicalFromModal}
         />
       )}
     </div>

@@ -1,6 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { translateRadicalMeaning } from './radical-dictionary.mjs'
+import {
+  translateRadicalMeaning,
+  toCanonicalRadicalGlyph,
+  toRadicalFamilyGlyph,
+  getRadicalMetadata,
+} from './radical-dictionary.mjs'
 
 // Helper to remove Vietnamese diacritics for flexible search
 function removeVietnameseTones(str) {
@@ -12,6 +17,187 @@ function removeVietnameseTones(str) {
     .replace(/Đ/g, 'D')
     .toLowerCase()
     .trim()
+}
+
+function katakanaToHiragana(str) {
+  if (!str) return ''
+  return String(str).replace(/[\u30a1-\u30f6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+}
+
+const ROMAJI_TABLE = [
+  ['kya', 'きゃ'],
+  ['kyu', 'きゅ'],
+  ['kyo', 'きょ'],
+  ['sha', 'しゃ'],
+  ['shu', 'しゅ'],
+  ['sho', 'しょ'],
+  ['sya', 'しゃ'],
+  ['syu', 'しゅ'],
+  ['syo', 'しょ'],
+  ['cha', 'ちゃ'],
+  ['chu', 'ちゅ'],
+  ['cho', 'ちょ'],
+  ['tya', 'ちゃ'],
+  ['tyu', 'ちゅ'],
+  ['tyo', 'ちょ'],
+  ['nya', 'にゃ'],
+  ['nyu', 'にゅ'],
+  ['nyo', 'にょ'],
+  ['hya', 'ひゃ'],
+  ['hyu', 'ひゅ'],
+  ['hyo', 'ひょ'],
+  ['mya', 'みゃ'],
+  ['myu', 'みゅ'],
+  ['myo', 'みょ'],
+  ['rya', 'りゃ'],
+  ['ryu', 'りゅ'],
+  ['ryo', 'りょ'],
+  ['gya', 'ぎゃ'],
+  ['gyu', 'ぎゅ'],
+  ['gyo', 'ぎょ'],
+  ['ja', 'じゃ'],
+  ['ju', 'じゅ'],
+  ['jo', 'じょ'],
+  ['jya', 'じゃ'],
+  ['jyu', 'じゅ'],
+  ['jyo', 'じょ'],
+  ['bya', 'びゃ'],
+  ['byu', 'びゅ'],
+  ['byo', 'びょ'],
+  ['pya', 'ぴゃ'],
+  ['pyu', 'ぴゅ'],
+  ['pyo', 'ぴょ'],
+  ['shi', 'し'],
+  ['chi', 'ち'],
+  ['tsu', 'つ'],
+  ['fu', 'ふ'],
+  ['ka', 'か'],
+  ['ki', 'き'],
+  ['ku', 'く'],
+  ['ke', 'け'],
+  ['ko', 'こ'],
+  ['sa', 'さ'],
+  ['si', 'し'],
+  ['su', 'す'],
+  ['se', 'せ'],
+  ['so', 'そ'],
+  ['ta', 'た'],
+  ['ti', 'ち'],
+  ['tu', 'つ'],
+  ['te', 'て'],
+  ['to', 'と'],
+  ['na', 'な'],
+  ['ni', 'に'],
+  ['nu', 'ぬ'],
+  ['ne', 'ね'],
+  ['no', 'の'],
+  ['ha', 'は'],
+  ['hi', 'ひ'],
+  ['hu', 'ふ'],
+  ['he', 'へ'],
+  ['ho', 'ほ'],
+  ['ma', 'ま'],
+  ['mi', 'み'],
+  ['mu', 'む'],
+  ['me', 'め'],
+  ['mo', 'も'],
+  ['ya', 'や'],
+  ['yu', 'ゆ'],
+  ['yo', 'よ'],
+  ['ra', 'ら'],
+  ['ri', 'り'],
+  ['ru', 'る'],
+  ['re', 'れ'],
+  ['ro', 'ろ'],
+  ['wa', 'わ'],
+  ['wo', 'を'],
+  ['ga', 'が'],
+  ['gi', 'ぎ'],
+  ['gu', 'ぐ'],
+  ['ge', 'げ'],
+  ['go', 'ご'],
+  ['za', 'ざ'],
+  ['zi', 'じ'],
+  ['ji', 'じ'],
+  ['zu', 'ず'],
+  ['ze', 'ぜ'],
+  ['zo', 'ぞ'],
+  ['da', 'だ'],
+  ['di', 'ぢ'],
+  ['du', 'づ'],
+  ['de', 'で'],
+  ['do', 'ど'],
+  ['ba', 'ば'],
+  ['bi', 'び'],
+  ['bu', 'ぶ'],
+  ['be', 'べ'],
+  ['bo', 'ぼ'],
+  ['pa', 'ぱ'],
+  ['pi', 'ぴ'],
+  ['pu', 'ぷ'],
+  ['pe', 'ぺ'],
+  ['po', 'ぽ'],
+  ['a', 'あ'],
+  ['i', 'い'],
+  ['u', 'う'],
+  ['e', 'え'],
+  ['o', 'お'],
+  ['n', 'ん'],
+]
+
+function romajiToHiragana(input) {
+  const s = String(input || '')
+    .toLowerCase()
+    .trim()
+  if (!s || !/^[a-z\-']+$/u.test(s)) return ''
+  let out = ''
+  let i = 0
+  while (i < s.length) {
+    if (s[i] === '-' || s[i] === "'") {
+      i++
+      continue
+    }
+    if (i + 1 < s.length && s[i] === s[i + 1] && /[bcdfghjklmpqrstvwxyz]/.test(s[i]) && s[i] !== 'n') {
+      out += 'っ'
+      i++
+      continue
+    }
+    if (s[i] === 'n' && i + 1 < s.length && !/[aeiouy]/.test(s[i + 1]) && s[i + 1] !== 'n') {
+      out += 'ん'
+      i++
+      continue
+    }
+    let matched = false
+    for (const [rom, hira] of ROMAJI_TABLE) {
+      if (s.startsWith(rom, i)) {
+        out += hira
+        i += rom.length
+        matched = true
+        break
+      }
+    }
+    if (!matched) return ''
+  }
+  return out
+}
+
+function numericStroke(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  const parsed = Number.parseInt(String(value || ''), 10)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function extractStoryComponentChars(text) {
+  if (!text) return []
+  const chars = new Set()
+  const matches = String(text).matchAll(/[（(]([^\s）)]{1})[）)]/g)
+  for (const m of matches) {
+    const canon = toCanonicalRadicalGlyph(m[1])
+    if (canon && /[\u4e00-\u9fff\u3400-\u4dbf]/.test(canon)) {
+      chars.add(canon)
+    }
+  }
+  return [...chars]
 }
 
 function parseCSVLine(text) {
@@ -291,19 +477,29 @@ function normalizeMazziKanji(item) {
           yinHan: typeof example.h === 'string' ? example.h.trim() : '',
         }))
     : []
+  const rawRadical = typeof item.comp === 'string' && item.comp.trim() ? item.comp.trim() : ''
+  const radicalUtf = rawRadical ? toCanonicalRadicalGlyph(rawRadical) : '—'
+  const radMeta = getRadicalMetadata(radicalUtf === '—' ? '' : radicalUtf)
+  const onyomi = typeof item.on === 'string' ? item.on.trim() : ''
+  const kunyomi = typeof item.kun === 'string' ? item.kun.trim() : ''
   const summary = {
     kanji: item.kanji,
     hanzi: typeof item.mean === 'string' ? item.mean.trim() : '',
     meaning_vi: firstUsefulMeaning(item),
     meaning_en: '',
     jlpt_level: typeof item.level === 'string' ? item.level.trim().toUpperCase() : '',
-    onyomi: typeof item.on === 'string' ? item.on.trim() : '',
-    kunyomi: typeof item.kun === 'string' ? item.kun.trim() : '',
+    onyomi,
+    kunyomi,
     stroke_count: item.stroke_count ?? '',
-    radical_utf: typeof item.comp === 'string' && item.comp.trim() ? item.comp.trim() : '—',
+    numericStrokeCount: numericStroke(item.stroke_count),
+    radical_utf: radicalUtf,
+    radical_family: radMeta.family,
+    radical_vi_name: radMeta.nameVi,
     radical_name_ja: composition ? 'Thành phần cấu tạo' : '',
     radical_meaning: composition,
     story: composition,
+    storyComponents: extractStoryComponentChars(composition),
+    readingsHiragana: katakanaToHiragana(`${onyomi} ${kunyomi}`.toLowerCase()),
     num_vocab_examples: examples.length,
   }
   const detail = {
@@ -331,21 +527,22 @@ function normalizeHackNaoKanji(item, level, index, allInLevel) {
   const kanji = String(item?.kanji || '').trim()
   const hanzi = String(item?.han_viet || (kanji === '那' ? 'NA' : '')).trim()
   const meaningVi = String(item?.nghia || '').trim()
-  const jlptLevel = String(item?.cap_do || level || '').trim().toUpperCase()
-  const onyomi = Array.isArray(item?.am_on)
-    ? item.am_on.filter(Boolean).join(', ')
-    : String(item?.am_on || '').trim()
+  const jlptLevel = String(item?.cap_do || level || '')
+    .trim()
+    .toUpperCase()
+  const onyomi = Array.isArray(item?.am_on) ? item.am_on.filter(Boolean).join(', ') : String(item?.am_on || '').trim()
   const kunyomi = Array.isArray(item?.am_kun)
     ? item.am_kun.filter(Boolean).join(', ')
     : String(item?.am_kun || '').trim()
   const strokeCount =
-    typeof item?.so_net === 'number'
-      ? item.so_net
-      : Number.parseInt(String(item?.so_net || ''), 10) || ''
-  const radicalUtf = String(item?.bo_thu || '').trim() || '—'
+    typeof item?.so_net === 'number' ? item.so_net : Number.parseInt(String(item?.so_net || ''), 10) || ''
+  const rawRadicalUtf = String(item?.bo_thu || '').trim()
+  const radicalUtf = rawRadicalUtf ? toCanonicalRadicalGlyph(rawRadicalUtf) : '—'
+  const radMeta = getRadicalMetadata(radicalUtf === '—' ? '' : radicalUtf)
   const radicalNameJa = String(item?.ten_bo_thu || '').trim()
   const radicalMeaning = translateRadicalMeaning(item?.nghia_bo_thu, radicalUtf)
   const story = String(item?.cau_chuyen_ghi_nho || '').trim()
+  const storyComponents = extractStoryComponentChars(story)
 
   const examples = Array.isArray(item?.tu_vung_vi_du)
     ? item.tu_vung_vi_du
@@ -362,7 +559,10 @@ function normalizeHackNaoKanji(item, level, index, allInLevel) {
     : []
 
   const prevKanji = index > 0 && allInLevel && allInLevel[index - 1] ? allInLevel[index - 1].kanji : undefined
-  const nextKanji = index < (allInLevel?.length ?? 0) - 1 && allInLevel && allInLevel[index + 1] ? allInLevel[index + 1].kanji : undefined
+  const nextKanji =
+    index < (allInLevel?.length ?? 0) - 1 && allInLevel && allInLevel[index + 1]
+      ? allInLevel[index + 1].kanji
+      : undefined
 
   const summary = {
     kanji,
@@ -373,13 +573,19 @@ function normalizeHackNaoKanji(item, level, index, allInLevel) {
     onyomi,
     kunyomi,
     stroke_count: strokeCount,
+    numericStrokeCount: numericStroke(strokeCount),
     radical_utf: radicalUtf,
+    radical_family: radMeta.family,
+    radical_vi_name: radMeta.nameVi,
     radical_name_ja: radicalNameJa,
     radical_meaning: radicalMeaning,
     story,
+    storyComponents,
+    readingsHiragana: katakanaToHiragana(`${onyomi} ${kunyomi}`.toLowerCase()),
     num_vocab_examples: examples.length,
     normalizedHanzi: removeVietnameseTones(hanzi),
     normalizedMeaning: removeVietnameseTones(meaningVi),
+    normalizedRadical: removeVietnameseTones(`${radMeta.nameVi} ${radicalMeaning}`),
     ...(prevKanji ? { prev_kanji: prevKanji } : {}),
     ...(nextKanji ? { next_kanji: nextKanji } : {}),
   }
@@ -408,10 +614,7 @@ function normalizeHackNaoKanji(item, level, index, allInLevel) {
 
 export class NhaiKanjiService {
   constructor(options = {}) {
-    this.kanjiDataPath =
-      options.kanjiDataPath !== undefined
-        ? options.kanjiDataPath
-        : (process.env.KANJI_DATA_PATH || '')
+    this.kanjiDataPath = options.kanjiDataPath !== undefined ? options.kanjiDataPath : process.env.KANJI_DATA_PATH || ''
     this.mazziDataPath = options.mazziDataPath || process.env.MAZII_CRAWLER_DATA_PATH || ''
     this.dataPath = options.dataPath || process.env.NHAIKANJI_DATA_PATH || ''
 
@@ -530,8 +733,15 @@ export class NhaiKanjiService {
                   row[h] = (cols[idx] || '').trim()
                 })
                 if (row.kanji) {
+                  row.radical_utf = row.radical_utf ? toCanonicalRadicalGlyph(row.radical_utf) : '—'
+                  const radMeta = getRadicalMetadata(row.radical_utf === '—' ? '' : row.radical_utf)
+                  row.radical_family = radMeta.family
+                  row.radical_vi_name = radMeta.nameVi
+                  row.numericStrokeCount = numericStroke(row.stroke_count)
+                  row.readingsHiragana = katakanaToHiragana(`${row.onyomi || ''} ${row.kunyomi || ''}`.toLowerCase())
                   row.normalizedHanzi = removeVietnameseTones(row.hanzi)
                   row.normalizedMeaning = removeVietnameseTones(row.meaning_vi)
+                  row.normalizedRadical = removeVietnameseTones(`${radMeta.nameVi} ${row.radical_meaning || ''}`)
                   this.kanjiSummaryList.push(row)
                   this.kanjiMap.set(row.kanji, row)
                 }
@@ -648,60 +858,198 @@ export class NhaiKanjiService {
     return this.fullKanjiData
   }
 
-  getKanjiList({ level, query = '', page = 1, limit = 50, sort = 'default' }) {
+  computeLevelCounts(list) {
+    const counts = { ALL: list.length, N5: 0, N4: 0, N3: 0, N2: 0, N1: 0 }
+    for (const k of list) {
+      const lvl = k.jlpt_level ? k.jlpt_level.toUpperCase() : ''
+      if (lvl === 'N5' || lvl === 'N4' || lvl === 'N3' || lvl === 'N2' || lvl === 'N1') {
+        counts[lvl]++
+      }
+    }
+    return counts
+  }
+
+  getKanjiList({ level, query = '', radical = '', strokeMin, strokeMax, page = 1, limit = 50, sort = 'default' } = {}) {
     this.ensureLoaded()
+    const catalogCounts = this.computeLevelCounts(this.kanjiSummaryList)
     let results = this.kanjiSummaryList
+
+    if (radical && String(radical).trim()) {
+      const rawRad = String(radical).trim()
+      const canonRad = toCanonicalRadicalGlyph(rawRad)
+      const targetFamily = toRadicalFamilyGlyph(canonRad)
+      results = results.filter((k) => {
+        const kRad = k.radical_utf || ''
+        const kFamily = k.radical_family || toRadicalFamilyGlyph(kRad)
+        return (
+          kFamily === targetFamily ||
+          kRad === canonRad ||
+          kRad === rawRad ||
+          (Array.isArray(k.storyComponents) &&
+            (k.storyComponents.includes(canonRad) || k.storyComponents.includes(targetFamily)))
+        )
+      })
+    }
+
+    const minStrokes = Number(strokeMin)
+    if (Number.isFinite(minStrokes) && minStrokes > 0) {
+      results = results.filter((k) => {
+        const s = k.numericStrokeCount ?? numericStroke(k.stroke_count)
+        return s >= minStrokes
+      })
+    }
+
+    const maxStrokes = Number(strokeMax)
+    if (Number.isFinite(maxStrokes) && maxStrokes > 0) {
+      results = results.filter((k) => {
+        const s = k.numericStrokeCount ?? numericStroke(k.stroke_count)
+        return s > 0 && s <= maxStrokes
+      })
+    }
+
+    if (query && query.trim()) {
+      const rawQ = query.trim()
+      const q = rawQ.toLowerCase()
+      const normQ = removeVietnameseTones(q)
+      const hiraQ = katakanaToHiragana(q)
+      const romajiHiraQ = romajiToHiragana(q)
+
+      results = results.filter((k) => {
+        const readingsHira =
+          k.readingsHiragana ?? katakanaToHiragana(`${k.onyomi || ''} ${k.kunyomi || ''}`.toLowerCase())
+        return (
+          k.kanji.includes(rawQ) ||
+          k.hanzi.toLowerCase().includes(q) ||
+          (k.normalizedHanzi && k.normalizedHanzi.includes(normQ)) ||
+          k.meaning_vi.toLowerCase().includes(q) ||
+          (k.normalizedMeaning && k.normalizedMeaning.includes(normQ)) ||
+          (k.onyomi && k.onyomi.toLowerCase().includes(q)) ||
+          (k.kunyomi && k.kunyomi.toLowerCase().includes(q)) ||
+          (hiraQ && readingsHira.includes(hiraQ)) ||
+          (romajiHiraQ && readingsHira.includes(romajiHiraQ)) ||
+          (k.normalizedRadical && k.normalizedRadical.includes(normQ))
+        )
+      })
+    }
+
+    const levelCounts = this.computeLevelCounts(results)
 
     if (level && level.toUpperCase() !== 'ALL') {
       const targetLevel = level.toUpperCase()
       results = results.filter((k) => k.jlpt_level && k.jlpt_level.toUpperCase() === targetLevel)
     }
 
-    if (query && query.trim()) {
-      const q = query.trim().toLowerCase()
-      const normQ = removeVietnameseTones(q)
-
-      results = results.filter((k) => {
-        return (
-          k.kanji.includes(query) ||
-          k.hanzi.toLowerCase().includes(q) ||
-          k.normalizedHanzi.includes(normQ) ||
-          k.meaning_vi.toLowerCase().includes(q) ||
-          k.normalizedMeaning.includes(normQ) ||
-          (k.onyomi && k.onyomi.toLowerCase().includes(q)) ||
-          (k.kunyomi && k.kunyomi.toLowerCase().includes(q))
-        )
-      })
-    }
-
+    const jlptOrder = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 }
     if (sort === 'stroke_asc') {
       results = [...results].sort((a, b) => {
-        const netA = typeof a.stroke_count === 'number' ? a.stroke_count : (Number.parseInt(a.stroke_count, 10) || 0)
-        const netB = typeof b.stroke_count === 'number' ? b.stroke_count : (Number.parseInt(b.stroke_count, 10) || 0)
+        const netA = a.numericStrokeCount ?? numericStroke(a.stroke_count)
+        const netB = b.numericStrokeCount ?? numericStroke(b.stroke_count)
         if (netA !== netB) return netA - netB
         return (a.normalizedHanzi || '').localeCompare(b.normalizedHanzi || '')
       })
     } else if (sort === 'stroke_desc') {
       results = [...results].sort((a, b) => {
-        const netA = typeof a.stroke_count === 'number' ? a.stroke_count : (Number.parseInt(a.stroke_count, 10) || 0)
-        const netB = typeof b.stroke_count === 'number' ? b.stroke_count : (Number.parseInt(b.stroke_count, 10) || 0)
+        const netA = a.numericStrokeCount ?? numericStroke(a.stroke_count)
+        const netB = b.numericStrokeCount ?? numericStroke(b.stroke_count)
         if (netA !== netB) return netB - netA
         return (a.normalizedHanzi || '').localeCompare(b.normalizedHanzi || '')
       })
     } else if (sort === 'hanzi_az') {
       results = [...results].sort((a, b) => (a.normalizedHanzi || '').localeCompare(b.normalizedHanzi || ''))
+    } else if (sort === 'jlpt_asc') {
+      results = [...results].sort((a, b) => {
+        const rankA = jlptOrder[(a.jlpt_level || '').toUpperCase()] || 99
+        const rankB = jlptOrder[(b.jlpt_level || '').toUpperCase()] || 99
+        if (rankA !== rankB) return rankA - rankB
+        return (
+          (a.numericStrokeCount ?? numericStroke(a.stroke_count)) -
+          (b.numericStrokeCount ?? numericStroke(b.stroke_count))
+        )
+      })
+    } else if (sort === 'examples_desc') {
+      results = [...results].sort((a, b) => (Number(b.num_vocab_examples) || 0) - (Number(a.num_vocab_examples) || 0))
     }
 
     const total = results.length
-    const offset = (Math.max(1, page) - 1) * limit
-    const items = results.slice(offset, offset + limit)
+    const safePage = Math.max(1, Number(page) || 1)
+    const safeLimit = Math.max(1, Number(limit) || 50)
+    const offset = (safePage - 1) * safeLimit
+    const items = results.slice(offset, offset + safeLimit)
 
     return {
       items,
       total,
-      page: Number(page),
-      limit: Number(limit),
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+      levelCounts,
+      catalogCounts,
+    }
+  }
+
+  getKanjiRadicals({ level = 'ALL', query = '' } = {}) {
+    this.ensureLoaded()
+    const targetLevel = level ? level.toUpperCase() : 'ALL'
+    const map = new Map()
+
+    for (const k of this.kanjiSummaryList) {
+      if (targetLevel !== 'ALL' && (!k.jlpt_level || k.jlpt_level.toUpperCase() !== targetLevel)) continue
+      const glyph = k.radical_family || toRadicalFamilyGlyph(k.radical_utf)
+      if (!glyph || glyph === '—') continue
+
+      let entry = map.get(glyph)
+      if (!entry) {
+        const meta = getRadicalMetadata(glyph)
+        entry = {
+          glyph,
+          variants: new Set(),
+          nameVi: meta.nameVi || k.radical_vi_name || '',
+          meaningVi: k.radical_meaning || '',
+          strokeCount: meta.strokeCount || 0,
+          count: 0,
+        }
+        map.set(glyph, entry)
+      }
+      if (k.radical_utf && k.radical_utf !== '—') {
+        entry.variants.add(k.radical_utf)
+      }
+      if (!entry.meaningVi && k.radical_meaning) {
+        entry.meaningVi = k.radical_meaning
+      }
+      entry.count++
+    }
+
+    let radicals = [...map.values()].map((entry) => ({
+      glyph: entry.glyph,
+      variants: [...entry.variants],
+      nameVi: entry.nameVi,
+      meaningVi: entry.meaningVi,
+      strokeCount: entry.strokeCount,
+      count: entry.count,
+    }))
+
+    if (query && String(query).trim()) {
+      const q = String(query).trim().toLowerCase()
+      const normQ = removeVietnameseTones(q)
+      radicals = radicals.filter(
+        (r) =>
+          r.glyph.includes(query.trim()) ||
+          r.variants.some((v) => v.includes(query.trim())) ||
+          removeVietnameseTones(r.nameVi).includes(normQ) ||
+          removeVietnameseTones(r.meaningVi).includes(normQ)
+      )
+    }
+
+    radicals.sort((a, b) => {
+      const sA = a.strokeCount || 99
+      const sB = b.strokeCount || 99
+      if (sA !== sB) return sA - sB
+      return b.count - a.count
+    })
+
+    return {
+      radicals,
+      totalRadicals: radicals.length,
     }
   }
 
@@ -715,10 +1063,46 @@ export class NhaiKanjiService {
       return null
     }
 
+    const jlptOrder = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 }
+    const targetFamily = summary?.radical_family || toRadicalFamilyGlyph(summary?.radical_utf || '')
+    const primaryHanzi = (summary?.hanzi || detail?.kanjiInfo?.hanzi || '').split(/[,;/]/)[0].trim().toUpperCase()
+
+    const relatedByRadical = targetFamily
+      ? this.kanjiSummaryList
+          .filter(
+            (k) => k.kanji !== kanjiChar && (k.radical_family || toRadicalFamilyGlyph(k.radical_utf)) === targetFamily
+          )
+          .sort(
+            (a, b) =>
+              (jlptOrder[(a.jlpt_level || '').toUpperCase()] || 99) -
+              (jlptOrder[(b.jlpt_level || '').toUpperCase()] || 99)
+          )
+          .slice(0, 8)
+      : []
+
+    const relatedByHanzi = primaryHanzi
+      ? this.kanjiSummaryList
+          .filter((k) => {
+            if (k.kanji === kanjiChar) return false
+            const tokens = String(k.hanzi || '')
+              .split(/[,;/]/)
+              .map((t) => t.trim().toUpperCase())
+            return tokens.includes(primaryHanzi)
+          })
+          .sort(
+            (a, b) =>
+              (jlptOrder[(a.jlpt_level || '').toUpperCase()] || 99) -
+              (jlptOrder[(b.jlpt_level || '').toUpperCase()] || 99)
+          )
+          .slice(0, 6)
+      : []
+
     return {
       kanji: kanjiChar,
       summary: summary || null,
       detail: detail || null,
+      relatedByRadical,
+      relatedByHanzi,
     }
   }
 
@@ -1158,10 +1542,42 @@ export class NhaiKanjiService {
 
     // Phân nhóm câu hỏi theo từng kỹ năng chuẩn JLPT
     const sectionGroups = {
-      vocab: { name: 'Từ vựng (文字・語彙)', total: 0, correct: 0, weightedTotal: 0, weightedCorrect: 0, maxScore: 60, minPass: 19 },
-      grammar: { name: 'Ngữ pháp (文法)', total: 0, correct: 0, weightedTotal: 0, weightedCorrect: 0, maxScore: 60, minPass: 19 },
-      reading: { name: 'Đọc hiểu (読解)', total: 0, correct: 0, weightedTotal: 0, weightedCorrect: 0, maxScore: 60, minPass: 19 },
-      listening: { name: 'Nghe hiểu (聴解)', total: 0, correct: 0, weightedTotal: 0, weightedCorrect: 0, maxScore: 60, minPass: 19 },
+      vocab: {
+        name: 'Từ vựng (文字・語彙)',
+        total: 0,
+        correct: 0,
+        weightedTotal: 0,
+        weightedCorrect: 0,
+        maxScore: 60,
+        minPass: 19,
+      },
+      grammar: {
+        name: 'Ngữ pháp (文法)',
+        total: 0,
+        correct: 0,
+        weightedTotal: 0,
+        weightedCorrect: 0,
+        maxScore: 60,
+        minPass: 19,
+      },
+      reading: {
+        name: 'Đọc hiểu (読解)',
+        total: 0,
+        correct: 0,
+        weightedTotal: 0,
+        weightedCorrect: 0,
+        maxScore: 60,
+        minPass: 19,
+      },
+      listening: {
+        name: 'Nghe hiểu (聴解)',
+        total: 0,
+        correct: 0,
+        weightedTotal: 0,
+        weightedCorrect: 0,
+        maxScore: 60,
+        minPass: 19,
+      },
     }
 
     if (Array.isArray(exam.parts)) {
@@ -1298,11 +1714,11 @@ export class NhaiKanjiService {
     let cefrLevel = 'Chưa đạt'
     if (passed) {
       if (level === 'N1') {
-        cefrLevel = scaledTotalScore >= 142 ? 'C1' : (scaledTotalScore >= 100 ? 'B2' : 'Chưa đạt')
+        cefrLevel = scaledTotalScore >= 142 ? 'C1' : scaledTotalScore >= 100 ? 'B2' : 'Chưa đạt'
       } else if (level === 'N2') {
-        cefrLevel = scaledTotalScore >= 112 ? 'B2' : (scaledTotalScore >= 90 ? 'B1' : 'Chưa đạt')
+        cefrLevel = scaledTotalScore >= 112 ? 'B2' : scaledTotalScore >= 90 ? 'B1' : 'Chưa đạt'
       } else if (level === 'N3') {
-        cefrLevel = scaledTotalScore >= 104 ? 'B1' : (scaledTotalScore >= 95 ? 'A2' : 'Chưa đạt')
+        cefrLevel = scaledTotalScore >= 104 ? 'B1' : scaledTotalScore >= 95 ? 'A2' : 'Chưa đạt'
       } else if (level === 'N4') {
         cefrLevel = scaledTotalScore >= 90 ? 'A2' : 'Chưa đạt'
       } else if (level === 'N5') {
@@ -1416,7 +1832,7 @@ export class NhaiKanjiService {
 export const nhaiKanjiService = new NhaiKanjiService({
   kanjiDataPath:
     process.env.KANJI_DATA_PATH ||
-    (fs.existsSync('D:/Project/data/kanji_hack_nao_n1_n5.json')
-      ? 'D:/Project/data/kanji_hack_nao_n1_n5.json'
+    (fs.existsSync('D:/student/Languages/Japanese/kanji_hack_nao_n1_n5.json')
+      ? 'D:/student/Languages/Japanese/kanji_hack_nao_n1_n5.json'
       : path.resolve(process.cwd(), 'data', 'kanji_hack_nao_n1_n5.json')),
 })

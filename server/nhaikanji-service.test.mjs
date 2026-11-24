@@ -68,17 +68,42 @@ test('NhaiKanjiService loads canonical repo fixtures with N5/N4 isolation and de
   // 1. N5 Kanji list contains 土 and 日, excludes N4 kanji
   const n5 = service.getKanjiList({ level: 'N5', limit: 5 })
   assert.ok(n5.items.length > 0, 'N5 list must have items')
-  assert.ok(n5.items.some((k) => k.kanji === '土'), 'N5 list must contain 土')
-  assert.ok(n5.items.some((k) => k.kanji === '日'), 'N5 list must contain 日')
-  assert.equal(n5.items.some((k) => k.kanji === '語'), false, 'N5 list must not contain N4 kanji 語')
-  assert.equal(n5.items.every((k) => k.jlpt_level === 'N5'), true, 'All N5 items must have level N5')
+  assert.ok(
+    n5.items.some((k) => k.kanji === '土'),
+    'N5 list must contain 土'
+  )
+  assert.ok(
+    n5.items.some((k) => k.kanji === '日'),
+    'N5 list must contain 日'
+  )
+  assert.equal(
+    n5.items.some((k) => k.kanji === '語'),
+    false,
+    'N5 list must not contain N4 kanji 語'
+  )
+  assert.equal(
+    n5.items.every((k) => k.jlpt_level === 'N5'),
+    true,
+    'All N5 items must have level N5'
+  )
 
   // 2. N4 Kanji list contains 語, excludes N5 kanji
   const n4 = service.getKanjiList({ level: 'N4', limit: 5 })
   assert.ok(n4.items.length > 0, 'N4 list must have items')
-  assert.ok(n4.items.some((k) => k.kanji === '語'), 'N4 list must contain 語')
-  assert.equal(n4.items.some((k) => k.kanji === '土'), false, 'N4 list must not contain N5 kanji 土')
-  assert.equal(n4.items.every((k) => k.jlpt_level === 'N4'), true, 'All N4 items must have level N4')
+  assert.ok(
+    n4.items.some((k) => k.kanji === '語'),
+    'N4 list must contain 語'
+  )
+  assert.equal(
+    n4.items.some((k) => k.kanji === '土'),
+    false,
+    'N4 list must not contain N5 kanji 土'
+  )
+  assert.equal(
+    n4.items.every((k) => k.jlpt_level === 'N4'),
+    true,
+    'All N4 items must have level N4'
+  )
 
   // 3. Kanji Detail for 土
   const detailTho = service.getKanjiDetail('土')
@@ -97,14 +122,28 @@ test('NhaiKanjiService loads canonical repo fixtures with N5/N4 isolation and de
   // 5. Bunpo list N4 contains んです and isolates from N5
   const bunpoN4 = service.getBunpoList({ level: 'N4', limit: 5 })
   assert.ok(bunpoN4.items.length > 0, 'N4 Bunpo must have items')
-  assert.ok(bunpoN4.items.some((b) => b.pattern.includes('んです')), 'N4 Bunpo must contain んです')
-  assert.equal(bunpoN4.items.some((b) => b.level === 'N5'), false, 'N4 Bunpo must not contain N5 items')
+  assert.ok(
+    bunpoN4.items.some((b) => b.pattern.includes('んです')),
+    'N4 Bunpo must contain んです'
+  )
+  assert.equal(
+    bunpoN4.items.some((b) => b.level === 'N5'),
+    false,
+    'N4 Bunpo must not contain N5 items'
+  )
 
   // 6. Bunpo list N5 contains です and isolates from N4
   const bunpoN5 = service.getBunpoList({ level: 'N5', limit: 5 })
   assert.ok(bunpoN5.items.length > 0, 'N5 Bunpo must have items')
-  assert.ok(bunpoN5.items.some((b) => b.pattern.includes('です')), 'N5 Bunpo must contain です')
-  assert.equal(bunpoN5.items.some((b) => b.level === 'N4'), false, 'N5 Bunpo must not contain N4 items')
+  assert.ok(
+    bunpoN5.items.some((b) => b.pattern.includes('です')),
+    'N5 Bunpo must contain です'
+  )
+  assert.equal(
+    bunpoN5.items.some((b) => b.level === 'N4'),
+    false,
+    'N5 Bunpo must not contain N4 items'
+  )
 
   // 7. JLPT Exams returns array
   const exams = service.getJlptExams({ level: 'N4' })
@@ -711,3 +750,128 @@ test('NhaiKanjiService retrieves and caches calligraphic brush outline data', as
   assert.ok(brushData.strokes[0].endsWith('Z'))
 })
 
+test('NhaiKanjiService supports radical family filtering, stroke bounds, romaji/hiragana search, levelCounts, and related peers', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kotodama-kanji-facets-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+
+  const mockFile = path.join(root, 'hack_nao.json')
+  fs.writeFileSync(
+    mockFile,
+    JSON.stringify({
+      N5: [
+        {
+          stt: 1,
+          kanji: '水',
+          han_viet: 'THỦY',
+          nghia: 'Nước',
+          cap_do: 'N5',
+          am_on: ['スイ'],
+          am_kun: ['みず'],
+          so_net: 4,
+          bo_thu: '⽔',
+          ten_bo_thu: 'みず',
+          nghia_bo_thu: 'water',
+          cau_chuyen_ghi_nho: 'Dòng nước (水) chảy',
+          tu_vung_vi_du: [{ tu: '水', cach_doc: 'みず', han_viet: 'THỦY', nghia: 'Nước' }],
+        },
+        {
+          stt: 2,
+          kanji: '日',
+          han_viet: 'NHẬT',
+          nghia: 'Mặt trời',
+          cap_do: 'N5',
+          am_on: ['ニチ', 'ジツ'],
+          am_kun: ['ひ'],
+          so_net: 4,
+          bo_thu: '⽇',
+          ten_bo_thu: 'にち',
+          nghia_bo_thu: 'sun',
+          cau_chuyen_ghi_nho: 'Mặt trời (日) tròn',
+          tu_vung_vi_du: [{ tu: '日本', cach_doc: 'にほん', han_viet: 'NHẬT BẢN', nghia: 'Nhật Bản' }],
+        },
+      ],
+      N4: [
+        {
+          stt: 3,
+          kanji: '海',
+          han_viet: 'HẢI',
+          nghia: 'Biển',
+          cap_do: 'N4',
+          am_on: ['カイ'],
+          am_kun: ['うみ'],
+          so_net: 9,
+          bo_thu: '⺡',
+          ten_bo_thu: 'さんずい',
+          nghia_bo_thu: 'water',
+          cau_chuyen_ghi_nho: 'Nước (氵) mỗi ngày tụ lại thành biển',
+          tu_vung_vi_du: [{ tu: '海', cach_doc: 'うみ', han_viet: 'HẢI', nghia: 'Biển' }],
+        },
+      ],
+      N3: [
+        {
+          stt: 4,
+          kanji: '実',
+          han_viet: 'THỰC',
+          nghia: 'Sự thật',
+          cap_do: 'N3',
+          am_on: ['ジツ'],
+          am_kun: ['み'],
+          so_net: 8,
+          bo_thu: '⼧',
+          ten_bo_thu: 'うかんむり',
+          nghia_bo_thu: 'roof',
+          cau_chuyen_ghi_nho: 'Dưới mái nhà (宀)',
+          tu_vung_vi_du: [{ tu: '本当', cach_doc: 'ほんとう', han_viet: 'BẢN ĐƯƠNG', nghia: 'Thật' }],
+        },
+      ],
+      N2: [],
+      N1: [],
+    })
+  )
+
+  const service = new NhaiKanjiService({ kanjiDataPath: mockFile })
+
+  // 1. Canonical radical normalization + variant family matching (氵 <-> 水)
+  const waterKanji = service.getKanjiList({ radical: '水', level: 'ALL' })
+  assert.equal(waterKanji.total, 2)
+  assert.deepEqual(
+    waterKanji.items.map((k) => k.kanji),
+    ['水', '海']
+  )
+  assert.equal(waterKanji.items[0].radical_utf, '水')
+  assert.equal(waterKanji.items[1].radical_utf, '氵')
+  assert.equal(waterKanji.levelCounts.N5, 1)
+  assert.equal(waterKanji.levelCounts.N4, 1)
+  assert.equal(waterKanji.catalogCounts.ALL, 4)
+
+  // 2. Stroke bounds filtering
+  const midStrokes = service.getKanjiList({ strokeMin: 5, strokeMax: 10 })
+  assert.equal(midStrokes.total, 2)
+  assert.deepEqual(
+    midStrokes.items.map((k) => k.kanji),
+    ['海', '実']
+  )
+
+  // 3. Multi-script search: Romaji & Hiragana matching Katakana Onyomi
+  const byRomaji = service.getKanjiList({ query: 'nichi' })
+  assert.equal(byRomaji.total, 1)
+  assert.equal(byRomaji.items[0].kanji, '日')
+
+  const byHira = service.getKanjiList({ query: 'じつ' })
+  assert.equal(byHira.total, 2)
+  assert.deepEqual(
+    byHira.items.map((k) => k.kanji),
+    ['日', '実']
+  )
+
+  // 4. Radicals facet aggregation
+  const rads = service.getKanjiRadicals({ level: 'ALL' })
+  const waterRad = rads.radicals.find((r) => r.glyph === '水')
+  assert.ok(waterRad)
+  assert.equal(waterRad.nameVi, 'Thủy')
+  assert.equal(waterRad.count, 2)
+
+  // 5. Detail relatedByRadical & relatedByHanzi
+  const detailWater = service.getKanjiDetail('水')
+  assert.ok(detailWater.relatedByRadical.some((k) => k.kanji === '海'))
+})
