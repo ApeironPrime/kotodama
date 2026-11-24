@@ -216,19 +216,33 @@ describe('KanjiPage Washi Ledger Suite', () => {
     fireEvent.click(screen.getByText('THỦY'))
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toBeTruthy()
+    expect(within(dialog).queryByRole('button', { name: 'Diễn lại bút pháp' })).toBeNull()
+    expect(within(dialog).getByRole('button', { name: 'Đóng' })).toBeTruthy()
     expect(await within(dialog).findByText('水曜日')).toBeTruthy()
     expect(within(dialog).getByRole('button', { name: 'Nghe phát âm 水曜日' })).toBeTruthy()
     expect(within(dialog).getByRole('button', { name: 'Nghe câu 水曜日に会いましょう。' })).toBeTruthy()
     expect(within(dialog).queryByRole('button', { name: /Minh họa/ })).toBeNull()
     expect(await within(dialog).findByText('Cùng bộ 水 (Thủy)')).toBeTruthy()
 
-    // Navigate to peer 海 and verify Exploration Breadcrumb Trail
+    // Navigate to peer 海 and verify Exploration Breadcrumb Trail in footer
     fireEvent.click(within(dialog).getByRole('button', { name: /海\s*HẢI/ }))
     expect(await within(dialog).findByRole('button', { name: 'Quay lại 水' })).toBeTruthy()
 
-    // Switch to Practice Tab and verify dual dojo mode
+    // Switch to merged Practice view inside Column 1 and verify dual dojo mode
     fireEvent.click(within(dialog).getByRole('button', { name: /Luyện viết nét/i }))
     expect(within(dialog).getByRole('button', { name: 'Chấm nét chuẩn' })).toBeTruthy()
     expect(within(dialog).getByRole('button', { name: 'Vung cọ tự do' })).toBeTruthy()
+  })
+
+  it('supports inline Lật thẻ flashcard study mode right inside KanjiPage', async () => {
+    renderKanjiPage()
+    await screen.findByText('THỦY')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lật thẻ' }))
+    const card = await screen.findByRole('button', { name: /Mặt trước thẻ Hán tự/ })
+    fireEvent.click(card)
+
+    expect(await screen.findByText(/Dòng nước \(水\) chảy/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Mở chi tiết & Tập viết/ })).toBeTruthy()
   })
 })

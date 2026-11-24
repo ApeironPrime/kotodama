@@ -6916,15 +6916,21 @@ body:has(.video-study-page) {
 
   position: fixed;
   inset: 0;
-  background: rgba(18, 16, 15, 0.72);
+  background: rgba(18, 16, 15, 0.68);
   backdrop-filter: blur(8px);
   z-index: 99999;
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
-  padding: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 4rem;
   color: var(--color-text);
   animation: shodo-fade-in 0.2s ease-out;
+}
+@media (max-width: 960px) {
+  .shodo-theater-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
 }
 
 [data-theme='dark'] .shodo-theater-overlay {
@@ -8081,19 +8087,24 @@ body:has(.video-study-page) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.55rem;
+  width: 100%;
 }
 .shodo-canvas-frame {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: 248px;
+  height: 248px;
   background: #fefcf8;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   /* Washi paper shadow */
   box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(180, 70, 50, 0.18);
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(180, 70, 50, 0.22);
+}
+.shodo-canvas-draw {
+  width: 248px;
+  height: 248px;
 }
 /* Ghost guide character */
 .shodo-canvas-guide {
@@ -8138,20 +8149,26 @@ body:has(.video-study-page) {
   line-height: 1.5;
 }
 
-/* ─── Wide Modal for 3-Realm Layout ─────────────────────────────────────── */
+/* ─── Wide Modal for 3-Realm Centered Monograph Sheet ───────────────────── */
 .shodo-theater-scroll--wide {
-  max-width: 100%;
-  width: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
+  width: min(1120px, 100%);
+  max-width: min(1120px, 100%);
+  height: auto;
+  max-height: min(710px, calc(100dvh - 2.5rem));
+  border-radius: 4px;
+  border: 1px solid var(--color-border-strong);
+  box-shadow: 0 28px 64px -16px rgba(12, 10, 8, 0.45);
   overflow: hidden;
-  animation: kanji-modal-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: kanji-modal-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @media (max-width: 960px) {
   .shodo-theater-scroll--wide {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: 0;
     overflow-y: auto;
   }
 }
@@ -8162,6 +8179,170 @@ body:has(.video-study-page) {
     padding: 0;
     overflow: hidden;
   }
+}
+
+/* Floating Side Paddles */
+.shodo-side-paddle {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100000;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.7rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+  background: rgba(250, 247, 242, 0.92);
+  color: var(--color-text);
+  cursor: pointer;
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.shodo-side-paddle span {
+  font-family: var(--font-jp-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.shodo-side-paddle:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  transform: translateY(-50%) scale(1.04);
+}
+.shodo-side-paddle--prev {
+  left: max(0.65rem, calc(50% - 560px - 3.6rem));
+}
+.shodo-side-paddle--next {
+  right: max(0.65rem, calc(50% - 560px - 3.6rem));
+}
+@media (max-width: 960px) {
+  .shodo-side-paddle {
+    display: none;
+  }
+}
+
+/* Ergonomic Bottom Action Bar */
+.shodo-theater-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding: 0.62rem 1.35rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+}
+.shodo-theater-footer__left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.shodo-theater-footer__right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.shodo-history-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  overflow-x: auto;
+}
+.shodo-footer-hint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+.shodo-footer-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.28rem 0.6rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.shodo-footer-nav-btn + .shodo-footer-nav-btn {
+  border-left: 1px solid var(--color-border-subtle);
+}
+.shodo-footer-nav-btn:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-accent-text);
+}
+.shodo-footer-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.shodo-footer-close-btn {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.shodo-footer-close-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+/* Inline Practice inside Column 1 */
+.kanji-realm-practice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1;
+}
+.shodo-practice-inline-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+.shodo-practice-inline-title {
+  font-size: 0.76rem;
+  color: var(--color-text-secondary);
+}
+.shodo-practice-inline-title strong {
+  font-family: var(--font-jp-serif);
+  color: var(--color-accent-text);
+  font-size: 0.92rem;
+}
+
+.kanji-constellation-primitive-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 3px;
+  background: var(--color-bg-subtle);
+  text-align: center;
+}
+.kanji-constellation-primitive-note span {
+  font-family: var(--font-jp-serif);
+  font-size: 2.5rem;
+  color: var(--color-text);
+  line-height: 1;
+}
+.kanji-constellation-primitive-note p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
 }
 @keyframes kanji-modal-slide-in {
   from {
@@ -8465,8 +8646,8 @@ body:has(.video-study-page) {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 310px;
-  min-height: 275px;
+  height: 235px;
+  min-height: 220px;
   position: relative;
 }
 .kanji-constellation-stage {

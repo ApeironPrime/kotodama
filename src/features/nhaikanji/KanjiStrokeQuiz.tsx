@@ -9,8 +9,8 @@ interface KanjiStrokeQuizProps {
   fallbackStrokeCount?: number | string
 }
 
-const STAGE_SIZE = 280
-const STAGE_PADDING = 18
+const STAGE_SIZE = 248
+const STAGE_PADDING = 16
 
 export function KanjiStrokeQuiz({ kanjiChar, fallbackStrokeCount }: KanjiStrokeQuizProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)

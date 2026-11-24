@@ -109,6 +109,11 @@ export type KanjiDetailData = {
   } | null
   relatedByRadical?: KanjiSummary[]
   relatedByHanzi?: KanjiSummary[]
+  verifiedDescendants?: Array<{
+    char: string
+    label: string
+    meaning?: string
+  }>
   phonetics?: {
     onyomiRomaji?: string
     kunyomiRomaji?: string

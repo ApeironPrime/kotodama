@@ -129,7 +129,8 @@ export default function DictionaryPage({
   const [urlLesson] = useUrlState<string | null>('lesson', null)
   const isLessonFocusMode =
     !searchTerm && ((activeTab === 'vocabulary' && Boolean(urlUnit)) || (activeTab === 'grammar' && Boolean(urlLesson)))
-  const showDictionarySearch = !isLessonFocusMode && !(activeTab === 'vocabulary' && !searchTerm)
+  const showDictionarySearch =
+    !isLessonFocusMode && !((activeTab === 'vocabulary' || activeTab === 'kanji') && !searchTerm)
   const showQuickSuggestions =
     showDictionarySearch && (activeTab === 'vocab' || activeTab === 'all' || activeTab === 'sentences')
   const [input, setInput] = useState(searchTerm)
@@ -150,11 +151,7 @@ export default function DictionaryPage({
 
   // Kanji Search filters
   const [kanjiLevel, setKanjiLevel] = useState<string>('N5')
-  const [kanjiView, setKanjiView] = useUrlState<'grid' | 'ink'>(
-    'view',
-    typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches ? 'grid' : 'ink',
-    ['grid', 'ink']
-  )
+  const [kanjiView, setKanjiView] = useUrlState<'grid' | 'ink'>('view', 'grid', ['grid', 'ink'])
   const [selectedKanjiModal, setSelectedKanjiModal] = useState<KanjiSummary | null>(null)
 
   // Fetch saved terms from server

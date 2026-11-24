@@ -6,7 +6,6 @@ import {
   X,
   Volume2,
   PenTool,
-  BookOpen,
   Layers,
   ChevronLeft,
   ChevronRight,
@@ -79,9 +78,8 @@ function extractOtherKanjiChars(word: string, focalKanji: string): string[] {
 export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilterByRadical }: KanjiDetailModalProps) {
   const { user } = useAuth()
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'info' | 'practice'>('info')
+  const [stageMode, setStageMode] = useState<'stroke' | 'practice' | 'illustration'>('stroke')
   const [practiceMode, setPracticeMode] = useState<'quiz' | 'brush'>('quiz')
-  const [viewMode, setViewMode] = useState<'calligraphy' | 'illustration'>('calligraphy')
   const [graphMode, setGraphMode] = useState<ConstellationMode>('auto')
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
@@ -92,7 +90,6 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const queryClient = useQueryClient()
 
-  // Update exploration history stack whenever focal kanji changes
   useEffect(() => {
     setHistoryStack((prev) => {
       const existingIdx = prev.findIndex((item) => item.kanji === kanjiSummary.kanji)
@@ -137,9 +134,9 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
         e.preventDefault()
         handleStepBackHistory()
       } else if (e.key === '1') {
-        setActiveTab('info')
+        setStageMode('stroke')
       } else if (e.key === '2') {
-        setActiveTab('practice')
+        setStageMode('practice')
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -150,7 +147,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
     setIllustrationError(false)
     setSaveError(null)
     setGraphMode('auto')
-    setViewMode('calligraphy')
+    setStageMode('stroke')
   }, [kanjiSummary.kanji])
 
   useEffect(() => {
@@ -168,13 +165,12 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
     queryFn: () => nhaikanjiApi.fetchKanjiDetail(kanjiSummary.kanji),
   })
 
-  // Hide illustration view if backend reports no illustration asset exists
-  const showIllustrationToggle = detailData?.hasIllustration !== false && !detailData?.isRadicalOnly
+  const showIllustrationToggle = detailData?.hasIllustration === true && !detailData?.isRadicalOnly
   useEffect(() => {
-    if (!showIllustrationToggle && viewMode === 'illustration') {
-      setViewMode('calligraphy')
+    if (!showIllustrationToggle && stageMode === 'illustration') {
+      setStageMode('stroke')
     }
-  }, [showIllustrationToggle, viewMode])
+  }, [showIllustrationToggle, stageMode])
 
   const { data: savedTermsData } = useQuery({
     queryKey: ['srs', user?.id ?? 'me', 'saved-terms'],
@@ -297,11 +293,15 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
   }, [kanjiSummary, storyComponents])
 
   const allComponents = useMemo(() => [...storyComponents, ...radicalComponent], [storyComponents, radicalComponent])
-  const descendantNodes = useMemo(() => getKanjiDescendants(kanjiSummary.kanji), [kanjiSummary.kanji])
-  const illustrationUrl = apiPaths.nhaikanji.kanjiIllustration(kanjiSummary.kanji)
 
-  const isPrimitive = allComponents.length === 0
-  const hasBothLineage = allComponents.length > 0 && descendantNodes.length > 0
+  const descendantNodes = useMemo(() => {
+    const local = getKanjiDescendants(kanjiSummary.kanji)
+    if (local.length > 0) return local
+    return (detailData?.verifiedDescendants ?? []).map((d) => ({ char: d.char, label: d.label }))
+  }, [kanjiSummary.kanji, detailData?.verifiedDescendants])
+
+  const illustrationUrl = apiPaths.nhaikanji.kanjiIllustration(kanjiSummary.kanji)
+  const hasBothLineage = storyComponents.length > 0 && descendantNodes.length > 0
   const hasAnyGraphData = allComponents.length > 0 || descendantNodes.length > 0
 
   const handleSelectConstellationKanji = (k: string) => {
@@ -319,6 +319,23 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
       aria-modal="true"
       aria-label={`Trình diễn thư pháp chữ ${kanjiSummary.kanji}`}
     >
+      {/* Floating Side Paddles for ergonomic left/right flipping */}
+      {onSelectKanji && kanjiSummary.prev_kanji && (
+        <button
+          type="button"
+          className="shodo-side-paddle shodo-side-paddle--prev"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (kanjiSummary.prev_kanji) onSelectKanji(kanjiSummary.prev_kanji)
+          }}
+          title={`Chữ trước: ${kanjiSummary.prev_kanji} (←)`}
+          aria-label={`Chữ trước: ${kanjiSummary.prev_kanji}`}
+        >
+          <ChevronLeft size={20} strokeWidth={1.6} />
+          <span>{kanjiSummary.prev_kanji}</span>
+        </button>
+      )}
+
       <div
         className="shodo-theater-scroll shodo-theater-scroll--wide"
         ref={dialogRef}
@@ -361,6 +378,462 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
                 {saveError}
               </p>
             )}
+            <button
+              type="button"
+              className="shodo-theater-hairline-btn shodo-theater-hairline-btn--close"
+              onClick={onClose}
+              aria-label="Đóng sân khấu thư pháp"
+              title="Đóng (Esc)"
+            >
+              <X size={18} strokeWidth={1.6} />
+            </button>
+          </div>
+        </div>
+
+        {/* ─── 3-REALM MONOGRAPH BODY ──────────────────────────────────────── */}
+        <div className="shodo-theater-body">
+          <div className="kanji-three-realms">
+            {/* ── REALM 1: Bút pháp / Tập viết & Âm đọc (Left) ─────────── */}
+            <div className="kanji-realm kanji-realm--visual">
+              <div className="kanji-realm-toggle" role="group" aria-label="Chế độ bảng chữ">
+                <button
+                  type="button"
+                  className={`kanji-realm-toggle-btn ${stageMode === 'stroke' ? 'is-active' : ''}`}
+                  onClick={() => setStageMode('stroke')}
+                >
+                  <span>書</span> Bút pháp
+                </button>
+                <button
+                  type="button"
+                  className={`kanji-realm-toggle-btn ${stageMode === 'practice' ? 'is-active' : ''}`}
+                  onClick={() => setStageMode('practice')}
+                >
+                  <PenTool size={12} /> Luyện viết nét
+                </button>
+                {showIllustrationToggle && (
+                  <button
+                    type="button"
+                    className={`kanji-realm-toggle-btn ${stageMode === 'illustration' ? 'is-active' : ''}`}
+                    onClick={() => setStageMode('illustration')}
+                  >
+                    <Image size={12} /> Minh họa
+                  </button>
+                )}
+              </div>
+
+              {stageMode === 'stroke' && (
+                <div className="kanji-realm-calligraphy">
+                  <KanjiStrokePlayer kanji={kanjiSummary.kanji} fallbackStrokeCount={kanjiSummary.stroke_count} />
+                  <div className="shodo-hero-art">
+                    <div className="shodo-hero-hanzi">{kanjiSummary.hanzi}</div>
+                    <div className="shodo-hero-meaning">{kanjiSummary.meaning_vi}</div>
+                    {(detailData?.secondaryMeanings?.length ?? 0) > 0 && (
+                      <div className="shodo-hero-secondary">{detailData?.secondaryMeanings?.join(' · ')}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {stageMode === 'practice' && (
+                <div className="kanji-realm-practice">
+                  <div className="shodo-practice-inline-head">
+                    <span className="shodo-practice-inline-title">
+                      Tập viết chữ: <strong>{kanjiSummary.kanji}</strong> ({kanjiSummary.stroke_count} nét)
+                    </span>
+                    <div className="shodo-practice-mode-switch" role="group" aria-label="Chế độ luyện viết">
+                      <button
+                        type="button"
+                        className={`shodo-practice-mode-btn${practiceMode === 'quiz' ? ' is-active' : ''}`}
+                        onClick={() => setPracticeMode('quiz')}
+                      >
+                        Chấm nét chuẩn
+                      </button>
+                      <button
+                        type="button"
+                        className={`shodo-practice-mode-btn${practiceMode === 'brush' ? ' is-active' : ''}`}
+                        onClick={() => setPracticeMode('brush')}
+                      >
+                        Vung cọ tự do
+                      </button>
+                    </div>
+                  </div>
+                  {practiceMode === 'quiz' ? (
+                    <KanjiStrokeQuiz
+                      key={`quiz-${kanjiSummary.kanji}`}
+                      kanjiChar={kanjiSummary.kanji}
+                      fallbackStrokeCount={kanjiSummary.stroke_count}
+                    />
+                  ) : (
+                    <KanjiCanvas kanjiChar={kanjiSummary.kanji} />
+                  )}
+                </div>
+              )}
+
+              {stageMode === 'illustration' && showIllustrationToggle && (
+                <div className="kanji-realm-illustration">
+                  {!illustrationError ? (
+                    <div className="kanji-illus-canvas">
+                      <img
+                        src={illustrationUrl}
+                        alt={`Minh họa ${kanjiSummary.kanji} — ${kanjiSummary.hanzi}`}
+                        className="kanji-illus-img"
+                        onError={() => setIllustrationError(true)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="kanji-illus-zen-fallback">
+                      <span className="kanji-illus-zen-glyph">{kanjiSummary.kanji}</span>
+                      <span className="kanji-illus-zen-note">Bản họa nét mực đang biên soạn</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Readings & Radical */}
+              <div className="kanji-realm-readings">
+                <button
+                  type="button"
+                  className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_on' ? ' is-playing' : ''}`}
+                  disabled={!kanjiSummary.onyomi}
+                  onClick={() => kanjiSummary.onyomi && speakJapanese(kanjiSummary.onyomi, undefined, 'reading_on')}
+                  title={kanjiSummary.onyomi ? 'Bấm để nghe âm On' : 'Không có âm On'}
+                >
+                  <span className="kanji-reading-chip-label">
+                    On {kanjiSummary.onyomi && <Volume2 size={10} aria-hidden="true" />}
+                  </span>
+                  <span className="kanji-reading-chip-val">{kanjiSummary.onyomi || '—'}</span>
+                  {detailData?.phonetics?.onyomiRomaji && (
+                    <span className="kanji-reading-chip-romaji">{detailData.phonetics.onyomiRomaji}</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_kun' ? ' is-playing' : ''}`}
+                  disabled={!kanjiSummary.kunyomi}
+                  onClick={() => kanjiSummary.kunyomi && speakJapanese(kanjiSummary.kunyomi, undefined, 'reading_kun')}
+                  title={kanjiSummary.kunyomi ? 'Bấm để nghe âm Kun' : 'Không có âm Kun'}
+                >
+                  <span className="kanji-reading-chip-label">
+                    Kun {kanjiSummary.kunyomi && <Volume2 size={10} aria-hidden="true" />}
+                  </span>
+                  <span className="kanji-reading-chip-val">{kanjiSummary.kunyomi || '—'}</span>
+                  {detailData?.phonetics?.kunyomiRomaji && (
+                    <span className="kanji-reading-chip-romaji">{detailData.phonetics.kunyomiRomaji}</span>
+                  )}
+                </button>
+
+                {kanjiSummary.radical_utf && kanjiSummary.radical_utf !== '—' && (
+                  <button
+                    type="button"
+                    className={`kanji-reading-chip kanji-reading-chip--radical${onFilterByRadical ? ' kanji-reading-chip--interactive' : ''}`}
+                    disabled={!onFilterByRadical}
+                    onClick={() => onFilterByRadical?.(kanjiSummary.radical_family || kanjiSummary.radical_utf)}
+                    title={
+                      onFilterByRadical
+                        ? `Lọc các chữ cùng bộ ${kanjiSummary.radical_utf}${radicalDisplayName ? ` (${radicalDisplayName})` : ''}`
+                        : undefined
+                    }
+                  >
+                    <span className="kanji-reading-chip-label">
+                      <Layers size={10} /> Bộ {radicalDisplayName || ''}
+                    </span>
+                    <span className="kanji-reading-chip-val kanji-reading-chip-val--large">
+                      {kanjiSummary.radical_utf}
+                    </span>
+                    {onFilterByRadical && <span className="kanji-reading-chip-romaji">Lọc bộ →</span>}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ── REALM 2: Chiết tự, Phả hệ & Chữ liên quan (Center) ───── */}
+            <div className="kanji-realm kanji-realm--constellation">
+              <div className="kanji-realm-label kanji-realm-label--between">
+                <div className="kanji-realm-label-main">
+                  <span className="kanji-realm-label-jp">{hasBothLineage ? '系譜図' : '星座図'}</span>
+                  <span>
+                    {hasBothLineage
+                      ? 'Phả hệ Chiết tự · Cấu tạo & Phái sinh'
+                      : allComponents.length > 0
+                        ? 'Chiết tự & Bộ thủ cấu thành'
+                        : 'Phả hệ nở rộng • Chữ phái sinh'}
+                  </span>
+                </div>
+                {hasBothLineage && (
+                  <div className="kanji-constellation-mode-tabs" role="group" aria-label="Chế độ sơ đồ phả hệ">
+                    <button
+                      type="button"
+                      className={`kanji-const-mode-btn${graphMode === 'auto' ? ' is-active' : ''}`}
+                      onClick={() => setGraphMode('auto')}
+                    >
+                      Toàn cảnh
+                    </button>
+                    <button
+                      type="button"
+                      className={`kanji-const-mode-btn${graphMode === 'components' ? ' is-active' : ''}`}
+                      onClick={() => setGraphMode('components')}
+                    >
+                      Cấu tạo
+                    </button>
+                    <button
+                      type="button"
+                      className={`kanji-const-mode-btn${graphMode === 'descendants' ? ' is-active' : ''}`}
+                      onClick={() => setGraphMode('descendants')}
+                    >
+                      Phái sinh
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {hasAnyGraphData ? (
+                <KanjiConstellationGraph
+                  key={`${kanjiSummary.kanji}-${graphMode}`}
+                  kanji={kanjiSummary.kanji}
+                  components={allComponents}
+                  descendants={descendantNodes}
+                  mode={graphMode}
+                  onSelectKanji={handleSelectConstellationKanji}
+                />
+              ) : (
+                <div className="kanji-constellation-primitive-note">
+                  <span>{kanjiSummary.kanji}</span>
+                  <p>Chữ tượng hình / nguyên thể độc lập</p>
+                </div>
+              )}
+
+              {kanjiSummary.story && (
+                <div className="kanji-constellation-story-box">
+                  <span className="sr-only">Chiết tự & Câu chuyện gợi nhớ</span>
+                  <blockquote className="kanji-constellation-story" title="Chiết tự & Câu chuyện gợi nhớ">
+                    「 {kanjiSummary.story} 」
+                  </blockquote>
+                </div>
+              )}
+
+              {((detailData?.relatedByHanzi?.length ?? 0) > 0 || (detailData?.relatedByRadical?.length ?? 0) > 0) &&
+                onSelectKanji && (
+                  <div className="kanji-related-peers">
+                    {(detailData?.relatedByHanzi?.length ?? 0) > 0 && (
+                      <div className="kanji-related-peers__group">
+                        <span className="kanji-related-peers__label">Cùng âm {kanjiSummary.hanzi}</span>
+                        <div className="kanji-related-peers__list">
+                          {detailData?.relatedByHanzi?.map((peer) => (
+                            <button
+                              key={peer.kanji}
+                              type="button"
+                              className="kanji-related-peer-btn"
+                              onClick={() => onSelectKanji(peer.kanji)}
+                              title={`${peer.kanji} (${peer.hanzi}) — ${peer.meaning_vi}`}
+                            >
+                              <strong>{peer.kanji}</strong>
+                              <span>{peer.meaning_vi}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {(detailData?.relatedByRadical?.length ?? 0) > 0 && (
+                      <div className="kanji-related-peers__group">
+                        <span className="kanji-related-peers__label">
+                          Cùng bộ {kanjiSummary.radical_utf}
+                          {radicalDisplayName ? ` (${radicalDisplayName})` : ''}
+                        </span>
+                        <div className="kanji-related-peers__list">
+                          {detailData?.relatedByRadical?.map((peer) => (
+                            <button
+                              key={peer.kanji}
+                              type="button"
+                              className="kanji-related-peer-btn"
+                              onClick={() => onSelectKanji(peer.kanji)}
+                              title={`${peer.kanji} (${peer.hanzi}) — ${peer.meaning_vi}`}
+                            >
+                              <strong>{peer.kanji}</strong>
+                              <span>{peer.hanzi}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+            </div>
+
+            {/* ── REALM 3: Từ vựng & Audio (Right) ─────────────────────── */}
+            <div className="kanji-realm kanji-realm--vocab">
+              <div className="kanji-realm-label">
+                <span className="kanji-realm-label-jp">{isRadicalOnly ? '漢字例' : '語彙'}</span>
+                <span>
+                  {isRadicalOnly
+                    ? `Chữ tiêu biểu dùng bộ ${kanjiSummary.kanji} (${examples.length})`
+                    : `Từ vựng & Audio (${examples.length || kanjiSummary.num_vocab_examples})`}
+                </span>
+              </div>
+
+              {isLoading ? (
+                <div className="shodo-vocab-loading">Đang tải từ vựng...</div>
+              ) : examples.length === 0 ? (
+                <div className="shodo-vocab-empty">Chưa có từ vựng ví dụ.</div>
+              ) : (
+                <div className="shodo-vocab-list kanji-realm-vocab-list">
+                  {examples.map((item, idx) => {
+                    const isSaved = Boolean(savedSrs[`vocab_${item.word}`] || savedSrs[item.word])
+                    const audioToken = item.audio || `vocab_${idx}_${item.word}`
+                    const sentenceAudioToken = item.audioExample || `sent_${idx}_${item.word}`
+                    const isPlaying = playingAudio === audioToken
+                    const isPlayingSentence = playingAudio === sentenceAudioToken
+                    const otherKanji = onSelectKanji ? extractOtherKanjiChars(item.word, kanjiSummary.kanji) : []
+
+                    return (
+                      <div key={idx} className="shodo-vocab-row">
+                        <div className="shodo-vocab-main">
+                          <div className="shodo-vocab-word-line">
+                            <span className="shodo-vocab-index">{String(idx + 1).padStart(2, '0')}</span>
+                            <span className="shodo-vocab-word">{item.word}</span>
+                            {item.reading && item.reading !== item.word && (
+                              <span className="shodo-vocab-reading">〔 {item.reading} 〕</span>
+                            )}
+                            {item.yinHan && <span className="shodo-vocab-yinhan">{item.yinHan}</span>}
+                            {otherKanji.length > 0 && (
+                              <span className="shodo-vocab-kanji-jumps">
+                                {otherKanji.map((ch) => (
+                                  <button
+                                    key={ch}
+                                    type="button"
+                                    className="shodo-vocab-kanji-pill"
+                                    onClick={() => onSelectKanji?.(ch)}
+                                    title={`Xem chữ ${ch}`}
+                                  >
+                                    {ch}
+                                  </button>
+                                ))}
+                              </span>
+                            )}
+                          </div>
+                          {item.meaning && <div className="shodo-vocab-meaning">{item.meaning}</div>}
+                          {item.example && (
+                            <div className="shodo-vocab-example">
+                              <div className="shodo-vocab-ex-jp-row">
+                                <span className="shodo-vocab-ex-jp">{item.example}</span>
+                                <button
+                                  type="button"
+                                  className={`shodo-sentence-audio-btn${isPlayingSentence ? ' is-playing' : ''}`}
+                                  onClick={() =>
+                                    speakJapanese(item.example || '', item.audioExample, sentenceAudioToken)
+                                  }
+                                  aria-label={`Nghe câu ${item.example}`}
+                                  title="Nghe câu ví dụ"
+                                >
+                                  <Volume2 size={12} aria-hidden="true" />
+                                  <span>Nghe câu</span>
+                                </button>
+                              </div>
+                              {item.exampleVi && <span className="shodo-vocab-ex-vi">{item.exampleVi}</span>}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="shodo-vocab-row-actions">
+                          <button
+                            type="button"
+                            className={`shodo-audio-play-btn ${isPlaying ? 'is-playing' : ''}`}
+                            onClick={() => speakJapanese(item.reading || item.word, item.audio, audioToken)}
+                            title={`Nghe phát âm ${item.word}`}
+                            aria-label={`Nghe phát âm ${item.word}`}
+                          >
+                            <Volume2 size={15} />
+                          </button>
+                          {!isRadicalOnly && (
+                            <button
+                              type="button"
+                              className={`shodo-vocab-save-btn ${isSaved ? 'is-saved' : ''}`}
+                              onClick={() => handleSaveToSrs(item.word, item.meaning, item.reading)}
+                              title={isSaved ? 'Đã lưu vào SRS' : 'Lưu từ vào sổ tay SRS'}
+                              aria-label={isSaved ? `Đã lưu ${item.word}` : `Lưu ${item.word} vào SRS`}
+                            >
+                              {isSaved ? <Check size={14} /> : <BookmarkPlus size={14} />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ─── ERGONOMIC BOTTOM ACTION BAR ─────────────────────────────────── */}
+        <footer className="shodo-theater-footer">
+          <div className="shodo-theater-footer__left">
+            {historyStack.length > 1 && onSelectKanji ? (
+              <nav className="shodo-history-inline" aria-label="Lộ trình khám phá Hán tự">
+                <button
+                  type="button"
+                  className="shodo-history-back"
+                  onClick={handleStepBackHistory}
+                  title="Quay lại chữ vừa xem (Backspace)"
+                >
+                  <ArrowLeft size={13} aria-hidden="true" />
+                  <span>Quay lại {historyStack[historyStack.length - 2]?.kanji}</span>
+                </button>
+                <ol className="shodo-history-crumbs">
+                  {historyStack.map((item, idx) => {
+                    const isLast = idx === historyStack.length - 1
+                    return (
+                      <li key={`${item.kanji}-${idx}`}>
+                        {idx > 0 && <span className="shodo-history-sep">›</span>}
+                        {isLast ? (
+                          <span className="shodo-history-current" aria-current="page">
+                            {item.kanji}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="shodo-history-crumb-btn"
+                            onClick={() => onSelectKanji(item.kanji)}
+                          >
+                            {item.kanji}
+                          </button>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ol>
+              </nav>
+            ) : (
+              <span className="shodo-footer-hint">
+                Phím tắt: [← / →] Chuyển chữ · [1 / 2] Bút pháp / Tập viết · [Esc] Đóng
+              </span>
+            )}
+          </div>
+
+          <div className="shodo-theater-footer__right">
+            {onSelectKanji && (
+              <div className="shodo-theater-nav-group" role="group" aria-label="Chuyển chữ theo thứ tự">
+                <button
+                  type="button"
+                  className="shodo-footer-nav-btn"
+                  disabled={!kanjiSummary.prev_kanji}
+                  onClick={() => kanjiSummary.prev_kanji && onSelectKanji(kanjiSummary.prev_kanji)}
+                >
+                  <ChevronLeft size={14} aria-hidden="true" />
+                  <span>Trước{kanjiSummary.prev_kanji ? ` (${kanjiSummary.prev_kanji})` : ''}</span>
+                </button>
+                <button
+                  type="button"
+                  className="shodo-footer-nav-btn"
+                  disabled={!kanjiSummary.next_kanji}
+                  onClick={() => kanjiSummary.next_kanji && onSelectKanji(kanjiSummary.next_kanji)}
+                >
+                  <span>Kế{kanjiSummary.next_kanji ? ` (${kanjiSummary.next_kanji})` : ''}</span>
+                  <ChevronRight size={14} aria-hidden="true" />
+                </button>
+              </div>
+            )}
+
             {!isRadicalOnly && (
               <button
                 type="button"
@@ -376,520 +849,28 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
               </button>
             )}
 
-            {onSelectKanji && (
-              <div className="shodo-theater-nav-group" role="group" aria-label="Chuyển chữ theo thứ tự">
-                <button
-                  type="button"
-                  className="shodo-theater-hairline-btn"
-                  disabled={!kanjiSummary.prev_kanji}
-                  onClick={() => kanjiSummary.prev_kanji && onSelectKanji(kanjiSummary.prev_kanji)}
-                  title={kanjiSummary.prev_kanji ? `Chữ trước: ${kanjiSummary.prev_kanji} (←)` : 'Đầu danh sách'}
-                  aria-label={kanjiSummary.prev_kanji ? `Chữ trước: ${kanjiSummary.prev_kanji}` : 'Chữ trước'}
-                >
-                  <ChevronLeft size={17} strokeWidth={1.5} />
-                </button>
-                <button
-                  type="button"
-                  className="shodo-theater-hairline-btn"
-                  disabled={!kanjiSummary.next_kanji}
-                  onClick={() => kanjiSummary.next_kanji && onSelectKanji(kanjiSummary.next_kanji)}
-                  title={kanjiSummary.next_kanji ? `Chữ kế: ${kanjiSummary.next_kanji} (→)` : 'Cuối danh sách'}
-                  aria-label={kanjiSummary.next_kanji ? `Chữ kế: ${kanjiSummary.next_kanji}` : 'Chữ kế'}
-                >
-                  <ChevronRight size={17} strokeWidth={1.5} />
-                </button>
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="shodo-theater-hairline-btn shodo-theater-hairline-btn--close"
-              onClick={onClose}
-              aria-label="Đóng sân khấu thư pháp"
-              title="Đóng (Esc)"
-            >
-              <X size={18} strokeWidth={1.5} />
+            <button type="button" className="shodo-footer-close-btn" onClick={onClose}>
+              Đóng
             </button>
           </div>
-        </div>
-
-        {/* ─── EXPLORATION BREADCRUMB TRAIL ────────────────────────────────── */}
-        {historyStack.length > 1 && onSelectKanji && (
-          <nav className="shodo-history-bar" aria-label="Lộ trình khám phá Hán tự">
-            <button
-              type="button"
-              className="shodo-history-back"
-              onClick={handleStepBackHistory}
-              title="Quay lại chữ vừa xem (Backspace)"
-            >
-              <ArrowLeft size={13} aria-hidden="true" />
-              <span>Quay lại {historyStack[historyStack.length - 2]?.kanji}</span>
-            </button>
-            <ol className="shodo-history-crumbs">
-              {historyStack.map((item, idx) => {
-                const isLast = idx === historyStack.length - 1
-                return (
-                  <li key={`${item.kanji}-${idx}`}>
-                    {idx > 0 && <span className="shodo-history-sep">›</span>}
-                    {isLast ? (
-                      <span className="shodo-history-current" aria-current="page">
-                        {item.kanji}
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="shodo-history-crumb-btn"
-                        onClick={() => onSelectKanji(item.kanji)}
-                      >
-                        {item.kanji}
-                      </button>
-                    )}
-                  </li>
-                )
-              })}
-            </ol>
-          </nav>
-        )}
-
-        {/* ─── STAGE TABS ──────────────────────────────────────────────────── */}
-        <div className="shodo-theater-tabs">
-          <button
-            type="button"
-            className={`shodo-theater-tab ${activeTab === 'info' ? 'is-active' : ''}`}
-            onClick={() => setActiveTab('info')}
-          >
-            <BookOpen size={15} />
-            <span>
-              {isRadicalOnly
-                ? `Bộ thủ & Chữ tiêu biểu (${examples.length})`
-                : `Trình diễn & Chiết tự (${examples.length || kanjiSummary.num_vocab_examples} từ vựng)`}
-            </span>
-          </button>
-          <button
-            type="button"
-            className={`shodo-theater-tab ${activeTab === 'practice' ? 'is-active' : ''}`}
-            onClick={() => setActiveTab('practice')}
-          >
-            <PenTool size={15} />
-            <span>Luyện viết nét ({kanjiSummary.stroke_count} nét)</span>
-          </button>
-        </div>
-
-        {/* ─── STAGE CONTENT ───────────────────────────────────────────────── */}
-        <div className="shodo-theater-body">
-          {activeTab === 'practice' ? (
-            <div className="shodo-practice-layout">
-              <div className="shodo-practice-view">
-                <div className="shodo-practice-head">
-                  <h3 className="shodo-practice-title">
-                    Tập viết chữ: <span className="shodo-practice-char">{kanjiSummary.kanji}</span> (
-                    {kanjiSummary.stroke_count} nét)
-                  </h3>
-                  <div className="shodo-practice-mode-switch" role="group" aria-label="Chế độ luyện viết">
-                    <button
-                      type="button"
-                      className={`shodo-practice-mode-btn${practiceMode === 'quiz' ? ' is-active' : ''}`}
-                      onClick={() => setPracticeMode('quiz')}
-                    >
-                      Chấm nét chuẩn
-                    </button>
-                    <button
-                      type="button"
-                      className={`shodo-practice-mode-btn${practiceMode === 'brush' ? ' is-active' : ''}`}
-                      onClick={() => setPracticeMode('brush')}
-                    >
-                      Vung cọ tự do
-                    </button>
-                  </div>
-                </div>
-
-                {practiceMode === 'quiz' ? (
-                  <KanjiStrokeQuiz
-                    key={`quiz-${kanjiSummary.kanji}`}
-                    kanjiChar={kanjiSummary.kanji}
-                    fallbackStrokeCount={kanjiSummary.stroke_count}
-                  />
-                ) : (
-                  <>
-                    <p className="shodo-practice-desc">
-                      Dùng chuột hoặc ngón tay để vẽ các nét theo chữ mẫu mờ bên dưới
-                    </p>
-                    <KanjiCanvas kanjiChar={kanjiSummary.kanji} />
-                  </>
-                )}
-              </div>
-
-              <aside className="shodo-practice-aside" aria-label="Ghi chú luyện viết">
-                <div className="shodo-practice-aside__card">
-                  <span className="shodo-practice-aside__label">Âm Hán-Việt &amp; Nghĩa</span>
-                  <strong className="shodo-practice-aside__hanzi">{kanjiSummary.hanzi}</strong>
-                  <p className="shodo-practice-aside__meaning">{kanjiSummary.meaning_vi}</p>
-                </div>
-                {kanjiSummary.radical_utf && kanjiSummary.radical_utf !== '—' && (
-                  <div className="shodo-practice-aside__card">
-                    <span className="shodo-practice-aside__label">Bộ thủ chủ đạo</span>
-                    <div className="shodo-practice-aside__rad">
-                      <span>{kanjiSummary.radical_utf}</span>
-                      <div>
-                        <strong>{radicalDisplayName ? `Bộ ${radicalDisplayName}` : 'Bộ thủ'}</strong>
-                        <small>{kanjiSummary.radical_meaning}</small>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {kanjiSummary.story && (
-                  <div className="shodo-practice-aside__card">
-                    <span className="shodo-practice-aside__label">Mẹo nhớ chiết tự</span>
-                    <p className="shodo-practice-aside__story">「 {kanjiSummary.story} 」</p>
-                  </div>
-                )}
-              </aside>
-            </div>
-          ) : (
-            /* ═══════════════════════════════════════════════════════════════
-               3-REALM LAYOUT: Thư pháp | Phả hệ | Từ vựng
-               ═══════════════════════════════════════════════════════════════ */
-            <div
-              className={`kanji-three-realms${!hasAnyGraphData ? ' kanji-three-realms--two-col' : ''}${isPrimitive && hasAnyGraphData ? ' kanji-three-realms--compound-only' : ''}`}
-            >
-              {/* ── REALM 1: Thư pháp & Âm đọc (Left) ───────────────────── */}
-              <div className="kanji-realm kanji-realm--visual">
-                {showIllustrationToggle && (
-                  <div className="kanji-realm-toggle">
-                    <button
-                      type="button"
-                      className={`kanji-realm-toggle-btn ${viewMode === 'calligraphy' ? 'is-active' : ''}`}
-                      onClick={() => setViewMode('calligraphy')}
-                    >
-                      <span>書</span> Thư pháp
-                    </button>
-                    <button
-                      type="button"
-                      className={`kanji-realm-toggle-btn ${viewMode === 'illustration' ? 'is-active' : ''}`}
-                      onClick={() => setViewMode('illustration')}
-                    >
-                      <Image size={13} /> Minh họa
-                    </button>
-                  </div>
-                )}
-
-                {viewMode === 'calligraphy' && (
-                  <div className="kanji-realm-calligraphy">
-                    <KanjiStrokePlayer kanji={kanjiSummary.kanji} fallbackStrokeCount={kanjiSummary.stroke_count} />
-                    <div className="shodo-hero-art">
-                      <div className="shodo-hero-hanzi">{kanjiSummary.hanzi}</div>
-                      <div className="shodo-hero-meaning">{kanjiSummary.meaning_vi}</div>
-                      {(detailData?.secondaryMeanings?.length ?? 0) > 0 && (
-                        <div className="shodo-hero-secondary">{detailData?.secondaryMeanings?.join(' · ')}</div>
-                      )}
-                      <div className="shodo-hero-meta-line">
-                        {kanjiSummary.stroke_count} nét · {kanjiSummary.jlpt_level}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {viewMode === 'illustration' && showIllustrationToggle && (
-                  <div className="kanji-realm-illustration">
-                    {!illustrationError ? (
-                      <div className="kanji-illus-canvas">
-                        <img
-                          src={illustrationUrl}
-                          alt={`Minh họa ${kanjiSummary.kanji} — ${kanjiSummary.hanzi}`}
-                          className="kanji-illus-img"
-                          onError={() => setIllustrationError(true)}
-                        />
-                      </div>
-                    ) : (
-                      <div className="kanji-illus-zen-fallback">
-                        <span className="kanji-illus-zen-glyph">{kanjiSummary.kanji}</span>
-                        <span className="kanji-illus-zen-note">Bản họa nét mực đang biên soạn</span>
-                      </div>
-                    )}
-                    {kanjiSummary.story && (
-                      <div className="kanji-illus-caption">
-                        <span className="kanji-illus-caption-quote">「</span>
-                        <span className="kanji-illus-caption-text">{kanjiSummary.story}</span>
-                        <span className="kanji-illus-caption-quote">」</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Readings & Radical */}
-                <div className="kanji-realm-readings">
-                  <button
-                    type="button"
-                    className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_on' ? ' is-playing' : ''}`}
-                    disabled={!kanjiSummary.onyomi}
-                    onClick={() => kanjiSummary.onyomi && speakJapanese(kanjiSummary.onyomi, undefined, 'reading_on')}
-                    title={kanjiSummary.onyomi ? 'Bấm để nghe âm On' : 'Không có âm On'}
-                  >
-                    <span className="kanji-reading-chip-label">
-                      On {kanjiSummary.onyomi && <Volume2 size={10} aria-hidden="true" />}
-                    </span>
-                    <span className="kanji-reading-chip-val">{kanjiSummary.onyomi || '—'}</span>
-                    {detailData?.phonetics?.onyomiRomaji && (
-                      <span className="kanji-reading-chip-romaji">{detailData.phonetics.onyomiRomaji}</span>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_kun' ? ' is-playing' : ''}`}
-                    disabled={!kanjiSummary.kunyomi}
-                    onClick={() =>
-                      kanjiSummary.kunyomi && speakJapanese(kanjiSummary.kunyomi, undefined, 'reading_kun')
-                    }
-                    title={kanjiSummary.kunyomi ? 'Bấm để nghe âm Kun' : 'Không có âm Kun'}
-                  >
-                    <span className="kanji-reading-chip-label">
-                      Kun {kanjiSummary.kunyomi && <Volume2 size={10} aria-hidden="true" />}
-                    </span>
-                    <span className="kanji-reading-chip-val">{kanjiSummary.kunyomi || '—'}</span>
-                    {detailData?.phonetics?.kunyomiRomaji && (
-                      <span className="kanji-reading-chip-romaji">{detailData.phonetics.kunyomiRomaji}</span>
-                    )}
-                  </button>
-
-                  {kanjiSummary.radical_utf && kanjiSummary.radical_utf !== '—' && (
-                    <button
-                      type="button"
-                      className={`kanji-reading-chip kanji-reading-chip--radical${onFilterByRadical ? ' kanji-reading-chip--interactive' : ''}`}
-                      disabled={!onFilterByRadical}
-                      onClick={() => onFilterByRadical?.(kanjiSummary.radical_family || kanjiSummary.radical_utf)}
-                      title={
-                        onFilterByRadical
-                          ? `Lọc các chữ cùng bộ ${kanjiSummary.radical_utf}${radicalDisplayName ? ` (${radicalDisplayName})` : ''}`
-                          : undefined
-                      }
-                    >
-                      <span className="kanji-reading-chip-label">
-                        <Layers size={10} /> Bộ {radicalDisplayName || ''}
-                      </span>
-                      <span className="kanji-reading-chip-val kanji-reading-chip-val--large">
-                        {kanjiSummary.radical_utf}
-                      </span>
-                      {onFilterByRadical && <span className="kanji-reading-chip-romaji">Lọc bộ →</span>}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* ── REALM 2: Phả hệ Chiết tự & Đồng âm / Cùng bộ (Center) ─ */}
-              {hasAnyGraphData && (
-                <div className="kanji-realm kanji-realm--constellation">
-                  <div className="kanji-realm-label kanji-realm-label--between">
-                    <div className="kanji-realm-label-main">
-                      <span className="kanji-realm-label-jp">{hasBothLineage ? '系譜図' : '星座図'}</span>
-                      <span>
-                        {hasBothLineage
-                          ? 'Phả hệ Chiết tự · Cấu tạo & Phái sinh'
-                          : allComponents.length > 0
-                            ? 'Phả hệ Chiết tự • Bộ thủ cấu thành'
-                            : 'Phả hệ nở rộng • Chữ phái sinh'}
-                      </span>
-                    </div>
-                    {hasBothLineage && (
-                      <div className="kanji-constellation-mode-tabs" role="group" aria-label="Chế độ sơ đồ phả hệ">
-                        <button
-                          type="button"
-                          className={`kanji-const-mode-btn${graphMode === 'auto' ? ' is-active' : ''}`}
-                          onClick={() => setGraphMode('auto')}
-                        >
-                          Toàn cảnh
-                        </button>
-                        <button
-                          type="button"
-                          className={`kanji-const-mode-btn${graphMode === 'components' ? ' is-active' : ''}`}
-                          onClick={() => setGraphMode('components')}
-                        >
-                          Cấu tạo
-                        </button>
-                        <button
-                          type="button"
-                          className={`kanji-const-mode-btn${graphMode === 'descendants' ? ' is-active' : ''}`}
-                          onClick={() => setGraphMode('descendants')}
-                        >
-                          Phái sinh
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <KanjiConstellationGraph
-                    key={`${kanjiSummary.kanji}-${graphMode}`}
-                    kanji={kanjiSummary.kanji}
-                    components={allComponents}
-                    descendants={descendantNodes}
-                    mode={graphMode}
-                    onSelectKanji={handleSelectConstellationKanji}
-                  />
-
-                  {kanjiSummary.story && (
-                    <div className="kanji-constellation-story-box">
-                      <span className="sr-only">Chiết tự & Câu chuyện gợi nhớ</span>
-                      <blockquote className="kanji-constellation-story" title="Chiết tự & Câu chuyện gợi nhớ">
-                        「 {kanjiSummary.story} 」
-                      </blockquote>
-                    </div>
-                  )}
-
-                  {((detailData?.relatedByHanzi?.length ?? 0) > 0 || (detailData?.relatedByRadical?.length ?? 0) > 0) &&
-                    onSelectKanji && (
-                      <div className="kanji-related-peers">
-                        {(detailData?.relatedByHanzi?.length ?? 0) > 0 && (
-                          <div className="kanji-related-peers__group">
-                            <span className="kanji-related-peers__label">Cùng âm {kanjiSummary.hanzi}</span>
-                            <div className="kanji-related-peers__list">
-                              {detailData?.relatedByHanzi?.map((peer) => (
-                                <button
-                                  key={peer.kanji}
-                                  type="button"
-                                  className="kanji-related-peer-btn"
-                                  onClick={() => onSelectKanji(peer.kanji)}
-                                  title={`${peer.kanji} (${peer.hanzi}) — ${peer.meaning_vi}`}
-                                >
-                                  <strong>{peer.kanji}</strong>
-                                  <span>{peer.meaning_vi}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {(detailData?.relatedByRadical?.length ?? 0) > 0 && (
-                          <div className="kanji-related-peers__group">
-                            <span className="kanji-related-peers__label">
-                              Cùng bộ {kanjiSummary.radical_utf}
-                              {radicalDisplayName ? ` (${radicalDisplayName})` : ''}
-                            </span>
-                            <div className="kanji-related-peers__list">
-                              {detailData?.relatedByRadical?.map((peer) => (
-                                <button
-                                  key={peer.kanji}
-                                  type="button"
-                                  className="kanji-related-peer-btn"
-                                  onClick={() => onSelectKanji(peer.kanji)}
-                                  title={`${peer.kanji} (${peer.hanzi}) — ${peer.meaning_vi}`}
-                                >
-                                  <strong>{peer.kanji}</strong>
-                                  <span>{peer.hanzi}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                </div>
-              )}
-
-              {/* ── REALM 3: Từ vựng & Audio (Right) ─────────────────────── */}
-              <div className="kanji-realm kanji-realm--vocab">
-                <div className="kanji-realm-label">
-                  <span className="kanji-realm-label-jp">{isRadicalOnly ? '漢字例' : '語彙'}</span>
-                  <span>
-                    {isRadicalOnly
-                      ? `Chữ tiêu biểu dùng bộ ${kanjiSummary.kanji} (${examples.length})`
-                      : `Từ vựng & Audio (${examples.length || kanjiSummary.num_vocab_examples})`}
-                  </span>
-                </div>
-
-                {isLoading ? (
-                  <div className="shodo-vocab-loading">Đang tải từ vựng...</div>
-                ) : examples.length === 0 ? (
-                  <div className="shodo-vocab-empty">Chưa có từ vựng ví dụ.</div>
-                ) : (
-                  <div className="shodo-vocab-list kanji-realm-vocab-list">
-                    {examples.map((item, idx) => {
-                      const isSaved = Boolean(savedSrs[`vocab_${item.word}`] || savedSrs[item.word])
-                      const audioToken = item.audio || `vocab_${idx}_${item.word}`
-                      const sentenceAudioToken = item.audioExample || `sent_${idx}_${item.word}`
-                      const isPlaying = playingAudio === audioToken
-                      const isPlayingSentence = playingAudio === sentenceAudioToken
-                      const otherKanji = onSelectKanji ? extractOtherKanjiChars(item.word, kanjiSummary.kanji) : []
-
-                      return (
-                        <div key={idx} className="shodo-vocab-row">
-                          <div className="shodo-vocab-main">
-                            <div className="shodo-vocab-word-line">
-                              <span className="shodo-vocab-index">{String(idx + 1).padStart(2, '0')}</span>
-                              <span className="shodo-vocab-word">{item.word}</span>
-                              {item.reading && item.reading !== item.word && (
-                                <span className="shodo-vocab-reading">〔 {item.reading} 〕</span>
-                              )}
-                              {item.yinHan && <span className="shodo-vocab-yinhan">{item.yinHan}</span>}
-                              {otherKanji.length > 0 && (
-                                <span className="shodo-vocab-kanji-jumps">
-                                  {otherKanji.map((ch) => (
-                                    <button
-                                      key={ch}
-                                      type="button"
-                                      className="shodo-vocab-kanji-pill"
-                                      onClick={() => onSelectKanji?.(ch)}
-                                      title={`Xem chữ ${ch}`}
-                                    >
-                                      {ch}
-                                    </button>
-                                  ))}
-                                </span>
-                              )}
-                            </div>
-                            {item.meaning && <div className="shodo-vocab-meaning">{item.meaning}</div>}
-                            {item.example && (
-                              <div className="shodo-vocab-example">
-                                <div className="shodo-vocab-ex-jp-row">
-                                  <span className="shodo-vocab-ex-jp">{item.example}</span>
-                                  <button
-                                    type="button"
-                                    className={`shodo-sentence-audio-btn${isPlayingSentence ? ' is-playing' : ''}`}
-                                    onClick={() =>
-                                      speakJapanese(item.example || '', item.audioExample, sentenceAudioToken)
-                                    }
-                                    aria-label={`Nghe câu ${item.example}`}
-                                    title="Nghe câu ví dụ"
-                                  >
-                                    <Volume2 size={12} aria-hidden="true" />
-                                    <span>Nghe câu</span>
-                                  </button>
-                                </div>
-                                {item.exampleVi && <span className="shodo-vocab-ex-vi">{item.exampleVi}</span>}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="shodo-vocab-row-actions">
-                            <button
-                              type="button"
-                              className={`shodo-audio-play-btn ${isPlaying ? 'is-playing' : ''}`}
-                              onClick={() => speakJapanese(item.reading || item.word, item.audio, audioToken)}
-                              title={`Nghe phát âm ${item.word}`}
-                              aria-label={`Nghe phát âm ${item.word}`}
-                            >
-                              <Volume2 size={15} />
-                            </button>
-                            {!isRadicalOnly && (
-                              <button
-                                type="button"
-                                className={`shodo-vocab-save-btn ${isSaved ? 'is-saved' : ''}`}
-                                onClick={() => handleSaveToSrs(item.word, item.meaning, item.reading)}
-                                title={isSaved ? 'Đã lưu vào SRS' : 'Lưu từ vào sổ tay SRS'}
-                                aria-label={isSaved ? `Đã lưu ${item.word}` : `Lưu ${item.word} vào SRS`}
-                              >
-                                {isSaved ? <Check size={14} /> : <BookmarkPlus size={14} />}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        </footer>
       </div>
+
+      {onSelectKanji && kanjiSummary.next_kanji && (
+        <button
+          type="button"
+          className="shodo-side-paddle shodo-side-paddle--next"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (kanjiSummary.next_kanji) onSelectKanji(kanjiSummary.next_kanji)
+          }}
+          title={`Chữ kế: ${kanjiSummary.next_kanji} (→)`}
+          aria-label={`Chữ kế: ${kanjiSummary.next_kanji}`}
+        >
+          <span>{kanjiSummary.next_kanji}</span>
+          <ChevronRight size={20} strokeWidth={1.6} />
+        </button>
+      )}
     </div>
   )
 

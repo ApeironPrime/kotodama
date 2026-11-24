@@ -22,8 +22,8 @@ const SPEED_OPTIONS: SpeedOption[] = [
   { label: '1.5x', val: 1.5, delay: 110 },
 ]
 
-const STAGE_SIZE = 280
-const STAGE_PADDING = 18
+const STAGE_SIZE = 248
+const STAGE_PADDING = 16
 
 export function KanjiStrokePlayer({ kanji, fallbackStrokeCount, className = '' }: KanjiStrokePlayerProps) {
   const reducedMotion = useReducedMotion()
@@ -411,22 +411,8 @@ export function KanjiStrokePlayer({ kanji, fallbackStrokeCount, className = '' }
 
       {/* ─── CONTROLS (Thư pháp Bút pháp) ───────────────────────────────── */}
       <div className="kanji-stroke-controls">
-        {/* Replay action */}
-        <button
-          type="button"
-          className="kanji-stroke-ctrl-btn kanji-stroke-ctrl-btn--primary"
-          onClick={handleReplay}
-          disabled={reducedMotion}
-          title="Diễn lại thứ tự nét viết từ đầu"
-          aria-label="Diễn lại bút pháp"
-        >
-          <RotateCcw size={13} />
-          <span>Diễn lại bút pháp</span>
-        </button>
-
-        {/* Step & Playback Actions */}
+        {/* Step & Smart Play/Pause/Replay Actions */}
         <div className="kanji-stroke-ctrl-group">
-          {/* Step Back */}
           <button
             type="button"
             className="kanji-stroke-mini-btn"
@@ -438,19 +424,31 @@ export function KanjiStrokePlayer({ kanji, fallbackStrokeCount, className = '' }
             <ChevronLeft size={14} />
           </button>
 
-          {/* Play/Pause */}
           <button
             type="button"
             className="kanji-stroke-mini-btn kanji-stroke-mini-btn--play"
-            onClick={handleTogglePlay}
+            onClick={
+              isPlaying ? handleTogglePlay : currentStrokeIndex >= totalStrokes ? handleReplay : handleTogglePlay
+            }
             disabled={reducedMotion}
-            title={isPlaying ? 'Tạm dừng viết' : 'Tiếp tục viết'}
-            aria-label={isPlaying ? 'Tạm dừng' : 'Tiếp tục'}
+            title={
+              isPlaying
+                ? 'Tạm dừng viết'
+                : currentStrokeIndex >= totalStrokes
+                  ? 'Phát lại bút pháp từ nét 1'
+                  : 'Tiếp tục viết'
+            }
+            aria-label={isPlaying ? 'Tạm dừng' : currentStrokeIndex >= totalStrokes ? 'Phát lại bút pháp' : 'Tiếp tục'}
           >
-            {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+            {isPlaying ? (
+              <Pause size={13} />
+            ) : currentStrokeIndex >= totalStrokes ? (
+              <RotateCcw size={13} />
+            ) : (
+              <Play size={13} />
+            )}
           </button>
 
-          {/* Step Next */}
           <button
             type="button"
             className="kanji-stroke-mini-btn"

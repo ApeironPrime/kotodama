@@ -8,6 +8,59 @@ import {
   getRadicalMeaningByGlyph,
 } from './radical-dictionary.mjs'
 
+let DatabaseSync = null
+try {
+  const sqlite = await import('node:sqlite')
+  DatabaseSync = sqlite.DatabaseSync
+} catch {
+  // Optional enrichment: gracefully skip if node:sqlite is unavailable
+}
+
+let masterDictDb = null
+let masterDictCompoundStmt = null
+let masterDictSingleCharStmt = null
+let masterDictInitAttempted = false
+
+function getMasterDictStatements() {
+  if (masterDictInitAttempted) {
+    return { compoundStmt: masterDictCompoundStmt, singleCharStmt: masterDictSingleCharStmt }
+  }
+  masterDictInitAttempted = true
+  if (!DatabaseSync) return { compoundStmt: null, singleCharStmt: null }
+  const dbPath = path.resolve(process.cwd(), 'data', 'master_dictionary.db')
+  if (!fs.existsSync(dbPath)) return { compoundStmt: null, singleCharStmt: null }
+  try {
+    masterDictDb = new DatabaseSync(dbPath, { open: true, readOnly: true })
+    masterDictCompoundStmt = masterDictDb.prepare(
+      `SELECT word, reading, han_viet, jlpt, meanings, examples
+         FROM words
+        WHERE word LIKE ?
+          AND length(word) BETWEEN 2 AND 6
+        ORDER BY
+          CASE WHEN jlpt IS NOT NULL THEN 0 ELSE 1 END,
+          CASE WHEN examples IS NOT NULL AND examples != '[]' THEN 0 ELSE 1 END,
+          length(word) ASC
+        LIMIT 14`
+    )
+    masterDictSingleCharStmt = masterDictDb.prepare(`SELECT meanings FROM words WHERE word = ? LIMIT 3`)
+  } catch {
+    masterDictDb = null
+    masterDictCompoundStmt = null
+    masterDictSingleCharStmt = null
+  }
+  return { compoundStmt: masterDictCompoundStmt, singleCharStmt: masterDictSingleCharStmt }
+}
+
+function parseJsonArraySafe(raw) {
+  if (!raw || typeof raw !== 'string') return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 // Helper to remove Vietnamese diacritics for flexible search
 function removeVietnameseTones(str) {
   if (!str) return ''
@@ -772,6 +825,7 @@ export class NhaiKanjiService {
 
     this.kanjiSummaryList = []
     this.kanjiMap = new Map() // kanji char -> summary object
+    this.verifiedDescendantsMap = new Map() // component char -> derived kanji summaries
     this.fullKanjiData = null // loaded lazily or on demand
     this.bunpoList = []
     this.jlptExamsMaster = null
@@ -940,10 +994,49 @@ export class NhaiKanjiService {
         }
       }
 
+      this.buildVerifiedDescendantsIndex()
       this.isLoaded = true
     } catch (err) {
       console.warn('[NhaiKanjiService] Warning during load:', err.message)
       this.isLoaded = true
+    }
+  }
+
+  buildVerifiedDescendantsIndex() {
+    this.verifiedDescendantsMap = new Map()
+    const jlptOrder = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 }
+    const temp = new Map()
+
+    for (const k of this.kanjiSummaryList) {
+      const parents = new Set()
+      if (Array.isArray(k.storyComponents)) {
+        for (const comp of k.storyComponents) {
+          const canon = toCanonicalRadicalGlyph(comp)
+          if (canon && canon !== k.kanji) parents.add(canon)
+        }
+      }
+      if (k.radical_utf && k.radical_utf !== '—') {
+        const canonRad = toCanonicalRadicalGlyph(k.radical_utf)
+        if (canonRad && canonRad !== k.kanji) parents.add(canonRad)
+        if (k.radical_family && k.radical_family !== k.kanji) parents.add(k.radical_family)
+      }
+      for (const parent of parents) {
+        if (!temp.has(parent)) temp.set(parent, [])
+        temp.get(parent).push({
+          char: k.kanji,
+          label: k.hanzi,
+          meaning: k.meaning_vi,
+          rank: jlptOrder[(k.jlpt_level || '').toUpperCase()] || 99,
+        })
+      }
+    }
+
+    for (const [parent, list] of temp.entries()) {
+      list.sort((a, b) => a.rank - b.rank)
+      this.verifiedDescendantsMap.set(
+        parent,
+        list.slice(0, 8).map(({ char, label, meaning }) => ({ char, label, meaning }))
+      )
     }
   }
 
@@ -1341,25 +1434,97 @@ export class NhaiKanjiService {
     const onyomiRaw = summary?.onyomi || detail?.kanjiInfo?.kanjialiveData?.onyomi_ja || ''
     const kunyomiRaw = summary?.kunyomi || detail?.kanjiInfo?.kanjialiveData?.kunyomi_ja || ''
     const primaryMeaningNorm = removeVietnameseTones(summary?.meaning_vi || '')
-    const examples = detail?.kanjiInfo?.kanjialiveData?.examples || []
+    const baseExamples = detail?.kanjiInfo?.kanjialiveData?.examples || []
+    const { compoundStmt, singleCharStmt } = getMasterDictStatements()
+
+    // Extract secondary meanings ONLY from single-character entries (never multi-char compounds!)
     const secondaryMeanings = []
-    for (const ex of examples) {
+    for (const ex of baseExamples) {
+      if (ex.word !== kanjiChar) continue
       const m = String(ex?.meaning || '').trim()
       if (!m || m.length > 48) continue
       const normM = removeVietnameseTones(m)
       if (normM === primaryMeaningNorm || secondaryMeanings.some((s) => removeVietnameseTones(s) === normM)) continue
-      if (ex.word === kanjiChar || secondaryMeanings.length < 2) {
-        secondaryMeanings.push(m)
-      }
+      secondaryMeanings.push(m)
       if (secondaryMeanings.length >= 2) break
     }
+    if (secondaryMeanings.length < 2 && singleCharStmt) {
+      try {
+        const rows = singleCharStmt.all(kanjiChar)
+        for (const row of rows) {
+          for (const rawM of parseJsonArraySafe(row?.meanings)) {
+            const m = String(rawM || '').trim()
+            if (!m || m.length > 48) continue
+            const normM = removeVietnameseTones(m)
+            if (normM === primaryMeaningNorm || secondaryMeanings.some((s) => removeVietnameseTones(s) === normM)) {
+              continue
+            }
+            secondaryMeanings.push(m)
+            if (secondaryMeanings.length >= 2) break
+          }
+          if (secondaryMeanings.length >= 2) break
+        }
+      } catch {
+        // ignore optional SQLite read error
+      }
+    }
+
+    // Backfill sparse vocab examples (< 6) from master_dictionary.db while preserving canonical examples first
+    let mergedExamples = baseExamples
+    if (baseExamples.length < 6 && compoundStmt && summary) {
+      try {
+        const seenWords = new Set(baseExamples.map((e) => e.word))
+        const rows = compoundStmt.all(`%${kanjiChar}%`)
+        const extra = []
+        for (const row of rows) {
+          const w = String(row?.word || '').trim()
+          if (!w || seenWords.has(w) || !/[\u4e00-\u9fff]/.test(w)) continue
+          seenWords.add(w)
+          const meanings = parseJsonArraySafe(row?.meanings)
+          const exList = parseJsonArraySafe(row?.examples)
+          const firstEx = exList.find((e) => e?.jp)
+          extra.push({
+            id: `dict-${kanjiChar}-${extra.length}`,
+            word: w,
+            reading: String(row?.reading || '').trim(),
+            meaning: String(meanings[0] || '').trim(),
+            yinHan: String(row?.han_viet || '').trim(),
+            ...(firstEx?.jp ? { example: String(firstEx.jp).trim() } : {}),
+            ...(firstEx?.vi ? { exampleVi: String(firstEx.vi).trim() } : {}),
+          })
+          if (baseExamples.length + extra.length >= 6) break
+        }
+        if (extra.length > 0) {
+          mergedExamples = [...baseExamples, ...extra]
+        }
+      } catch {
+        // ignore optional SQLite read error
+      }
+    }
+
+    const enrichedDetail =
+      detail && mergedExamples !== baseExamples
+        ? {
+            ...detail,
+            kanjiInfo: {
+              ...detail.kanjiInfo,
+              kanjialiveData: {
+                ...detail.kanjiInfo?.kanjialiveData,
+                examples: mergedExamples,
+              },
+            },
+          }
+        : detail || null
+
+    const verifiedDescendants = this.verifiedDescendantsMap.get(kanjiChar) || []
 
     return {
       kanji: kanjiChar,
       summary: summary || null,
-      detail: detail || null,
+      detail: enrichedDetail,
       relatedByRadical,
       relatedByHanzi,
+      verifiedDescendants,
       phonetics: {
         onyomiRomaji: kanaToRomaji(onyomiRaw),
         kunyomiRomaji: kanaToRomaji(kunyomiRaw),

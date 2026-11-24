@@ -84,6 +84,9 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState<number>(48)
   const [onlySaved, setOnlySaved] = useState(false)
+  const [studyMode, setStudyMode] = useState(false)
+  const [studyIdx, setStudyIdx] = useState(0)
+  const [studyFlipped, setStudyFlipped] = useState(false)
   const [isRadicalOpen, setIsRadicalOpen] = useState(false)
   const [radicalSearch, setRadicalSearch] = useState('')
   const [radicalStrokeGroup, setRadicalStrokeGroup] = useState<RadicalStrokeGroupId>('all')
@@ -286,6 +289,35 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
     return items.filter((item) => savedKanjiSet.has(item.kanji))
   }, [data?.items, onlySaved, savedKanjiSet])
 
+  useEffect(() => {
+    setStudyIdx(0)
+    setStudyFlipped(false)
+  }, [selectedLevel, selectedRadical, strokePreset, debouncedSearchQuery, onlySaved, page])
+
+  const activeStudyKanji = displayedItems[studyIdx] ?? displayedItems[0] ?? null
+
+  useEffect(() => {
+    if (!studyMode || selectedKanji || displayedItems.length === 0) return
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      if (e.key === ' ') {
+        e.preventDefault()
+        setStudyFlipped((f) => !f)
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setStudyIdx((i) => Math.max(0, i - 1))
+        setStudyFlipped(false)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setStudyIdx((i) => Math.min(displayedItems.length - 1, i + 1))
+        setStudyFlipped(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [studyMode, selectedKanji, displayedItems.length])
+
   const hasActiveFilters =
     selectedLevel !== 'ALL' ||
     Boolean(selectedRadical) ||
@@ -322,7 +354,7 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
         </div>
 
         <div className="kanji-ledger-masthead__actions">
-          {query === undefined && (
+          {!query && (
             <div className="nhaikanji-search-box">
               <Search size={16} className="nhaikanji-search-icon" aria-hidden="true" />
               <input
@@ -349,17 +381,34 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
             <div className="kanji-view-segmented" role="group" aria-label="Cách xem Hán tự">
               <button
                 type="button"
-                className={`kanji-view-segmented__btn${viewMode === 'grid' ? ' is-active' : ''}`}
-                aria-pressed={viewMode === 'grid'}
-                onClick={() => onChangeViewMode('grid')}
+                className={`kanji-view-segmented__btn${viewMode === 'grid' && !studyMode ? ' is-active' : ''}`}
+                aria-pressed={viewMode === 'grid' && !studyMode}
+                onClick={() => {
+                  setStudyMode(false)
+                  onChangeViewMode('grid')
+                }}
               >
                 Danh sách
               </button>
               <button
                 type="button"
-                className={`kanji-view-segmented__btn${viewMode === 'ink' ? ' is-active' : ''}`}
-                aria-pressed={viewMode === 'ink'}
-                onClick={() => onChangeViewMode('ink')}
+                className={`kanji-view-segmented__btn${studyMode ? ' is-active' : ''}`}
+                aria-pressed={studyMode}
+                onClick={() => {
+                  if (viewMode !== 'grid') onChangeViewMode('grid')
+                  setStudyMode((prev) => !prev)
+                }}
+              >
+                Lật thẻ
+              </button>
+              <button
+                type="button"
+                className={`kanji-view-segmented__btn${viewMode === 'ink' && !studyMode ? ' is-active' : ''}`}
+                aria-pressed={viewMode === 'ink' && !studyMode}
+                onClick={() => {
+                  setStudyMode(false)
+                  onChangeViewMode('ink')
+                }}
               >
                 Thủy mặc
               </button>
@@ -570,7 +619,7 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
         </div>
       </section>
 
-      {/* 3. Kanji Specimen Grid */}
+      {/* 3. Kanji Specimen Grid or Inline Flashcard Stage */}
       {isLoading && !data ? (
         <div className="kanji-grid" aria-busy="true" aria-label="Đang tải danh sách Hán tự">
           {Array.from({ length: 24 }).map((_, i) => (
@@ -591,8 +640,90 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
             Đặt lại bộ lọc
           </Button>
         </div>
+      ) : studyMode && activeStudyKanji ? (
+        <div className="kanji-flashcard-stage" role="region" aria-label="Ôn nhanh Hán tự dạng thẻ">
+          <div className="kanji-flashcard-meta">
+            <span>
+              Thẻ <strong>{studyIdx + 1}</strong> / {displayedItems.length}
+            </span>
+            <span>
+              {activeStudyKanji.jlpt_level} · {activeStudyKanji.stroke_count} nét
+              {activeStudyKanji.radical_utf && activeStudyKanji.radical_utf !== '—'
+                ? ` · Bộ ${activeStudyKanji.radical_utf}`
+                : ''}
+            </span>
+          </div>
+
+          <div
+            role="button"
+            tabIndex={0}
+            className={`kanji-flashcard-card${studyFlipped ? ' is-flipped' : ''}`}
+            onClick={() => setStudyFlipped((f) => !f)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                setStudyFlipped((f) => !f)
+              }
+            }}
+            aria-label={
+              studyFlipped ? 'Mặt sau thẻ Hán tự — nhấn để lật lại' : 'Mặt trước thẻ Hán tự — nhấn để xem nghĩa'
+            }
+          >
+            {!studyFlipped ? (
+              <div className="kanji-flashcard-front">
+                <span className="kanji-flashcard-glyph">{activeStudyKanji.kanji}</span>
+                <span className="kanji-flashcard-hint">Nhấn [Space] hoặc chạm để lật xem Hán-Việt &amp; Chiết tự</span>
+              </div>
+            ) : (
+              <div className="kanji-flashcard-back">
+                <div className="kanji-flashcard-back__top">
+                  <span className="kanji-flashcard-back__char">{activeStudyKanji.kanji}</span>
+                  <div>
+                    <div className="kanji-flashcard-back__hanzi">{activeStudyKanji.hanzi}</div>
+                    <div className="kanji-flashcard-back__meaning">{activeStudyKanji.meaning_vi}</div>
+                  </div>
+                </div>
+                <div className="kanji-flashcard-back__readings">
+                  <span>On: {activeStudyKanji.onyomi || '—'}</span>
+                  <span>Kun: {activeStudyKanji.kunyomi || '—'}</span>
+                </div>
+                {activeStudyKanji.story && (
+                  <blockquote className="kanji-flashcard-back__story">「 {activeStudyKanji.story} 」</blockquote>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="kanji-flashcard-actions">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={studyIdx <= 0}
+              onClick={() => {
+                setStudyIdx((i) => Math.max(0, i - 1))
+                setStudyFlipped(false)
+              }}
+            >
+              <ChevronLeft size={15} /> Chữ trước
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => openKanjiModal(activeStudyKanji)}>
+              Mở chi tiết &amp; Tập viết
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={studyIdx >= displayedItems.length - 1}
+              onClick={() => {
+                setStudyIdx((i) => Math.min(displayedItems.length - 1, i + 1))
+                setStudyFlipped(false)
+              }}
+            >
+              Chữ tiếp <ChevronRight size={15} />
+            </Button>
+          </div>
+        </div>
       ) : (
-        <div className="kanji-grid">
+        <div className={`kanji-grid${displayedItems.length < 6 ? ' kanji-grid--compact' : ''}`}>
           {displayedItems.map((k) => {
             const isSaved = savedKanjiSet.has(k.kanji)
             return (
@@ -633,6 +764,7 @@ export function KanjiPage({ query, viewMode, onChangeViewMode }: KanjiPageProps 
                 <div className="kanji-card__hanzi">{k.hanzi}</div>
                 <div className="kanji-card__meaning">{k.meaning_vi}</div>
                 {(k.onyomi || k.kunyomi) && <div className="kanji-card__onyomi">{k.onyomi || k.kunyomi}</div>}
+                {k.story && <div className="kanji-card__story">{k.story}</div>}
               </div>
             )
           })}
