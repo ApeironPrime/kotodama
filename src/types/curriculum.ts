@@ -123,6 +123,7 @@ export interface CurriculumUnitSummary {
   title: string
   topic: string
   term_count: number
+  preview_terms?: string[]
 }
 
 export interface CurriculumCatalogData {

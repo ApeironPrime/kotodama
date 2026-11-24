@@ -257,15 +257,7 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     isFeatured = code === 'minna-n5-standard' || (code.includes('minna') && level === 'N5')
     variants = ['Bản Chuẩn (Kanji & Nghĩa)', 'Bản Hiragana Thuần', 'Bản Romaji Nhập môn']
   } else if (isMimiKara) {
-    if (code.includes('5163539') || (level === 'N3' && course.unit_count > 1)) {
-      displayTitle = 'Mimi Kara Oboeru N3 (Trọn Bộ 12 Chuyên Đề Phản Xạ)'
-    } else if (code.includes('1670871') || (level === 'N2' && course.unit_count > 1)) {
-      displayTitle = 'Mimi Kara Oboeru N2 (Trọn Bộ 13 Chuyên Đề Phản Xạ)'
-    } else if (level === 'N1') {
-      displayTitle = 'Mimi Kara Oboeru N1 (Vốn Từ Nâng Cao Phản Xạ)'
-    } else {
-      displayTitle = course.title
-    }
+    displayTitle = level ? `Mimi Kara Oboeru ${level}` : course.title
     kanjiTitle = '耳から覚える'
     volumeTag = level || '中級'
     palette = 'matcha'
@@ -291,12 +283,11 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     pacingBadge = '6 tuần nước rút • 2 trang mỗi ngày'
     isFeatured = true
   } else if (isTango) {
-    const wordCount = { N1: '3.000', N2: '2.500', N3: '2.000', N4: '1.500', N5: '1.000' }[level] || '2.000'
-    displayTitle = `Tango ${level || 'N3'} (${wordCount} Từ vựng Thiết yếu Kèm Ví dụ)`
+    displayTitle = `Tango ${level || 'N3'}`
     kanjiTitle = '日本語単語'
     volumeTag = level || '中級'
-    palette = 'matcha'
-    pattern = 'shippo'
+    palette = 'kuri'
+    pattern = 'kasumi'
     sealChar = '語'
     publisher = 'Ask Publishing · アスク出版'
     pedagogicalSubtitle = 'Ghi nhớ bản chất qua 100% câu ví dụ ngữ cảnh thực tế'
@@ -826,19 +817,8 @@ export function getCuratedCourseMetadata(course: CurriculumCourseCard): CuratedC
     pacingBadge = `${course.term_count.toLocaleString()} từ • Trọng tâm rút gọn`
   }
 
-  const coverFamily =
-    isMimiKara && ['N1', 'N2', 'N3'].includes(level)
-      ? 'mimikara'
-      : isTango && ['N1', 'N2', 'N3', 'N4', 'N5'].includes(level)
-        ? 'tango'
-        : isMinna && ['N4', 'N5'].includes(level)
-          ? 'minna'
-          : isSoumatome && ['N1', 'N2', 'N3'].includes(level)
-            ? 'soumatome'
-            : undefined
-
   return {
-    coverSrc: coverFamily ? `/assets/book-covers/${coverFamily}-${level.toLowerCase()}.jpg` : undefined,
+    coverSrc: undefined,
     track,
     displayTitle,
     kanjiTitle,

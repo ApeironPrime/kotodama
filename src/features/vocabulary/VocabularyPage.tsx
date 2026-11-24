@@ -82,6 +82,16 @@ function formatJpQuote(text: string): string {
   return `「${trimmed}」`
 }
 
+const RAW_PHRASE_MAP: Array<[RegExp, string]> = [
+  [/同じ漢字を含む\s*名詞/g, 'Danh từ cùng Hán tự'],
+  [/同じ漢字を含む\s*動詞/g, 'Động từ cùng Hán tự'],
+  [/同じ漢字を含む/g, 'Cùng Hán tự'],
+  [/似た意味の/g, 'Nghĩa tương đồng '],
+  [/意味がたくさんある/g, 'Từ đa nghĩa '],
+  [/カタカナ語/g, 'Từ Katakana'],
+  [/ことば/g, 'Từ ngữ'],
+]
+
 const RAW_POS_MAP: Array<[RegExp, string]> = [
   [/い形容詞/g, 'Tính từ い'],
   [/な形容詞/g, 'Tính từ な'],
@@ -102,13 +112,29 @@ function normalizeFullWidthAscii(text: string): string {
     .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
 }
 
+function readUnitKnownCount(storageKey: string): number {
+  if (typeof window === 'undefined') return 0
+  try {
+    const raw = window.localStorage.getItem(storageKey)
+    if (!raw) return 0
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.length : 0
+  } catch {
+    return 0
+  }
+}
+
 function formatEditorialUnit(rawTitle?: string, ordinal?: number, topic?: string) {
   const title = normalizeFullWidthAscii((rawTitle || '').trim())
   const chapter = title.match(/^Unit\s+(\d+)/i)?.[1] || String(ordinal || 1)
   const recap = title.startsWith('まとめ')
   const badge = recap ? '復' : chapter.padStart(2, '0')
   if (!title) return { title: topic || `Bài ${chapter}`, japanese: '', badge, chapter, recap }
-  const looksTechnical = /\|/.test(title) || /_\s*\[[^\]]+\]/.test(title) || /^(?:Unit\s+\d+|まとめ)/i.test(title)
+  const looksTechnical =
+    /\|/.test(title) ||
+    /_\s*\[[^\]]+\]/.test(title) ||
+    /^(?:Unit\s+\d+|まとめ)/i.test(title) ||
+    /(?:名詞|動詞|形容詞|副詞|接続詞|同じ漢字|Phó từ[A-Z]|Danh từ[A-Z])/.test(title)
   if (!looksTechnical) return { title, japanese: '', badge, chapter, recap }
 
   const prefix = recap ? 'Ôn tập' : `Bài ${chapter}`
@@ -119,10 +145,20 @@ function formatEditorialUnit(rawTitle?: string, ordinal?: number, topic?: string
     .replace(/\s{2,}/g, ' ')
     .trim()
   let body = japanese
+  for (const [pattern, viLabel] of RAW_PHRASE_MAP) {
+    body = body.replace(pattern, viLabel)
+  }
   for (const [pattern, viLabel] of RAW_POS_MAP) {
     body = body.replace(pattern, viLabel)
   }
-  body = body.replace(/\s+([A-Z])$/, ' (Phần $1)')
+  body = body
+    .replace(/([A-Za-zÀ-ỹ])([A-Z])(?=\s*[+＋&]|$)/g, '$1 $2')
+    .replace(/\s*[+＋]\s*/g, ' & ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+  if (!body.includes('&') && /\s([A-Z])$/.test(body)) {
+    body = body.replace(/\s([A-Z])$/, ' (Phần $1)')
+  }
   const resolvedBody = body === japanese ? topic?.trim() || body : body
   return {
     title: resolvedBody ? `${prefix} · ${resolvedBody}` : prefix,
@@ -931,7 +967,6 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     >
                       <div className="curriculum-featured-spread__cover-pane">
                         <WatojiBookCover
-                          coverSrc={featuredItem.meta.coverSrc}
                           bookTitle={featuredItem.course.title}
                           size="featured"
                           kanjiTitle={featuredItem.meta.kanjiTitle}
@@ -1044,8 +1079,9 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   if (selectedCourseCode && !selectedUnitKey) {
     const course = courseDetailData?.course
     const units = courseDetailData?.units || []
-    const openUnit = (unitKey: string) => {
+    const openUnit = (unitKey: string, initialMode: 'flashcard' | 'cloze' | 'karuta' | 'typing' = 'flashcard') => {
       setSelectedUnitKey(unitKey)
+      setStageMode(initialMode)
       setCurrentIndex(0)
       setIsFlipped(false)
       setUnitSearchQuery('')
@@ -1054,6 +1090,18 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       setAuthNotice(null)
       setSrsError(null)
     }
+
+    const unitKnownCounts: Record<string, number> = {}
+    let totalKnownInCourse = 0
+    for (const u of units) {
+      const kCount = readUnitKnownCount(`kotodama.known:${user?.id ?? 'guest'}:${selectedCourseCode}:${u.unit_key}`)
+      unitKnownCounts[u.unit_key] = kCount
+      totalKnownInCourse += Math.min(kCount, u.term_count || kCount)
+    }
+    const courseTermTotal = course?.term_count || units.reduce((acc, u) => acc + u.term_count, 0)
+    const courseProgressPct =
+      courseTermTotal > 0 ? Math.min(100, Math.round((totalKnownInCourse / courseTermTotal) * 100)) : 0
+    const resumeUnit = units.find((u) => (unitKnownCounts[u.unit_key] || 0) < u.term_count) || units[0]
 
     return (
       <div className="curriculum-container washi-page curriculum-course-view">
@@ -1071,11 +1119,11 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           </button>
 
           {isCourseLoading && (
-            <div className="curriculum-unit-grid" role="status" aria-label="Đang tải danh sách bài học...">
-              <div className="curriculum-skeleton-card" style={{ height: '80px' }} />
-              <div className="curriculum-skeleton-card" style={{ height: '80px' }} />
-              <div className="curriculum-skeleton-card" style={{ height: '80px' }} />
-              <div className="curriculum-skeleton-card" style={{ height: '80px' }} />
+            <div className="curriculum-toc-skeleton" role="status" aria-label="Đang tải danh sách bài học...">
+              <div className="curriculum-skeleton-card" style={{ height: '64px' }} />
+              <div className="curriculum-skeleton-card" style={{ height: '64px' }} />
+              <div className="curriculum-skeleton-card" style={{ height: '64px' }} />
+              <div className="curriculum-skeleton-card" style={{ height: '64px' }} />
             </div>
           )}
 
@@ -1091,15 +1139,20 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
             <>
               {(() => {
                 const courseMeta = curateCatalogCourses([course])[0]?.meta
-                const firstUnit = units[0]
+                const displayTitle = courseMeta?.displayTitle || course.title
+                const displayPublisher =
+                  (courseMeta?.publisher || course.provider_source || '').split('·')[0]?.trim() ||
+                  course.provider_source
+                const editorialManifesto =
+                  courseMeta?.methodQuote ||
+                  courseMeta?.pedagogicalSubtitle ||
+                  'Chọn một chương bên dưới để lật mở Flashcard, luyện phản xạ Karuta hoặc gõ âm đọc.'
                 return (
                   <header className="curriculum-book-banner">
-                    <div className="curriculum-book-banner__mist" aria-hidden="true" />
                     {courseMeta && (
                       <div className="curriculum-book-banner__cover">
                         <WatojiBookCover
-                          coverSrc={courseMeta.coverSrc}
-                          bookTitle={course.title}
+                          bookTitle={displayTitle}
                           size="featured"
                           kanjiTitle={courseMeta.kanjiTitle}
                           subtitle={courseMeta.publisher}
@@ -1112,40 +1165,66 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                       </div>
                     )}
                     <div className="curriculum-book-banner__body">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                      <div className="curriculum-book-banner__eyebrow">
                         <span className="curriculum-level-badge" data-level={course.level}>
                           {course.level}
                         </span>
-                        <span
-                          style={{
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            color: 'var(--color-text-muted)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                          }}
-                        >
-                          {courseMeta?.publisher || course.provider_source}
-                        </span>
+                        <span className="curriculum-book-banner__publisher">{displayPublisher}</span>
                       </div>
-                      <h1 className="curriculum-book-banner__title">{course.title}</h1>
-                      <p className="curriculum-book-banner__desc">
-                        {course.description ||
-                          'Chọn một bài học dưới đây để bắt đầu học Flashcard, luyện phản xạ Mini-Game hoặc xem danh sách từ vựng chi tiết.'}
-                      </p>
+                      <h1 className="curriculum-book-banner__title">{displayTitle}</h1>
+                      <p className="curriculum-book-banner__desc">{editorialManifesto}</p>
+
+                      <div className="curriculum-course-progress" aria-label="Tiến độ toàn bộ giáo trình">
+                        <div className="curriculum-course-progress__meta">
+                          <span>
+                            Đã thuộc <strong>{totalKnownInCourse.toLocaleString()}</strong> /{' '}
+                            {courseTermTotal.toLocaleString()} từ
+                          </span>
+                          <span>{courseProgressPct}%</span>
+                        </div>
+                        <div className="curriculum-course-progress__track">
+                          <div
+                            className="curriculum-course-progress__fill"
+                            style={{ width: `${courseProgressPct}%` }}
+                          />
+                        </div>
+                      </div>
+
                       <div className="curriculum-book-banner__footer">
                         <div className="curriculum-book-banner__stats">
                           <span className="curriculum-stat-pill">
-                            <Layers size={13} aria-hidden="true" /> {course.unit_count} bài học
+                            <Layers size={13} aria-hidden="true" /> {course.unit_count} chương
                           </span>
                           <span className="curriculum-stat-pill">
-                            <BookOpen size={13} aria-hidden="true" /> {course.term_count} từ vựng
+                            <BookOpen size={13} aria-hidden="true" /> {courseTermTotal.toLocaleString()} từ vựng
                           </span>
                         </div>
-                        {firstUnit && (
-                          <Button variant="primary" size="sm" onClick={() => openUnit(firstUnit.unit_key)}>
-                            Bắt đầu Bài {firstUnit.ordinal} →
-                          </Button>
+                        {resumeUnit && (
+                          <div className="curriculum-book-banner__actions">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => openUnit(resumeUnit.unit_key, 'flashcard')}
+                            >
+                              {totalKnownInCourse > 0
+                                ? `Tiếp tục Bài ${resumeUnit.ordinal} →`
+                                : `Bắt đầu Bài ${resumeUnit.ordinal} →`}
+                            </Button>
+                            <button
+                              type="button"
+                              className="curriculum-quick-mode-btn"
+                              onClick={() => openUnit(resumeUnit.unit_key, 'karuta')}
+                            >
+                              Đấu trường Karuta
+                            </button>
+                            <button
+                              type="button"
+                              className="curriculum-quick-mode-btn"
+                              onClick={() => openUnit(resumeUnit.unit_key, 'typing')}
+                            >
+                              Gõ âm đọc
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1153,41 +1232,75 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 )
               })()}
 
-              <h2 className="curriculum-course-view__list-title">Danh sách bài học</h2>
-              <ul className="curriculum-unit-grid curriculum-course-view__list">
+              <div className="curriculum-toc-header">
+                <h2 className="curriculum-course-view__list-title">
+                  <span className="curriculum-toc-kanji" aria-hidden="true">
+                    目次
+                  </span>
+                  Mục lục bài học
+                </h2>
+                <span className="curriculum-toc-meta">
+                  {units.length} chương · {courseTermTotal.toLocaleString()} từ
+                </span>
+              </div>
+
+              <ol className="curriculum-toc-list">
                 {units.map((unit) => {
-                  const { title, japanese, badge, recap } = formatEditorialUnit(unit.title, unit.ordinal, unit.topic)
+                  const { title, japanese, badge, chapter, recap } = formatEditorialUnit(
+                    unit.title,
+                    unit.ordinal,
+                    unit.topic
+                  )
                   const subtitle = japanese || (unit.topic && !title.includes(unit.topic) ? unit.topic : '')
+                  const known = Math.min(unitKnownCounts[unit.unit_key] || 0, unit.term_count)
+                  const pct = unit.term_count > 0 ? Math.min(100, Math.round((known / unit.term_count) * 100)) : 0
+                  const previews = unit.preview_terms?.slice(0, 3) || []
                   return (
                     <li key={unit.unit_id}>
                       <button
                         type="button"
-                        className={`curriculum-unit-card${recap ? ' is-recap' : ''}`}
-                        onClick={() => openUnit(unit.unit_key)}
+                        className={`curriculum-toc-row${recap ? ' is-recap' : ''}`}
+                        onClick={() => openUnit(unit.unit_key, 'flashcard')}
                       >
-                        <span className="curriculum-unit-card__left">
-                          <span className="curriculum-unit-card__seal" aria-hidden="true">
-                            {badge}
-                          </span>
-                          <span>
-                            <span className="curriculum-unit-card__title">{title}</span>
-                            {subtitle && (
-                              <span className="curriculum-unit-card__topic" lang={japanese ? 'ja' : undefined}>
-                                {subtitle}
-                              </span>
-                            )}
-                          </span>
+                        <span className="curriculum-toc-row__index" aria-hidden="true">
+                          {recap ? '復' : `第${chapter}課`}
+                          <small>{badge}</small>
                         </span>
 
-                        <span className="curriculum-unit-card__meta">
-                          <Badge variant="primary">{unit.term_count} từ</Badge>
-                          <ChevronRight size={18} style={{ color: 'var(--color-text-muted)' }} aria-hidden="true" />
+                        <span className="curriculum-toc-row__main">
+                          <span className="curriculum-toc-row__title">{title}</span>
+                          {subtitle && (
+                            <span className="curriculum-toc-row__subtitle" lang={japanese ? 'ja' : undefined}>
+                              {subtitle}
+                            </span>
+                          )}
+                          {previews.length > 0 && (
+                            <span className="curriculum-toc-row__previews" lang="ja">
+                              {previews.map((word, idx) => (
+                                <span key={idx} className="curriculum-toc-preview-chip">
+                                  {word}
+                                </span>
+                              ))}
+                            </span>
+                          )}
+                        </span>
+
+                        <span className="curriculum-toc-row__right">
+                          <span className="curriculum-toc-progress">
+                            <span className="curriculum-toc-progress__label">
+                              {known > 0 ? `${known} / ${unit.term_count} từ` : `${unit.term_count} từ`}
+                            </span>
+                            <span className="curriculum-toc-progress__bar" aria-hidden="true">
+                              <span style={{ width: `${pct}%` }} />
+                            </span>
+                          </span>
+                          <ChevronRight size={16} className="curriculum-toc-row__chevron" aria-hidden="true" />
                         </span>
                       </button>
                     </li>
                   )
                 })}
-              </ul>
+              </ol>
             </>
           )}
         </div>

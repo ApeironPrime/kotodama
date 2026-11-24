@@ -337,7 +337,7 @@ export function WatojiBookCover({
         {/* Subtitle / Edition note (if featured) */}
         {isFeatured && subtitle && (
           <div className="watoji-cover__footnote">
-            <span>{subtitle}</span>
+            <span>{subtitle.split('·')[0]?.trim() || subtitle}</span>
           </div>
         )}
 

@@ -1130,4 +1130,77 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     fireEvent.click(retryWeakBtn)
     expect(await panel.findByText(/Ôn từ yếu/)).toBeTruthy()
   })
+
+  it('uses 100% Watoji covers on bookshelf and renders clean Tango titles without inflated numbers', async () => {
+    vi.mocked(curriculumApi.fetchCatalog).mockResolvedValueOnce({
+      items: [
+        {
+          course_code: 'mazii-tango-n1',
+          title: 'Tango N1 (3000 Từ)',
+          level: 'N1',
+          provider_source: 'Ask Publishing',
+          visibility: 'public',
+          rights_status: 'verified',
+          description: 'Tango N1',
+          unit_count: 10,
+          term_count: 1852,
+        },
+      ],
+      pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+    })
+
+    const { container } = renderWithClient(<VocabularyPage />)
+    expect(await screen.findByText('Tango N1')).toBeTruthy()
+    expect(screen.queryByText(/3\.000/)).toBeNull()
+    expect(container.querySelectorAll('.published-book img').length).toBe(0)
+    expect(container.querySelectorAll('.watoji-cover').length).toBeGreaterThan(0)
+  })
+
+  it('renders printed Table of Contents with sanitized unit titles, preview words, and quick Karuta/Typing launch', async () => {
+    vi.mocked(curriculumApi.fetchCourseDetail).mockResolvedValueOnce({
+      course: {
+        course_code: 'mimi-n1',
+        title: 'Mimikara Oboeru N1',
+        level: 'N1',
+        provider_source: 'ALC Press',
+        visibility: 'public',
+        rights_status: 'verified',
+        description: 'Giáo trình cao cấp Mimikara Oboeru N1.',
+        unit_count: 2,
+        term_count: 20,
+      },
+      units: [
+        {
+          unit_id: 'mimi-n1:u7',
+          unit_key: 'u7',
+          ordinal: 7,
+          title: 'Unit 7 | 副詞A+接続詞',
+          topic: '',
+          term_count: 10,
+          preview_terms: ['たちまち', 'やがて'],
+        },
+        {
+          unit_id: 'mimi-n1:recap',
+          unit_key: 'recap',
+          ordinal: 8,
+          title: 'まとめ | 同じ漢字を含む名詞',
+          topic: '',
+          term_count: 10,
+          preview_terms: ['男性', '女性'],
+        },
+      ],
+    })
+
+    renderWithClient(<VocabularyPage />)
+    fireEvent.click(await screen.findByText('Minna no Nihongo N5 Chuẩn'))
+
+    expect(await screen.findByText('Mục lục bài học')).toBeTruthy()
+    expect(screen.getByText('Bài 7 · Phó từ A & Liên từ')).toBeTruthy()
+    expect(screen.getByText('Ôn tập · Danh từ cùng Hán tự')).toBeTruthy()
+    expect(screen.getByText('たちまち')).toBeTruthy()
+    expect(screen.getByText('男性')).toBeTruthy()
+    expect(screen.getByLabelText('Tiến độ toàn bộ giáo trình')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Đấu trường Karuta' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Gõ âm đọc' })).toBeTruthy()
+  })
 })

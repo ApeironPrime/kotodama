@@ -517,6 +517,38 @@ export class CurriculumCatalogService {
     const unitsSqlSqlite = unitsSqlPg.replace('$1', '?').replace('::int', '')
     const unitRows = await this.queryAll(unitsSqlSqlite, unitsSqlPg, [cleanCourseCode])
 
+    const previewMap = new Map()
+    try {
+      const previewSqlPg = `
+        SELECT unit_id, display_word
+        FROM (
+          SELECT
+            ct.unit_id,
+            t.display_word,
+            ROW_NUMBER() OVER (PARTITION BY ct.unit_id ORDER BY ct.ordinal ASC) AS rn
+          FROM curriculum_course_terms ct
+          JOIN curriculum_terms t ON t.term_id = ct.term_id
+          WHERE ct.course_code = $1
+        ) ranked
+        WHERE rn <= 3
+        ORDER BY unit_id, rn ASC
+      `
+      const previewSqlSqlite = previewSqlPg.replace('$1', '?')
+      const previewRows = await this.queryAll(previewSqlSqlite, previewSqlPg, [cleanCourseCode])
+      for (const row of previewRows) {
+        const uid = row?.unit_id
+        const word = typeof row?.display_word === 'string' ? row.display_word.trim() : ''
+        if (!uid || !word) continue
+        const list = previewMap.get(uid) || []
+        if (list.length < 3) {
+          list.push(word)
+          previewMap.set(uid, list)
+        }
+      }
+    } catch {
+      // Non-fatal: preview terms are optional enrichment
+    }
+
     const units = unitRows.map((u) => ({
       unit_id: u.unit_id,
       unit_key: u.unit_key,
@@ -524,6 +556,7 @@ export class CurriculumCatalogService {
       title: u.title,
       topic: u.topic || '',
       term_count: Number(u.term_count || 0),
+      preview_terms: previewMap.get(u.unit_id) || [],
     }))
 
     const totalTerms = units.reduce((sum, u) => sum + u.term_count, 0)

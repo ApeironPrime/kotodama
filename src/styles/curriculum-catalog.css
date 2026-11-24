@@ -6,28 +6,20 @@
   padding: var(--space-4) var(--page-gutter);
 }
 
-/* Washi Paper Canvas (Calm & Natural texture, double-hairline exhibition frame) */
+/* Washi Paper Canvas (Open on canvas — zero outer box) */
 .curriculum-paper-grid {
   position: relative;
-  overflow: hidden;
-  background-color: var(--color-surface);
-  border-radius: 18px;
-  border: 1px solid var(--color-border);
-  padding: clamp(1.5rem, 3vw, 2.5rem);
+  overflow: visible;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
+  padding: 0.25rem 0 2rem;
   margin-bottom: var(--space-8);
-  box-shadow:
-    0 2px 4px color-mix(in srgb, var(--color-text) 3%, transparent),
-    0 18px 42px -22px color-mix(in srgb, var(--color-text) 10%, transparent);
+  box-shadow: none;
 }
 
 .curriculum-paper-grid::before {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
-  border-radius: 12px;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .curriculum-paper-grid > * {
@@ -169,8 +161,8 @@
 
 .curriculum-hero__title {
   margin: 0 0 var(--space-2) 0;
-  font-family: var(--font-display, 'Noto Serif JP', serif);
-  font-size: clamp(1.85rem, 3.4vw, 2.6rem);
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: clamp(1.85rem, 3.2vw, 2.45rem);
   font-weight: 700;
   line-height: var(--line-height-snug);
   color: var(--color-text, #1a1817);
@@ -427,7 +419,7 @@
 }
 
 .curriculum-track-title {
-  font-family: var(--font-display, 'Noto Serif JP', serif);
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--color-text, #1a1817);
@@ -755,6 +747,22 @@
   font-size: 0.48rem;
 }
 
+.watoji-cover__footnote {
+  position: absolute;
+  left: 10px;
+  right: 36px;
+  bottom: 16px;
+  z-index: 2;
+  font-size: 0.54rem;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  pointer-events: none;
+}
+
 .watoji-cover__masthead {
   position: relative;
   z-index: 2;
@@ -1054,11 +1062,11 @@
   position: relative;
   background: var(--color-bg-elevated, #ffffff);
   border: 1px solid var(--color-border-subtle, rgba(215, 205, 190, 0.55));
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 1rem 1.15rem;
   box-shadow: 0 2px 8px -2px rgba(44, 38, 35, 0.04);
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 1.15rem;
   cursor: pointer;
   outline: none;
@@ -1765,19 +1773,19 @@
 
 .curriculum-book-banner__title {
   margin: 0 0 0.45rem 0;
-  font-family: var(--font-display), var(--font-jp-serif), serif;
-  font-size: clamp(1.55rem, 2.6vw, 2.1rem);
-  font-weight: 600;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: clamp(1.55rem, 2.6vw, 2.15rem);
+  font-weight: 700;
   color: var(--color-text);
   line-height: 1.2;
 }
 
 .curriculum-book-banner__desc {
-  margin: 0 0 1.1rem 0;
+  margin: 0 0 1rem 0;
   color: var(--color-text-secondary);
   font-size: 0.94rem;
-  line-height: 1.55;
-  max-width: 62ch;
+  line-height: 1.6;
+  max-width: 65ch;
 }
 
 .curriculum-book-banner__footer {
@@ -1789,19 +1797,94 @@
 }
 
 .curriculum-course-view .curriculum-book-banner {
-  gap: clamp(0.75rem, 2vw, 1.5rem);
-  padding: clamp(0.75rem, 2vw, 1.25rem);
-  margin-bottom: 1.15rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  gap: clamp(1.15rem, 2.5vw, 2.25rem);
+  padding: 0.75rem 0 1.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.curriculum-book-banner__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.curriculum-book-banner__publisher {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.curriculum-course-progress {
+  max-width: 440px;
+  margin: 0 0 1.1rem;
+}
+
+.curriculum-course-progress__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.curriculum-course-progress__track {
+  height: 4px;
+  background: color-mix(in srgb, var(--color-border) 75%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.curriculum-course-progress__fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
+.curriculum-book-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.curriculum-quick-mode-btn {
+  padding: 0.38rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.curriculum-quick-mode-btn:hover {
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
 }
 
 .curriculum-course-view :is(.watoji-cover--featured, .published-book--featured) {
-  width: clamp(4rem, 11vw, 7rem);
+  width: clamp(5.5rem, 12vw, 8.25rem);
   height: auto;
   aspect-ratio: 175 / 240;
 }
 
 .curriculum-course-view .curriculum-book-banner__title {
-  font-size: clamp(1.2rem, 2.5vw, 2.1rem);
+  font-size: clamp(1.45rem, 2.6vw, 2.2rem);
   overflow-wrap: anywhere;
 }
 
@@ -1812,10 +1895,203 @@
 }
 
 .curriculum-course-view__list-title {
-  margin: 0 0 0.65rem;
-  font-family: var(--font-display);
-  font-size: 1.2rem;
+  margin: 0;
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.25rem;
+  font-weight: 700;
   color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.curriculum-toc-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1.5px solid var(--color-text);
+}
+
+.curriculum-toc-kanji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.12rem 0.38rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 2px;
+  color: var(--color-accent);
+  font-family: var(--font-jp-serif, serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.curriculum-toc-meta {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.curriculum-toc-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.curriculum-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.curriculum-toc-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 0.9rem 0.5rem;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    padding-inline 140ms ease;
+}
+
+.curriculum-toc-row:hover {
+  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
+  padding-inline: 0.75rem;
+}
+
+.curriculum-toc-row:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.curriculum-toc-row__index {
+  flex-shrink: 0;
+  width: 3.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: var(--font-jp-serif, serif);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.curriculum-toc-row__index small {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.curriculum-toc-row.is-recap .curriculum-toc-row__index {
+  color: var(--color-accent-text);
+}
+
+.curriculum-toc-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.curriculum-toc-row__title {
+  font-family: var(--font-jp-serif, 'Shippori Mincho', 'Noto Serif JP', serif);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.curriculum-toc-row__subtitle {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.curriculum-toc-row__previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.curriculum-toc-preview-chip {
+  font-family: var(--font-jp-serif, serif);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: 0.06rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 55%, transparent);
+}
+
+.curriculum-toc-row__right {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.curriculum-toc-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.26rem;
+  min-width: 5.5rem;
+}
+
+.curriculum-toc-progress__label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+}
+
+.curriculum-toc-progress__bar {
+  width: 5.5rem;
+  height: 3px;
+  background: color-mix(in srgb, var(--color-border) 75%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.curriculum-toc-progress__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.curriculum-toc-row__chevron {
+  color: var(--color-text-muted);
+  transition:
+    transform 140ms ease,
+    color 140ms ease;
+}
+
+.curriculum-toc-row:hover .curriculum-toc-row__chevron {
+  color: var(--color-accent-text);
+  transform: translateX(2px);
+}
+
+@media (max-width: 639px) {
+  .curriculum-toc-row {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .curriculum-toc-row__right {
+    width: 100%;
+    justify-content: space-between;
+    padding-left: 4rem;
+  }
 }
 
 .curriculum-course-view__list {
