@@ -1,6 +1,16 @@
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
-import { type CSSProperties, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
+import gsap from 'gsap'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search, ChevronLeft, ChevronRight, X, Bookmark, BookmarkCheck, PenTool, RotateCcw } from 'lucide-react'
 import { nhaikanjiApi } from './nhaikanjiApi'
@@ -59,6 +69,13 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
   const [studyMode, setStudyMode] = useState(false)
   const [studyIdx, setStudyIdx] = useState(0)
   const [studyFlipped, setStudyFlipped] = useState(false)
+  const [studyHasFlipped, setStudyHasFlipped] = useState(false)
+  const [studyInstantSwap, setStudyInstantSwap] = useState(false)
+  const [studyDealTick, setStudyDealTick] = useState(0)
+  const [studyDealDir, setStudyDealDir] = useState<1 | -1>(1)
+  const studySceneRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const didMountGridRef = useRef(false)
   const [isHandwritingOpen, setIsHandwritingOpen] = useState(false)
   const [selectedKanji, setSelectedKanji] = useState<KanjiSummary | null>(null)
   const [optimisticSaved, setOptimisticSaved] = useState<Record<string, boolean>>({})
@@ -235,9 +252,63 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
   useEffect(() => {
     setStudyIdx(0)
     setStudyFlipped(false)
+    setStudyHasFlipped(false)
   }, [selectedLevel, debouncedSearchQuery, onlySaved, page])
 
   const activeStudyKanji = displayedItems[studyIdx] ?? displayedItems[0] ?? null
+
+  const stepStudyCard = useCallback(
+    (dir: 1 | -1) => {
+      if (dir < 0 && studyIdx <= 0) return
+      if (dir > 0 && studyIdx >= displayedItems.length - 1) return
+      setStudyInstantSwap(true)
+      setStudyFlipped(false)
+      setStudyHasFlipped(false)
+      setStudyDealDir(dir)
+      setStudyDealTick((t) => t + 1)
+      setStudyIdx((i) => Math.min(displayedItems.length - 1, Math.max(0, i + dir)))
+      if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => setStudyInstantSwap(false))
+        })
+      } else {
+        setStudyInstantSwap(false)
+      }
+    },
+    [studyIdx, displayedItems.length]
+  )
+
+  useLayoutEffect(() => {
+    if (studyDealTick === 0) return
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const el = studySceneRef.current
+    if (!el) return
+    gsap.killTweensOf(el)
+    gsap.fromTo(
+      el,
+      { x: studyDealDir * 60, y: 3, rotationZ: studyDealDir * 1.2, scale: 0.985 },
+      { x: 0, y: 0, rotationZ: 0, scale: 1, duration: 0.38, ease: 'power3.out', clearProps: 'transform' }
+    )
+  }, [studyDealTick, studyDealDir])
+
+  useLayoutEffect(() => {
+    if (!didMountGridRef.current) {
+      didMountGridRef.current = true
+      return
+    }
+    if (studyMode || viewMode === 'ink') return
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const gridEl = gridRef.current
+    if (!gridEl) return
+    const cards = gridEl.querySelectorAll<HTMLElement>('.kanji-card')
+    if (!cards.length) return
+    gsap.killTweensOf(cards)
+    gsap.fromTo(
+      cards,
+      { y: 12, scale: 0.985 },
+      { y: 0, scale: 1, duration: 0.28, stagger: 0.008, ease: 'power2.out', clearProps: 'transform' }
+    )
+  }, [selectedLevel, selectedBook, onlySaved, page, studyMode, viewMode])
 
   useEffect(() => {
     if (!studyMode || viewMode === 'ink' || selectedKanji || displayedItems.length === 0) return
@@ -246,20 +317,21 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
       if (e.key === ' ') {
         e.preventDefault()
+        playPaperFlip()
+        setStudyInstantSwap(false)
+        setStudyHasFlipped(true)
         setStudyFlipped((f) => !f)
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        setStudyIdx((i) => Math.max(0, i - 1))
-        setStudyFlipped(false)
+        stepStudyCard(-1)
       } else if (e.key === 'ArrowRight') {
         e.preventDefault()
-        setStudyIdx((i) => Math.min(displayedItems.length - 1, i + 1))
-        setStudyFlipped(false)
+        stepStudyCard(1)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [studyMode, viewMode, selectedKanji, displayedItems.length])
+  }, [studyMode, viewMode, selectedKanji, displayedItems.length, stepStudyCard])
 
   const hasActiveFilters =
     selectedLevel !== 'ALL' || selectedBook !== 'ALL' || onlySaved || Boolean(debouncedSearchQuery)
@@ -499,62 +571,72 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                 </span>
               </div>
 
-              <div
-                role="button"
-                tabIndex={0}
-                className={`kanji-flashcard-card${studyFlipped ? ' is-flipped' : ''}`}
-                onClick={() => {
-                  playPaperFlip()
-                  setStudyFlipped((f) => !f)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
+              <div ref={studySceneRef} className="washi-3d-scene">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={`washi-3d-flipper${studyFlipped ? ' is-flipped' : ''}${studyInstantSwap ? ' is-instant' : ''}`}
+                  onClick={() => {
                     playPaperFlip()
+                    setStudyInstantSwap(false)
+                    setStudyHasFlipped(true)
                     setStudyFlipped((f) => !f)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault()
+                      playPaperFlip()
+                      setStudyInstantSwap(false)
+                      setStudyHasFlipped(true)
+                      setStudyFlipped((f) => !f)
+                    }
+                  }}
+                  aria-label={
+                    studyFlipped ? 'Mặt sau thẻ Hán tự — nhấn để lật lại' : 'Mặt trước thẻ Hán tự — nhấn để xem nghĩa'
                   }
-                }}
-                aria-label={
-                  studyFlipped ? 'Mặt sau thẻ Hán tự — nhấn để lật lại' : 'Mặt trước thẻ Hán tự — nhấn để xem nghĩa'
-                }
-              >
-                {!studyFlipped ? (
-                  <div key={`${activeStudyKanji.kanji}-front`} className="kanji-flashcard-front">
-                    <span className="kanji-flashcard-glyph">{activeStudyKanji.kanji}</span>
-                    <span className="kanji-flashcard-hint">
-                      Nhấn [Space] hoặc chạm để lật xem Hán-Việt &amp; Chiết tự
-                    </span>
+                >
+                  <div
+                    className="washi-3d-face washi-3d-face--front kanji-flashcard-3d-face"
+                    aria-hidden={studyFlipped}
+                  >
+                    <div className="kanji-flashcard-front">
+                      <span className="kanji-flashcard-glyph">{activeStudyKanji.kanji}</span>
+                      <span className="kanji-flashcard-hint">
+                        Nhấn [Space] hoặc chạm để lật xem Hán-Việt &amp; Chiết tự
+                      </span>
+                    </div>
                   </div>
-                ) : (
-                  <div key={`${activeStudyKanji.kanji}-back`} className="kanji-flashcard-back">
-                    <div className="kanji-flashcard-back__top">
-                      <span className="kanji-flashcard-back__char">{activeStudyKanji.kanji}</span>
-                      <div>
-                        <div className="kanji-flashcard-back__hanzi">{activeStudyKanji.hanzi}</div>
-                        <div className="kanji-flashcard-back__meaning">{activeStudyKanji.meaning_vi}</div>
+
+                  <div
+                    className="washi-3d-face washi-3d-face--back kanji-flashcard-3d-face"
+                    aria-hidden={!studyFlipped}
+                  >
+                    {(studyFlipped || studyHasFlipped) && (
+                      <div className="kanji-flashcard-back">
+                        <div className="kanji-flashcard-back__top">
+                          <span className="kanji-flashcard-back__char">{activeStudyKanji.kanji}</span>
+                          <div>
+                            <div className="kanji-flashcard-back__hanzi">{activeStudyKanji.hanzi}</div>
+                            <div className="kanji-flashcard-back__meaning">{activeStudyKanji.meaning_vi}</div>
+                          </div>
+                        </div>
+                        <div className="kanji-flashcard-back__readings">
+                          <span>On: {activeStudyKanji.onyomi || '—'}</span>
+                          <span>Kun: {activeStudyKanji.kunyomi || '—'}</span>
+                        </div>
+                        {activeStudyKanji.story && (
+                          <blockquote className="kanji-flashcard-back__story">
+                            「 {activeStudyKanji.story} 」
+                          </blockquote>
+                        )}
                       </div>
-                    </div>
-                    <div className="kanji-flashcard-back__readings">
-                      <span>On: {activeStudyKanji.onyomi || '—'}</span>
-                      <span>Kun: {activeStudyKanji.kunyomi || '—'}</span>
-                    </div>
-                    {activeStudyKanji.story && (
-                      <blockquote className="kanji-flashcard-back__story">「 {activeStudyKanji.story} 」</blockquote>
                     )}
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="kanji-flashcard-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={studyIdx <= 0}
-                  onClick={() => {
-                    setStudyIdx((i) => Math.max(0, i - 1))
-                    setStudyFlipped(false)
-                  }}
-                >
+                <Button variant="secondary" size="sm" disabled={studyIdx <= 0} onClick={() => stepStudyCard(-1)}>
                   <ChevronLeft size={15} /> Chữ trước
                 </Button>
                 <Button variant="secondary" size="sm" onClick={() => openKanjiModal(activeStudyKanji)}>
@@ -564,20 +646,14 @@ export function KanjiPage({ query, viewMode = 'grid', onChangeViewMode, inkConte
                   variant="secondary"
                   size="sm"
                   disabled={studyIdx >= displayedItems.length - 1}
-                  onClick={() => {
-                    setStudyIdx((i) => Math.min(displayedItems.length - 1, i + 1))
-                    setStudyFlipped(false)
-                  }}
+                  onClick={() => stepStudyCard(1)}
                 >
                   Chữ tiếp <ChevronRight size={15} />
                 </Button>
               </div>
             </div>
           ) : (
-            <div
-              key={`${selectedLevel}-${selectedBook}-${onlySaved ? 'saved' : page}`}
-              className={`kanji-grid${displayedItems.length < 6 ? ' kanji-grid--compact' : ''}`}
-            >
+            <div ref={gridRef} className={`kanji-grid${displayedItems.length < 6 ? ' kanji-grid--compact' : ''}`}>
               {displayedItems.map((k, idx) => {
                 const isSaved = savedKanjiSet.has(k.kanji)
                 const levelTag = (k.jlpt_level || 'N5').toLowerCase()

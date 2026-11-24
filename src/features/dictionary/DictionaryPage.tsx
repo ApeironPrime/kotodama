@@ -1,7 +1,8 @@
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
 import { useUrlState } from '../../lib/useUrlState'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import gsap from 'gsap'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, EmptyState, Input } from '../../components/ui'
 import {
@@ -35,6 +36,7 @@ import { DictionaryWordDetail } from './DictionaryWordDetail'
 import { DictionarySentenceDetail } from './DictionarySentenceDetail'
 import { DictionaryWordOfTheDay } from './DictionaryWordOfTheDay'
 import { playWashiPaperSound } from '../vocabulary/tactileAudio'
+import { getLastSpatialDirection, runSpatialTransition } from '../../lib/libraryTransition'
 
 const POPULAR_SEARCHES = ['学校', '先生', '桜', '儚い', '木漏れ日', 'もののあわれ', '幽玄', '勉強']
 
@@ -69,9 +71,13 @@ const CURATED_LEXICON_SHELVES = [
   },
 ] as const
 
-const VocabularyPage = lazy(() => import('../vocabulary/VocabularyPage'))
-const BunpoPage = lazy(() => import('../nhaikanji/BunpoPage').then((module) => ({ default: module.BunpoPage })))
-const KanjiPage = lazy(() => import('../nhaikanji/KanjiPage').then((module) => ({ default: module.KanjiPage })))
+const loadVocabularyPage = () => import('../vocabulary/VocabularyPage')
+const loadBunpoPage = () => import('../nhaikanji/BunpoPage').then((module) => ({ default: module.BunpoPage }))
+const loadKanjiPage = () => import('../nhaikanji/KanjiPage').then((module) => ({ default: module.KanjiPage }))
+
+const VocabularyPage = lazy(loadVocabularyPage)
+const BunpoPage = lazy(loadBunpoPage)
+const KanjiPage = lazy(loadKanjiPage)
 
 function grammarLink(item: BunpoItem) {
   const params = new URLSearchParams({ tab: 'grammar', book: item.bookId, lesson: item.lessonId, point: item.id })
@@ -398,11 +404,77 @@ export default function DictionaryPage({
   }
 
   const selectTab = (tab: DictionaryTab) => {
-    if (tab !== activeTab) {
-      playWashiPaperSound()
+    if (tab === activeTab) return
+    playWashiPaperSound()
+    if (effectiveMode === 'library') {
+      const order: DictionaryTab[] = ['vocabulary', 'kanji', 'grammar']
+      const prevIdx = order.indexOf(activeTab)
+      const nextIdx = order.indexOf(tab)
+      const dir = nextIdx >= prevIdx ? 'forward' : 'back'
+      runSpatialTransition(dir, () => {
+        setActiveTab(tab)
+      })
+      return
     }
     setActiveTab(tab)
   }
+
+  const tabsBarRef = useRef<HTMLDivElement>(null)
+  const stageViewportRef = useRef<HTMLDivElement>(null)
+  const prevTabRef = useRef<DictionaryTab>(activeTab)
+  const [glider, setGlider] = useState<{ left: number; width: number; ready: boolean }>({
+    left: 0,
+    width: 0,
+    ready: false,
+  })
+
+  // Preload all 3 Library chunks immediately so tab switches never flash a Suspense loader
+  useEffect(() => {
+    if (effectiveMode !== 'library') return
+    void loadVocabularyPage()
+    void loadKanjiPage()
+    void loadBunpoPage()
+  }, [effectiveMode])
+
+  const measureTabGlider = useCallback(() => {
+    const bar = tabsBarRef.current
+    if (!bar) return
+    const activeBtn = bar.querySelector<HTMLButtonElement>('[role="tab"].is-active')
+    if (!activeBtn || activeBtn.offsetWidth === 0) return
+    const pad = 10
+    setGlider({
+      left: activeBtn.offsetLeft + pad,
+      width: Math.max(16, activeBtn.offsetWidth - pad * 2),
+      ready: true,
+    })
+  }, [])
+
+  useLayoutEffect(() => {
+    measureTabGlider()
+  }, [activeTab, effectiveMode, searchTerm, isLessonFocusMode, measureTabGlider])
+
+  useEffect(() => {
+    const bar = tabsBarRef.current
+    if (!bar || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => measureTabGlider())
+    ro.observe(bar)
+    return () => ro.disconnect()
+  }, [measureTabGlider])
+
+  // Fallback spatial glide for browsers without CSS View Transitions
+  useLayoutEffect(() => {
+    if (prevTabRef.current === activeTab) return
+    prevTabRef.current = activeTab
+    if (effectiveMode !== 'library') return
+    const doc = typeof document !== 'undefined' ? (document as Document & { startViewTransition?: unknown }) : null
+    if (doc && typeof doc.startViewTransition === 'function') return
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const el = stageViewportRef.current
+    if (!el) return
+    const dir = getLastSpatialDirection() === 'forward' ? 1 : -1
+    gsap.killTweensOf(el)
+    gsap.fromTo(el, { x: dir * 38 }, { x: 0, duration: 0.34, ease: 'power3.out', clearProps: 'transform' })
+  }, [activeTab, effectiveMode])
 
   // Counts for search scopes
   const vocabCount = results.length
@@ -537,7 +609,8 @@ export default function DictionaryPage({
         {/* Dynamic Navigation Bar: 3 Fixed Library Tabs vs Deep Search Scopes */}
         {!isLessonFocusMode && (effectiveMode === 'library' || Boolean(searchTerm)) && (
           <div
-            className={`dictionary-tabs${!showDictionarySearch ? ' dictionary-tabs--flush' : ''}`}
+            ref={tabsBarRef}
+            className={`dictionary-tabs${!showDictionarySearch ? ' dictionary-tabs--flush' : ''}${glider.ready ? ' dictionary-tabs--gliding' : ''}`}
             role="tablist"
             onKeyDown={(event) => {
               if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -599,16 +672,29 @@ export default function DictionaryPage({
                     </button>
                   )
                 })}
+            {glider.ready && (
+              <span
+                className="dictionary-tabs__glider"
+                aria-hidden="true"
+                style={{
+                  width: `${glider.width}px`,
+                  transform: `translate3d(${glider.left}px, 0, 0)`,
+                }}
+              />
+            )}
           </div>
         )}
 
         <div
           className={`dictionary-workspace ${activeTab === 'kanji' || activeTab === 'vocabulary' || activeTab === 'grammar' ? 'is-kanji-art-mode' : ''}`}
         >
-          <div className="dictionary-workspace__main">
+          <div
+            ref={stageViewportRef}
+            className={`dictionary-workspace__main${effectiveMode === 'library' ? ' library-stage-viewport' : ''}`}
+          >
             {/* 1. VIEW: TAB HÁN TỰ */}
             {activeTab === 'kanji' && (
-              <div className="washi-tab-stage" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <Suspense fallback={<p role="status">Đang mở kho Hán tự…</p>}>
                   <KanjiPage
                     query={searchTerm}
@@ -651,11 +737,9 @@ export default function DictionaryPage({
 
             {/* 2. VIEW: TAB NGỮ PHÁP */}
             {activeTab === 'grammar' && !searchTerm && (
-              <div className="washi-tab-stage">
-                <Suspense fallback={<p role="status">Đang mở thư viện ngữ pháp…</p>}>
-                  <BunpoPage {...(onReview ? { onGoToSrs: onReview } : {})} />
-                </Suspense>
-              </div>
+              <Suspense fallback={<p role="status">Đang mở thư viện ngữ pháp…</p>}>
+                <BunpoPage {...(onReview ? { onGoToSrs: onReview } : {})} />
+              </Suspense>
             )}
             {activeTab === 'grammar' && Boolean(searchTerm) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -759,24 +843,22 @@ export default function DictionaryPage({
 
             {/* 3. VIEW: TAB TỦ SÁCH (THƯ VIỆN GIÁO TRÌNH WATOJI) */}
             {activeTab === 'vocabulary' && (
-              <div className="washi-tab-stage">
-                <Suspense
-                  fallback={
-                    <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-                      <Loader2
-                        size={32}
-                        className="animate-spin"
-                        style={{ margin: '0 auto', color: 'var(--color-accent-text)' }}
-                      />
-                      <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
-                        Đang mở tủ sách Kotodama...
-                      </p>
-                    </div>
-                  }
-                >
-                  <VocabularyPage {...(onReview ? { onGoToSrs: onReview } : {})} />
-                </Suspense>
-              </div>
+              <Suspense
+                fallback={
+                  <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+                    <Loader2
+                      size={32}
+                      className="animate-spin"
+                      style={{ margin: '0 auto', color: 'var(--color-accent-text)' }}
+                    />
+                    <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
+                      Đang mở tủ sách Kotodama...
+                    </p>
+                  </div>
+                }
+              >
+                <VocabularyPage {...(onReview ? { onGoToSrs: onReview } : {})} />
+              </Suspense>
             )}
 
             {/* 4. VIEW: TAB TỪ ĐIỂN, TẤT CẢ, HOẶC CÂU VÍ DỤ */}

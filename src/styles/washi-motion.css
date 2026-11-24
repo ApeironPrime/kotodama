@@ -1,7 +1,9 @@
 /* ==========================================================================
-   KOTODAMA WASHI & SUMI-E MOTION CHOREOGRAPHY (和紙と墨の動き)
-   Tactile, GPU-composited animations inspired by Watoji bookbinding,
-   Kakejiku hanging scrolls, Shoji screens, and Cinnabar Hanko seals.
+   KOTODAMA SPATIAL & 3D MOTION SYSTEM (空間と立体の動き)
+   Zero-blink continuous spatial motion:
+   1. Scoped directional View Transitions + gliding ink underline for tabs.
+   2. Unflattened 3D 180° two-sided physical card rotation (preserve-3d).
+   3. Tactile 3D Watoji book spine tilt, TOC Shiori bookmark, and Shodo modal.
    ========================================================================== */
 
 :root {
@@ -10,82 +12,7 @@
   --ease-hanko-stamp: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ─── Core Keyframes ──────────────────────────────────────────────────────── */
-
-@keyframes washi-rise-soft {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes washi-tab-veil {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 8px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes washi-cover-unfold {
-  0% {
-    opacity: 0;
-    transform: perspective(920px) rotateY(-14deg) translate3d(-10px, 6px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: perspective(920px) rotateY(0deg) translate3d(0, 0, 0);
-  }
-}
-
-@keyframes washi-progress-sweep {
-  0% {
-    transform: scaleX(0);
-  }
-  100% {
-    transform: scaleX(1);
-  }
-}
-
-@keyframes kakejiku-unroll {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, -8px, 0) scaleY(0.965);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scaleY(1);
-  }
-}
-
-@keyframes washi-card-flip-in {
-  0% {
-    opacity: 0;
-    transform: perspective(900px) rotateX(6deg) translate3d(0, 6px, 0) scale(0.988);
-  }
-  100% {
-    opacity: 1;
-    transform: perspective(900px) rotateX(0deg) translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes washi-brush-draw {
-  0% {
-    opacity: 0;
-    transform: scaleX(0.15);
-  }
-  100% {
-    opacity: 1;
-    transform: scaleX(1);
-  }
-}
+/* ─── Keyframes (Continuous physical motion, zero blank-page flashes) ─────── */
 
 @keyframes washi-hanko-slam {
   0% {
@@ -108,7 +35,7 @@
 
 @keyframes washi-seal-pop {
   0% {
-    transform: scale(0.82) rotate(-6deg);
+    transform: scale(0.84) rotate(-5deg);
   }
   55% {
     transform: scale(1.12) rotate(2deg);
@@ -120,11 +47,9 @@
 
 @keyframes shoji-drawer-in {
   0% {
-    opacity: 0.4;
     transform: translate3d(100%, 0, 0);
   }
   100% {
-    opacity: 1;
     transform: translate3d(0, 0, 0);
   }
 }
@@ -141,7 +66,7 @@
 @keyframes shodo-stage-unfold {
   0% {
     opacity: 0;
-    transform: translate3d(0, 12px, 0) scale(0.972);
+    transform: translate3d(0, 16px, 0) scale(0.96);
   }
   100% {
     opacity: 1;
@@ -149,25 +74,23 @@
   }
 }
 
-@keyframes shodo-realm-switch {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 6px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
 @keyframes washi-drawer-unfold {
   0% {
     opacity: 0;
-    transform: translate3d(0, -8px, 0) scaleY(0.97);
+    transform: translate3d(0, -10px, 0) scaleY(0.96);
   }
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scaleY(1);
+  }
+}
+
+@keyframes washi-progress-sweep {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
   }
 }
 
@@ -183,320 +106,113 @@
   }
 }
 
-/* ─── 1. Library 3-Tab Switcher & Workspace Stage (/tra-tu) ──────────────── */
+/* ─── 1. Gliding Tab Ink Bar & Scoped Library Stage (/tra-tu) ─────────────── */
 
-.dictionary-tabs button {
+.dictionary-tabs {
   position: relative;
+}
+
+.dictionary-tabs--gliding button {
   border-bottom-color: transparent !important;
   transition:
-    color 0.2s var(--ease-washi-out),
-    background-color 0.2s var(--ease-washi-out),
-    transform 0.2s var(--ease-washi-out);
+    color 0.22s var(--ease-washi-out),
+    background-color 0.22s var(--ease-washi-out);
 }
 
 .dictionary-tabs button svg {
-  transition: transform 0.22s var(--ease-washi-out);
+  transition: transform 0.24s var(--ease-washi-out);
 }
 
 .dictionary-tabs button:hover svg {
   transform: translateY(-1.5px);
 }
 
-.dictionary-tabs button::after {
-  content: '';
+.dictionary-tabs__glider {
   position: absolute;
-  left: 0.65rem;
-  right: 0.65rem;
-  bottom: -1px;
+  left: 0;
+  bottom: 0;
   height: 2.5px;
   border-radius: 2px 2px 0 0;
   background: var(--color-accent, #b82e2e);
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform 0.28s var(--ease-brush-sweep);
-}
-
-.dictionary-tabs button.is-active::after {
-  transform: scaleX(1);
-}
-
-.washi-tab-stage {
-  animation: washi-tab-veil 0.3s var(--ease-washi-out) both;
-}
-
-/* ─── 2. Global Quick Dictionary Overlay (Ctrl+K Shoji Drawer) ───────────── */
-
-.dict-overlay-backdrop {
-  animation: washi-backdrop-in 0.18s ease-out both;
-}
-
-.dict-overlay-drawer {
-  animation: shoji-drawer-in 0.28s var(--ease-brush-sweep) both;
-}
-
-.dict-overlay-item,
-.dict-overlay-kanji-card,
-.dict-overlay-shortcut-btn {
-  animation: washi-rise-soft 0.26s var(--ease-washi-out) both;
-  animation-delay: calc(min(var(--stagger-i, 0), 8) * 28ms);
+  pointer-events: none;
+  will-change: transform, width;
   transition:
-    border-color 0.18s var(--ease-washi-out),
-    transform 0.18s var(--ease-washi-out),
-    box-shadow 0.18s var(--ease-washi-out),
-    background-color 0.18s var(--ease-washi-out);
+    transform 0.36s var(--ease-washi-out),
+    width 0.36s var(--ease-washi-out),
+    opacity 0.18s ease;
 }
 
-.dict-overlay-item:hover {
-  border-color: rgba(184, 46, 46, 0.34);
-  transform: translate3d(2px, 0, 0);
-  box-shadow: 0 4px 14px -8px rgba(24, 21, 18, 0.14);
+.library-stage-viewport {
+  view-transition-name: library-stage;
+  will-change: transform;
 }
 
-.dict-overlay-chip {
-  transition:
-    border-color 0.16s var(--ease-washi-out),
-    color 0.16s var(--ease-washi-out),
-    transform 0.16s var(--ease-washi-out),
-    background-color 0.16s var(--ease-washi-out);
-}
+/* ─── 2. Unflattened True 3D 180° Two-Sided Flashcard Flipper ────────────── */
 
-.dict-overlay-chip:hover {
-  transform: translateY(-1px);
-}
-
-/* ─── 3. Bookshelf Catalog: Vocabulary (/tra-tu) & Grammar (/tra-tu?tab=grammar) ── */
-
-.curriculum-masthead {
-  animation: washi-rise-soft 0.32s var(--ease-washi-out) both;
-}
-
-.curriculum-toolbar {
-  animation: washi-rise-soft 0.34s var(--ease-washi-out) 0.04s both;
-}
-
-.curriculum-series-bar {
-  animation: washi-rise-soft 0.34s var(--ease-washi-out) 0.07s both;
-}
-
-.curriculum-track-section {
-  animation: washi-rise-soft 0.38s var(--ease-washi-out) both;
-  animation-delay: calc(0.08s + min(var(--track-i, 0), 4) * 55ms);
-}
-
-.curriculum-standing-shelf-cell {
-  animation: washi-rise-soft 0.36s var(--ease-washi-out) both;
-  animation-delay: calc(0.06s + min(var(--book-i, 0), 9) * 36ms);
-}
-
-/* 3D Spine-Hinged Watoji Book Physics & Paper Sheen */
-.watoji-cover__surface {
+/* CRITICAL: Never set overflow:hidden or filter on .washi-3d-scene or .washi-3d-flipper,
+   as CSS Transforms Level 2 flattens preserve-3d when those properties are present. */
+.washi-3d-scene {
+  perspective: 1650px;
+  -webkit-perspective: 1650px;
+  width: 100%;
   position: relative;
-  overflow: hidden;
 }
 
-.watoji-cover__surface::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 24%,
-    rgba(255, 252, 244, 0.18) 46%,
-    rgba(255, 252, 244, 0.04) 58%,
-    transparent 76%
-  );
-  transform: translate3d(-120%, 0, 0);
-  transition: transform 0.58s var(--ease-brush-sweep);
+.washi-3d-flipper {
+  display: grid;
+  width: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform: translate3d(0, 0, 0) rotateY(0deg);
+  transition: transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.washi-3d-flipper.is-flipped {
+  transform: translate3d(0, 0, 0) rotateY(180deg);
+}
+
+.washi-3d-flipper.is-instant {
+  transition: none !important;
+}
+
+.washi-3d-face {
+  grid-area: 1 / 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat;
+  box-shadow: 0 18px 34px -10px rgba(30, 29, 26, 0.14);
+}
+
+.washi-3d-face--front {
+  transform: rotateY(0deg) translateZ(1px);
+  z-index: 2;
+}
+
+.washi-3d-face--back {
+  transform: rotateY(180deg) translateZ(1px);
+}
+
+.washi-3d-flipper.is-flipped .washi-3d-face--front {
   pointer-events: none;
 }
 
-.curriculum-featured-spread {
-  transition:
-    transform 0.28s var(--ease-washi-out),
-    border-color 0.28s var(--ease-washi-out);
+.washi-3d-flipper:not(.is-flipped) .washi-3d-face--back {
+  pointer-events: none;
 }
 
-.curriculum-featured-spread:hover .watoji-cover,
-.curriculum-standing-book:hover .watoji-cover {
-  transform: perspective(920px) rotateY(-8deg) translate3d(0, -5px, 0);
-  box-shadow:
-    -6px 10px 22px rgba(28, 25, 23, 0.22),
-    0 3px 8px rgba(0, 0, 0, 0.1);
+/* Override legacy flat fade-in animation that caused white blink on flip */
+.washi-3d-face .curriculum-flashcard__flip-stage {
+  animation: none !important;
 }
 
-.curriculum-featured-spread:hover .watoji-cover__surface::after,
-.curriculum-standing-book:hover .watoji-cover__surface::after {
-  transform: translate3d(120%, 0, 0);
-}
-
-.watoji-cover__seal {
-  transition: transform 0.26s var(--ease-hanko-stamp);
-}
-
-.curriculum-featured-spread:hover .watoji-cover__seal,
-.curriculum-standing-book:hover .watoji-cover__seal {
-  transform: scale(1.06);
-}
-
-.curriculum-featured-spread__cta {
-  display: inline-flex;
-  align-items: center;
-  transition:
-    transform 0.22s var(--ease-washi-out),
-    color 0.22s var(--ease-washi-out);
-}
-
-.curriculum-featured-spread:hover .curriculum-featured-spread__cta {
-  transform: translate3d(4px, 0, 0);
-}
-
-.curriculum-hanko-srs-pill {
-  transition:
-    transform 0.2s var(--ease-washi-out),
-    border-color 0.2s var(--ease-washi-out),
-    background-color 0.2s var(--ease-washi-out),
-    box-shadow 0.2s var(--ease-washi-out);
-}
-
-.curriculum-hanko-srs-pill:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px -6px rgba(184, 46, 46, 0.24);
-}
-
-.curriculum-hanko-srs-pill:hover .curriculum-hanko-srs-pill__stamp {
-  animation: washi-seal-pop 0.32s var(--ease-hanko-stamp);
-}
-
-/* ─── 4. Course Detail & Printed Table of Contents (/tra-tu?course=...) ──── */
-
-.curriculum-book-banner__cover {
-  animation: washi-cover-unfold 0.46s var(--ease-brush-sweep) both;
-}
-
-.curriculum-book-banner__body {
-  animation: washi-rise-soft 0.38s var(--ease-washi-out) 0.06s both;
-}
-
-.curriculum-course-progress__fill,
-.curriculum-toc-progress__bar > span,
-.curriculum-book-progress-bar > span {
-  transform-origin: left center;
-  animation: washi-progress-sweep 0.62s var(--ease-brush-sweep) 0.12s both;
-}
-
-.curriculum-toc-header {
-  animation: washi-rise-soft 0.34s var(--ease-washi-out) 0.1s both;
-}
-
-.curriculum-toc-list > li {
-  animation: washi-rise-soft 0.32s var(--ease-washi-out) both;
-  animation-delay: calc(0.1s + min(var(--toc-i, 0), 14) * 24ms);
-}
-
-.curriculum-toc-row {
-  position: relative;
-  transition:
-    background-color 0.2s var(--ease-washi-out),
-    padding-left 0.2s var(--ease-washi-out);
-}
-
-.curriculum-toc-row::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.45rem;
-  bottom: 0.45rem;
-  width: 2.5px;
-  border-radius: 2px;
-  background: var(--color-accent, #b82e2e);
-  transform: scaleY(0);
-  transform-origin: center;
-  transition: transform 0.22s var(--ease-brush-sweep);
-}
-
-.curriculum-toc-row:hover::before,
-.curriculum-toc-row:focus-visible::before {
-  transform: scaleY(1);
-}
-
-.curriculum-toc-row__title {
-  transition:
-    transform 0.2s var(--ease-washi-out),
-    color 0.2s var(--ease-washi-out);
-}
-
-.curriculum-toc-row:hover .curriculum-toc-row__title {
-  transform: translate3d(3px, 0, 0);
-  color: var(--color-accent-text, #9f2626);
-}
-
-.curriculum-toc-row__index {
-  transition: color 0.2s var(--ease-washi-out);
-}
-
-.curriculum-toc-row:hover .curriculum-toc-row__index {
-  color: var(--color-accent, #b82e2e);
-}
-
-.curriculum-toc-row__chevron {
-  transition:
-    transform 0.2s var(--ease-washi-out),
-    color 0.2s var(--ease-washi-out);
-}
-
-.curriculum-toc-row:hover .curriculum-toc-row__chevron {
-  transform: translate3d(4px, 0, 0);
-  color: var(--color-accent, #b82e2e);
-}
-
-/* ─── 5. Kakejiku Study Stage (/tra-tu?course=...&unit=...) ──────────────── */
-
-.curriculum-study-bar {
-  animation: washi-rise-soft 0.28s var(--ease-washi-out) both;
-}
-
-.kakejiku-scroll {
-  transform-origin: top center;
-  animation: kakejiku-unroll 0.42s var(--ease-brush-sweep) both;
-}
-
-.curriculum-flashcard__flip-stage {
-  animation: washi-card-flip-in 0.28s var(--ease-washi-out) both;
-}
-
-.curriculum-flashcard__brush-rule {
-  transform-origin: center;
-  animation: washi-brush-draw 0.42s var(--ease-brush-sweep) 0.05s both;
-}
-
-.curriculum-flashcard__back-spread > *,
-.bunpo-kakejiku__back-groups > *,
-.bunpo-kakejiku__back-single > * {
-  animation: washi-rise-soft 0.26s var(--ease-washi-out) both;
-}
-
-.curriculum-flashcard__back-spread > *:nth-child(1),
-.bunpo-kakejiku__back-groups > *:nth-child(1),
-.bunpo-kakejiku__back-single > *:nth-child(1) {
-  animation-delay: 20ms;
-}
-
-.curriculum-flashcard__back-spread > *:nth-child(2),
-.bunpo-kakejiku__back-groups > *:nth-child(2),
-.bunpo-kakejiku__back-single > *:nth-child(2) {
-  animation-delay: 55ms;
-}
-
-.curriculum-flashcard__back-spread > *:nth-child(3),
-.bunpo-kakejiku__back-groups > *:nth-child(3),
-.bunpo-kakejiku__back-single > *:nth-child(3) {
-  animation-delay: 90ms;
-}
-
-.curriculum-flashcard__back-spread > *:nth-child(4),
-.bunpo-kakejiku__back-groups > *:nth-child(4),
-.bunpo-kakejiku__back-single > *:nth-child(4) {
-  animation-delay: 125ms;
+.washi-3d-face .curriculum-flashcard {
+  flex: 1;
 }
 
 .kakejiku-stamp-flash {
@@ -536,20 +252,190 @@
   transform: scale(1.07);
 }
 
-/* ─── 6. Kanji Ledger, Handwriting Pad & Flashcard (/tra-tu?tab=kanji) ───── */
+/* ─── 3. Global Quick Dictionary Overlay (Ctrl+K Shoji Drawer) ───────────── */
 
-.kanji-ledger-topbar {
-  animation: washi-rise-soft 0.28s var(--ease-washi-out) both;
+.dict-overlay-backdrop {
+  animation: washi-backdrop-in 0.2s ease-out both;
 }
 
-.kanji-ledger-controls {
-  animation: washi-rise-soft 0.32s var(--ease-washi-out) 0.04s both;
+.dict-overlay-drawer {
+  animation: shoji-drawer-in 0.3s var(--ease-brush-sweep) both;
 }
 
-.kanji-grid > .kanji-card:not(.kanji-card--skeleton) {
-  animation: washi-rise-soft 0.3s var(--ease-washi-out) both;
-  animation-delay: calc(min(var(--kanji-i, 0), 18) * 18ms);
+.dict-overlay-item,
+.dict-overlay-kanji-card,
+.dict-overlay-shortcut-btn {
+  transition:
+    border-color 0.18s var(--ease-washi-out),
+    transform 0.18s var(--ease-washi-out),
+    box-shadow 0.18s var(--ease-washi-out),
+    background-color 0.18s var(--ease-washi-out);
 }
+
+.dict-overlay-item:hover {
+  border-color: rgba(184, 46, 46, 0.34);
+  transform: translate3d(3px, 0, 0);
+  box-shadow: 0 4px 14px -8px rgba(24, 21, 18, 0.14);
+}
+
+.dict-overlay-chip {
+  transition:
+    border-color 0.16s var(--ease-washi-out),
+    color 0.16s var(--ease-washi-out),
+    transform 0.16s var(--ease-washi-out),
+    background-color 0.16s var(--ease-washi-out);
+}
+
+.dict-overlay-chip:hover {
+  transform: translateY(-1.5px);
+}
+
+/* ─── 4. 3D Spine-Hinged Watoji Book Physics & Paper Sheen (/tra-tu) ─────── */
+
+.watoji-cover__surface {
+  position: relative;
+  overflow: hidden;
+}
+
+.watoji-cover__surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 24%,
+    rgba(255, 252, 244, 0.2) 46%,
+    rgba(255, 252, 244, 0.04) 58%,
+    transparent 76%
+  );
+  transform: translate3d(-120%, 0, 0);
+  transition: transform 0.62s var(--ease-brush-sweep);
+  pointer-events: none;
+}
+
+.curriculum-featured-spread {
+  transition:
+    transform 0.28s var(--ease-washi-out),
+    border-color 0.28s var(--ease-washi-out);
+}
+
+.curriculum-featured-spread:hover .watoji-cover,
+.curriculum-standing-book:hover .watoji-cover {
+  transform: perspective(920px) rotateY(-9deg) translate3d(0, -6px, 0);
+  box-shadow:
+    -7px 12px 24px rgba(28, 25, 23, 0.24),
+    0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.curriculum-featured-spread:hover .watoji-cover__surface::after,
+.curriculum-standing-book:hover .watoji-cover__surface::after {
+  transform: translate3d(120%, 0, 0);
+}
+
+.watoji-cover__seal {
+  transition: transform 0.26s var(--ease-hanko-stamp);
+}
+
+.curriculum-featured-spread:hover .watoji-cover__seal,
+.curriculum-standing-book:hover .watoji-cover__seal {
+  transform: scale(1.07);
+}
+
+.curriculum-featured-spread__cta {
+  display: inline-flex;
+  align-items: center;
+  transition:
+    transform 0.22s var(--ease-washi-out),
+    color 0.22s var(--ease-washi-out);
+}
+
+.curriculum-featured-spread:hover .curriculum-featured-spread__cta {
+  transform: translate3d(5px, 0, 0);
+}
+
+.curriculum-hanko-srs-pill {
+  transition:
+    transform 0.2s var(--ease-washi-out),
+    border-color 0.2s var(--ease-washi-out),
+    background-color 0.2s var(--ease-washi-out),
+    box-shadow 0.2s var(--ease-washi-out);
+}
+
+.curriculum-hanko-srs-pill:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px -6px rgba(184, 46, 46, 0.24);
+}
+
+.curriculum-hanko-srs-pill:hover .curriculum-hanko-srs-pill__stamp {
+  animation: washi-seal-pop 0.32s var(--ease-hanko-stamp);
+}
+
+/* ─── 5. Course Detail & Printed Table of Contents (/tra-tu?course=...) ──── */
+
+.curriculum-course-progress__fill,
+.curriculum-toc-progress__bar > span,
+.curriculum-book-progress-bar > span {
+  transform-origin: left center;
+  animation: washi-progress-sweep 0.58s var(--ease-brush-sweep) both;
+}
+
+.curriculum-toc-row {
+  position: relative;
+  transition:
+    background-color 0.2s var(--ease-washi-out),
+    padding-left 0.2s var(--ease-washi-out);
+}
+
+.curriculum-toc-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  width: 2.5px;
+  border-radius: 2px;
+  background: var(--color-accent, #b82e2e);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.22s var(--ease-brush-sweep);
+}
+
+.curriculum-toc-row:hover::before,
+.curriculum-toc-row:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.curriculum-toc-row__title {
+  transition:
+    transform 0.2s var(--ease-washi-out),
+    color 0.2s var(--ease-washi-out);
+}
+
+.curriculum-toc-row:hover .curriculum-toc-row__title {
+  transform: translate3d(4px, 0, 0);
+  color: var(--color-accent-text, #9f2626);
+}
+
+.curriculum-toc-row__index {
+  transition: color 0.2s var(--ease-washi-out);
+}
+
+.curriculum-toc-row:hover .curriculum-toc-row__index {
+  color: var(--color-accent, #b82e2e);
+}
+
+.curriculum-toc-row__chevron {
+  transition:
+    transform 0.2s var(--ease-washi-out),
+    color 0.2s var(--ease-washi-out);
+}
+
+.curriculum-toc-row:hover .curriculum-toc-row__chevron {
+  transform: translate3d(5px, 0, 0);
+  color: var(--color-accent, #b82e2e);
+}
+
+/* ─── 6. Kanji Ledger & Handwriting Pad (/tra-tu?tab=kanji) ──────────────── */
 
 .kanji-card__char {
   transition:
@@ -558,7 +444,7 @@
 }
 
 .kanji-card:hover .kanji-card__char {
-  transform: translate3d(0, -2px, 0) scale(1.065);
+  transform: translate3d(0, -2px, 0) scale(1.07);
 }
 
 .kanji-card__radical-mark {
@@ -570,7 +456,7 @@
 
 .kanji-card:hover .kanji-card__radical-mark {
   color: var(--color-accent-text, #9f2626);
-  transform: scale(1.06);
+  transform: scale(1.07);
 }
 
 .kanji-card__save-btn {
@@ -589,12 +475,10 @@
 .kanji-handwriting-pad,
 .kanji-handwriting-drawer {
   transform-origin: top center;
-  animation: washi-drawer-unfold 0.26s var(--ease-brush-sweep) both;
+  animation: washi-drawer-unfold 0.28s var(--ease-brush-sweep) both;
 }
 
 .kanji-handwriting-candidate {
-  animation: washi-rise-soft 0.22s var(--ease-washi-out) both;
-  animation-delay: calc(min(var(--cand-i, 0), 10) * 24ms);
   transition:
     transform 0.18s var(--ease-washi-out),
     border-color 0.18s var(--ease-washi-out),
@@ -605,23 +489,27 @@
   transform: translateY(-2px);
 }
 
-.kanji-flashcard-stage {
-  animation: washi-rise-soft 0.3s var(--ease-washi-out) both;
-}
-
-.kanji-flashcard-front,
-.kanji-flashcard-back {
-  animation: washi-card-flip-in 0.26s var(--ease-washi-out) both;
+/* Kanji Inline 3D Flashcard */
+.kanji-flashcard-3d-face {
+  min-height: 250px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  padding: 1.75rem 1.5rem;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
 }
 
 /* ─── 7. Shodo Calligraphy & Genealogy Modal (/tra-tu?tab=kanji&kanji=三) ── */
 
 .shodo-theater-overlay {
-  animation: washi-backdrop-in 0.2s ease-out both;
+  animation: washi-backdrop-in 0.22s ease-out both;
 }
 
 .shodo-theater-scroll {
-  animation: shodo-stage-unfold 0.32s var(--ease-brush-sweep) both;
+  animation: shodo-stage-unfold 0.34s var(--ease-brush-sweep) both;
 }
 
 .shodo-side-paddle {
@@ -633,21 +521,11 @@
 }
 
 .shodo-side-paddle--prev:hover {
-  transform: translateY(-50%) translate3d(-3px, 0, 0);
+  transform: translateY(-50%) translate3d(-4px, 0, 0);
 }
 
 .shodo-side-paddle--next:hover {
-  transform: translateY(-50%) translate3d(3px, 0, 0);
-}
-
-.kanji-three-realms--animated {
-  animation: shodo-realm-switch 0.28s var(--ease-washi-out) both;
-}
-
-.kanji-realm-calligraphy,
-.kanji-realm-practice,
-.kanji-realm-illustration {
-  animation: shodo-realm-switch 0.24s var(--ease-washi-out) both;
+  transform: translateY(-50%) translate3d(4px, 0, 0);
 }
 
 .shodo-hanko-seal-btn.is-stamped .shodo-hanko-seal-box {
@@ -655,8 +533,6 @@
 }
 
 .shodo-vocab-row {
-  animation: washi-rise-soft 0.26s var(--ease-washi-out) both;
-  animation-delay: calc(min(var(--vocab-i, 0), 10) * 28ms);
   transition:
     background-color 0.18s var(--ease-washi-out),
     border-color 0.18s var(--ease-washi-out),
@@ -664,7 +540,7 @@
 }
 
 .shodo-vocab-row:hover {
-  transform: translate3d(2px, 0, 0);
+  transform: translate3d(3px, 0, 0);
 }
 
 .kanji-related-peer-btn,
@@ -681,7 +557,6 @@
   transform: translateY(-1.5px);
 }
 
-/* Acoustic Vermilion Soundwave Pulse when Speaking */
 .kanji-reading-pill-btn.is-playing,
 .shodo-audio-play-btn.is-playing,
 .shodo-sentence-audio-btn.is-playing,
@@ -693,50 +568,21 @@
 /* ─── Reduced Motion Guardrail ────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .washi-tab-stage,
+  .washi-3d-flipper,
+  .dictionary-tabs__glider,
   .dict-overlay-backdrop,
   .dict-overlay-drawer,
-  .dict-overlay-item,
-  .dict-overlay-kanji-card,
-  .dict-overlay-shortcut-btn,
-  .curriculum-masthead,
-  .curriculum-toolbar,
-  .curriculum-series-bar,
-  .curriculum-track-section,
-  .curriculum-standing-shelf-cell,
-  .curriculum-book-banner__cover,
-  .curriculum-book-banner__body,
   .curriculum-course-progress__fill,
   .curriculum-toc-progress__bar > span,
   .curriculum-book-progress-bar > span,
-  .curriculum-toc-header,
-  .curriculum-toc-list > li,
-  .curriculum-study-bar,
-  .kakejiku-scroll,
-  .curriculum-flashcard__flip-stage,
-  .curriculum-flashcard__brush-rule,
-  .curriculum-flashcard__back-spread > *,
-  .bunpo-kakejiku__back-groups > *,
-  .bunpo-kakejiku__back-single > *,
   .kakejiku-stamp-flash,
-  .kanji-ledger-topbar,
-  .kanji-ledger-controls,
-  .kanji-grid > .kanji-card,
   .kanji-card__save-btn.is-saved,
+  .kanji-handwriting-panel,
   .kanji-handwriting-pad,
   .kanji-handwriting-drawer,
-  .kanji-handwriting-candidate,
-  .kanji-flashcard-stage,
-  .kanji-flashcard-front,
-  .kanji-flashcard-back,
   .shodo-theater-overlay,
   .shodo-theater-scroll,
-  .kanji-three-realms--animated,
-  .kanji-realm-calligraphy,
-  .kanji-realm-practice,
-  .kanji-realm-illustration,
   .shodo-hanko-seal-btn.is-stamped .shodo-hanko-seal-box,
-  .shodo-vocab-row,
   .kanji-reading-pill-btn.is-playing,
   .shodo-audio-play-btn.is-playing,
   .shodo-sentence-audio-btn.is-playing,

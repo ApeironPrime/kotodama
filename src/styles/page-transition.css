@@ -12,6 +12,77 @@
   animation: washi-view-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Scoped Library Spatial Slide: keep root/navbar/tabs rock-steady, slide only library-stage */
+html[data-vt-scope='library']::view-transition-old(root),
+html[data-vt-scope='library']::view-transition-new(root) {
+  animation: none !important;
+}
+
+::view-transition-group(library-stage) {
+  animation-duration: 0.36s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-vt-scope='library'][data-vt-dir='forward']::view-transition-old(library-stage) {
+  animation: library-slide-out-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-vt-scope='library'][data-vt-dir='forward']::view-transition-new(library-stage) {
+  animation: library-slide-in-right 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-vt-scope='library'][data-vt-dir='back']::view-transition-old(library-stage) {
+  animation: library-slide-out-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-vt-scope='library'][data-vt-dir='back']::view-transition-new(library-stage) {
+  animation: library-slide-in-left 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes library-slide-out-left {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-48px, 0, 0);
+  }
+}
+
+@keyframes library-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translate3d(48px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes library-slide-out-right {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(48px, 0, 0);
+  }
+}
+
+@keyframes library-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translate3d(-48px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @keyframes washi-view-out {
   0% {
     opacity: 1;

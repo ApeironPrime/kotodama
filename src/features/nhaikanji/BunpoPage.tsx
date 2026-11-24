@@ -2,7 +2,8 @@ import { usePersistentState } from '../../lib/usePersistentState'
 import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { useUrlState } from '../../lib/useUrlState'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import gsap from 'gsap'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -28,6 +29,7 @@ import { StudyInkAtmosphere } from '../vocabulary/StudyInkAtmosphere'
 import { playWashiPaperSound } from '../vocabulary/tactileAudio'
 import { playPaperFlip, playSoftMiss, playStampSuccess } from '../vocabulary/soundEngine'
 import { sumiAudio } from '../dictionary/sumiAudio'
+import { runSpatialTransition } from '../../lib/libraryTransition'
 
 const GRAMMAR_CATALOG = [
   {
@@ -233,6 +235,13 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
   // In-Lesson Flashcard state
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [hasFlippedCard, setHasFlippedCard] = useState(false)
+  const [instantCardSwap, setInstantCardSwap] = useState(false)
+  const [cardDealTick, setCardDealTick] = useState(0)
+  const [cardDealDir, setCardDealDir] = useState<1 | -1>(1)
+  const cardSceneRef = useRef<HTMLDivElement>(null)
+  const catalogGridRef = useRef<HTMLDivElement>(null)
+  const didMountCatalogRef = useRef(false)
   const [stampBurstCount, setStampBurstCount] = useState(0)
   const [flipRippleCount, setFlipRippleCount] = useState(0)
   const [showStampFlash, setShowStampFlash] = useState(false)
@@ -409,20 +418,70 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     }
   }, [])
 
-  // Keyboard shortcut listener for in-lesson flashcard
-  const handleNextCard = () => {
+  const resetCardForDeal = useCallback((dir: 1 | -1) => {
+    setInstantCardSwap(true)
     setIsFlipped(false)
-    if (currentIndex < grammars.length - 1) {
-      setCurrentIndex((i) => i + 1)
+    setHasFlippedCard(false)
+    setCardDealDir(dir)
+    setCardDealTick((t) => t + 1)
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setInstantCardSwap(false))
+      })
+    } else {
+      setInstantCardSwap(false)
     }
-  }
+  }, [])
 
-  const handlePrevCard = () => {
-    setIsFlipped(false)
-    if (currentIndex > 0) {
-      setCurrentIndex((i) => i - 1)
+  useLayoutEffect(() => {
+    if (cardDealTick === 0) return
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const el = cardSceneRef.current
+    if (!el) return
+    gsap.killTweensOf(el)
+    gsap.fromTo(
+      el,
+      { x: cardDealDir * 68, y: 4, rotationZ: cardDealDir * 1.4, scale: 0.98 },
+      { x: 0, y: 0, rotationZ: 0, scale: 1, duration: 0.42, ease: 'power3.out', clearProps: 'transform' }
+    )
+  }, [cardDealTick, cardDealDir])
+
+  useLayoutEffect(() => {
+    if (selectedBook) return
+    if (!didMountCatalogRef.current) {
+      didMountCatalogRef.current = true
+      return
     }
-  }
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const container = catalogGridRef.current
+    if (!container) return
+    const items = container.querySelectorAll<HTMLElement>('.curriculum-featured-spread, .curriculum-standing-book')
+    if (!items.length) return
+    gsap.killTweensOf(items)
+    gsap.fromTo(
+      items,
+      { y: 12, scale: 0.988 },
+      { y: 0, scale: 1, duration: 0.28, stagger: 0.02, ease: 'power2.out', clearProps: 'transform' }
+    )
+  }, [selectedGrammarLevel, selectedGrammarSeries, selectedBook])
+
+  const handleNextCard = useCallback(() => {
+    if (currentIndex < grammars.length - 1) {
+      resetCardForDeal(1)
+      setCurrentIndex((i) => i + 1)
+    } else {
+      setIsFlipped(false)
+    }
+  }, [currentIndex, grammars.length, resetCardForDeal])
+
+  const handlePrevCard = useCallback(() => {
+    if (currentIndex > 0) {
+      resetCardForDeal(-1)
+      setCurrentIndex((i) => i - 1)
+    } else {
+      setIsFlipped(false)
+    }
+  }, [currentIndex, resetCardForDeal])
 
   const handleSaveToSrs = useCallback(
     async (item: CurriculumGrammar) => {
@@ -473,17 +532,30 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return
 
       if (e.code === 'Space') {
+        if (e.target instanceof Element && e.target.closest('button, a')) return
         e.preventDefault()
+        playPaperFlip()
+        setInstantCardSwap(false)
+        setHasFlippedCard(true)
+        setFlipRippleCount((c) => c + 1)
         setIsFlipped((f) => !f)
       } else if (e.key === 'z' || e.key === 'Z') {
         e.preventDefault()
         setKnownGrammars((prev) => [...new Set([...prev, currentCard.id])])
-        setIsFlipped(false)
-        setCurrentIndex((i) => (i < grammars.length - 1 ? i + 1 : i))
+        if (currentIndex < grammars.length - 1) {
+          resetCardForDeal(1)
+          setCurrentIndex((i) => i + 1)
+        } else {
+          setIsFlipped(false)
+        }
       } else if (e.key === 'x' || e.key === 'X') {
         e.preventDefault()
-        setIsFlipped(false)
-        setCurrentIndex((i) => (i < grammars.length - 1 ? i + 1 : i))
+        if (currentIndex < grammars.length - 1) {
+          resetCardForDeal(1)
+          setCurrentIndex((i) => i + 1)
+        } else {
+          setIsFlipped(false)
+        }
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault()
         const firstAudio = currentCard.examples?.find((e) => e.audio)?.audio
@@ -496,7 +568,18 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedLesson, stageMode, currentCard, isFlipped, grammars.length, handleSaveToSrs, playAudio, setKnownGrammars])
+  }, [
+    selectedLesson,
+    stageMode,
+    currentCard,
+    currentIndex,
+    isFlipped,
+    grammars.length,
+    handleSaveToSrs,
+    playAudio,
+    resetCardForDeal,
+    setKnownGrammars,
+  ])
 
   /** Check if a grammar item is saved — matches both local ID key and server term key */
   const isGrammarSaved = (item: CurriculumGrammar) =>
@@ -581,7 +664,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
     return (
       <div className="curriculum-container">
-        <div className="curriculum-paper-grid">
+        <div ref={catalogGridRef} className="curriculum-paper-grid">
           <header className="curriculum-masthead">
             <div className="curriculum-masthead__copy">
               <h1 className="curriculum-masthead__title">
@@ -685,8 +768,10 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                     type="button"
                     className="bunpo-pattern-hit"
                     onClick={() => {
-                      setSelectedBook(item.curriculumCode || 'shinkanzen_n3')
-                      setSelectedLesson(item.lessonId || '1')
+                      runSpatialTransition('forward', () => {
+                        setSelectedBook(item.curriculumCode || 'shinkanzen_n3')
+                        setSelectedLesson(item.lessonId || '1')
+                      })
                     }}
                   >
                     <div className="bunpo-pattern-hit__main">
@@ -715,7 +800,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
 
               return (
                 <section
-                  key={`${track.id}-${selectedGrammarLevel}-${selectedGrammarSeries}`}
+                  key={track.id}
                   className="curriculum-track-section"
                   style={{ '--track-i': trackIdx } as CSSProperties}
                   aria-labelledby={`heading-bunpo-${track.id}`}
@@ -742,12 +827,12 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                           tabIndex={0}
                           role="button"
                           aria-label={`Giáo trình ${featuredBook.title}, ${featuredBook.level}`}
-                          onClick={() => setSelectedBook(featuredBook.id)}
+                          onClick={() => runSpatialTransition('forward', () => setSelectedBook(featuredBook.id))}
                           onMouseEnter={() => playWashiPaperSound()}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault()
-                              setSelectedBook(featuredBook.id)
+                              runSpatialTransition('forward', () => setSelectedBook(featuredBook.id))
                             }
                           }}
                         >
@@ -826,12 +911,12 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                 tabIndex={0}
                                 role="button"
                                 aria-label={`Giáo trình ${book.title}, ${book.level}`}
-                                onClick={() => setSelectedBook(book.id)}
+                                onClick={() => runSpatialTransition('forward', () => setSelectedBook(book.id))}
                                 onMouseEnter={() => playWashiPaperSound()}
                                 onKeyDown={(event) => {
                                   if (event.key === 'Enter' || event.key === ' ') {
                                     event.preventDefault()
-                                    setSelectedBook(book.id)
+                                    runSpatialTransition('forward', () => setSelectedBook(book.id))
                                   }
                                 }}
                               >
@@ -911,11 +996,14 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     const resumeIdx = resumeLesson ? lessons.indexOf(resumeLesson) + 1 : 1
 
     const openLesson = (lessonId: string, initialMode: 'flashcard' | 'game' = 'flashcard') => {
-      setSelectedLesson(lessonId)
-      setStageMode(initialMode)
-      setCurrentIndex(0)
-      setIsFlipped(false)
-      resetGrammarQuiz()
+      runSpatialTransition('forward', () => {
+        setSelectedLesson(lessonId)
+        setStageMode(initialMode)
+        setCurrentIndex(0)
+        setIsFlipped(false)
+        setHasFlippedCard(false)
+        resetGrammarQuiz()
+      })
     }
 
     return (
@@ -924,7 +1012,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
           <button
             type="button"
             className="curriculum-unit-view__back-btn"
-            onClick={() => setSelectedBook(null)}
+            onClick={() => runSpatialTransition('back', () => setSelectedBook(null))}
             aria-label="Quay lại danh mục giáo trình"
           >
             <ArrowLeft size={16} aria-hidden="true" /> Quay lại danh sách sách
@@ -1073,6 +1161,8 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
     sumiAudio.initOnGesture()
     sumiAudio.playBrushFriction()
     playPaperFlip()
+    setInstantCardSwap(false)
+    setHasFlippedCard(true)
     setFlipRippleCount((c) => c + 1)
     setIsFlipped((f) => !f)
   }
@@ -1104,7 +1194,7 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       {/* 3.1 Compact Single-Row Study Bar */}
       <header className="curriculum-study-bar">
         <div className="curriculum-study-bar__left">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedLesson(null)}>
+          <Button variant="ghost" size="sm" onClick={() => runSpatialTransition('back', () => setSelectedLesson(null))}>
             <ArrowLeft size={16} aria-hidden="true" /> Danh sách bài học
           </Button>
 
@@ -1334,102 +1424,193 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                 </div>
               </div>
 
-              <div key={selectedLesson ?? 'lesson'} className="kakejiku-scroll">
-                <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true" />
+              {/* True 3D 180° Two-Sided Kakejiku Hanging Scroll */}
+              <div ref={cardSceneRef} className="washi-3d-scene">
+                {showStampFlash && (
+                  <div className="kakejiku-stamp-flash" aria-hidden="true">
+                    済
+                  </div>
+                )}
 
                 <div
                   role="button"
                   tabIndex={0}
                   aria-label="Lật thẻ ngữ pháp"
                   aria-expanded={isFlipped}
-                  className={`curriculum-flashcard bunpo-kakejiku-card${isFlipped ? ' is-flipped' : ''}`}
+                  className={`washi-3d-flipper${isFlipped ? ' is-flipped' : ''}${instantCardSwap ? ' is-instant' : ''}`}
                   onKeyDown={(event) => {
-                    if (event.target === event.currentTarget && event.key === 'Enter') {
+                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
                       event.preventDefault()
                       toggleGrammarCardFlip()
                     }
                   }}
                   onClick={toggleGrammarCardFlip}
                 >
-                  <img src="/assets/study-scroll-sumie.jpg" alt="" aria-hidden="true" className="kakejiku-art-bg" />
-                  <StudyInkAtmosphere burstTrigger={stampBurstCount} rippleTrigger={flipRippleCount} />
+                  {/* ── FRONT FACE (0deg) ── */}
+                  <div className="washi-3d-face washi-3d-face--front" aria-hidden={isFlipped}>
+                    <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true" />
+                    <div className="curriculum-flashcard bunpo-kakejiku-card">
+                      <img src="/assets/study-scroll-sumie.jpg" alt="" aria-hidden="true" className="kakejiku-art-bg" />
+                      <StudyInkAtmosphere burstTrigger={stampBurstCount} rippleTrigger={flipRippleCount} />
 
-                  {showStampFlash && (
-                    <div className="kakejiku-stamp-flash" aria-hidden="true">
-                      済
-                    </div>
-                  )}
-
-                  <div className="kakejiku-colophon" aria-hidden="true" lang="ja">
-                    {currentCard.level} · {currentLessonBadge} ·{' '}
-                    {currentCard.groups && currentCard.groups.length > 1 ? `${currentCard.groups.length}義` : '文法'}
-                  </div>
-
-                  <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
-                    <span>文法墨蹟</span>
-                    <span className="curriculum-flashcard__hanko">{isFlipped ? '裏' : '表'}</span>
-                  </div>
-
-                  <div
-                    key={`${currentCard.id}-${isFlipped ? 'back' : 'front'}`}
-                    className="curriculum-flashcard__center curriculum-flashcard__flip-stage"
-                  >
-                    {!isFlipped ? (
-                      <div className="bunpo-kakejiku__front">
-                        <div className="bunpo-kakejiku__pattern" lang="ja">
-                          {currentCard.pattern}
-                        </div>
-                        <div className="curriculum-flashcard__brush-rule" aria-hidden="true" />
-                        {currentCard.structure && (
-                          <div className="bunpo-kakejiku__structure">✦ Cấu trúc: {currentCard.structure}</div>
-                        )}
-                        {currentCard.groups && currentCard.groups.length > 1 && (
-                          <div className="bunpo-kakejiku__multi-row">
-                            <span className="bunpo-multi-tag">
-                              Gồm {currentCard.groups.length} nghĩa &amp; cách dùng
-                            </span>
-                          </div>
-                        )}
-                        <div className="curriculum-flashcard__cue is-first-card">
-                          <span aria-hidden="true">◇</span>
-                          <span>Nhấn [Space] hoặc chạm để lật xem ý nghĩa &amp; 1 ví dụ mỗi nghĩa</span>
-                        </div>
+                      <div className="kakejiku-colophon" aria-hidden="true" lang="ja">
+                        {currentCard.level} · {currentLessonBadge} ·{' '}
+                        {currentCard.groups && currentCard.groups.length > 1
+                          ? `${currentCard.groups.length}義`
+                          : '文法'}
                       </div>
-                    ) : (
-                      <div className="bunpo-kakejiku__back">
-                        <div className="bunpo-kakejiku__pattern--back" lang="ja">
-                          {currentCard.pattern}
-                        </div>
 
-                        {currentCard.groups && currentCard.groups.length > 1 ? (
-                          <div className="bunpo-kakejiku__back-groups">
+                      <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
+                        <span>文法墨蹟</span>
+                        <span className="curriculum-flashcard__hanko">表</span>
+                      </div>
+
+                      <div className="curriculum-flashcard__center">
+                        <div className="bunpo-kakejiku__front">
+                          <div className="bunpo-kakejiku__pattern" lang="ja">
+                            {currentCard.pattern}
+                          </div>
+                          <div className="curriculum-flashcard__brush-rule" aria-hidden="true" />
+                          {currentCard.structure && (
+                            <div className="bunpo-kakejiku__structure">✦ Cấu trúc: {currentCard.structure}</div>
+                          )}
+                          {currentCard.groups && currentCard.groups.length > 1 && (
                             <div className="bunpo-kakejiku__multi-row">
                               <span className="bunpo-multi-tag">
-                                Mẫu ngữ pháp có {currentCard.groups.length} nghĩa &amp; cách dùng
+                                Gồm {currentCard.groups.length} nghĩa &amp; cách dùng
                               </span>
                             </div>
+                          )}
+                          <div className="curriculum-flashcard__cue is-first-card">
+                            <span aria-hidden="true">◇</span>
+                            <span>Nhấn [Space] hoặc chạm để lật xem ý nghĩa &amp; 1 ví dụ mỗi nghĩa</span>
+                          </div>
+                        </div>
+                      </div>
 
-                            {currentCard.groups.map((group, gIdx) => {
-                              const firstEx = group.examples && group.examples[0]
-                              return (
-                                <div key={gIdx} className="bunpo-group-card">
-                                  <div className="bunpo-group-card__head">
-                                    <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
-                                    <span className="bunpo-group-card__meaning">
-                                      {group.meaning || group.usage || ''}
-                                    </span>
-                                  </div>
+                      <div className="curriculum-flashcard__footer">
+                        <span className="curriculum-flashcard__footer-meta">
+                          Mẫu {currentIndex + 1} / {grammars.length}
+                        </span>
+                        <span className="curriculum-flashcard__footer-keys">
+                          Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)
+                        </span>
+                      </div>
+                      <div className="curriculum-flashcard__rail" aria-hidden="true">
+                        <span
+                          style={{
+                            width: `${grammars.length > 0 ? ((currentIndex + 1) / grammars.length) * 100 : 0}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="kakejiku-rod kakejiku-rod--bottom" aria-hidden="true" />
+                  </div>
 
-                                  {group.structure && (
-                                    <div className="bunpo-group-card__structure">✦ {group.structure}</div>
-                                  )}
+                  {/* ── BACK FACE (180deg) ── */}
+                  <div className="washi-3d-face washi-3d-face--back" aria-hidden={!isFlipped}>
+                    <div className="kakejiku-rod kakejiku-rod--top" aria-hidden="true" />
+                    <div className="curriculum-flashcard bunpo-kakejiku-card is-flipped">
+                      <img src="/assets/study-scroll-sumie.jpg" alt="" aria-hidden="true" className="kakejiku-art-bg" />
 
-                                  {group.usage && group.usage !== group.meaning && (
-                                    <div className="bunpo-group-card__usage">◎ {group.usage}</div>
-                                  )}
+                      <div className="kakejiku-colophon" aria-hidden="true" lang="ja">
+                        {currentCard.level} · {currentLessonBadge} ·{' '}
+                        {currentCard.groups && currentCard.groups.length > 1
+                          ? `${currentCard.groups.length}義`
+                          : '文法'}
+                      </div>
 
-                                  {firstEx && (
-                                    <div className="bunpo-example-box bunpo-example-box--inline">
+                      <div className="curriculum-flashcard__tategaki" aria-hidden="true" lang="ja">
+                        <span>文法墨蹟</span>
+                        <span className="curriculum-flashcard__hanko">裏</span>
+                      </div>
+
+                      <div className="curriculum-flashcard__center">
+                        {(isFlipped || hasFlippedCard) && (
+                          <div className="bunpo-kakejiku__back">
+                            <div className="bunpo-kakejiku__pattern--back" lang="ja">
+                              {currentCard.pattern}
+                            </div>
+
+                            {currentCard.groups && currentCard.groups.length > 1 ? (
+                              <div className="bunpo-kakejiku__back-groups">
+                                <div className="bunpo-kakejiku__multi-row">
+                                  <span className="bunpo-multi-tag">
+                                    Mẫu ngữ pháp có {currentCard.groups.length} nghĩa &amp; cách dùng
+                                  </span>
+                                </div>
+
+                                {currentCard.groups.map((group, gIdx) => {
+                                  const firstEx = group.examples && group.examples[0]
+                                  return (
+                                    <div key={gIdx} className="bunpo-group-card">
+                                      <div className="bunpo-group-card__head">
+                                        <span className="bunpo-group-badge">Nghĩa {group.group_no || gIdx + 1}</span>
+                                        <span className="bunpo-group-card__meaning">
+                                          {group.meaning || group.usage || ''}
+                                        </span>
+                                      </div>
+
+                                      {group.structure && (
+                                        <div className="bunpo-group-card__structure">✦ {group.structure}</div>
+                                      )}
+
+                                      {group.usage && group.usage !== group.meaning && (
+                                        <div className="bunpo-group-card__usage">◎ {group.usage}</div>
+                                      )}
+
+                                      {firstEx && (
+                                        <div className="bunpo-example-box bunpo-example-box--inline">
+                                          <div className="bunpo-example-box__body">
+                                            <div
+                                              className="bunpo-example-box__jp"
+                                              lang="ja"
+                                              dangerouslySetInnerHTML={{
+                                                __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
+                                              }}
+                                            />
+                                            {firstEx.vi && <div className="bunpo-example-box__vi">{firstEx.vi}</div>}
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            className="washi-audio-btn"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              playAudio(firstEx.audio, firstEx.jp)
+                                            }}
+                                            title="Nghe đọc câu ví dụ"
+                                          >
+                                            <Volume2 size={16} />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            ) : (
+                              <div className="bunpo-kakejiku__back-single">
+                                <div className="bunpo-kakejiku__single-meaning">
+                                  {currentCard.shortMeaning || currentCard.explanation}
+                                </div>
+
+                                {currentCard.structure && (
+                                  <div className="bunpo-kakejiku__structure">✦ Cấu trúc: {currentCard.structure}</div>
+                                )}
+
+                                {currentCard.explanation && currentCard.explanation !== currentCard.shortMeaning && (
+                                  <div className="bunpo-kakejiku__single-explain">{currentCard.explanation}</div>
+                                )}
+
+                                {(() => {
+                                  const firstEx = currentCard.examples?.[0]
+                                  if (!firstEx) return null
+                                  return (
+                                    <div
+                                      className="bunpo-example-box bunpo-example-box--inline"
+                                      style={{ marginTop: '0.85rem' }}
+                                    >
                                       <div className="bunpo-example-box__body">
                                         <div
                                           className="bunpo-example-box__jp"
@@ -1453,81 +1634,33 @@ export function BunpoPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
                                         <Volume2 size={16} />
                                       </button>
                                     </div>
-                                  )}
-                                </div>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          <div className="bunpo-kakejiku__back-single">
-                            <div className="bunpo-kakejiku__single-meaning">
-                              {currentCard.shortMeaning || currentCard.explanation}
-                            </div>
-
-                            {currentCard.structure && (
-                              <div className="bunpo-kakejiku__structure">✦ Cấu trúc: {currentCard.structure}</div>
+                                  )
+                                })()}
+                              </div>
                             )}
-
-                            {currentCard.explanation && currentCard.explanation !== currentCard.shortMeaning && (
-                              <div className="bunpo-kakejiku__single-explain">{currentCard.explanation}</div>
-                            )}
-
-                            {(() => {
-                              const firstEx = currentCard.examples?.[0]
-                              if (!firstEx) return null
-                              return (
-                                <div
-                                  className="bunpo-example-box bunpo-example-box--inline"
-                                  style={{ marginTop: '0.85rem' }}
-                                >
-                                  <div className="bunpo-example-box__body">
-                                    <div
-                                      className="bunpo-example-box__jp"
-                                      lang="ja"
-                                      dangerouslySetInnerHTML={{
-                                        __html: sanitizeHtml(firstEx.jp_ruby || firstEx.jp),
-                                      }}
-                                    />
-                                    {firstEx.vi && <div className="bunpo-example-box__vi">{firstEx.vi}</div>}
-                                  </div>
-
-                                  <button
-                                    type="button"
-                                    className="washi-audio-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      playAudio(firstEx.audio, firstEx.jp)
-                                    }}
-                                    title="Nghe đọc câu ví dụ"
-                                  >
-                                    <Volume2 size={16} />
-                                  </button>
-                                </div>
-                              )
-                            })()}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="curriculum-flashcard__footer">
-                    <span className="curriculum-flashcard__footer-meta">
-                      Mẫu {currentIndex + 1} / {grammars.length}
-                    </span>
-                    <span className="curriculum-flashcard__footer-keys">
-                      Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)
-                    </span>
-                  </div>
-                  <div className="curriculum-flashcard__rail" aria-hidden="true">
-                    <span
-                      style={{
-                        width: `${grammars.length > 0 ? ((currentIndex + 1) / grammars.length) * 100 : 0}%`,
-                      }}
-                    />
+                      <div className="curriculum-flashcard__footer">
+                        <span className="curriculum-flashcard__footer-meta">
+                          Mặt sau · {currentIndex + 1} / {grammars.length}
+                        </span>
+                        <span className="curriculum-flashcard__footer-keys">
+                          Phím tắt: Space (Lật) · Z (Đã biết) · X (Chưa biết) · R (Phát âm) · C (Thêm SRS)
+                        </span>
+                      </div>
+                      <div className="curriculum-flashcard__rail" aria-hidden="true">
+                        <span
+                          style={{
+                            width: `${grammars.length > 0 ? ((currentIndex + 1) / grammars.length) * 100 : 0}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="kakejiku-rod kakejiku-rod--bottom" aria-hidden="true" />
                   </div>
                 </div>
-                <div className="kakejiku-rod kakejiku-rod--bottom" aria-hidden="true" />
               </div>
             </div>
 

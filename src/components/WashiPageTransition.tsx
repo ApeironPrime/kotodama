@@ -19,7 +19,7 @@ export default function WashiPageTransition() {
     }, 320)
 
     return () => clearTimeout(timer)
-  }, [location.pathname, location.search])
+  }, [location.pathname])
 
   return <div className={`washi-mist-overlay ${isTransitioning ? 'is-active' : ''}`} aria-hidden="true" />
 }

@@ -1,6 +1,7 @@
 import { useDialogAccessibility } from '../../lib/useDialogAccessibility'
-import { type CSSProperties, useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { type CSSProperties, useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import gsap from 'gsap'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   X,
@@ -103,9 +104,37 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
   const [illustrationError, setIllustrationError] = useState(false)
   const [historyStack, setHistoryStack] = useState<KanjiSummary[]>([kanjiSummary])
   const dialogRef = useRef<HTMLDivElement>(null)
+  const realmsRef = useRef<HTMLDivElement>(null)
+  const navDirRef = useRef<1 | -1>(1)
+  const didMountKanjiRef = useRef(false)
   useDialogAccessibility(dialogRef, onClose)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const queryClient = useQueryClient()
+
+  const navigateToKanji = useCallback(
+    (char: string, dir: 1 | -1 = 1) => {
+      if (!onSelectKanji) return
+      navDirRef.current = dir
+      onSelectKanji(char)
+    },
+    [onSelectKanji]
+  )
+
+  useLayoutEffect(() => {
+    if (!didMountKanjiRef.current) {
+      didMountKanjiRef.current = true
+      return
+    }
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const el = realmsRef.current
+    if (!el) return
+    gsap.killTweensOf(el)
+    gsap.fromTo(
+      el,
+      { x: navDirRef.current * 42 },
+      { x: 0, duration: 0.34, ease: 'power3.out', clearProps: 'transform' }
+    )
+  }, [kanjiSummary.kanji])
 
   useEffect(() => {
     setQuizCompleted(false)
@@ -122,9 +151,9 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
     if (historyStack.length <= 1 || !onSelectKanji) return
     const previous = historyStack[historyStack.length - 2]
     if (previous) {
-      onSelectKanji(previous.kanji)
+      navigateToKanji(previous.kanji, -1)
     }
-  }, [historyStack, onSelectKanji])
+  }, [historyStack, onSelectKanji, navigateToKanji])
 
   useEffect(
     () => () => {
@@ -144,10 +173,10 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
       }
       if (e.key === 'ArrowLeft' && kanjiSummary.prev_kanji && onSelectKanji) {
         e.preventDefault()
-        onSelectKanji(kanjiSummary.prev_kanji)
+        navigateToKanji(kanjiSummary.prev_kanji, -1)
       } else if (e.key === 'ArrowRight' && kanjiSummary.next_kanji && onSelectKanji) {
         e.preventDefault()
-        onSelectKanji(kanjiSummary.next_kanji)
+        navigateToKanji(kanjiSummary.next_kanji, 1)
       } else if (e.key === 'Backspace' && historyStack.length > 1 && onSelectKanji) {
         e.preventDefault()
         handleStepBackHistory()
@@ -159,7 +188,14 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [kanjiSummary.prev_kanji, kanjiSummary.next_kanji, onSelectKanji, historyStack.length, handleStepBackHistory])
+  }, [
+    kanjiSummary.prev_kanji,
+    kanjiSummary.next_kanji,
+    onSelectKanji,
+    historyStack.length,
+    handleStepBackHistory,
+    navigateToKanji,
+  ])
 
   useEffect(() => {
     setIllustrationError(false)
@@ -329,7 +365,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
   const hasAnyGraphData = allComponents.length > 0 || descendantNodes.length > 0
 
   const handleSelectConstellationKanji = (k: string) => {
-    if (onSelectKanji) onSelectKanji(k)
+    navigateToKanji(k, 1)
   }
 
   const radicalDisplayName =
@@ -350,7 +386,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
           className="shodo-side-paddle shodo-side-paddle--prev"
           onClick={(e) => {
             e.stopPropagation()
-            if (kanjiSummary.prev_kanji) onSelectKanji(kanjiSummary.prev_kanji)
+            if (kanjiSummary.prev_kanji) navigateToKanji(kanjiSummary.prev_kanji, -1)
           }}
           title={`Chữ trước: ${kanjiSummary.prev_kanji} (←)`}
           aria-label={`Chữ trước: ${kanjiSummary.prev_kanji}`}
@@ -443,7 +479,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
 
         {/* ─── 3-REALM MONOGRAPH BODY ──────────────────────────────────────── */}
         <div className="shodo-theater-body">
-          <div key={kanjiSummary.kanji} className="kanji-three-realms kanji-three-realms--animated">
+          <div ref={realmsRef} className="kanji-three-realms">
             {/* ── REALM 1: Bút pháp / Tập viết & Âm đọc (Left) ─────────── */}
             <div className="kanji-realm kanji-realm--visual">
               <div className="kanji-realm-toggle" role="group" aria-label="Chế độ bảng chữ">
@@ -832,7 +868,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
           className="shodo-side-paddle shodo-side-paddle--next"
           onClick={(e) => {
             e.stopPropagation()
-            if (kanjiSummary.next_kanji) onSelectKanji(kanjiSummary.next_kanji)
+            if (kanjiSummary.next_kanji) navigateToKanji(kanjiSummary.next_kanji, 1)
           }}
           title={`Chữ kế: ${kanjiSummary.next_kanji} (→)`}
           aria-label={`Chữ kế: ${kanjiSummary.next_kanji}`}
