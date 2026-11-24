@@ -21,7 +21,6 @@ import {
   Shuffle,
   Volume2,
   VolumeX,
-  Sparkles,
   X,
 } from 'lucide-react'
 import { Button } from '../../components/ui'
@@ -44,7 +43,6 @@ import { HorizontalBookshelf } from './HorizontalBookshelf'
 import { KaikaShokoModal } from './KaikaShokoModal'
 import { LessonMiniGame } from './LessonMiniGame'
 import { StudyInkAtmosphere } from './StudyInkAtmosphere'
-import { WashiGoldDustCanvas } from './WashiGoldDustCanvas'
 import { sumiAudio } from '../dictionary/sumiAudio'
 import { splitSentenceByKeyword } from './kanaRomaji'
 import {
@@ -781,39 +779,7 @@ export function VocabularyPage({ onGoToSrs }: { onGoToSrs?: () => void }) {
       <div className="curriculum-container">
         {/* Washi Canvas Frame */}
         <div className="curriculum-paper-grid">
-          <div className="curriculum-paper-grid__mist" aria-hidden="true" />
-          {/* Creative Engineering: Interactive Kyoto Gold Dust Shimmer Canvas */}
-          <WashiGoldDustCanvas />
-
-          {/* Hero Header */}
-          <header className="curriculum-hero">
-            <div className="curriculum-hero__layout">
-              <div className="curriculum-hero__main">
-                <div className="curriculum-hero__eyebrow">
-                  <span className="curriculum-hero__hanko" aria-hidden="true">
-                    庫
-                  </span>
-                  <Sparkles size={14} aria-hidden="true" />
-                  <span>THƯ VIỆN TUYỂN CHỌN KOTODAMA • 文庫</span>
-                </div>
-                <h1 className="curriculum-hero__title">Học bản chất – không học vẹt</h1>
-                <p className="curriculum-hero__desc">
-                  Khám phá các bộ giáo trình từ vựng theo chuẩn JLPT và khung CEFR/SE. Không chạy theo số lượng cơ học —
-                  mỗi bộ giáo trình đại diện cho một phương pháp sư phạm riêng biệt: từ xây dựng nền móng cốt lõi, phản
-                  xạ ngữ cảnh, đến bứt phá điểm thi theo tuần và thuật ngữ chuyên ngành.
-                </p>
-              </div>
-              <aside className="curriculum-hero__aside" aria-hidden="true">
-                <span className="curriculum-hero__jp" lang="ja">
-                  読書百遍・意自ずから通ず
-                </span>
-                <div className="curriculum-hero__pills">
-                  <span>Chuẩn JLPT N5–N1</span>
-                  <span>Flashcard &amp; Karuta</span>
-                </div>
-              </aside>
-            </div>
-          </header>
+          <h1 className="visually-hidden">Tủ sách</h1>
 
           {/* Search, Level Filters & Hanko SRS Toolbar */}
           <div className="curriculum-toolbar">

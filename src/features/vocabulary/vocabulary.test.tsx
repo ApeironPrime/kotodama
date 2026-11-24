@@ -267,20 +267,16 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     })
   })
 
-  it('renders hero title "Học bản chất – không học vẹt" and course cards grouped by level', async () => {
+  it('renders catalog filters and course cards without the intro banner', async () => {
     renderWithClient(<VocabularyPage />)
 
-    // 1. Hero text
-    expect(await screen.findByText('Học bản chất – không học vẹt')).toBeTruthy()
-    expect(screen.getByText(/Khám phá các bộ giáo trình từ vựng theo chuẩn JLPT/i)).toBeTruthy()
-
-    // 2. Filter tabs
+    expect(screen.getByRole('heading', { name: 'Tủ sách', level: 1 })).toBeTruthy()
+    expect(screen.queryByText('Học bản chất – không học vẹt')).toBeNull()
     expect(screen.getByRole('tab', { name: 'Tất cả' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'N5' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'N3' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'SE IT' })).toBeTruthy()
 
-    // 3. Courses rendered under level group headings
     expect(await screen.findByText('Minna no Nihongo N5 Chuẩn')).toBeTruthy()
     expect(screen.getByText('Nihongo Soumatome N3 Từ Vựng')).toBeTruthy()
     expect(screen.getByText('Tiếng Nhật CNTT (SE IT)')).toBeTruthy()
@@ -341,8 +337,8 @@ describe('VocabularyPage Suite (Task T05 & T06)', () => {
     const backBtn = screen.getByRole('button', { name: /Quay lại danh mục giáo trình/i })
     fireEvent.click(backBtn)
 
-    expect(await screen.findByText('Học bản chất – không học vẹt')).toBeTruthy()
-    expect(screen.getByText('Minna no Nihongo N5 Chuẩn')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Tất cả' })).toBeTruthy()
+    expect(await screen.findByText('Minna no Nihongo N5 Chuẩn')).toBeTruthy()
   })
 
   it('supports keyboard navigation (Enter key on course card, Space key on filter pill)', async () => {
