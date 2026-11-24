@@ -24,7 +24,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react'
-import { Badge, Button } from '../../components/ui'
+import { Button } from '../../components/ui'
 import { RetryState } from '../../components/AppStates'
 import { srsApi } from '../srs/srsApi'
 import type { CurriculumWord } from '../srs/srsTypes'
