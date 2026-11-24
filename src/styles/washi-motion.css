@@ -513,9 +513,9 @@
 
 .shiori-attached-drawer {
   position: fixed;
-  top: 4rem;
+  top: calc(5.15rem + 1rem);
   right: 0;
-  bottom: 0;
+  bottom: 1.25rem;
   width: min(calc(100vw - 46px), 480px);
   z-index: 65;
   transform: translate3d(100%, 0, 0);
@@ -535,7 +535,7 @@
   position: absolute;
   left: 1px;
   right: auto;
-  top: 44%;
+  top: 46%;
   transform: translate3d(-100%, -50%, 0);
   margin: 0;
   writing-mode: vertical-rl;
@@ -618,8 +618,12 @@
   flex: 1;
   height: 100%;
   background: var(--color-surface);
-  border-left: 1px solid var(--color-border);
-  box-shadow: -16px 0 38px -14px rgba(32, 26, 20, 0.18);
+  border: 1px solid var(--color-border);
+  border-right: none;
+  border-radius: 14px 0 0 14px;
+  box-shadow:
+    -14px 10px 36px -14px rgba(32, 26, 20, 0.2),
+    -2px 0 12px -4px rgba(32, 26, 20, 0.08);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -642,9 +646,16 @@
   padding-right: 0.25rem;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 999px) {
   .shiori-attached-drawer {
-    top: 3.5rem;
+    top: calc(5rem + 0.85rem);
+  }
+}
+
+@media (max-width: 800px) {
+  .shiori-attached-drawer {
+    top: calc(4.25rem + 0.75rem);
+    bottom: calc(4.25rem + env(safe-area-inset-bottom) + 0.75rem);
   }
 }
 
