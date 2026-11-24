@@ -128,6 +128,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
   const [staticPage, setStaticPage] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const hudRef = useRef<HTMLElement | null>(null)
   const particlesRef = useRef<GlyphParticle[]>([])
   const rowHeightRef = useRef(GLYPH_ROW_HEIGHT)
   const outgoingParticlesRef = useRef<OutgoingParticle[]>([])
@@ -339,7 +340,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       const cols = width < 480 ? 3 : width < 640 ? 4 : width < 960 ? 6 : 8
       const insetX = Math.min(64, width * 0.12)
       const colWidth = (width - insetX * 2) / cols
-      const insetY = 48
+      const insetY = Math.min(48, viewportHeight * 0.16)
       const innerHeight = viewportHeight - insetY * 2
       const rowsInView = Math.max(1, Math.round(innerHeight / GLYPH_ROW_HEIGHT))
       const rowHeight = innerHeight / rowsInView
@@ -407,16 +408,33 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
     [items]
   )
 
-  // Canvas size and resize handler - STRICT VIEWPORT BOUNDS (Maximum 740px height)
   useEffect(() => {
     const canvas = canvasRef.current
     const container = containerRef.current
-    if (!canvas || !container) return
+    const hud = hudRef.current
+    if (!canvas || !container || !hud) return
+
+    const mobileNav = document.querySelector<HTMLElement>('.nav-mobile')
+    const kanjiPage = container.closest('.kanji-ledger-root')
+    let resizeFrame = 0
+    let lastWidth = 0
+    let lastHeight = 0
+    let lastDpr = 0
 
     const updateSize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
       const width = container.clientWidth
-      const viewportHeight = Math.min(740, Math.max(520, window.innerHeight - 240))
+      // Keep the same canvas size when the user scrolls the page.
+      const panelTop = container.getBoundingClientRect().top + window.scrollY
+      const bottomNavHeight = mobileNav?.offsetHeight ?? 0
+      const frameBorder = container.offsetHeight - container.clientHeight
+      const availableHeight = window.innerHeight - panelTop - hud.offsetHeight - bottomNavHeight - frameBorder - 12
+      const viewportHeight = Math.max(150, Math.floor(availableHeight))
+      if (!width || (width === lastWidth && viewportHeight === lastHeight && dpr === lastDpr)) return
+
+      lastWidth = width
+      lastHeight = viewportHeight
+      lastDpr = dpr
 
       canvas.width = width * dpr
       canvas.height = viewportHeight * dpr
@@ -431,9 +449,23 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
       layoutParticles(width, viewportHeight)
     }
 
+    const scheduleResize = () => {
+      cancelAnimationFrame(resizeFrame)
+      resizeFrame = requestAnimationFrame(updateSize)
+    }
+    const observer = new ResizeObserver(scheduleResize)
+    observer.observe(container)
+    observer.observe(hud)
+    if (kanjiPage) observer.observe(kanjiPage)
+    if (mobileNav) observer.observe(mobileNav)
+
     updateSize()
-    window.addEventListener('resize', updateSize)
-    return () => window.removeEventListener('resize', updateSize)
+    window.addEventListener('resize', scheduleResize)
+    return () => {
+      window.removeEventListener('resize', scheduleResize)
+      observer.disconnect()
+      cancelAnimationFrame(resizeFrame)
+    }
   }, [items, layoutParticles, reducedMotion])
 
   // Native wheel scroll / zoom listener
@@ -1676,7 +1708,7 @@ export const SumiECanvas: React.FC<SumiECanvasProps> = ({ items, activeLevel, on
   return (
     <div className="sumi-e-container" ref={containerRef}>
       {/* ─── WHISPER HUD (Giao diện điều khiển vi mô) ────────────────────── */}
-      <header className="sumi-e-hud" aria-label="Bảng điều khiển thủy mặc">
+      <header className="sumi-e-hud" ref={hudRef} aria-label="Bảng điều khiển thủy mặc">
         {/* Minimalist JLPT Level Selector (Tất cả, N5 - N1) */}
         <nav className="sumi-e-levels" aria-label="Chọn cấp độ Hán tự">
           {JLPT_LEVELS.map((lvl) => {
