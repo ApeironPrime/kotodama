@@ -11,10 +11,10 @@ import type { KanjiDetailData, KanjiSummary } from './nhaikanjiTypes'
 vi.mock('./nhaikanjiApi', () => ({
   nhaikanjiApi: {
     fetchKanjiList: vi.fn(),
-    fetchKanjiRadicals: vi.fn(),
     fetchKanjiDetail: vi.fn(),
     fetchKanjiStrokes: vi.fn(),
     fetchKanjiBrushData: vi.fn(),
+    recognizeHandwriting: vi.fn(),
     getKanjiIllustrationUrl: vi.fn((c: string) => `/api/v1/nhaikanji/illustration/${c}`),
   },
 }))
@@ -145,19 +145,7 @@ describe('KanjiPage Washi Ledger Suite', () => {
       levelCounts: { ALL: 2, N5: 1, N4: 1, N3: 0, N2: 0, N1: 0 },
       catalogCounts: { ALL: 2517, N5: 118, N4: 209, N3: 375, N2: 505, N1: 1310 },
     })
-    vi.mocked(nhaikanjiApi.fetchKanjiRadicals).mockResolvedValue({
-      radicals: [
-        {
-          glyph: '水',
-          variants: ['水', '氵'],
-          nameVi: 'Thủy',
-          meaningVi: 'Nước',
-          strokeCount: 4,
-          count: 132,
-        },
-      ],
-      totalRadicals: 1,
-    })
+    vi.mocked(nhaikanjiApi.recognizeHandwriting).mockResolvedValue({ candidates: sampleKanji, source: 'ime' })
     vi.mocked(nhaikanjiApi.fetchKanjiDetail).mockImplementation(async (char: string) =>
       char === '海' ? sampleDetailSea : sampleDetailWater
     )
@@ -171,7 +159,7 @@ describe('KanjiPage Washi Ledger Suite', () => {
     })
   })
 
-  it('renders editorial masthead, live level counts, and zero native select controls', async () => {
+  it('renders dedicated search console, live level counts, 1-click Lưu button, and zero native select controls', async () => {
     const { container } = renderKanjiPage()
 
     expect(await screen.findByRole('heading', { name: 'Kho Hán Tự (Kanji) & Chiết Tự' })).toBeTruthy()
@@ -179,59 +167,54 @@ describe('KanjiPage Washi Ledger Suite', () => {
     expect(await screen.findByText('THỦY')).toBeTruthy()
     expect(screen.getByText('HẢI')).toBeTruthy()
     expect(screen.getByRole('tab', { name: /Kanji N5/ }).textContent).toContain('1')
+    expect(screen.getByLabelText('Tìm kiếm Hán tự')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Vẽ chữ/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Bộ thủ/ })).toBeNull()
+    expect(screen.queryByText('Chưa lưu')).toBeNull()
+    expect(screen.getAllByRole('button', { name: /^Lưu / }).length).toBe(2)
   })
 
-  it('supports stroke range pills and custom editorial sort controls', async () => {
+  it('toggles handwriting pad and supports dedicated multi-script search', async () => {
     renderKanjiPage()
     await screen.findByText('THỦY')
 
-    fireEvent.click(screen.getByRole('button', { name: '5–8 nét' }))
-    await waitFor(() =>
-      expect(nhaikanjiApi.fetchKanjiList).toHaveBeenCalledWith(
-        expect.objectContaining({ strokeMin: 5, strokeMax: 8, page: 1 })
-      )
-    )
+    fireEvent.click(screen.getByRole('button', { name: /Vẽ chữ/ }))
+    expect(await screen.findByRole('region', { name: 'Bảng vẽ nhận diện Hán tự' })).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ít → Nhiều nét' }))
+    const searchInput = screen.getByLabelText('Tìm kiếm Hán tự')
+    fireEvent.change(searchInput, { target: { value: 'mizu' } })
     await waitFor(() =>
-      expect(nhaikanjiApi.fetchKanjiList).toHaveBeenCalledWith(expect.objectContaining({ sort: 'stroke_asc' }))
+      expect(nhaikanjiApi.fetchKanjiList).toHaveBeenCalledWith(expect.objectContaining({ query: 'mizu', page: 1 }))
     )
   })
 
-  it('opens the 214 Radicals drawer on demand, filters by radical, and opens detail modal with audio & peer jump', async () => {
+  it('opens detail modal without footer, with header SRS save, individual reading pills, and blank-outline practice', async () => {
     renderKanjiPage()
     await screen.findByText('THỦY')
-
-    expect(nhaikanjiApi.fetchKanjiRadicals).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: /Bộ thủ/ }))
-
-    const waterTile = await screen.findByRole('button', { name: /水\s*Thủy/ })
-    fireEvent.click(waterTile)
-
-    await waitFor(() =>
-      expect(nhaikanjiApi.fetchKanjiList).toHaveBeenCalledWith(expect.objectContaining({ radical: '水', page: 1 }))
-    )
 
     // Open KanjiDetailModal
     fireEvent.click(screen.getByText('THỦY'))
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toBeTruthy()
     expect(within(dialog).queryByRole('button', { name: 'Diễn lại bút pháp' })).toBeNull()
-    expect(within(dialog).getByRole('button', { name: 'Đóng' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Đóng sân khấu thư pháp' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Lưu sổ tay' })).toBeTruthy()
     expect(await within(dialog).findByText('水曜日')).toBeTruthy()
     expect(within(dialog).getByRole('button', { name: 'Nghe phát âm 水曜日' })).toBeTruthy()
     expect(within(dialog).getByRole('button', { name: 'Nghe câu 水曜日に会いましょう。' })).toBeTruthy()
-    expect(within(dialog).queryByRole('button', { name: /Minh họa/ })).toBeNull()
+    expect(within(dialog).getByRole('button', { name: 'スイ' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'みず' })).toBeTruthy()
     expect(await within(dialog).findByText('Cùng bộ 水 (Thủy)')).toBeTruthy()
 
-    // Navigate to peer 海 and verify Exploration Breadcrumb Trail in footer
+    // Navigate to peer 海 and verify Exploration Back button in header
     fireEvent.click(within(dialog).getByRole('button', { name: /海\s*HẢI/ }))
     expect(await within(dialog).findByRole('button', { name: 'Quay lại 水' })).toBeTruthy()
 
-    // Switch to merged Practice view inside Column 1 and verify dual dojo mode
+    // Switch to Practice view and verify ONLY Chấm nét chuẩn (no Vung cọ tự do) & glyph masked
     fireEvent.click(within(dialog).getByRole('button', { name: /Luyện viết nét/i }))
-    expect(within(dialog).getByRole('button', { name: 'Chấm nét chuẩn' })).toBeTruthy()
-    expect(within(dialog).getByRole('button', { name: 'Vung cọ tự do' })).toBeTruthy()
+    expect(within(dialog).queryByRole('button', { name: 'Vung cọ tự do' })).toBeNull()
+    expect(within(dialog).getByText(/？ • HẢI/)).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: /Bút pháp/i })).toBeTruthy()
   })
 
   it('supports inline Lật thẻ flashcard study mode right inside KanjiPage', async () => {

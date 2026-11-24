@@ -17,7 +17,6 @@ import {
 import { nhaikanjiApi } from './nhaikanjiApi'
 import { apiPaths } from '../../lib/apiClient'
 import type { KanjiSummary, KanjiVocabExample } from './nhaikanjiTypes'
-import { KanjiCanvas } from './KanjiCanvas'
 import { KanjiStrokeQuiz } from './KanjiStrokeQuiz'
 import { KanjiConstellationGraph, type ConstellationMode } from './KanjiConstellationGraph'
 import { KanjiStrokePlayer } from './KanjiStrokePlayer'
@@ -75,11 +74,28 @@ function extractOtherKanjiChars(word: string, focalKanji: string): string[] {
   return out
 }
 
+function parseKanjiReadings(raw?: string): Array<{ display: string; spoken: string }> {
+  if (!raw) return []
+  const parts = raw
+    .split(/[,、;；/\s]+/)
+    .map((s) => s.trim())
+    .filter((s) => Boolean(s) && s !== '-' && s !== '—')
+  const seen = new Set<string>()
+  const result: Array<{ display: string; spoken: string }> = []
+  for (const part of parts) {
+    const spoken = part.replace(/[.\-・（）()]/g, '').trim()
+    if (!spoken || seen.has(spoken)) continue
+    seen.add(spoken)
+    result.push({ display: part, spoken })
+  }
+  return result
+}
+
 export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilterByRadical }: KanjiDetailModalProps) {
   const { user } = useAuth()
   const [saveError, setSaveError] = useState<string | null>(null)
   const [stageMode, setStageMode] = useState<'stroke' | 'practice' | 'illustration'>('stroke')
-  const [practiceMode, setPracticeMode] = useState<'quiz' | 'brush'>('quiz')
+  const [quizCompleted, setQuizCompleted] = useState(false)
   const [graphMode, setGraphMode] = useState<ConstellationMode>('auto')
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const [savedSrs, setSavedSrs] = useState<Record<string, boolean>>({})
@@ -91,6 +107,7 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
   const queryClient = useQueryClient()
 
   useEffect(() => {
+    setQuizCompleted(false)
     setHistoryStack((prev) => {
       const existingIdx = prev.findIndex((item) => item.kanji === kanjiSummary.kanji)
       if (existingIdx >= 0) {
@@ -363,7 +380,9 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
               </span>
               <div className="shodo-theater-title-row">
                 <span className="shodo-theater-title">
-                  {kanjiSummary.kanji} • {kanjiSummary.hanzi}
+                  {stageMode === 'practice' && !quizCompleted
+                    ? `？ • ${kanjiSummary.hanzi}`
+                    : `${kanjiSummary.kanji} • ${kanjiSummary.hanzi}`}
                 </span>
                 <span className="shodo-theater-meta-pill">
                   {kanjiSummary.jlpt_level || 'N5'} · {kanjiSummary.stroke_count} nét
@@ -377,6 +396,31 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
               <p role="alert" className="ui-error-text">
                 {saveError}
               </p>
+            )}
+            {historyStack.length > 1 && onSelectKanji && (
+              <button
+                type="button"
+                className="shodo-history-back"
+                onClick={handleStepBackHistory}
+                title="Quay lại chữ vừa xem (Backspace)"
+              >
+                <ArrowLeft size={13} aria-hidden="true" />
+                <span>Quay lại {historyStack[historyStack.length - 2]?.kanji}</span>
+              </button>
+            )}
+            {!isRadicalOnly && (
+              <button
+                type="button"
+                className={`shodo-hanko-seal-btn ${isKanjiSaved ? 'is-stamped' : ''}`}
+                onClick={handleSaveKanjiToSrs}
+                title={isKanjiSaved ? 'Đã lưu Hán tự vào sổ tay SRS' : 'Lưu Hán tự vào sổ tay SRS'}
+                aria-label={isKanjiSaved ? 'Đã lưu sổ tay' : 'Lưu sổ tay'}
+              >
+                <span className="shodo-hanko-seal-box">
+                  <span className="shodo-hanko-seal-glyph">{isKanjiSaved ? '済' : '印'}</span>
+                </span>
+                <span className="shodo-hanko-seal-label">{isKanjiSaved ? 'Đã lưu SRS' : 'Lưu vào SRS'}</span>
+              </button>
             )}
             <button
               type="button"
@@ -406,7 +450,10 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
                 <button
                   type="button"
                   className={`kanji-realm-toggle-btn ${stageMode === 'practice' ? 'is-active' : ''}`}
-                  onClick={() => setStageMode('practice')}
+                  onClick={() => {
+                    setQuizCompleted(false)
+                    setStageMode('practice')
+                  }}
                 >
                   <PenTool size={12} /> Luyện viết nét
                 </button>
@@ -438,34 +485,16 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
                 <div className="kanji-realm-practice">
                   <div className="shodo-practice-inline-head">
                     <span className="shodo-practice-inline-title">
-                      Tập viết chữ: <strong>{kanjiSummary.kanji}</strong> ({kanjiSummary.stroke_count} nét)
+                      Tập viết chữ: <strong>{quizCompleted ? kanjiSummary.kanji : kanjiSummary.hanzi}</strong> (
+                      {kanjiSummary.stroke_count} nét)
                     </span>
-                    <div className="shodo-practice-mode-switch" role="group" aria-label="Chế độ luyện viết">
-                      <button
-                        type="button"
-                        className={`shodo-practice-mode-btn${practiceMode === 'quiz' ? ' is-active' : ''}`}
-                        onClick={() => setPracticeMode('quiz')}
-                      >
-                        Chấm nét chuẩn
-                      </button>
-                      <button
-                        type="button"
-                        className={`shodo-practice-mode-btn${practiceMode === 'brush' ? ' is-active' : ''}`}
-                        onClick={() => setPracticeMode('brush')}
-                      >
-                        Vung cọ tự do
-                      </button>
-                    </div>
                   </div>
-                  {practiceMode === 'quiz' ? (
-                    <KanjiStrokeQuiz
-                      key={`quiz-${kanjiSummary.kanji}`}
-                      kanjiChar={kanjiSummary.kanji}
-                      fallbackStrokeCount={kanjiSummary.stroke_count}
-                    />
-                  ) : (
-                    <KanjiCanvas kanjiChar={kanjiSummary.kanji} />
-                  )}
+                  <KanjiStrokeQuiz
+                    key={`quiz-${kanjiSummary.kanji}`}
+                    kanjiChar={kanjiSummary.kanji}
+                    fallbackStrokeCount={kanjiSummary.stroke_count}
+                    onCompleteQuiz={() => setQuizCompleted(true)}
+                  />
                 </div>
               )}
 
@@ -491,37 +520,55 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
 
               {/* Readings & Radical */}
               <div className="kanji-realm-readings">
-                <button
-                  type="button"
-                  className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_on' ? ' is-playing' : ''}`}
-                  disabled={!kanjiSummary.onyomi}
-                  onClick={() => kanjiSummary.onyomi && speakJapanese(kanjiSummary.onyomi, undefined, 'reading_on')}
-                  title={kanjiSummary.onyomi ? 'Bấm để nghe âm On' : 'Không có âm On'}
-                >
-                  <span className="kanji-reading-chip-label">
-                    On {kanjiSummary.onyomi && <Volume2 size={10} aria-hidden="true" />}
-                  </span>
-                  <span className="kanji-reading-chip-val">{kanjiSummary.onyomi || '—'}</span>
-                  {detailData?.phonetics?.onyomiRomaji && (
-                    <span className="kanji-reading-chip-romaji">{detailData.phonetics.onyomiRomaji}</span>
+                <div className="kanji-reading-chip">
+                  <span className="kanji-reading-chip-label">On</span>
+                  {parseKanjiReadings(kanjiSummary.onyomi).length > 0 ? (
+                    <div className="kanji-reading-pills">
+                      {parseKanjiReadings(kanjiSummary.onyomi).map((r, idx) => {
+                        const audioId = `reading_on_${idx}`
+                        return (
+                          <button
+                            key={`${r.spoken}-${idx}`}
+                            type="button"
+                            className={`kanji-reading-pill-btn${playingAudio === audioId ? ' is-playing' : ''}`}
+                            onClick={() => speakJapanese(r.spoken, undefined, audioId)}
+                            title={`Nghe âm On: ${r.display}`}
+                          >
+                            <Volume2 size={11} aria-hidden="true" />
+                            <span>{r.display}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <span className="kanji-reading-chip-val">—</span>
                   )}
-                </button>
+                </div>
 
-                <button
-                  type="button"
-                  className={`kanji-reading-chip kanji-reading-chip--interactive${playingAudio === 'reading_kun' ? ' is-playing' : ''}`}
-                  disabled={!kanjiSummary.kunyomi}
-                  onClick={() => kanjiSummary.kunyomi && speakJapanese(kanjiSummary.kunyomi, undefined, 'reading_kun')}
-                  title={kanjiSummary.kunyomi ? 'Bấm để nghe âm Kun' : 'Không có âm Kun'}
-                >
-                  <span className="kanji-reading-chip-label">
-                    Kun {kanjiSummary.kunyomi && <Volume2 size={10} aria-hidden="true" />}
-                  </span>
-                  <span className="kanji-reading-chip-val">{kanjiSummary.kunyomi || '—'}</span>
-                  {detailData?.phonetics?.kunyomiRomaji && (
-                    <span className="kanji-reading-chip-romaji">{detailData.phonetics.kunyomiRomaji}</span>
+                <div className="kanji-reading-chip">
+                  <span className="kanji-reading-chip-label">Kun</span>
+                  {parseKanjiReadings(kanjiSummary.kunyomi).length > 0 ? (
+                    <div className="kanji-reading-pills">
+                      {parseKanjiReadings(kanjiSummary.kunyomi).map((r, idx) => {
+                        const audioId = `reading_kun_${idx}`
+                        return (
+                          <button
+                            key={`${r.spoken}-${idx}`}
+                            type="button"
+                            className={`kanji-reading-pill-btn${playingAudio === audioId ? ' is-playing' : ''}`}
+                            onClick={() => speakJapanese(r.spoken, undefined, audioId)}
+                            title={`Nghe âm Kun: ${r.display}`}
+                          >
+                            <Volume2 size={11} aria-hidden="true" />
+                            <span>{r.display}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <span className="kanji-reading-chip-val">—</span>
                   )}
-                </button>
+                </div>
 
                 {kanjiSummary.radical_utf && kanjiSummary.radical_utf !== '—' && (
                   <button
@@ -764,96 +811,6 @@ export function KanjiDetailModal({ kanjiSummary, onClose, onSelectKanji, onFilte
             </div>
           </div>
         </div>
-
-        {/* ─── ERGONOMIC BOTTOM ACTION BAR ─────────────────────────────────── */}
-        <footer className="shodo-theater-footer">
-          <div className="shodo-theater-footer__left">
-            {historyStack.length > 1 && onSelectKanji ? (
-              <nav className="shodo-history-inline" aria-label="Lộ trình khám phá Hán tự">
-                <button
-                  type="button"
-                  className="shodo-history-back"
-                  onClick={handleStepBackHistory}
-                  title="Quay lại chữ vừa xem (Backspace)"
-                >
-                  <ArrowLeft size={13} aria-hidden="true" />
-                  <span>Quay lại {historyStack[historyStack.length - 2]?.kanji}</span>
-                </button>
-                <ol className="shodo-history-crumbs">
-                  {historyStack.map((item, idx) => {
-                    const isLast = idx === historyStack.length - 1
-                    return (
-                      <li key={`${item.kanji}-${idx}`}>
-                        {idx > 0 && <span className="shodo-history-sep">›</span>}
-                        {isLast ? (
-                          <span className="shodo-history-current" aria-current="page">
-                            {item.kanji}
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            className="shodo-history-crumb-btn"
-                            onClick={() => onSelectKanji(item.kanji)}
-                          >
-                            {item.kanji}
-                          </button>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ol>
-              </nav>
-            ) : (
-              <span className="shodo-footer-hint">
-                Phím tắt: [← / →] Chuyển chữ · [1 / 2] Bút pháp / Tập viết · [Esc] Đóng
-              </span>
-            )}
-          </div>
-
-          <div className="shodo-theater-footer__right">
-            {onSelectKanji && (
-              <div className="shodo-theater-nav-group" role="group" aria-label="Chuyển chữ theo thứ tự">
-                <button
-                  type="button"
-                  className="shodo-footer-nav-btn"
-                  disabled={!kanjiSummary.prev_kanji}
-                  onClick={() => kanjiSummary.prev_kanji && onSelectKanji(kanjiSummary.prev_kanji)}
-                >
-                  <ChevronLeft size={14} aria-hidden="true" />
-                  <span>Trước{kanjiSummary.prev_kanji ? ` (${kanjiSummary.prev_kanji})` : ''}</span>
-                </button>
-                <button
-                  type="button"
-                  className="shodo-footer-nav-btn"
-                  disabled={!kanjiSummary.next_kanji}
-                  onClick={() => kanjiSummary.next_kanji && onSelectKanji(kanjiSummary.next_kanji)}
-                >
-                  <span>Kế{kanjiSummary.next_kanji ? ` (${kanjiSummary.next_kanji})` : ''}</span>
-                  <ChevronRight size={14} aria-hidden="true" />
-                </button>
-              </div>
-            )}
-
-            {!isRadicalOnly && (
-              <button
-                type="button"
-                className={`shodo-hanko-seal-btn ${isKanjiSaved ? 'is-stamped' : ''}`}
-                onClick={handleSaveKanjiToSrs}
-                title={isKanjiSaved ? 'Đã lưu Hán tự vào sổ tay SRS' : 'Lưu Hán tự vào sổ tay SRS'}
-                aria-label={isKanjiSaved ? 'Đã lưu sổ tay' : 'Lưu sổ tay'}
-              >
-                <span className="shodo-hanko-seal-box">
-                  <span className="shodo-hanko-seal-glyph">{isKanjiSaved ? '済' : '印'}</span>
-                </span>
-                <span className="shodo-hanko-seal-label">{isKanjiSaved ? 'Đã lưu SRS' : 'Lưu vào SRS'}</span>
-              </button>
-            )}
-
-            <button type="button" className="shodo-footer-close-btn" onClick={onClose}>
-              Đóng
-            </button>
-          </div>
-        </footer>
       </div>
 
       {onSelectKanji && kanjiSummary.next_kanji && (

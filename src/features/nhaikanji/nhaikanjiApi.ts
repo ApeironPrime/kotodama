@@ -90,6 +90,18 @@ export const nhaikanjiApi = {
     })
   },
 
+  async recognizeHandwriting(payload: {
+    strokes: number[][][]
+    width?: number
+    height?: number
+  }): Promise<{ candidates: KanjiSummary[]; source?: string }> {
+    return requestApi<{ candidates: KanjiSummary[]; source?: string }>({
+      method: 'POST',
+      url: apiPaths.nhaikanji.handwriting,
+      data: payload,
+    })
+  },
+
   async fetchKanjiBrushData(kanjiChar: string): Promise<KanjiBrushData | null> {
     try {
       return await requestApi<KanjiBrushData>({

@@ -82,6 +82,7 @@ export const apiPaths = {
     kanjiStrokes: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}/strokes`,
     kanjiBrush: (char: string) => `/api/v1/nhaikanji/kanji/${encodeURIComponent(char)}/brush`,
     kanjiIllustration: (char: string) => `/api/v1/nhaikanji/illustration/${encodeURIComponent(char)}`,
+    handwriting: '/api/v1/nhaikanji/handwriting',
     bunpoList: (level = 'ALL', bookId = 'all', query = '', page = 1, limit = 50) =>
       `/api/v1/nhaikanji/bunpo?level=${encodeURIComponent(level)}&bookId=${encodeURIComponent(bookId)}&q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
     jlptExams: (level = 'ALL', section = 'all') =>

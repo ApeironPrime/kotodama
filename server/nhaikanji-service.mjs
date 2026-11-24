@@ -1627,6 +1627,87 @@ export class NhaiKanjiService {
     return null
   }
 
+  async recognizeHandwriting({ strokes = [], width = 240, height = 240 } = {}) {
+    this.ensureLoaded()
+    if (!Array.isArray(strokes) || strokes.length === 0) {
+      return { candidates: [], source: 'empty' }
+    }
+
+    const validStrokes = strokes
+      .slice(0, 40)
+      .map((pts) =>
+        Array.isArray(pts)
+          ? pts
+              .slice(0, 120)
+              .filter(
+                (p) =>
+                  Array.isArray(p) && p.length >= 2 && Number.isFinite(Number(p[0])) && Number.isFinite(Number(p[1]))
+              )
+              .map((p) => [Math.round(Number(p[0])), Math.round(Number(p[1]))])
+          : []
+      )
+      .filter((pts) => pts.length > 0)
+
+    if (validStrokes.length === 0) {
+      return { candidates: [], source: 'empty' }
+    }
+
+    const areaW = Math.max(80, Math.min(800, Math.round(Number(width) || 240)))
+    const areaH = Math.max(80, Math.min(800, Math.round(Number(height) || 240)))
+
+    try {
+      const res = await fetch('https://inputtools.google.com/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(4500),
+        body: JSON.stringify({
+          options: 'enable_pre_space',
+          requests: [
+            {
+              writing_guide: { writing_area_width: areaW, writing_area_height: areaH },
+              ink: validStrokes.map((pts) => [pts.map((p) => p[0]), pts.map((p) => p[1])]),
+              language: 'ja',
+            },
+          ],
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const rawCandidates = Array.isArray(data?.[1]?.[0]?.[1]) ? data[1][0][1] : []
+        const seen = new Set()
+        const candidates = []
+
+        for (const entry of rawCandidates) {
+          if (typeof entry !== 'string' || !entry.trim()) continue
+          const ch = Array.from(entry.trim())[0]
+          if (!ch || seen.has(ch)) continue
+          const match = this.kanjiMap?.get(ch) || this.kanjiSummaryList.find((k) => k.kanji === ch)
+          if (match) {
+            seen.add(ch)
+            candidates.push(match)
+            if (candidates.length >= 12) break
+          }
+        }
+
+        if (candidates.length > 0) {
+          return { candidates, source: 'ime' }
+        }
+      }
+    } catch {
+      // Fall through to offline stroke-count fallback
+    }
+
+    const levelRank = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 }
+    const targetCount = validStrokes.length
+    const fallback = this.kanjiSummaryList
+      .filter((k) => Number(k.stroke_count) === targetCount)
+      .sort((a, b) => (levelRank[a.jlpt_level] || 9) - (levelRank[b.jlpt_level] || 9))
+      .slice(0, 12)
+
+    return { candidates: fallback, source: 'fallback' }
+  }
+
   getBunpoList({ level, bookId, query = '', page = 1, limit = 50 }) {
     this.ensureLoaded()
     let results = this.bunpoList

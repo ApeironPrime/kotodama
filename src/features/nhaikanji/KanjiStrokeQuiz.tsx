@@ -7,19 +7,22 @@ import { sumiAudio } from '../dictionary/sumiAudio'
 interface KanjiStrokeQuizProps {
   kanjiChar: string
   fallbackStrokeCount?: number | string
+  onCompleteQuiz?: () => void
 }
 
 const STAGE_SIZE = 248
 const STAGE_PADDING = 16
 
-export function KanjiStrokeQuiz({ kanjiChar, fallbackStrokeCount }: KanjiStrokeQuizProps) {
+export function KanjiStrokeQuiz({ kanjiChar, fallbackStrokeCount, onCompleteQuiz }: KanjiStrokeQuizProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const writerRef = useRef<HanziWriter | null>(null)
+  const onCompleteQuizRef = useRef(onCompleteQuiz)
+  onCompleteQuizRef.current = onCompleteQuiz
   const [totalStrokes, setTotalStrokes] = useState<number>(Number(fallbackStrokeCount) || 1)
   const [currentStroke, setCurrentStroke] = useState<number>(0)
   const [mistakes, setMistakes] = useState<number>(0)
   const [isCompleted, setIsCompleted] = useState<boolean>(false)
-  const [showOutline, setShowOutline] = useState<boolean>(true)
+  const [showOutline, setShowOutline] = useState<boolean>(false)
   const [hasError, setHasError] = useState<boolean>(false)
 
   const startQuiz = useCallback((writer: HanziWriter) => {
@@ -40,6 +43,7 @@ export function KanjiStrokeQuiz({ kanjiChar, fallbackStrokeCount }: KanjiStrokeQ
       onComplete: (summaryData) => {
         setIsCompleted(true)
         setMistakes(summaryData.totalMistakes)
+        onCompleteQuizRef.current?.()
       },
     })
   }, [])
@@ -53,7 +57,7 @@ export function KanjiStrokeQuiz({ kanjiChar, fallbackStrokeCount }: KanjiStrokeQ
     setMistakes(0)
     setIsCompleted(false)
     setHasError(false)
-    setShowOutline(true)
+    setShowOutline(false)
     setTotalStrokes(Number(fallbackStrokeCount) || 1)
 
     try {
@@ -62,7 +66,7 @@ export function KanjiStrokeQuiz({ kanjiChar, fallbackStrokeCount }: KanjiStrokeQ
         height: STAGE_SIZE,
         padding: STAGE_PADDING,
         showCharacter: false,
-        showOutline: true,
+        showOutline: false,
         strokeColor: '#1E1D1A',
         outlineColor: 'rgba(180, 165, 145, 0.45)',
         highlightColor: '#B82E2E',
@@ -160,6 +164,8 @@ export function KanjiStrokeQuiz({ kanjiChar, fallbackStrokeCount }: KanjiStrokeQ
   const handleRestart = () => {
     const writer = writerRef.current
     if (!writer) return
+    void writer.hideOutline()
+    setShowOutline(false)
     startQuiz(writer)
   }
 

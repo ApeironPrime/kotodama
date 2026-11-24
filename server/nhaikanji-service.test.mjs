@@ -889,3 +889,67 @@ test('NhaiKanjiService supports radical family filtering, stroke bounds, romaji/
   assert.ok(radicalDetail.relatedByRadical.some((k) => k.kanji === '水' || k.kanji === '海'))
   assert.equal(service.getKanjiDetail('NON_EXISTENT_KANJI'), null)
 })
+
+test('NhaiKanjiService.recognizeHandwriting handles empty strokes and offline stroke-count fallback', async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kotodama-hw-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+
+  const mockFile = path.join(root, 'hack_nao.json')
+  fs.writeFileSync(
+    mockFile,
+    JSON.stringify({
+      N5: [
+        {
+          stt: 1,
+          kanji: '日',
+          han_viet: 'NHẬT',
+          nghia: 'Mặt trời',
+          cap_do: 'N5',
+          so_net: 4,
+          am_on: ['ニチ'],
+          am_kun: ['ひ'],
+        },
+      ],
+      N4: [],
+      N3: [],
+      N2: [],
+      N1: [],
+    })
+  )
+
+  const service = new NhaiKanjiService({ kanjiDataPath: mockFile })
+  const empty = await service.recognizeHandwriting({ strokes: [] })
+  assert.deepEqual(empty, { candidates: [], source: 'empty' })
+
+  const origFetch = globalThis.fetch
+  globalThis.fetch = async () => {
+    throw new Error('offline')
+  }
+  t.after(() => {
+    globalThis.fetch = origFetch
+  })
+
+  const fallback = await service.recognizeHandwriting({
+    strokes: [
+      [
+        [10, 10],
+        [10, 80],
+      ],
+      [
+        [10, 10],
+        [80, 10],
+      ],
+      [
+        [10, 45],
+        [80, 45],
+      ],
+      [
+        [10, 80],
+        [80, 80],
+      ],
+    ],
+  })
+  assert.equal(fallback.source, 'fallback')
+  assert.equal(fallback.candidates.length, 1)
+  assert.equal(fallback.candidates[0].kanji, '日')
+})

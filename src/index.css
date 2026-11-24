@@ -8424,6 +8424,9 @@ body:has(.video-study-page) {
 .kanji-realm-toggle {
   display: inline-flex;
   align-self: flex-start;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
   border: 1px solid var(--color-border);
   border-radius: 3px;
   background: var(--color-surface);
@@ -8601,6 +8604,41 @@ body:has(.video-study-page) {
   font-size: 0.63rem;
   color: var(--color-text-muted);
   text-align: center;
+}
+.kanji-reading-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.28rem;
+  margin-top: 0.15rem;
+}
+.kanji-reading-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0.18rem 0.42rem;
+  border-radius: 3px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-jp-serif);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
+}
+.kanji-reading-pill-btn:hover {
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+.kanji-reading-pill-btn.is-playing {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
 }
 .kanji-reading-chip--radical {
   background: var(--color-accent-subtle);

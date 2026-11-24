@@ -714,7 +714,8 @@ async function route(request, response) {
   if (request.method === 'POST') {
     // Shadowing attempts include base64-encoded audio → allow up to 10 MB
     const isShadowingAttempt = path.match(/^\/api\/v1\/shadowing\/sessions\/[0-9a-f-]+\/attempts$/i)
-    const maxBodySize = isShadowingAttempt ? 10 * 1024 * 1024 : 32_768
+    const isHandwriting = path === '/api/v1/nhaikanji/handwriting'
+    const maxBodySize = isShadowingAttempt ? 10 * 1024 * 1024 : isHandwriting ? 131_072 : 32_768
     try {
       body = await readJson(request, { maxSize: maxBodySize })
     } catch (error) {
@@ -727,6 +728,15 @@ async function route(request, response) {
     }
   }
   const respond = (data, status, headers) => success(response, data, status, { ...cors, ...headers })
+
+  if (request.method === 'POST' && path === '/api/v1/nhaikanji/handwriting') {
+    const result = await nhaiKanjiService.recognizeHandwriting({
+      strokes: Array.isArray(body?.strokes) ? body.strokes : [],
+      width: Number(body?.width) || 240,
+      height: Number(body?.height) || 240,
+    })
+    return respond(result)
+  }
 
   // --- NhaiKanji Endpoints ---
   if (request.method === 'GET' && path === '/api/v1/nhaikanji/kanji') {
