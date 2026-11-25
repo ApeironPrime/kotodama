@@ -83,6 +83,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldP
         <button
           type="button"
           className="auth-washi__pw-toggle"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setVisible((prev) => !prev)}
           aria-label={visible ? hideLabel : showLabel}
           aria-pressed={visible}

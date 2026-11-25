@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react'
 import { Button, Input } from '../../components/ui'
 import { useAuth } from './authContext'
 import { AuthEditorialShell, AuthField, AuthPasswordField } from './AuthEditorialShell'
+import { useDeferredAutofillUnlock } from './useDeferredAutofillUnlock'
 import { getPageFromPath, type Page } from '../../types/app'
 
 type AuthForm = { name?: string; email: string; password: string; confirmPassword?: string }
@@ -13,6 +14,7 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
   const isLogin = mode === 'login'
   const location = useLocation()
   const { signIn, signUp } = useAuth()
+  const autofillGuard = useDeferredAutofillUnlock()
   const {
     register,
     handleSubmit,
@@ -79,6 +81,7 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
               placeholder="Tên của bạn"
               autoComplete="name"
               aria-invalid={!!errors.name}
+              {...autofillGuard}
               {...register('name', {
                 validate: (value) => Boolean(value?.trim()) || 'Vui lòng nhập họ và tên.',
               })}
@@ -92,6 +95,7 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
             autoComplete="email"
             placeholder="ban@example.com"
             aria-invalid={!!errors.email}
+            {...autofillGuard}
             {...register('email', {
               required: 'Vui lòng nhập email.',
               validate: (value) => /^\S+@\S+\.\S+$/.test(value.trim()) || 'Email chưa đúng định dạng.',
@@ -112,6 +116,7 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
           hintTone={!isLogin && password && password.length >= 8 ? 'ok' : 'muted'}
           autoComplete={isLogin ? 'current-password' : 'new-password'}
           placeholder={isLogin ? 'Nhập mật khẩu của bạn' : 'Ít nhất 8 ký tự'}
+          {...autofillGuard}
           {...register('password', {
             required: 'Vui lòng nhập mật khẩu.',
             minLength: { value: 8, message: 'Mật khẩu cần ít nhất 8 ký tự.' },
@@ -126,6 +131,7 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
             hideLabel="Ẩn mật khẩu xác nhận"
             autoComplete="new-password"
             placeholder="Nhập lại mật khẩu"
+            {...autofillGuard}
             {...register('confirmPassword', {
               validate: (value) => value === password || 'Mật khẩu xác nhận không khớp.',
             })}

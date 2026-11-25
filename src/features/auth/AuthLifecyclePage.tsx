@@ -7,6 +7,7 @@ import { Button, Input } from '../../components/ui'
 import { apiPaths, getApiErrorMessage, requestApi } from '../../lib/apiClient'
 import type { Page } from '../../types/app'
 import { AuthEditorialShell, AuthField, AuthPasswordField } from './AuthEditorialShell'
+import { useDeferredAutofillUnlock } from './useDeferredAutofillUnlock'
 
 type LifecycleMode = 'forgotPassword' | 'resetPassword' | 'verifyEmail'
 type EmailForm = { email: string }
@@ -310,6 +311,7 @@ function PasswordFields({
   errors: ReturnType<typeof useForm<PasswordForm>>['formState']['errors']
   password?: string
 }) {
+  const autofillGuard = useDeferredAutofillUnlock()
   return (
     <>
       <AuthPasswordField
@@ -320,6 +322,7 @@ function PasswordFields({
         hintTone={password && password.length >= 8 ? 'ok' : 'muted'}
         autoComplete="new-password"
         placeholder="Ít nhất 8 ký tự"
+        {...autofillGuard}
         {...register('password', {
           required: 'Vui lòng nhập mật khẩu mới.',
           minLength: { value: 8, message: 'Mật khẩu cần ít nhất 8 ký tự.' },
@@ -333,6 +336,7 @@ function PasswordFields({
         hideLabel="Ẩn mật khẩu xác nhận"
         autoComplete="new-password"
         placeholder="Nhập lại mật khẩu"
+        {...autofillGuard}
         {...register('confirmPassword', {
           validate: (value) => value === password || 'Mật khẩu xác nhận không khớp.',
         })}

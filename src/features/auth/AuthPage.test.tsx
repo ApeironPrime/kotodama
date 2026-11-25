@@ -62,15 +62,23 @@ describe('AuthPage & AuthLifecyclePage', () => {
     const form = container.querySelector('form')
     expect(form?.hasAttribute('novalidate')).toBe(true)
 
+    const emailInput = screen.getByLabelText('Email') as HTMLInputElement
     const passwordInput = screen.getByLabelText('Mật khẩu') as HTMLInputElement
+    expect(emailInput.readOnly).toBe(true)
+    expect(passwordInput.readOnly).toBe(true)
     expect(passwordInput.type).toBe('password')
+
+    fireEvent.focus(emailInput)
+    fireEvent.focus(passwordInput)
+    expect(emailInput.readOnly).toBe(false)
+    expect(passwordInput.readOnly).toBe(false)
 
     fireEvent.click(screen.getByRole('button', { name: 'Hiện mật khẩu' }))
     expect(passwordInput.type).toBe('text')
     fireEvent.click(screen.getByRole('button', { name: 'Ẩn mật khẩu' }))
     expect(passwordInput.type).toBe('password')
 
-    fireEvent.input(screen.getByLabelText('Email'), { target: { value: '  learner@kotodama.jp  ' } })
+    fireEvent.input(emailInput, { target: { value: '  learner@kotodama.jp  ' } })
     fireEvent.input(passwordInput, { target: { value: 'kotodama123' } })
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }))
 
