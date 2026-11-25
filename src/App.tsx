@@ -221,8 +221,7 @@ function AppContent() {
             {page === 'profile' && <LocalProfilePage onNavigate={goTo} />}
             {page === 'settings' && <SettingsPage onLogout={() => void signOut()} />}
             {page === 'security' && <AccountSecurityPage onNavigate={goTo} />}
-            {page === 'login' && <ManagedAuthPage mode="login" onNavigate={goTo} />}
-            {page === 'register' && <ManagedAuthPage mode="register" onNavigate={goTo} />}
+            {(page === 'login' || page === 'register') && <ManagedAuthPage mode={page} onNavigate={goTo} />}
             {page === 'forgotPassword' && <AuthLifecyclePage mode="forgotPassword" onNavigate={goTo} />}
             {page === 'resetPassword' && <AuthLifecyclePage mode="resetPassword" onNavigate={goTo} />}
             {page === 'verifyEmail' && <AuthLifecyclePage mode="verifyEmail" onNavigate={goTo} />}

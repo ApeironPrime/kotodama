@@ -173,6 +173,16 @@
   min-height: 2.75rem;
   padding: 0 var(--space-3);
 }
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--auth-paper, var(--color-bg-canvas, #faf7f2)) inset !important;
+  box-shadow: 0 0 0 1000px var(--auth-paper, var(--color-bg-canvas, #faf7f2)) inset !important;
+  -webkit-text-fill-color: var(--color-text, #1c1917) !important;
+  caret-color: var(--color-text, #1c1917);
+  transition: background-color 99999s ease-out 0s;
+}
 .ui-textarea {
   min-height: 6.5rem;
   padding: var(--space-3);

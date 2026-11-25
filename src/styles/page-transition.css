@@ -128,3 +128,14 @@ html[data-vt-scope='library'][data-vt-dir='back']::view-transition-new(library-s
   opacity: 1;
   pointer-events: all;
 }
+
+/* Scoped Auth Switch: keep navbar, story column, artwork, and center rule rock-steady */
+html[data-vt-scope='auth']::view-transition-old(root),
+html[data-vt-scope='auth']::view-transition-new(root) {
+  animation: none !important;
+}
+
+::view-transition-group(auth-form-card) {
+  animation-duration: 0.18s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}

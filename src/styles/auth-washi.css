@@ -1,18 +1,58 @@
+/* ==========================================================================
+   AUTH WASHI EDITORIAL SPLIT LAYOUT (/login & /register)
+   Pure warm Washi paper (#FAF7F2), zero pink tint, hairline inputs,
+   zero vertical scroll on desktop (>= 1024px), natural scroll on mobile.
+   ========================================================================== */
+
+:root:not([data-theme='dark']) .app-shell:has(.auth-washi),
+:root:not([data-theme='dark']) .app-shell:has(.auth-page),
+:root:not([data-theme='dark']) .auth-washi {
+  --auth-paper: #faf7f2;
+  --color-bg-canvas: #faf7f2;
+  --color-bg: #faf7f2;
+  --color-bg-subtle: #f3ede2;
+  --color-bg-surface: #faf7f2;
+  --color-surface: #faf7f2;
+  --color-bg-elevated: #fdfbf7;
+  --color-bg-hover: #ece5d8;
+  --color-text: #1c1917;
+  --color-text-secondary: #57534e;
+  --color-text-muted: #78716c;
+  --color-border: #dfd9cc;
+  --color-border-strong: #d6d0c4;
+  --color-accent: #9e2a2b;
+  --color-accent-hover: #822021;
+  --color-accent-text: #9e2a2b;
+  --color-accent-subtle: rgb(158 42 43 / 8%);
+  --color-danger: #9e2a2b;
+  --color-danger-text: #9e2a2b;
+  --color-focus-ring: transparent;
+  background: #faf7f2;
+}
+
+:root:not([data-theme='dark']) .app-shell:has(.auth-washi) .nav-bar--home {
+  background: #faf7f2;
+  border-bottom-color: #dfd9cc;
+}
+
+[data-theme='dark'] .auth-washi {
+  --auth-paper: #0d0d15;
+  --color-accent: #d9534f;
+  --color-accent-hover: #e26b67;
+  --color-accent-text: #f08a86;
+  --color-danger: #f08a86;
+  --color-danger-text: #f08a86;
+}
+
 .auth-washi {
   position: relative;
   isolation: isolate;
-  min-height: calc(100svh - 4rem);
-  padding: 2rem clamp(1.25rem, 5vw, 5rem) 3rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 1rem 1.25rem 5.5rem;
   color: var(--color-text);
-  background:
-    radial-gradient(ellipse at 7% 30%, color-mix(in srgb, var(--color-bg-subtle) 65%, transparent), transparent 55%),
-    radial-gradient(ellipse at 95% 85%, color-mix(in srgb, var(--color-accent) 3.5%, transparent), transparent 50%),
-    var(--color-bg-canvas);
-}
-
-[data-theme='dark'] .auth-washi__art > img:first-child {
-  mix-blend-mode: normal;
-  opacity: 0.72;
+  background: var(--auth-paper, #faf7f2);
 }
 
 .auth-washi::before {
@@ -20,27 +60,42 @@
   z-index: -1;
   inset: 0;
   pointer-events: none;
-  opacity: 0.09;
+  opacity: 0.085;
   content: '';
-  background: url('/assets/hero-foreground-ink.svg') right bottom / auto 60% no-repeat;
+  background: url('/assets/hero-foreground-ink.svg') right bottom / auto 56% no-repeat;
 }
 
 .auth-washi__shell {
+  width: 100%;
   max-width: 76rem;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-washi__topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
 .auth-washi .auth-washi__back {
   padding: 0;
-  min-height: 2.75rem;
+  min-height: 2rem;
   font-size: 0.75rem;
   font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.auth-washi .auth-washi__back:hover {
+  color: var(--color-text);
+  background: transparent;
 }
 
 .auth-washi__layout {
   display: grid;
-  grid-template-columns: 1.08fr 1fr;
-  margin-top: 1.25rem;
+  grid-template-columns: 1fr 1fr;
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
@@ -49,13 +104,14 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   min-width: 0;
-  padding: 1.5rem 2.75rem 1.5rem 0;
+  min-height: 0;
+  padding: 1.25rem clamp(1.75rem, 3.2vw, 3rem) 1.25rem 0;
   border-right: 1px solid var(--color-border);
 }
 
-.auth-washi__edition,
-.auth-washi__colophon {
+.auth-washi__edition {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -72,45 +128,38 @@
 
 .auth-washi__art {
   position: relative;
-  height: clamp(15rem, 24vw, 22rem);
-  margin: 1rem -1rem 0;
+  width: 100%;
+  height: clamp(11rem, 24dvh, 16rem);
+  margin: 0.8rem 0 0.95rem;
+  overflow: hidden;
+  border: 1px solid #dfd8ca;
+  background-color: var(--auth-paper, #faf7f2);
 }
 
-.auth-washi__art > img:first-child {
+[data-theme='dark'] .auth-washi__art {
+  border-color: rgb(255 255 255 / 12%);
+}
+
+.auth-washi__art > img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center 54%;
   mix-blend-mode: multiply;
-  mask-image: radial-gradient(ellipse 64% 58% at 50% 50%, #000 35%, transparent 95%);
 }
 
-.auth-washi__calligraphy {
-  position: absolute;
-  top: 12%;
-  right: 12%;
-  writing-mode: vertical-rl;
-  color: var(--color-text);
-  font-family: var(--font-jp-serif);
-  font-size: clamp(2rem, 3.1vw, 3rem);
-  letter-spacing: 0.28em;
-}
-
-.auth-washi__art .auth-washi__seal {
-  position: absolute;
-  right: 13%;
-  bottom: 9%;
-  width: 2rem;
-  height: 2rem;
-  rotate: -6deg;
+[data-theme='dark'] .auth-washi__art > img {
+  mix-blend-mode: normal;
+  opacity: 0.78;
 }
 
 .auth-washi__verse {
-  padding: 0.5rem 0 2.5rem;
+  padding: 0;
 }
 
 .auth-washi__caption {
-  margin: 0 0 1rem;
+  margin: 0 0 0.45rem;
   color: var(--color-accent-text);
   font-size: 0.625rem;
   font-weight: 600;
@@ -120,43 +169,41 @@
 .auth-washi__verse h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-size: clamp(1.65rem, 2.3vw, 2.35rem);
   font-weight: 400;
-  line-height: 1.2;
-  letter-spacing: -0.035em;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
 }
 
 .auth-washi__verse > p:last-child {
-  margin: 1rem 0 0;
+  margin: 0.65rem 0 0;
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
-  line-height: 1.9;
-}
-
-.auth-washi__colophon {
-  margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid rgb(77 64 49 / 16%);
-  font-size: 0.5625rem;
+  line-height: 1.72;
 }
 
 .auth-washi__form-panel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding: 3.5rem clamp(1.5rem, 4vw, 4rem);
+  min-width: 0;
+  min-height: 0;
+  padding: 1.25rem clamp(1.5rem, 3.5vw, 3.5rem);
 }
 
 .auth-washi .auth-washi__card {
   width: 100%;
-  max-width: 25rem;
+  max-width: 26.5rem;
   margin: 0 auto;
+  view-transition-name: auth-form-card;
 }
 
 .auth-washi__eyebrow {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin: 0 0 1.5rem;
+  gap: 0.6rem;
+  margin: 0 0 0.55rem;
   color: var(--color-accent-text);
   font-size: 0.625rem;
   font-weight: 600;
@@ -171,83 +218,166 @@
 }
 
 .auth-washi .auth-card h1 {
-  margin: 0 0 0.9rem;
-  font-size: clamp(1.9rem, 3vw, 2.7rem);
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 2.15vw, 2.15rem);
   font-weight: 400;
   line-height: 1.15;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
 .auth-washi .auth-card__intro {
-  margin: 0 0 2.5rem;
+  margin: 0 0 1.15rem;
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
-  line-height: 1.8;
+  line-height: 1.55;
+}
+
+.auth-washi--login .auth-card__intro {
+  margin-bottom: 1.5rem;
 }
 
 .auth-washi .ui-field {
-  margin-bottom: 1.4rem;
+  margin-bottom: 0.72rem;
+}
+
+.auth-washi--login .ui-field {
+  margin-bottom: 1.05rem;
 }
 
 .auth-washi .ui-field__label {
   color: var(--color-text);
   font-size: 0.75rem;
   font-weight: 500;
+  line-height: 1.2;
+}
+
+.auth-washi .auth-washi__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 0.12rem;
 }
 
 .auth-washi .ui-input {
-  height: 3rem;
-  padding: 0.65rem 0;
+  width: 100%;
+  min-height: 2.3rem;
+  height: 2.3rem;
+  padding: 0.35rem 0;
   border: 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid #d6d0c4;
   border-radius: 0;
   background: transparent;
   color: var(--color-text);
   font-size: 0.875rem;
   box-shadow: none;
+  outline: none;
+  transition: border-color 0.18s ease;
+}
+
+.auth-washi .ui-input.auth-washi__input--pw {
+  padding-right: 2.2rem;
+}
+
+[data-theme='dark'] .auth-washi .ui-input {
+  border-bottom-color: rgb(255 255 255 / 22%);
 }
 
 .auth-washi .ui-input::placeholder {
   color: #8b8275;
 }
 
-.auth-washi .ui-input:focus {
-  border-color: var(--color-accent);
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 4px;
-  box-shadow: none;
+.auth-washi .ui-input:hover:not(:focus):not([aria-invalid='true']) {
+  border-bottom-color: #b8b0a2;
+}
+
+.auth-washi .ui-input:focus,
+.auth-washi .ui-input:focus-visible {
+  border-bottom-color: var(--color-accent);
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .auth-washi .ui-input[aria-invalid='true'] {
-  border-color: var(--color-danger);
+  border-bottom-color: var(--color-danger);
 }
 
-.auth-washi .ui-field__error,
+.auth-washi .ui-input:-webkit-autofill,
+.auth-washi .ui-input:-webkit-autofill:hover,
+.auth-washi .ui-input:-webkit-autofill:focus,
+.auth-washi .ui-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--auth-paper, #faf7f2) inset !important;
+  box-shadow: 0 0 0 1000px var(--auth-paper, #faf7f2) inset !important;
+  -webkit-text-fill-color: var(--color-text, #1c1917) !important;
+}
+
+.auth-washi__pw-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+
+.auth-washi__pw-toggle:hover {
+  color: var(--color-text);
+}
+
+.auth-washi__pw-toggle:focus-visible {
+  color: var(--color-accent);
+  outline: none;
+}
+
+.auth-washi .ui-field__error {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--color-danger);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
 .auth-washi .auth-card__error {
+  margin: 0 0 0.65rem;
   color: var(--color-danger);
   font-size: 0.75rem;
-  line-height: 1.6;
+  line-height: 1.45;
 }
 
 .auth-washi .auth-card__notice {
-  border-color: var(--color-border);
-  background: rgb(174 56 47 / 5%);
+  margin-bottom: 0.85rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  background: rgb(158 42 43 / 6%);
   color: var(--color-text);
+  font-size: 0.75rem;
 }
 
 .auth-washi .auth-washi__forgot {
   display: flex;
-  margin: -0.5rem 0 1.5rem auto;
+  margin: -0.35rem 0 1.05rem auto;
   padding: 0;
-  min-height: 2rem;
+  min-height: 1.65rem;
   font-size: 0.75rem;
   font-weight: 400;
+  color: var(--color-text-secondary);
 }
 
 .auth-washi .auth-washi__submit {
   justify-content: space-between;
-  min-height: 3.25rem;
-  padding: 0.85rem 1.25rem;
+  min-height: 2.85rem;
+  margin-top: 0.35rem;
+  padding: 0.7rem 1.2rem;
   border-radius: 2px;
   background: var(--color-accent);
   color: #fffaf2;
@@ -265,63 +395,97 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  margin-top: 1.5rem;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
   color: var(--color-text-secondary);
   font-size: 0.75rem;
 }
 
 .auth-washi__switch .ui-button {
-  min-height: 2.75rem;
-  padding: 0 0.4rem;
+  min-height: 1.85rem;
+  padding: 0 0.35rem;
   color: var(--color-accent-text);
   font-size: inherit;
 }
 
-.auth-washi__footnote {
-  margin: 2rem 0 0;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgb(77 64 49 / 14%);
-  color: var(--color-text-muted);
-  text-align: center;
-  font-size: 0.6875rem;
-  line-height: 1.6;
-}
-
-@media (max-width: 800px) {
-  .auth-washi {
-    padding-bottom: 6rem;
+@media (min-width: 1024px) {
+  html:has(.auth-washi),
+  body:has(.auth-washi) {
+    height: 100dvh;
+    overflow: hidden;
   }
-}
 
-@media (max-width: 760px) {
+  .app-shell:has(.auth-washi) {
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-shell:has(.auth-washi) > main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .auth-washi {
-    padding: 1rem 1.25rem 6rem;
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.65rem clamp(1.5rem, 4.5vw, 4.5rem) 0.9rem;
+  }
+
+  .auth-washi__shell {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .auth-washi__topbar {
+    margin-bottom: 0.45rem;
+  }
+
+  .auth-washi .auth-washi__back {
+    min-height: 1.9rem;
   }
 
   .auth-washi__layout {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .auth-washi .auth-card h1 {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1023px) {
+  .auth-washi__layout {
     grid-template-columns: 1fr;
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
   }
 
   .auth-washi__story {
-    padding: 1.25rem 0;
+    padding: 1rem 0;
     border-right: 0;
-    border-bottom: 1px solid rgb(77 64 49 / 16%);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .auth-washi__art,
-  .auth-washi__verse,
-  .auth-washi__colophon {
+  .auth-washi__verse {
     display: none;
   }
 
   .auth-washi__form-panel {
-    padding: 2.5rem 0 2rem;
+    padding: 2rem 0 1.5rem;
   }
 
   .auth-washi .auth-card h1 {
-    font-size: clamp(1.9rem, 7vw, 2.5rem);
+    font-size: clamp(1.75rem, 7vw, 2.25rem);
   }
 
   .auth-washi .ui-input {
