@@ -1,7 +1,8 @@
 /* ==========================================================================
-   AUTH WASHI EDITORIAL SPLIT LAYOUT (/login & /register)
-   Pure warm Washi paper (#FAF7F2), zero pink tint, hairline inputs,
-   zero vertical scroll on desktop (>= 1024px), natural scroll on mobile.
+   AUTH WASHI EDITORIAL SPLIT LAYOUT
+   Covers /dang-nhap, /dang-ky, /quen-mat-khau, /dat-lai-mat-khau, /xac-minh-email
+   Pure warm Washi paper (#FAF7F2), zero pink tint, hairline inputs with
+   animated ink underline, zero-jump inline validation, and zero desktop scroll.
    ========================================================================== */
 
 :root:not([data-theme='dark']) .app-shell:has(.auth-washi),
@@ -30,11 +31,6 @@
   background: #faf7f2;
 }
 
-:root:not([data-theme='dark']) .app-shell:has(.auth-washi) .nav-bar--home {
-  background: #faf7f2;
-  border-bottom-color: #dfd9cc;
-}
-
 [data-theme='dark'] .auth-washi {
   --auth-paper: #0d0d15;
   --color-accent: #d9534f;
@@ -50,7 +46,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  padding: 1rem 1.25rem 5.5rem;
+  padding: 1.15rem 1.25rem 2.5rem;
   color: var(--color-text);
   background: var(--auth-paper, #faf7f2);
 }
@@ -62,7 +58,7 @@
   pointer-events: none;
   opacity: 0.085;
   content: '';
-  background: url('/assets/hero-foreground-ink.svg') right bottom / auto 56% no-repeat;
+  background: url('/assets/hero-foreground-ink.svg') right bottom / auto 58% no-repeat;
 }
 
 .auth-washi__shell {
@@ -73,25 +69,86 @@
   flex-direction: column;
 }
 
+/* ─── Distraction-Free Editorial Header ──────────────────────────────────── */
+
 .auth-washi__topbar {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.35rem;
+  margin-bottom: 0.6rem;
 }
 
 .auth-washi .auth-washi__back {
   padding: 0;
   min-height: 2rem;
-  font-size: 0.75rem;
-  font-weight: 400;
+  font-size: 0.78rem;
+  font-weight: 450;
   color: var(--color-text-secondary);
+  background: transparent !important;
+}
+
+.auth-washi .auth-washi__back svg {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .auth-washi .auth-washi__back:hover {
   color: var(--color-text);
-  background: transparent;
+  background: transparent !important;
 }
+
+.auth-washi .auth-washi__back:hover svg {
+  transform: translateX(-3px);
+}
+
+.auth-washi__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.15rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.auth-washi__brand:hover {
+  opacity: 0.82;
+}
+
+.auth-washi__brand-seal {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 2px;
+  background: var(--color-accent);
+  color: #fffaf2;
+  font-family: var(--font-jp-serif);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  rotate: -3deg;
+}
+
+.auth-washi__brand-name {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.auth-washi__brand-jp {
+  color: var(--color-text-muted);
+  font-family: var(--font-jp-serif);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+/* ─── 50 / 50 Editorial Spread ───────────────────────────────────────────── */
 
 .auth-washi__layout {
   display: grid;
@@ -107,7 +164,7 @@
   justify-content: center;
   min-width: 0;
   min-height: 0;
-  padding: 1.25rem clamp(1.75rem, 3.2vw, 3rem) 1.25rem 0;
+  padding: 1.5rem clamp(1.75rem, 3.2vw, 3rem) 1.5rem 0;
   border-right: 1px solid var(--color-border);
 }
 
@@ -126,18 +183,29 @@
   letter-spacing: 0.26em;
 }
 
+/* ─── Clean Sumi-e Plate + External Tanzaku Colophon Strip ──────────────── */
+
+.auth-washi__art-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.85rem;
+  margin: 0.95rem 0 1.15rem;
+}
+
 .auth-washi__art {
   position: relative;
   width: 100%;
-  height: clamp(11rem, 24dvh, 16rem);
-  margin: 0.8rem 0 0.95rem;
+  height: clamp(12.5rem, 28dvh, 18rem);
+  padding: 4px;
   overflow: hidden;
   border: 1px solid #dfd8ca;
-  background-color: var(--auth-paper, #faf7f2);
+  background-color: #fdfbf7;
 }
 
 [data-theme='dark'] .auth-washi__art {
   border-color: rgb(255 255 255 / 12%);
+  background-color: var(--neutral-925);
 }
 
 .auth-washi__art > img {
@@ -145,13 +213,43 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 54%;
+  object-position: center 58%;
   mix-blend-mode: multiply;
 }
 
 [data-theme='dark'] .auth-washi__art > img {
   mix-blend-mode: normal;
-  opacity: 0.78;
+  opacity: 0.82;
+}
+
+.auth-washi__tanzaku {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.45rem;
+  border-left: 1px solid rgb(28 25 23 / 10%);
+}
+
+[data-theme='dark'] .auth-washi__tanzaku {
+  border-left-color: rgb(255 255 255 / 12%);
+}
+
+.auth-washi__calligraphy {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  color: var(--color-text);
+  font-family: var(--font-jp-serif);
+  font-size: clamp(1.2rem, 1.75vw, 1.5rem);
+  line-height: 1;
+  letter-spacing: 0.3em;
+}
+
+.auth-washi__seal {
+  width: 1.55rem;
+  height: 1.55rem;
+  rotate: -5deg;
+  opacity: 0.92;
 }
 
 .auth-washi__verse {
@@ -169,18 +267,20 @@
 .auth-washi__verse h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.65rem, 2.3vw, 2.35rem);
+  font-size: clamp(1.7rem, 2.4vw, 2.4rem);
   font-weight: 400;
   line-height: 1.18;
   letter-spacing: -0.03em;
 }
 
 .auth-washi__verse > p:last-child {
-  margin: 0.65rem 0 0;
+  margin: 0.7rem 0 0;
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
   line-height: 1.72;
 }
+
+/* ─── Form Column ────────────────────────────────────────────────────────── */
 
 .auth-washi__form-panel {
   display: flex;
@@ -189,7 +289,7 @@
   align-items: center;
   min-width: 0;
   min-height: 0;
-  padding: 1.25rem clamp(1.5rem, 3.5vw, 3.5rem);
+  padding: 1.5rem clamp(1.5rem, 3.5vw, 3.5rem);
 }
 
 .auth-washi .auth-washi__card {
@@ -220,7 +320,7 @@
 .auth-washi .auth-card h1 {
   margin: 0 0 0.4rem;
   font-family: var(--font-display);
-  font-size: clamp(1.65rem, 2.15vw, 2.15rem);
+  font-size: clamp(1.7rem, 2.25vw, 2.25rem);
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: -0.03em;
@@ -228,22 +328,24 @@
 }
 
 .auth-washi .auth-card__intro {
-  margin: 0 0 1.15rem;
+  margin: 0 0 1.25rem;
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
   line-height: 1.55;
 }
 
 .auth-washi--login .auth-card__intro {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.55rem;
 }
 
+/* ─── Hairline Inputs, Animated Ink Sweep & Zero-Jump Feedback Slot ─────── */
+
 .auth-washi .ui-field {
-  margin-bottom: 0.72rem;
+  margin-bottom: 0.25rem;
 }
 
 .auth-washi--login .ui-field {
-  margin-bottom: 1.05rem;
+  margin-bottom: 0.55rem;
 }
 
 .auth-washi .ui-field__label {
@@ -251,6 +353,11 @@
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1.2;
+  transition: color 180ms ease;
+}
+
+.auth-washi__field:focus-within .ui-field__label {
+  color: var(--color-accent-text);
 }
 
 .auth-washi .auth-washi__control {
@@ -258,6 +365,25 @@
   display: flex;
   align-items: center;
   margin-top: 0.12rem;
+}
+
+.auth-washi__control::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.auth-washi__field:focus-within .auth-washi__control::after,
+.auth-washi__field[data-invalid='true'] .auth-washi__control::after {
+  transform: scaleX(1);
 }
 
 .auth-washi .ui-input {
@@ -339,23 +465,41 @@
   outline: none;
 }
 
+.auth-washi__feedback {
+  min-height: 1.05rem;
+  margin-top: 0.18rem;
+  display: flex;
+  align-items: center;
+}
+
 .auth-washi .ui-field__error {
   display: block;
-  margin-top: 0.2rem;
+  margin-top: 0;
   color: var(--color-danger);
-  font-size: 0.7rem;
-  line-height: 1.35;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+}
+
+.auth-washi__hint {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+}
+
+.auth-washi__hint.is-ok {
+  color: #3f5e45;
 }
 
 .auth-washi .auth-card__error {
-  margin: 0 0 0.65rem;
+  margin: 0.15rem 0 0.65rem;
   color: var(--color-danger);
   font-size: 0.75rem;
   line-height: 1.45;
 }
 
 .auth-washi .auth-card__notice {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.9rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--color-border);
   background: rgb(158 42 43 / 6%);
@@ -363,21 +507,32 @@
   font-size: 0.75rem;
 }
 
+/* ─── Links & Primary Vermilion CTA ──────────────────────────────────────── */
+
 .auth-washi .auth-washi__forgot {
   display: flex;
-  margin: -0.35rem 0 1.05rem auto;
+  margin: -0.2rem 0 0.85rem auto;
   padding: 0;
   min-height: 1.65rem;
   font-size: 0.75rem;
-  font-weight: 400;
+  font-weight: 450;
   color: var(--color-text-secondary);
+  background: transparent !important;
+  text-decoration: none;
+}
+
+.auth-washi .auth-washi__forgot:hover {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  background: transparent !important;
 }
 
 .auth-washi .auth-washi__submit {
   justify-content: space-between;
-  min-height: 2.85rem;
-  margin-top: 0.35rem;
-  padding: 0.7rem 1.2rem;
+  min-height: 2.95rem;
+  margin-top: 0.3rem;
+  padding: 0.72rem 1.25rem;
   border-radius: 2px;
   background: var(--color-accent);
   color: #fffaf2;
@@ -385,9 +540,17 @@
   box-shadow: none;
 }
 
+.auth-washi .auth-washi__submit svg {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .auth-washi .auth-washi__submit:hover:not(:disabled) {
   background: var(--color-accent-hover);
-  box-shadow: 0 4px 12px rgb(99 40 28 / 12%);
+  box-shadow: 0 4px 12px rgb(99 40 28 / 14%);
+}
+
+.auth-washi .auth-washi__submit:hover:not(:disabled) svg {
+  transform: translateX(4px);
 }
 
 .auth-washi__switch {
@@ -396,7 +559,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
   color: var(--color-text-secondary);
   font-size: 0.75rem;
 }
@@ -406,7 +569,57 @@
   padding: 0 0.35rem;
   color: var(--color-accent-text);
   font-size: inherit;
+  background: transparent !important;
 }
+
+.auth-washi__switch .ui-button svg {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-washi__switch .ui-button:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  background: transparent !important;
+}
+
+.auth-washi__switch .ui-button:hover svg {
+  transform: translateX(3px);
+}
+
+/* ─── Lifecycle Status View (Forgot / Reset / Verify) ────────────────────── */
+
+.auth-washi__lifecycle-status {
+  padding: 0.25rem 0;
+}
+
+.auth-washi__status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  color: #3f5e45;
+}
+
+.auth-washi__status-icon.is-error {
+  color: var(--color-danger);
+}
+
+.auth-washi__lifecycle-status h2 {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.auth-washi__lifecycle-status p {
+  margin: 0 0 1.35rem;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* ─── Desktop Zero-Scroll Lock (>= 1024px) ───────────────────────────────── */
 
 @media (min-width: 1024px) {
   html:has(.auth-washi),
@@ -437,7 +650,7 @@
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    padding: 0.65rem clamp(1.5rem, 4.5vw, 4.5rem) 0.9rem;
+    padding: 1rem clamp(1.5rem, 4.5vw, 4.5rem) 1.25rem;
   }
 
   .auth-washi__shell {
@@ -446,11 +659,7 @@
   }
 
   .auth-washi__topbar {
-    margin-bottom: 0.45rem;
-  }
-
-  .auth-washi .auth-washi__back {
-    min-height: 1.9rem;
+    margin-bottom: 0.65rem;
   }
 
   .auth-washi__layout {
@@ -463,19 +672,25 @@
   }
 }
 
+/* ─── Mobile / Tablet Natural Scroll (< 1024px) ──────────────────────────── */
+
 @media (max-width: 1023px) {
+  .auth-washi {
+    padding: 0.85rem 1.25rem 2.5rem;
+  }
+
   .auth-washi__layout {
     grid-template-columns: 1fr;
-    margin-top: 0.5rem;
+    margin-top: 0.35rem;
   }
 
   .auth-washi__story {
-    padding: 1rem 0;
+    padding: 0.9rem 0;
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
   }
 
-  .auth-washi__art,
+  .auth-washi__art-row,
   .auth-washi__verse {
     display: none;
   }

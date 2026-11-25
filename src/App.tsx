@@ -171,18 +171,27 @@ function AppContent() {
   if ((page === 'login' || page === 'register') && status === 'authenticated')
     return <Navigate to={PAGE_PATHS.profile} replace />
 
+  const isAuthFlowPage =
+    page === 'login' ||
+    page === 'register' ||
+    page === 'forgotPassword' ||
+    page === 'resetPassword' ||
+    page === 'verifyEmail'
+
   return (
     <div className="app-shell">
       <HomeInkCursor />
       <ArtisticPreloader />
       <WashiPageTransition />
-      <TopNav
-        page={page}
-        navigate={goTo}
-        isAuthenticated={isAuthenticated}
-        userName={user?.name}
-        onQuickSearch={openQuickSearch}
-      />
+      {!isAuthFlowPage && (
+        <TopNav
+          page={page}
+          navigate={goTo}
+          isAuthenticated={isAuthenticated}
+          userName={user?.name}
+          onQuickSearch={openQuickSearch}
+        />
+      )}
       <main id="main-content" tabIndex={-1}>
         <p className="route-announcer" aria-live="polite">
           {getRoute(page).title}

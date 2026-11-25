@@ -173,6 +173,10 @@
   min-height: 2.75rem;
   padding: 0 var(--space-3);
 }
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,

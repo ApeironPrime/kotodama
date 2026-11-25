@@ -1,52 +1,18 @@
-import { useState, type ReactNode } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Button, Input } from '../../components/ui'
 import { useAuth } from './authContext'
+import { AuthEditorialShell, AuthField, AuthPasswordField } from './AuthEditorialShell'
 import { getPageFromPath, type Page } from '../../types/app'
-import '../../styles/auth-washi.css'
 
 type AuthForm = { name?: string; email: string; password: string; confirmPassword?: string }
-
-function AuthField({
-  id,
-  label,
-  error,
-  trailing,
-  children,
-}: {
-  id: string
-  label: string
-  error?: string | undefined
-  trailing?: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <div className="ui-field auth-washi__field">
-      <label htmlFor={id} className="ui-field__label">
-        {label}
-      </label>
-      <div className="ui-field__control auth-washi__control">
-        {children}
-        {trailing}
-      </div>
-      {error && (
-        <span className="ui-field__error" role="alert">
-          {error}
-        </span>
-      )}
-    </div>
-  )
-}
 
 function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavigate: (page: Page) => void }) {
   const isLogin = mode === 'login'
   const location = useLocation()
   const { signIn, signUp } = useAuth()
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -55,10 +21,12 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
   } = useForm<AuthForm>()
   const password = watch('password')
   const mutation = useMutation({
-    mutationFn: async (values: AuthForm) =>
-      isLogin
-        ? signIn({ email: values.email, password: values.password })
-        : signUp({ name: values.name ?? '', email: values.email, password: values.password }),
+    mutationFn: async (values: AuthForm) => {
+      const email = values.email.trim()
+      return isLogin
+        ? signIn({ email, password: values.password })
+        : signUp({ name: (values.name ?? '').trim(), email, password: values.password })
+    },
     onSuccess: () => {
       if (!isLogin) {
         onNavigate('verifyEmail')
@@ -100,6 +68,7 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
         </div>
       )}
       <form
+        noValidate
         aria-label={isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
@@ -110,7 +79,9 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
               placeholder="Tên của bạn"
               autoComplete="name"
               aria-invalid={!!errors.name}
-              {...register('name', { required: 'Vui lòng nhập họ và tên.' })}
+              {...register('name', {
+                validate: (value) => Boolean(value?.trim()) || 'Vui lòng nhập họ và tên.',
+              })}
             />
           </AuthField>
         )}
@@ -123,76 +94,42 @@ function AuthFormCard({ mode, onNavigate }: { mode: 'login' | 'register'; onNavi
             aria-invalid={!!errors.email}
             {...register('email', {
               required: 'Vui lòng nhập email.',
-              pattern: { value: /^\S+@\S+\.\S+$/, message: 'Email chưa đúng định dạng.' },
+              validate: (value) => /^\S+@\S+\.\S+$/.test(value.trim()) || 'Email chưa đúng định dạng.',
             })}
           />
         </AuthField>
-        <AuthField
+        <AuthPasswordField
           id="auth-password"
           label="Mật khẩu"
           error={errors.password?.message}
-          trailing={
-            <button
-              type="button"
-              className="auth-washi__pw-toggle"
-              onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-              aria-pressed={showPassword}
-            >
-              {showPassword ? (
-                <EyeOff size={15} strokeWidth={1.5} aria-hidden="true" />
-              ) : (
-                <Eye size={15} strokeWidth={1.5} aria-hidden="true" />
-              )}
-            </button>
+          hint={
+            !isLogin && password
+              ? password.length >= 8
+                ? '✓ Đủ độ dài tối thiểu (8+ ký tự)'
+                : 'Tối thiểu 8 ký tự'
+              : undefined
           }
-        >
-          <Input
-            id="auth-password"
-            type={showPassword ? 'text' : 'password'}
-            className="auth-washi__input--pw"
-            autoComplete={isLogin ? 'current-password' : 'new-password'}
-            placeholder={isLogin ? 'Nhập mật khẩu của bạn' : 'Ít nhất 8 ký tự'}
-            aria-invalid={!!errors.password}
-            {...register('password', {
-              required: 'Vui lòng nhập mật khẩu.',
-              minLength: { value: 8, message: 'Mật khẩu cần ít nhất 8 ký tự.' },
-            })}
-          />
-        </AuthField>
+          hintTone={!isLogin && password && password.length >= 8 ? 'ok' : 'muted'}
+          autoComplete={isLogin ? 'current-password' : 'new-password'}
+          placeholder={isLogin ? 'Nhập mật khẩu của bạn' : 'Ít nhất 8 ký tự'}
+          {...register('password', {
+            required: 'Vui lòng nhập mật khẩu.',
+            minLength: { value: 8, message: 'Mật khẩu cần ít nhất 8 ký tự.' },
+          })}
+        />
         {!isLogin && (
-          <AuthField
+          <AuthPasswordField
             id="auth-confirm-password"
             label="Xác nhận mật khẩu"
             error={errors.confirmPassword?.message}
-            trailing={
-              <button
-                type="button"
-                className="auth-washi__pw-toggle"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                aria-label={showConfirmPassword ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'}
-                aria-pressed={showConfirmPassword}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff size={15} strokeWidth={1.5} aria-hidden="true" />
-                ) : (
-                  <Eye size={15} strokeWidth={1.5} aria-hidden="true" />
-                )}
-              </button>
-            }
-          >
-            <Input
-              id="auth-confirm-password"
-              type={showConfirmPassword ? 'text' : 'password'}
-              className="auth-washi__input--pw"
-              autoComplete="new-password"
-              placeholder="Nhập lại mật khẩu"
-              aria-invalid={!!errors.confirmPassword}
-              {...register('confirmPassword', {
-                validate: (value) => value === password || 'Mật khẩu xác nhận không khớp.',
-              })}
-            />
-          </AuthField>
+            showLabel="Hiện mật khẩu xác nhận"
+            hideLabel="Ẩn mật khẩu xác nhận"
+            autoComplete="new-password"
+            placeholder="Nhập lại mật khẩu"
+            {...register('confirmPassword', {
+              validate: (value) => value === password || 'Mật khẩu xác nhận không khớp.',
+            })}
+          />
         )}
         {isLogin && (
           <Button variant="ghost" className="auth-washi__forgot" onClick={() => onNavigate('forgotPassword')}>
@@ -229,54 +166,28 @@ export default function AuthPage({
   const isLogin = mode === 'login'
 
   return (
-    <section
-      className={`auth-washi auth-washi--${mode}`}
-      aria-label={isLogin ? 'Đăng nhập Kotodama' : 'Đăng ký Kotodama'}
+    <AuthEditorialShell
+      variant={mode}
+      ariaLabel={isLogin ? 'Đăng nhập Kotodama' : 'Đăng ký Kotodama'}
+      onBack={() => onNavigate('home')}
+      onGoHome={() => onNavigate('home')}
+      storyParagraph={
+        isLogin ? (
+          <>
+            Trở về với những điều đã học.
+            <br />
+            Mở thêm một trang tiếng Nhật của riêng bạn.
+          </>
+        ) : (
+          <>
+            Bắt đầu từ những con chữ đầu tiên.
+            <br />
+            Lưu giữ nhịp học tiếng Nhật của riêng bạn.
+          </>
+        )
+      }
     >
-      <div className="auth-washi__shell">
-        <div className="auth-washi__topbar">
-          <Button variant="ghost" className="auth-washi__back" onClick={() => onNavigate('home')}>
-            <ArrowLeft size={15} aria-hidden="true" /> Về trang chủ
-          </Button>
-        </div>
-        <div className="auth-washi__layout">
-          <aside className="auth-washi__story" aria-label="Tinh thần Kotodama">
-            <div className="auth-washi__edition">
-              <span>KOTODAMA</span>
-              <span>言霊 · Ngôn linh</span>
-            </div>
-            <div className="auth-washi__art" aria-hidden="true">
-              <img src="/assets/ink-journey-poster.jpg" alt="" />
-            </div>
-            <div className="auth-washi__verse">
-              <p className="auth-washi__caption">MỖI CON CHỮ, MỘT CUỘC GẶP</p>
-              <h2>
-                Một nét mực.
-                <br />
-                Một bước gần hơn.
-              </h2>
-              <p>
-                {isLogin ? (
-                  <>
-                    Trở về với những điều đã học.
-                    <br />
-                    Mở thêm một trang tiếng Nhật của riêng bạn.
-                  </>
-                ) : (
-                  <>
-                    Bắt đầu từ những con chữ đầu tiên.
-                    <br />
-                    Lưu giữ nhịp học tiếng Nhật của riêng bạn.
-                  </>
-                )}
-              </p>
-            </div>
-          </aside>
-          <div className="auth-washi__form-panel">
-            <AuthFormCard key={mode} mode={mode} onNavigate={onNavigate} />
-          </div>
-        </div>
-      </div>
-    </section>
+      <AuthFormCard key={mode} mode={mode} onNavigate={onNavigate} />
+    </AuthEditorialShell>
   )
 }
